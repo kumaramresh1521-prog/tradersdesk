@@ -5,7 +5,7 @@ echo "=========================================================="
 echo "🚀 Deploying Breadth Lab to Google Cloud Run"
 echo "=========================================================="
 
-SERVICE_NAME="breadth-lab"
+SERVICE_NAME="tradersdesk"
 REGION="asia-south1"
 
 echo "Building and deploying to region: ${REGION}..."
