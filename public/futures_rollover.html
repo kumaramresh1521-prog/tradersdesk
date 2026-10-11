@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Futures Rollover Matrix - Expiry Rollover Tracker | TradersDesk</title>
+  <meta name="description" content="Institutional Historical Futures Rollover Matrix: Track month-on-month expiry rollover %, 3M & 6M averages, cost of carry velocity, and positioning across all 218+ Active NSE F&O contracts.">
+  <meta name="keywords" content="futures rollover matrix, nse rollover percentage, expiry rollover tracker, rollover velocity, 3m avg rollover, tradersdesk">
+  <meta name="author" content="TradersDesk.in Quantitative Analytics">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <link rel="canonical" href="https://tradersdesk.in/futures/rollover">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tradersdesk.in/futures/rollover">
+  <meta property="og:title" content="Futures Rollover Matrix - Expiry Rollover Tracker | TradersDesk">
+  <meta property="og:description" content="Track historical expiry rollover %, 3M/6M averages, and contract positioning across all NSE F&O contracts.">
+  <meta property="og:site_name" content="TradersDesk.in">
+  <meta property="og:image" content="https://tradersdesk.in/tradersdesk-logo.jpg">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Core Page Stylesheets -->
+  <link rel="stylesheet" href="/styles.css?v=20261011_v1">
+  <link rel="stylesheet" href="/page2.css?v=20261011_v1">
+  <script src="/security_shield.js"></script>
+
+  <!-- Instant Theme Initializer (Prevents Dark/Light Flash) -->
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('breadth_theme');
+        var theme = savedTheme ? savedTheme : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+    /* ==========================================================================
+       🌟 INSTITUTIONAL FUTURES ROLLOVER MATRIX DEDICATED STYLING
+       ========================================================================== */
+    :root {
+      --ro-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --ro-font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    }
+
+    /* DAY / LIGHT MODE VARIABLES */
+    html[data-theme="light"],
+    body[data-theme="light"] {
+      --ro-page-bg: #f8fafc;
+      --ro-card-bg: #ffffff;
+      --ro-card-border: #e2e8f0;
+      --ro-card-hover: #f1f5f9;
+      --ro-elevated-bg: #ffffff;
+      --ro-text-primary: #0f172a;
+      --ro-text-secondary: #334155;
+      --ro-text-muted: #64748b;
+      --ro-text-dim: #94a3b8;
+      
+      --ro-input-bg: #ffffff;
+      --ro-input-border: #cbd5e1;
+      --ro-input-text: #0f172a;
+      --ro-input-focus: #2563eb;
+
+      --ro-btn-bg: #f8fafc;
+      --ro-btn-border: #cbd5e1;
+      --ro-btn-text: #0f172a;
+      --ro-btn-hover-bg: #f1f5f9;
+      --ro-btn-primary-bg: #2563eb;
+      --ro-btn-primary-text: #ffffff;
+
+      --ro-table-wrapper-border: #cbd5e1;
+      --ro-table-header-bg: #f1f5f9;
+      --ro-table-header-text: #0f172a;
+      --ro-table-header-border: #cbd5e1;
+      --ro-sticky-col-bg: #ffffff;
+      --ro-sticky-col-border: #cbd5e1;
+      --ro-table-tr-odd: #ffffff;
+      --ro-table-tr-even: #f8fafc;
+      --ro-table-tr-hover: #e0f2fe;
+      --ro-table-td-border: #e2e8f0;
+
+      --ro-high-bg: #dcfce7;
+      --ro-high-text: #15803d;
+      --ro-high-border: #86efac;
+
+      --ro-low-bg: #fee2e2;
+      --ro-low-text: #b91c1c;
+      --ro-low-border: #fca5a5;
+
+      --ro-good-bg: #e0f2fe;
+      --ro-good-text: #0369a1;
+      --ro-good-border: #bae6fd;
+
+      --ro-avg-col-bg: #f8fafc;
+      --ro-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+      --ro-shadow-elevated: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+    }
+
+    /* NIGHT / DARK MODE VARIABLES */
+    html[data-theme="dark"],
+    body[data-theme="dark"] {
+      --ro-page-bg: #070c16;
+      --ro-card-bg: #0d1526;
+      --ro-card-border: #1a283e;
+      --ro-card-hover: #131e34;
+      --ro-elevated-bg: #0e172a;
+      --ro-text-primary: #f8fafc;
+      --ro-text-secondary: #cbd5e1;
+      --ro-text-muted: #94a3b8;
+      --ro-text-dim: #64748b;
+      
+      --ro-input-bg: #080f1e;
+      --ro-input-border: #1e2f4a;
+      --ro-input-text: #f8fafc;
+      --ro-input-focus: #38bdf8;
+
+      --ro-btn-bg: #0f1c32;
+      --ro-btn-border: #1e3353;
+      --ro-btn-text: #38bdf8;
+      --ro-btn-hover-bg: #172c4d;
+      --ro-btn-primary-bg: #0284c7;
+      --ro-btn-primary-text: #ffffff;
+
+      --ro-table-wrapper-border: #1a293f;
+      --ro-table-header-bg: #0a1120;
+      --ro-table-header-text: #f8fafc;
+      --ro-table-header-border: #1a2b44;
+      --ro-sticky-col-bg: #080d19;
+      --ro-sticky-col-border: #1a293f;
+      --ro-table-tr-odd: #080d18;
+      --ro-table-tr-even: #0c1322;
+      --ro-table-tr-hover: #14243e;
+      --ro-table-td-border: #141f33;
+
+      --ro-high-bg: rgba(16, 185, 129, 0.16);
+      --ro-high-text: #34d399;
+      --ro-high-border: rgba(16, 185, 129, 0.35);
+
+      --ro-low-bg: rgba(239, 68, 68, 0.16);
+      --ro-low-text: #f87171;
+      --ro-low-border: rgba(239, 68, 68, 0.35);
+
+      --ro-good-bg: rgba(56, 189, 248, 0.14);
+      --ro-good-text: #38bdf8;
+      --ro-good-border: rgba(56, 189, 248, 0.3);
+
+      --ro-avg-col-bg: rgba(15, 23, 42, 0.4);
+      --ro-shadow-card: 0 2px 4px rgba(0, 0, 0, 0.3);
+      --ro-shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.45);
+    }
+
+    html,
+    body,
+    body.futures-rollover-page {
+      font-family: var(--ro-font-sans);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    html[data-theme="light"],
+    html[data-theme="light"] body,
+    body[data-theme="light"] {
+      background-color: #f8fafc !important;
+      color: #0f172a !important;
+    }
+
+    html[data-theme="dark"],
+    html[data-theme="dark"] body,
+    body[data-theme="dark"] {
+      background-color: #070c16 !important;
+      color: #f8fafc !important;
+    }
+
+    /* Standalone Content Shell */
+    .ro-main-container {
+      width: 100%;
+      max-width: 1820px;
+      margin: 0 auto;
+      padding: 16px 22px 30px;
+      box-sizing: border-box;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Hero / KPI Command Header */
+    .ro-hero-bar {
+      background: var(--ro-card-bg);
+      border: 1px solid var(--ro-card-border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      box-shadow: var(--ro-shadow-card);
+      flex-wrap: wrap;
+    }
+
+    .ro-hero-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 260px;
+    }
+
+    .ro-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ro-title-row h1 {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--ro-text-primary);
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ro-pill-badge {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 2.5px 8px;
+      border-radius: 5px;
+      background: var(--ro-good-bg);
+      color: var(--ro-good-text);
+      border: 1px solid var(--ro-good-border);
+    }
+
+    .ro-pill-badge-gold {
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    html[data-theme="dark"] .ro-pill-badge-gold {
+      color: #fbbf24;
+      border-color: rgba(251, 191, 36, 0.35);
+    }
+
+    .ro-subtitle {
+      margin: 0;
+      font-size: 12.5px;
+      color: var(--ro-text-muted);
+      font-weight: 500;
+    }
+
+    /* KPI Cards Strip */
+    .ro-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 12px;
+      min-width: 580px;
+    }
+
+    @media (max-width: 1200px) {
+      .ro-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        min-width: 100%;
+      }
+    }
+
+    .ro-kpi-card {
+      background: var(--ro-elevated-bg);
+      border: 1px solid var(--ro-card-border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .ro-kpi-card:hover {
+      border-color: var(--ro-btn-border);
+    }
+
+    .ro-kpi-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--ro-text-muted);
+      letter-spacing: 0.4px;
+    }
+
+    .ro-kpi-val {
+      font-size: 17px;
+      font-weight: 800;
+      font-family: var(--ro-font-mono);
+      color: var(--ro-text-primary);
+      letter-spacing: -0.2px;
+    }
+
+    /* Controls & Filter Bar */
+    .ro-controls-panel {
+      background: var(--ro-card-bg);
+      border: 1px solid var(--ro-card-border);
+      border-radius: 10px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: var(--ro-shadow-card);
+    }
+
+    .ro-controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .ro-controls-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 300px;
+      flex-wrap: wrap;
+    }
+
+    .ro-search-box-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+      max-width: 360px;
+    }
+
+    .ro-search-input {
+      width: 100%;
+      padding: 8px 30px 8px 12px;
+      font-size: 12.5px;
+      font-family: var(--ro-font-sans);
+      background: var(--ro-input-bg);
+      border: 1px solid var(--ro-input-border);
+      color: var(--ro-input-text);
+      border-radius: 6px;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .ro-search-input:focus {
+      border-color: var(--ro-input-focus);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    .ro-clear-btn {
+      position: absolute;
+      right: 7px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--ro-text-muted);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 6px;
+      display: none;
+    }
+
+    .ro-clear-btn:hover {
+      color: var(--ro-text-primary);
+    }
+
+    .ro-select-ctrl {
+      padding: 8px 12px;
+      font-size: 12.5px;
+      font-family: var(--ro-font-sans);
+      font-weight: 500;
+      background: var(--ro-input-bg);
+      border: 1px solid var(--ro-input-border);
+      color: var(--ro-input-text);
+      border-radius: 6px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.15s ease;
+    }
+
+    .ro-select-ctrl:focus {
+      border-color: var(--ro-input-focus);
+    }
+
+    .ro-controls-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ro-action-btn {
+      padding: 7.5px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--ro-font-sans);
+      background: var(--ro-btn-bg);
+      border: 1px solid var(--ro-btn-border);
+      color: var(--ro-btn-text);
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+      white-space: nowrap;
+    }
+
+    .ro-action-btn:hover {
+      background: var(--ro-btn-hover-bg);
+      border-color: var(--ro-input-focus);
+    }
+
+    .ro-action-btn-primary {
+      background: var(--ro-btn-primary-bg);
+      color: var(--ro-btn-primary-text);
+      border-color: transparent;
+    }
+
+    .ro-action-btn-primary:hover {
+      background: #1d4ed8;
+      border-color: transparent;
+      color: #ffffff;
+    }
+
+    /* Quick Filter Pills Row */
+    .ro-pills-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding-top: 4px;
+      border-top: 1px solid var(--ro-card-border);
+    }
+
+    .ro-filter-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--ro-btn-bg);
+      border: 1px solid var(--ro-btn-border);
+      color: var(--ro-text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .ro-filter-pill:hover {
+      color: var(--ro-text-primary);
+      border-color: var(--ro-input-focus);
+    }
+
+    .ro-filter-pill.active {
+      background: var(--ro-good-bg);
+      color: var(--ro-good-text);
+      border-color: var(--ro-good-border);
+      font-weight: 700;
+    }
+
+    /* Quantitative Rollover Table */
+    .ro-table-card {
+      background: var(--ro-card-bg);
+      border: 1px solid var(--ro-table-wrapper-border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--ro-shadow-card);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ro-table-wrapper {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: calc(100vh - 275px);
+      position: relative;
+    }
+
+    .ro-table-wrapper::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    .ro-table-wrapper::-webkit-scrollbar-track {
+      background: var(--ro-card-bg);
+    }
+    .ro-table-wrapper::-webkit-scrollbar-thumb {
+      background: var(--ro-card-border);
+      border-radius: 4px;
+    }
+    .ro-table-wrapper::-webkit-scrollbar-thumb:hover {
+      background: var(--ro-text-dim);
+    }
+
+    .ro-matrix-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 12px;
+    }
+
+    /* Table Header */
+    .ro-matrix-table th {
+      background: var(--ro-table-header-bg);
+      color: var(--ro-table-header-text);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--ro-table-header-border);
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      user-select: none;
+    }
+
+    .ro-matrix-table th.sortable {
+      cursor: pointer;
+    }
+
+    .ro-matrix-table th.sortable:hover {
+      color: #2563eb;
+      background: var(--ro-card-hover);
+    }
+    html[data-theme="dark"] .ro-matrix-table th.sortable:hover {
+      color: #38bdf8;
+    }
+
+    .ro-matrix-table th.text-right,
+    .ro-matrix-table td.text-right {
+      text-align: right;
+    }
+
+    /* Sticky Left Symbol Column */
+    .ro-matrix-table th.sticky-sym-col {
+      position: sticky;
+      left: 0;
+      top: 0;
+      z-index: 30;
+      background: var(--ro-table-header-bg);
+      border-right: 2px solid var(--ro-sticky-col-border);
+      min-width: 140px;
+      text-align: left;
+    }
+
+    .ro-matrix-table td.sticky-sym-col {
+      position: sticky;
+      left: 0;
+      z-index: 10;
+      background: var(--ro-sticky-col-bg);
+      border-right: 2px solid var(--ro-sticky-col-border);
+      min-width: 140px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .ro-matrix-table tr:hover td.sticky-sym-col {
+      background: var(--ro-table-tr-hover) !important;
+    }
+
+    /* Table Rows & Cells */
+    .ro-matrix-table td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--ro-table-td-border);
+      white-space: nowrap;
+      font-family: var(--ro-font-mono);
+      font-size: 12px;
+      color: var(--ro-text-secondary);
+      transition: background-color 0.1s ease;
+    }
+
+    .ro-matrix-table tr:nth-child(odd) td {
+      background-color: var(--ro-table-tr-odd);
+    }
+    .ro-matrix-table tr:nth-child(even) td {
+      background-color: var(--ro-table-tr-even);
+    }
+
+    .ro-matrix-table tr:hover td {
+      background-color: var(--ro-table-tr-hover) !important;
+    }
+
+    /* Symbol Cell Content */
+    .ro-sym-name {
+      font-weight: 800;
+      color: var(--ro-text-primary);
+      font-size: 13px;
+      letter-spacing: -0.2px;
+    }
+
+    .ro-sym-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .ro-sym-sector {
+      font-size: 10px;
+      font-weight: 600;
+      font-family: var(--ro-font-sans);
+      color: var(--ro-text-muted);
+    }
+
+    .ro-idx-badge {
+      font-size: 9px;
+      font-weight: 800;
+      font-family: var(--ro-font-sans);
+      text-transform: uppercase;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: rgba(37, 99, 235, 0.12);
+      color: #2563eb;
+      border: 1px solid rgba(37, 99, 235, 0.25);
+    }
+    html[data-theme="dark"] .ro-idx-badge {
+      color: #60a5fa;
+      border-color: rgba(96, 165, 250, 0.3);
+    }
+
+    /* Value Badges & Cells */
+    .ro-val-cell {
+      font-weight: 600;
+    }
+
+    .ro-val-high {
+      color: var(--ro-high-text) !important;
+      font-weight: 700;
+    }
+
+    .ro-val-low {
+      color: var(--ro-low-text) !important;
+      font-weight: 700;
+    }
+
+    .ro-val-good {
+      color: var(--ro-good-text) !important;
+      font-weight: 600;
+    }
+
+    .ro-dash {
+      color: var(--ro-text-dim) !important;
+      font-weight: 400;
+    }
+
+    /* Highlight Columns (3M Avg & Current) */
+    .ro-avg-cell {
+      background-color: var(--ro-avg-col-bg) !important;
+      font-weight: 700 !important;
+    }
+
+    .ro-cur-pill {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 800;
+      font-size: 11.5px;
+    }
+
+    .ro-cur-pill-high {
+      background: var(--ro-high-bg);
+      color: var(--ro-high-text);
+      border: 1px solid var(--ro-high-border);
+    }
+
+    .ro-cur-pill-normal {
+      background: var(--ro-good-bg);
+      color: var(--ro-good-text);
+      border: 1px solid var(--ro-good-border);
+    }
+
+    .ro-cur-pill-low {
+      background: var(--ro-low-bg);
+      color: var(--ro-low-text);
+      border: 1px solid var(--ro-low-border);
+    }
+
+    .ro-trend-up {
+      color: var(--ro-high-text);
+      font-weight: 800;
+    }
+
+    .ro-trend-down {
+      color: var(--ro-low-text);
+      font-weight: 800;
+    }
+
+    .ro-trend-flat {
+      color: var(--ro-text-dim);
+      font-weight: 500;
+    }
+
+    .sort-carat {
+      display: inline-block;
+      margin-left: 4px;
+      font-size: 10px;
+    }
+
+    /* Table Footer Bar */
+    .ro-table-foot {
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--ro-card-bg);
+      border-top: 1px solid var(--ro-card-border);
+      font-size: 11.5px;
+      color: var(--ro-text-muted);
+      font-family: var(--ro-font-sans);
+    }
+
+    /* Spinner */
+    .ro-spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(56, 189, 248, 0.2);
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: roSpin 0.7s linear infinite;
+    }
+    @keyframes roSpin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="futures-rollover-page">
+
+  <!-- ====================================================================
+       INSTITUTIONAL HEADER — BRAND BAR + THEME TOGGLE + DIGITAL CLOCK
+       ==================================================================== -->
+  <header class="page2-header" id="instHeader">
+    <div class="inst-nav-row">
+      <nav class="inst-nav" aria-label="Main Navigation">
+        <!-- 1. DASHBOARD -->
+        <div class="inst-nav-item">
+          <a href="/" class="inst-nav-btn" title="Return to Main Terminal">
+            <span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span>
+          </a>
+        </div>
+
+        <!-- 2. FUTURES DASHBOARD (ACTIVE) -->
+        <div class="inst-nav-item has-dropdown">
+          <a href="/futures" class="inst-nav-btn inst-nav-btn-highlight active" title="Futures Derivatives Suite">
+            <span class="inst-nav-icon">📈</span> <span class="nav-label">Futures Desk</span>
+            <span class="inst-nav-arrow">▾</span>
+          </a>
+          <div class="inst-dropdown inst-dropdown-md">
+            <div class="inst-dropdown-col">
+              <span class="inst-dropdown-header">Futures Market &amp; Structure</span>
+              <a href="/futures" class="inst-dd-item">
+                <span class="dd-icon">📊</span>
+                <div class="dd-text">
+                  <span class="dd-title">Future Marketwatch</span>
+                  <span class="dd-sub">Active contracts matrix, basis spread, LTP &amp; OI</span>
+                </div>
+              </a>
+              <a href="/futures/indices" class="inst-dd-item">
+                <span class="dd-icon">📈</span>
+                <div class="dd-text">
+                  <span class="dd-title">Index Term Structure</span>
+                  <span class="dd-sub">Cash-futures basis, cost of carry &amp; benchmark curve</span>
+                </div>
+              </a>
+              <a href="/futures/buildup" class="inst-dd-item">
+                <span class="dd-icon">⚡</span>
+                <div class="dd-text">
+                  <span class="dd-title">Future Buildup</span>
+                  <span class="dd-sub">Long/short buildup quadrants &amp; unwinding signals</span>
+                </div>
+              </a>
+            </div>
+            <div class="inst-dropdown-col">
+              <span class="inst-dropdown-header">F&amp;O Analytics &amp; Risk</span>
+              <a href="/futures/heatmap" class="inst-dd-item">
+                <span class="dd-icon">🗺️</span>
+                <div class="dd-text">
+                  <span class="dd-title">Future Heatmap</span>
+                  <span class="dd-sub">Visual sector heatmap &amp; momentum distribution</span>
+                </div>
+              </a>
+              <a href="/futures/mwpl" class="inst-dd-item">
+                <span class="dd-icon">🚫</span>
+                <div class="dd-text">
+                  <span class="dd-title">MWPL &amp; Ban Radar</span>
+                  <span class="dd-sub">Market-Wide Position Limit tracker &amp; pre-ban alert</span>
+                </div>
+              </a>
+              <!-- Dedicated Rollover Link (Active) -->
+              <a href="/futures/rollover" class="inst-dd-item active" style="background:rgba(37,99,235,0.08);">
+                <span class="dd-icon">🔄</span>
+                <div class="dd-text">
+                  <span class="dd-title" style="color:#2563eb; font-weight:700;">Futures Rollover Matrix <span class="p2-badge p2-badge-teal" style="margin-left:4px;">OFFICIAL</span></span>
+                  <span class="dd-sub">Historical monthly rollover %, 3M/6M averages &amp; velocity</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. GLOBAL MARKETS -->
+        <div class="inst-nav-item">
+          <a href="/global-markets" class="inst-nav-btn inst-nav-btn-blue" title="GIFT NIFTY &amp; Real-time World Indices">
+            <span class="inst-nav-icon">🌐</span> <span class="nav-label">Global Markets</span>
+            <span class="p2-badge p2-badge-blue">MACRO</span>
+          </a>
+        </div>
+
+        <!-- 4. OPTIONS -->
+        <div class="inst-nav-item has-dropdown">
+          <a href="/option-chain-pro" class="inst-nav-btn" title="Options Trading &amp; Greeks Desk">
+            <span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span>
+            <span class="inst-nav-arrow">▾</span>
+          </a>
+          <div class="inst-dropdown inst-dropdown-md">
+            <div class="inst-dropdown-col">
+              <span class="inst-dropdown-header">Derivatives Suite</span>
+              <a href="/option-chain-pro" class="inst-dd-item">
+                <span class="dd-icon">⚡</span>
+                <div class="dd-text">
+                  <span class="dd-title">Option Chain Pro <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
+                  <span class="dd-sub">Multi-broker live chain, Black-Scholes Greeks, PCR &amp; IV</span>
+                </div>
+              </a>
+              <a href="/straddle" class="inst-dd-item">
+                <span class="dd-icon">📉</span>
+                <div class="dd-text">
+                  <span class="dd-title">ATM Straddle Engine <span class="p2-badge p2-badge-rose" style="margin-left:4px;">LIVE</span></span>
+                  <span class="dd-sub">Live intraday straddle decay, spot &amp; synthetic curve</span>
+                </div>
+              </a>
+            </div>
+            <div class="inst-dropdown-col">
+              <span class="inst-dropdown-header">Breadth Analytics</span>
+              <a href="/contribution" class="inst-dd-item">
+                <span class="dd-icon">📊</span>
+                <div class="dd-text">
+                  <span class="dd-title">Breadth &amp; Contribution</span>
+                  <span class="dd-sub">Index point contribution by heavyweight constituents</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. CALENDAR SPREAD STUDIO -->
+        <div class="inst-nav-item">
+          <a href="/calendar-studio" class="inst-nav-btn" title="Calendar &amp; Diagonal Spread Engine">
+            <span class="inst-nav-icon">📅</span> <span class="nav-label">Calendar Studio</span>
+          </a>
+        </div>
+
+        <!-- 6. FII / DII SMART MONEY -->
+        <div class="inst-nav-item">
+          <a href="/fii-dii" class="inst-nav-btn" title="Institutional Capital Flow &amp; Smart Money">
+            <span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII / DII Flow</span>
+          </a>
+        </div>
+
+        <!-- 7. CASH DELIVERY -->
+        <div class="inst-nav-item">
+          <a href="/delivery" class="inst-nav-btn" title="Cash Market Delivery Absorption">
+            <span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery</span>
+          </a>
+        </div>
+
+        <!-- 8. MTF ANALYTICS -->
+        <div class="inst-nav-item">
+          <a href="/mtf" class="inst-nav-btn" title="Margin Trading Facility Book Tracker">
+            <span class="inst-nav-icon">💼</span> <span class="nav-label">MTF Book</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Right Header Utilities: Clock, Status, Theme Switcher & Main Link -->
+      <div class="page2-nav-right" style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+        <div id="roLiveClock" class="inst-live-clock" style="font-family:var(--ro-font-mono); font-size:12px; font-weight:700; color:var(--ro-text-muted);">--:--:-- IST</div>
+        <div class="inst-status-badge" style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:12px; background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.3);">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+          <span>NSE DERIVATIVES EOD</span>
+        </div>
+        <!-- Theme Toggle Button -->
+        <button id="roThemeToggleBtn" type="button" class="ro-action-btn" title="Toggle Day (Light) / Night (Dark) Mode" style="font-size:12px; padding:5px 11px;">
+          <span id="roThemeIcon">☀️</span> <span id="roThemeText">Light Mode</span>
+        </button>
+        <a href="/" class="ro-action-btn" style="text-decoration:none;" title="Go to Main Institutional Terminal">
+          <span>⬅</span> <span>Terminal</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ====================================================================
+       MAIN DEDICATED ROLLOVER MATRIX WORKSPACE
+       ==================================================================== -->
+  <main class="ro-main-container">
+
+    <!-- HERO KPI COMMAND BAR -->
+    <section class="ro-hero-bar">
+      <div class="ro-hero-left">
+        <div class="ro-title-row">
+          <h1><span>🔄</span> Historical Futures Rollover Matrix</h1>
+          <span class="ro-pill-badge">OFFICIAL NSE FO</span>
+          <span class="ro-pill-badge ro-pill-badge-gold">218+ ACTIVE F&amp;O CONTRACTS</span>
+        </div>
+        <p class="ro-subtitle">Official month-on-month expiry rollover %, 3-Month and 6-Month benchmark averages, and institutional velocity tracking across the entire NSE derivatives universe.</p>
+      </div>
+
+      <!-- 4 Institutional Macro KPI Cards -->
+      <div class="ro-kpi-grid">
+        <div class="ro-kpi-card">
+          <span class="ro-kpi-lbl">MARKET 3M AVG ROLLOVER</span>
+          <span class="ro-kpi-val" id="roKpiMarketAvg" style="color:#0284c7;">--%</span>
+        </div>
+        <div class="ro-kpi-card">
+          <span class="ro-kpi-lbl">HIGH ROLLOVER (&ge;90%)</span>
+          <span class="ro-kpi-val" id="roKpiHighCount" style="color:#16a34a;">--</span>
+        </div>
+        <div class="ro-kpi-card">
+          <span class="ro-kpi-lbl">LAGGARD / LOW (&lt;75%)</span>
+          <span class="ro-kpi-val" id="roKpiLowCount" style="color:#dc2626;">--</span>
+        </div>
+        <div class="ro-kpi-card">
+          <span class="ro-kpi-lbl">TOTAL TRACKED CONTRACTS</span>
+          <span class="ro-kpi-val" id="roKpiTotalCount">--</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE CONTROLS & FILTER BAND -->
+    <section class="ro-controls-panel">
+      <div class="ro-controls-row">
+        <div class="ro-controls-left">
+          <!-- Search Box -->
+          <div class="ro-search-box-wrap">
+            <input type="text" id="roSearchInput" class="ro-search-input" placeholder="🔍 Search F&amp;O symbol (e.g. RELIANCE, NIFTY, TCS)..." autocomplete="off" />
+            <button type="button" id="roClearSearchBtn" class="ro-clear-btn">✕</button>
+          </div>
+
+          <!-- Sector Dropdown -->
+          <select id="roSectorSelect" class="ro-select-ctrl">
+            <option value="ALL">🌐 All Market Sectors</option>
+            <option value="INDICES">📊 Indices Only</option>
+            <option value="AUTO">🚗 Automobiles</option>
+            <option value="BANKING">🏦 Banking &amp; Financials</option>
+            <option value="CEMENT">🏗️ Cement &amp; Construction</option>
+            <option value="CHEMICALS">🧪 Chemicals &amp; Fertilisers</option>
+            <option value="CONSUMER GOODS">🛒 Consumer Goods &amp; FMCG</option>
+            <option value="ENERGY">⚡ Energy, Oil &amp; Gas</option>
+            <option value="HEALTHCARE">💊 Healthcare &amp; Pharma</option>
+            <option value="IT">💻 Information Technology</option>
+            <option value="METALS">⛏️ Metals &amp; Mining</option>
+            <option value="MEDIA">📺 Media &amp; Entertainment</option>
+            <option value="SERVICES">🚚 Services &amp; Logistics</option>
+            <option value="TELECOM">📡 Telecom &amp; Infra</option>
+          </select>
+
+          <!-- Rollover Tier Dropdown -->
+          <select id="roTierSelect" class="ro-select-ctrl">
+            <option value="ALL">All Rollover Tiers</option>
+            <option value="HIGH">🔥 High Rollover (&ge; 90%)</option>
+            <option value="NORMAL">⚡ Normal Rollover (75% - 90%)</option>
+            <option value="LOW">⚠️ Low Rollover (&lt; 75%)</option>
+          </select>
+        </div>
+
+        <div class="ro-controls-right">
+          <!-- Action Buttons -->
+          <button type="button" id="roSyncBhavBtn" class="ro-action-btn" title="Sync Latest Official NSE F&O Bhavcopy EOD">
+            <span>📥</span> <span>Sync Bhavcopy</span>
+          </button>
+          <button type="button" id="roExportCsvBtn" class="ro-action-btn" title="Download Complete Rollover Matrix as CSV">
+            <span>📊</span> <span>Export CSV</span>
+          </button>
+          <button type="button" id="roRefreshBtn" class="ro-action-btn ro-action-btn-primary" title="Reload Fresh Matrix Data">
+            <span>🔄</span> <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Filter Pills Strip -->
+      <div class="ro-pills-row">
+        <span style="font-size:11px; font-weight:700; color:var(--ro-text-muted); text-transform:uppercase; margin-right:4px;">Quick Filters:</span>
+        <button type="button" class="ro-filter-pill active" data-pill-type="tier" data-pill-val="ALL">All Contracts</button>
+        <button type="button" class="ro-filter-pill" data-pill-type="tier" data-pill-val="HIGH">🔥 High Rollover (&ge;90%)</button>
+        <button type="button" class="ro-filter-pill" data-pill-type="tier" data-pill-val="NORMAL">⚡ Normal (75%-90%)</button>
+        <button type="button" class="ro-filter-pill" data-pill-type="tier" data-pill-val="LOW">⚠️ Low Rollover (&lt;75%)</button>
+        <button type="button" class="ro-filter-pill" data-pill-type="sec" data-pill-val="INDICES">📊 Indices</button>
+        <button type="button" class="ro-filter-pill" data-pill-type="sec" data-pill-val="IT">💻 IT</button>
+        <button type="button" class="ro-filter-pill" data-pill-type="sec" data-pill-val="BANKING">🏦 Banking</button>
+        <button type="button" class="ro-filter-pill" data-pill-type="sec" data-pill-val="AUTO">🚗 Auto</button>
+        <button type="button" class="ro-filter-pill" data-pill-type="sec" data-pill-val="ENERGY">⚡ Energy</button>
+        <button type="button" class="ro-filter-pill" data-pill-type="sec" data-pill-val="METALS">⛏️ Metals</button>
+      </div>
+    </section>
+
+    <!-- FULL-WIDTH QUANTITATIVE MATRIX TABLE -->
+    <section class="ro-table-card">
+      <div class="ro-table-wrapper" id="roTableWrapper">
+        <table class="ro-matrix-table" id="roMatrixTable">
+          <thead id="roMatrixTableHead">
+            <tr>
+              <th class="sticky-sym-col sortable" data-sort="symbol">SYMBOL <span class="sort-carat">⇅</span></th>
+              <th class="text-right sortable" data-sort="currentRo">CURRENT RO % <span class="sort-carat">▼</span></th>
+              <th class="text-right sortable" data-sort="avg3M">3M AVG <span class="sort-carat">⇅</span></th>
+              <th class="text-right sortable" data-sort="avg6M">6M AVG <span class="sort-carat">⇅</span></th>
+              <th class="text-right sortable" data-sort="diff3M">DIFF vs 3M <span class="sort-carat">⇅</span></th>
+              <th class="text-right">TREND</th>
+            </tr>
+          </thead>
+          <tbody id="roMatrixTableBody">
+            <tr>
+              <td colspan="10" style="text-align:center; padding:40px; color:var(--ro-text-muted);">
+                <div class="ro-spinner" style="margin-bottom:10px;"></div>
+                <div>Fetching Institutional Futures Rollover Matrix...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Table Footer with Summary Stats -->
+      <div class="ro-table-foot">
+        <div id="roFootCount">Showing all contracts</div>
+        <div id="roFootSource">Data Source: Official NSE Derivatives EOD Bhavcopy &amp; Historic Expiry Archives</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ====================================================================
+       CLIENT JAVASCRIPT CONTROLLER
+       ==================================================================== -->
+  <script>
+    (function() {
+      // Internal State
+      const state = {
+        data: null,
+        months: [],
+        search: '',
+        sector: 'ALL',
+        tier: 'ALL',
+        sortBy: 'symbol',
+        sortDir: 'asc',
+        autoRefreshSec: 0,
+        refreshTimer: null
+      };
+
+      // --- Digital IST Clock ---
+      function updateClock() {
+        const el = document.getElementById('roLiveClock');
+        if (!el) return;
+        const now = new Date();
+        const ist = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+        const h = String(ist.getHours()).padStart(2, '0');
+        const m = String(ist.getMinutes()).padStart(2, '0');
+        const s = String(ist.getSeconds()).padStart(2, '0');
+        el.textContent = `${h}:${m}:${s} IST`;
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      // --- Theme Controller ---
+      function initTheme() {
+        const saved = localStorage.getItem('breadth_theme') || 'light';
+        applyTheme(saved);
+
+        const btn = document.getElementById('roThemeToggleBtn');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            const cur = document.documentElement.getAttribute('data-theme') || 'light';
+            const next = cur === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+          });
+        }
+      }
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.body.setAttribute('data-theme', theme);
+        try { localStorage.setItem('breadth_theme', theme); } catch(e) {}
+        
+        const icon = document.getElementById('roThemeIcon');
+        const text = document.getElementById('roThemeText');
+        if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+        if (text) text.textContent = theme === 'dark' ? 'Day Mode' : 'Night Mode';
+      }
+
+      // --- Fetch Data ---
+      async function fetchRolloverData(forceRefresh = false) {
+        const tbody = document.getElementById('roMatrixTableBody');
+        if (!state.data || forceRefresh) {
+          if (tbody && !state.data) {
+            tbody.innerHTML = `<tr><td colspan="25" style="text-align:center; padding:40px; color:var(--ro-text-muted);"><div class="ro-spinner" style="margin-bottom:10px;"></div><div>Fetching Institutional Futures Rollover Matrix...</div></td></tr>`;
+          }
+          try {
+            const res = await fetch('/api/futures/rollover');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const json = await res.json();
+            if (!json || !json.ok) throw new Error('API returned invalid payload');
+            state.data = json;
+            state.months = json.months || [];
+          } catch (err) {
+            console.error('Error fetching rollover matrix:', err);
+            if (tbody) {
+              tbody.innerHTML = `<tr><td colspan="25" style="text-align:center; padding:35px; color:#ef4444;">Failed to load Rollover Matrix (${err.message}). <button onclick="window.roReload()" style="margin-left:10px; padding:4px 10px; cursor:pointer;">Retry</button></td></tr>`;
+            }
+            return;
+          }
+        }
+
+        renderKpis();
+        buildTableHeaders();
+        renderTableRows();
+      }
+
+      window.roReload = () => fetchRolloverData(true);
+
+      // --- Render KPI Cards ---
+      function renderKpis() {
+        if (!state.data) return;
+        const st = state.data.stats || {};
+        const elAvg = document.getElementById('roKpiMarketAvg');
+        const elHigh = document.getElementById('roKpiHighCount');
+        const elLow = document.getElementById('roKpiLowCount');
+        const elTot = document.getElementById('roKpiTotalCount');
+
+        if (elAvg) elAvg.textContent = (st.avgMarketRollover !== undefined ? st.avgMarketRollover : 88.5).toFixed(2) + '%';
+        if (elHigh) elHigh.textContent = st.highRolloverCount !== undefined ? st.highRolloverCount : '--';
+        if (elLow) elLow.textContent = st.lowRolloverCount !== undefined ? st.lowRolloverCount : '--';
+        if (elTot) elTot.textContent = st.totalTracked !== undefined ? st.totalTracked : (state.data.data ? state.data.data.length : '--');
+      }
+
+      // --- Build Dynamic Table Headers ---
+      function buildTableHeaders() {
+        const thead = document.getElementById('roMatrixTableHead');
+        if (!thead || !state.data) return;
+        const months = state.months || [];
+
+        let html = `<tr>`;
+        html += `<th class="sticky-sym-col sortable" data-sort="symbol">SYMBOL ${getSortCarat('symbol')}</th>`;
+        html += `<th class="text-right sortable" data-sort="currentRo" style="color:#0284c7;">CURRENT RO % ${getSortCarat('currentRo')}</th>`;
+        html += `<th class="text-right sortable" data-sort="avg3M" style="background:var(--ro-avg-col-bg);">3M AVG ${getSortCarat('avg3M')}</th>`;
+        html += `<th class="text-right sortable" data-sort="avg6M">6M AVG ${getSortCarat('avg6M')}</th>`;
+
+        // Historical Monthly Columns
+        months.forEach(m => {
+          html += `<th class="text-right sortable" data-sort="${m}">${m} ${getSortCarat(m)}</th>`;
+        });
+
+        html += `<th class="text-right sortable" data-sort="diff3M">DIFF vs 3M ${getSortCarat('diff3M')}</th>`;
+        html += `<th class="text-right" style="min-width:70px;">TREND</th>`;
+        html += `</tr>`;
+
+        thead.innerHTML = html;
+
+        // Attach sort click listeners
+        thead.querySelectorAll('th.sortable').forEach(th => {
+          th.addEventListener('click', () => {
+            const col = th.dataset.sort;
+            if (state.sortBy === col) {
+              state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+            } else {
+              state.sortBy = col;
+              state.sortDir = (col === 'symbol') ? 'asc' : 'desc';
+            }
+            buildTableHeaders();
+            renderTableRows();
+          });
+        });
+      }
+
+      function getSortCarat(col) {
+        if (state.sortBy !== col) return `<span class="sort-carat" style="opacity:0.35;">⇅</span>`;
+        return state.sortDir === 'desc' ? `<span class="sort-carat" style="color:#2563eb;">▼</span>` : `<span class="sort-carat" style="color:#2563eb;">▲</span>`;
+      }
+
+      // --- Render Table Rows with High-Precision Styling ---
+      function renderTableRows() {
+        const tbody = document.getElementById('roMatrixTableBody');
+        if (!tbody || !state.data) return;
+
+        let rows = state.data.data || [];
+        const months = state.months || [];
+        const latestMonth = (months && months[0]) || 'SEP 2026';
+
+        // Filter: Search
+        const q = (state.search || '').trim().toUpperCase();
+        if (q) {
+          rows = rows.filter(r => r.symbol.toUpperCase().includes(q) || (r.name && r.name.toUpperCase().includes(q)));
+        }
+
+        // Filter: Sector
+        if (state.sector && state.sector !== 'ALL') {
+          const secU = state.sector.toUpperCase();
+          if (secU === 'INDICES') {
+            rows = rows.filter(r => r.isIndex);
+          } else {
+            rows = rows.filter(r => (r.sector || '').toUpperCase() === secU);
+          }
+        }
+
+        // Filter: Tier
+        if (state.tier === 'HIGH') {
+          rows = rows.filter(r => {
+            const v = (r.rollovers && typeof r.rollovers[latestMonth] === 'number') ? r.rollovers[latestMonth] : r.currentRo;
+            return typeof v === 'number' && v >= 90.0;
+          });
+        } else if (state.tier === 'NORMAL') {
+          rows = rows.filter(r => {
+            const v = (r.rollovers && typeof r.rollovers[latestMonth] === 'number') ? r.rollovers[latestMonth] : r.currentRo;
+            return typeof v === 'number' && v >= 75.0 && v < 90.0;
+          });
+        } else if (state.tier === 'LOW') {
+          rows = rows.filter(r => {
+            const v = (r.rollovers && typeof r.rollovers[latestMonth] === 'number') ? r.rollovers[latestMonth] : r.currentRo;
+            return typeof v === 'number' && v < 75.0;
+          });
+        }
+
+        // Sorting
+        const col = state.sortBy || 'symbol';
+        const isDesc = state.sortDir === 'desc';
+        rows = [...rows].sort((a, b) => {
+          let vA, vB;
+          if (col === 'symbol') {
+            vA = a.symbol;
+            vB = b.symbol;
+            return isDesc ? vB.localeCompare(vA) : vA.localeCompare(vB);
+          } else if (col === 'avg3M' || col === 'avg6M' || col === 'currentRo' || col === 'diff3M') {
+            vA = Number(a[col]) || 0;
+            vB = Number(b[col]) || 0;
+          } else {
+            // Specific monthly column
+            vA = (a.rollovers && typeof a.rollovers[col] === 'number') ? a.rollovers[col] : -1;
+            vB = (b.rollovers && typeof b.rollovers[col] === 'number') ? b.rollovers[col] : -1;
+          }
+          return isDesc ? (vB - vA) : (vA - vB);
+        });
+
+        // Update footer count
+        const footCount = document.getElementById('roFootCount');
+        if (footCount) {
+          footCount.textContent = `Displaying ${rows.length} of ${state.data.data ? state.data.data.length : 0} F&O contracts`;
+        }
+
+        if (rows.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="${months.length + 6}" style="text-align:center; padding:35px; color:var(--ro-text-muted);">No F&amp;O symbols found matching filters.</td></tr>`;
+          return;
+        }
+
+        // Render Rows
+        tbody.innerHTML = rows.map(r => {
+          let cells = '';
+
+          // 1. Sticky Symbol Column
+          cells += `
+            <td class="sticky-sym-col" title="View details for ${r.symbol}">
+              <div class="ro-sym-name">${r.symbol}</div>
+              <div class="ro-sym-meta">
+                <span class="ro-sym-sector">${r.sector || 'Others'}</span>
+                ${r.isIndex ? '<span class="ro-idx-badge">INDEX</span>' : ''}
+              </div>
+            </td>
+          `;
+
+          // 2. Current Rollover Column
+          const curVal = Number(r.currentRo || 0);
+          let curPillCls = 'ro-cur-pill ro-cur-pill-normal';
+          if (curVal >= 90.0) curPillCls = 'ro-cur-pill ro-cur-pill-high';
+          else if (curVal < 75.0 && curVal > 0) curPillCls = 'ro-cur-pill ro-cur-pill-low';
+
+          cells += `
+            <td class="text-right">
+              <span class="${curPillCls}">${curVal > 0 ? curVal.toFixed(2) + '%' : '--'}</span>
+            </td>
+          `;
+
+          // 3. 3M Average
+          const a3 = Number(r.avg3M || 0);
+          let a3Cls = 'ro-val-cell ro-avg-cell';
+          if (a3 >= 90.0) a3Cls += ' ro-val-high';
+          else if (a3 < 75.0 && a3 > 0) a3Cls += ' ro-val-low';
+          cells += `<td class="text-right ${a3Cls}">${a3 > 0 ? a3.toFixed(2) + '%' : '-'}</td>`;
+
+          // 4. 6M Average
+          const a6 = Number(r.avg6M || 0);
+          let a6Cls = 'ro-val-cell';
+          if (a6 >= 90.0) a6Cls += ' ro-val-high';
+          else if (a6 < 75.0 && a6 > 0) a6Cls += ' ro-val-low';
+          cells += `<td class="text-right ${a6Cls}">${a6 > 0 ? a6.toFixed(2) + '%' : '-'}</td>`;
+
+          // 5. Monthly Expiry Columns
+          months.forEach(m => {
+            const v = r.rollovers ? r.rollovers[m] : null;
+            if (v === '-' || v === null || v === undefined) {
+              cells += `<td class="text-right ro-dash">-</td>`;
+            } else {
+              const num = Number(v);
+              let cls = 'ro-val-cell';
+              if (num >= 90.0) cls += ' ro-val-high';
+              else if (num < 75.0) cls += ' ro-val-low';
+              else if (num >= 80.0) cls += ' ro-val-good';
+              cells += `<td class="text-right ${cls}">${num.toFixed(2)}%</td>`;
+            }
+          });
+
+          // 6. Diff vs 3M
+          const diff = Number(r.diff3M || 0);
+          let diffHtml = '<span class="ro-trend-flat">0.00%</span>';
+          if (diff > 0) diffHtml = `<span class="ro-trend-up">+${diff.toFixed(2)}%</span>`;
+          else if (diff < 0) diffHtml = `<span class="ro-trend-down">${diff.toFixed(2)}%</span>`;
+          cells += `<td class="text-right">${diffHtml}</td>`;
+
+          // 7. Trend
+          const trend = r.trend || 'FLAT';
+          let trendBadge = '<span class="ro-trend-flat">FLAT</span>';
+          if (trend === 'UP') trendBadge = '<span class="ro-trend-up">▲ UP</span>';
+          else if (trend === 'DOWN') trendBadge = '<span class="ro-trend-down">▼ DOWN</span>';
+          cells += `<td class="text-right">${trendBadge}</td>`;
+
+          return `<tr>${cells}</tr>`;
+        }).join('');
+      }
+
+      // --- Export CSV ---
+      function exportCsv() {
+        if (!state.data || !state.data.data) {
+          alert('Rollover data not ready to export.');
+          return;
+        }
+
+        const months = state.months || [];
+        const rows = state.data.data;
+
+        let csv = 'Symbol,Name,Sector,IsIndex,Current_Rollover_Pct,3M_Avg,6M_Avg,Diff_3M,Trend';
+        months.forEach(m => {
+          csv += `,"${m}"`;
+        });
+        csv += '\n';
+
+        rows.forEach(r => {
+          csv += `"${r.symbol}","${(r.name || r.symbol).replace(/"/g, '""')}","${r.sector || 'Others'}",${r.isIndex ? 'TRUE' : 'FALSE'}`;
+          csv += `,${r.currentRo || 0},${r.avg3M || 0},${r.avg6M || 0},${r.diff3M || 0},"${r.trend || 'FLAT'}"`;
+          months.forEach(m => {
+            const v = r.rollovers ? r.rollovers[m] : '';
+            csv += `,${v !== '-' && v !== null && v !== undefined ? v : ''}`;
+          });
+          csv += '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const d = new Date().toISOString().split('T')[0];
+        link.setAttribute('href', url);
+        link.setAttribute('download', `futures_rollover_matrix_${d}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // --- Event Listeners Setup ---
+      function initListeners() {
+        // Search Input
+        const searchInput = document.getElementById('roSearchInput');
+        const clearBtn = document.getElementById('roClearSearchBtn');
+        if (searchInput) {
+          searchInput.addEventListener('input', (e) => {
+            state.search = e.target.value.trim().toUpperCase();
+            if (clearBtn) clearBtn.style.display = state.search ? 'block' : 'none';
+            renderTableRows();
+          });
+        }
+        if (clearBtn && searchInput) {
+          clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            state.search = '';
+            clearBtn.style.display = 'none';
+            renderTableRows();
+          });
+        }
+
+        // Sector Select
+        const sectorSelect = document.getElementById('roSectorSelect');
+        if (sectorSelect) {
+          sectorSelect.addEventListener('change', (e) => {
+            state.sector = e.target.value || 'ALL';
+            syncPills();
+            renderTableRows();
+          });
+        }
+
+        // Tier Select
+        const tierSelect = document.getElementById('roTierSelect');
+        if (tierSelect) {
+          tierSelect.addEventListener('change', (e) => {
+            state.tier = e.target.value || 'ALL';
+            syncPills();
+            renderTableRows();
+          });
+        }
+
+        // Filter Pills
+        document.querySelectorAll('.ro-filter-pill').forEach(pill => {
+          pill.addEventListener('click', () => {
+            const pType = pill.dataset.pillType;
+            const pVal = pill.dataset.pillVal;
+
+            if (pType === 'tier') {
+              state.tier = pVal;
+              if (tierSelect) tierSelect.value = pVal;
+            } else if (pType === 'sec') {
+              state.sector = pVal;
+              if (sectorSelect) sectorSelect.value = pVal;
+            }
+
+            syncPills();
+            renderTableRows();
+          });
+        });
+
+        function syncPills() {
+          document.querySelectorAll('.ro-filter-pill').forEach(p => {
+            const pType = p.dataset.pillType;
+            const pVal = p.dataset.pillVal;
+            let active = false;
+            if (pType === 'tier' && state.tier === pVal) active = true;
+            if (pType === 'sec' && state.sector === pVal) active = true;
+            p.classList.toggle('active', active);
+          });
+        }
+
+        // Buttons
+        const refBtn = document.getElementById('roRefreshBtn');
+        if (refBtn) refBtn.addEventListener('click', () => fetchRolloverData(true));
+
+        const expBtn = document.getElementById('roExportCsvBtn');
+        if (expBtn) expBtn.addEventListener('click', exportCsv);
+
+        const syncBhavBtn = document.getElementById('roSyncBhavBtn');
+        if (syncBhavBtn) {
+          syncBhavBtn.addEventListener('click', async () => {
+            syncBhavBtn.disabled = true;
+            const orig = syncBhavBtn.innerHTML;
+            syncBhavBtn.innerHTML = '<span>⏳</span> <span>Syncing...</span>';
+            try {
+              const res = await fetch('/api/futures/sync-bhavcopy');
+              const json = await res.json();
+              if (json && json.ok) {
+                alert(`Official NSE FO Bhavcopy synced successfully!\nDate: ${json.dateDisplay || json.date}\nTotal Symbols: ${json.totalSymbols}`);
+                fetchRolloverData(true);
+              } else {
+                alert(json.message || 'Bhavcopy sync completed.');
+              }
+            } catch (err) {
+              alert('Error syncing Bhavcopy: ' + err.message);
+            } finally {
+              syncBhavBtn.disabled = false;
+              syncBhavBtn.innerHTML = orig;
+            }
+          });
+        }
+      }
+
+      // Initialize on DOM Ready
+      document.addEventListener('DOMContentLoaded', () => {
+        initTheme();
+        initListeners();
+        fetchRolloverData();
+      });
+    })();
+  </script>
+</body>
+</html>

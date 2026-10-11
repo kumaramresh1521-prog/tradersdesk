@@ -67,7 +67,6 @@ const els = {
   navFiiDii: document.getElementById("navFiiDii"),
   navMtf: document.getElementById("navMtf"),
   navDelivery: document.getElementById("navDelivery"),
-  navResources: document.getElementById("navResources"),
 
   // MTF Desk Elements
 
@@ -424,6 +423,7 @@ const els = {
   delivInspectBtn: document.getElementById("delivInspectBtn"),
   stockInspectorCard: document.getElementById("stockInspectorCard"),
   inspectSymbol: document.getElementById("inspectSymbol"),
+  inspectBadge: document.getElementById("inspectBadge"),
   inspectSignalBadge: document.getElementById("inspectSignalBadge"),
   inspectSubtitle: document.getElementById("inspectSubtitle"),
   closeInspectorBtn: document.getElementById("closeInspectorBtn"),
@@ -726,6 +726,7 @@ function escapeHtml(value) {
 }
 
 function resizeCanvas() {
+  if (!els.canvas) return;
   const rect = els.canvas.getBoundingClientRect();
   const scale = window.devicePixelRatio || 1;
   els.canvas.width = Math.max(320, Math.round(rect.width * scale));
@@ -941,6 +942,7 @@ function updateHoverFromClientX(clientX) {
 }
 
 function resizeNiftyCanvas() {
+  if (!els.niftyCanvas) return;
   const rect = els.niftyCanvas.getBoundingClientRect();
   const scale = window.devicePixelRatio || 1;
   els.niftyCanvas.width = Math.max(320, Math.round(rect.width * scale));
@@ -1550,6 +1552,55 @@ function renderSectorHeatmap(sectors) {
   container.innerHTML = html;
 }
 
+let isSectorHeatmapExpanded = false;
+
+function toggleSectorHeatmap(e) {
+  if (e && e.target && e.target.closest && e.target.closest(".sector-controls")) {
+    return;
+  }
+  const grid = document.getElementById("sectorHeatmap");
+  const controls = document.getElementById("sectorControlsWrap");
+  const header = document.getElementById("sectorHeatmapHeader");
+  const icon = document.getElementById("secHeatmapToggleIcon");
+  const badge = document.getElementById("secHeatmapBadge");
+  if (!grid) return;
+
+  isSectorHeatmapExpanded = !isSectorHeatmapExpanded;
+
+  if (isSectorHeatmapExpanded) {
+    grid.style.display = "grid";
+    if (controls) controls.style.display = "flex";
+    if (header) {
+      header.style.marginBottom = "10px";
+      header.style.borderBottom = "1px solid var(--border-subtle)";
+      header.style.paddingBottom = "8px";
+    }
+    if (icon) icon.textContent = "▼";
+    if (badge) {
+      badge.textContent = "COLLAPSE";
+      badge.style.background = "rgba(16, 185, 129, 0.15)";
+      badge.style.color = "#10b981";
+      badge.style.borderColor = "rgba(16, 185, 129, 0.3)";
+    }
+  } else {
+    grid.style.display = "none";
+    if (controls) controls.style.display = "none";
+    if (header) {
+      header.style.marginBottom = "0px";
+      header.style.borderBottom = "none";
+      header.style.paddingBottom = "0px";
+    }
+    if (icon) icon.textContent = "▶";
+    if (badge) {
+      badge.textContent = "CLICK TO EXPAND";
+      badge.style.background = "rgba(245, 158, 11, 0.15)";
+      badge.style.color = "#f59e0b";
+      badge.style.borderColor = "rgba(245, 158, 11, 0.3)";
+    }
+  }
+}
+window.toggleSectorHeatmap = toggleSectorHeatmap;
+
 function updateTotpTimer() {
   if (!els.totpTimer || !els.totpLabel || els.totpLabel.style.display === "none") return;
   const now = Math.floor(Date.now() / 1000);
@@ -1592,7 +1643,15 @@ async function runBreadth(options = {}) {
       resizeNiftyAdCanvas();
       drawNiftyAdChart(data.timeline || []);
     }
-    setRefreshState(`Updated ${formatTime(data.summary.latestTime)}`);
+    if (!_isMarketOpenState) {
+      const sDate = (data.summary && data.summary.date) || (els.dateInput && els.dateInput.value) || "";
+      setRefreshState(`Market Closed • EOD (${sDate})`);
+    } else if (els.autoRefresh && els.autoRefresh.checked) {
+      const seconds = Number(els.refreshInterval ? els.refreshInterval.value : 60) || 60;
+      setRefreshState(`Auto ${seconds}s • ${formatTime(data.summary.latestTime)}`);
+    } else {
+      setRefreshState(`Updated ${formatTime(data.summary.latestTime)}`);
+    }
     loadNifty({ fastRefresh: true });
   } catch (error) {
     latestData = null;
@@ -1764,13 +1823,22 @@ function scheduleAutoRefresh() {
     clearInterval(autoRefreshTimer);
     autoRefreshTimer = null;
   }
-  if (!els.autoRefresh.checked) {
+  if (!els.autoRefresh || !els.autoRefresh.checked) {
     setRefreshState(latestData ? `Updated ${formatTime(latestData.summary.latestTime)}` : "Manual mode");
     return;
   }
-  const seconds = Number(els.refreshInterval.value) || 60;
+  if (!_isMarketOpenState) {
+    const sDate = (latestData && latestData.summary && latestData.summary.date) || (els.dateInput && els.dateInput.value) || "";
+    setRefreshState(sDate ? `Market Closed • EOD (${sDate})` : "Market Closed");
+    return;
+  }
+  const seconds = Number(els.refreshInterval ? els.refreshInterval.value : 60) || 60;
   setRefreshState(`Auto ${seconds}s`);
   autoRefreshTimer = setInterval(() => {
+    if (!_isMarketOpenState) {
+      scheduleAutoRefresh();
+      return;
+    }
     if (!isLoading) runBreadth({ fastRefresh: true });
   }, seconds * 1000);
 }
@@ -3204,11 +3272,13 @@ function renderSmartMoneyDashboard(data) {
   if (els.smFiiNetValCr) {
     const vc = fii.netFuturesValueCr || 0;
     els.smFiiNetValCr.textContent = `₹${vc > 0 ? "+" : ""}${vc.toLocaleString("en-IN")} Cr`;
-    const dashFii = document.getElementById("dashKpiFii");
-    if (dashFii) {
-      dashFii.textContent = `₹${vc > 0 ? "+" : ""}${vc.toLocaleString("en-IN")} Cr`;
-      dashFii.style.color = vc >= 0 ? "var(--green)" : "var(--red)";
-    }
+  }
+  const dashFii = document.getElementById("dashKpiFii");
+  if (dashFii) {
+    const fn = latestCash ? (Number(latestCash.fiiNet) || 0) : (fii.fiiCashNetCr || 0);
+    const absVal = Math.abs(fn).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    dashFii.textContent = `₹${fn < 0 ? "-" : "+"}${absVal} Cr`;
+    dashFii.style.color = fn >= 0 ? "var(--green)" : "var(--red)";
   }
   if (els.smFiiZoneBadge) {
     els.smFiiZoneBadge.textContent = fii.zoneBadge || "BALANCED";
@@ -3216,8 +3286,11 @@ function renderSmartMoneyDashboard(data) {
   }
   if (els.smFiiZoneDesc) els.smFiiZoneDesc.textContent = fii.zoneDesc || "";
 
-  // 3. Render Cash Market Historical Data Table
+  // 3. Render Cash Market Historical Data Table & Interactive Flow Chart
   renderP1FiiCashTable(dailyCash);
+  if (data.cashFlow) {
+    renderP1FiiCashDashboard(data.cashFlow);
+  }
 
   // 3b. Render Detailed F&O Institutional Flow
   if (data.derivativesFlow) {
@@ -3343,6 +3416,534 @@ function exportP1FiiCashCsv() {
   document.body.removeChild(link);
 }
 
+// ============================================================================
+// 📊 FII / DII CASH MARKET FLOW INTERACTIVE CHART & CROSSHAIR ENGINE
+// ============================================================================
+let p1FiiChartRows = [];
+let p1FiiHoveredIndex = -1;
+let p1FiiCrosshairPos = null;
+let p1FiiCurrentPeriod = "daily";
+let p1FiiCurrentView = "net";
+let p1FiiCurrentRange = "30";
+let p1FiiCashFlowData = null;
+let p1FiiChartInitialized = false;
+
+function initP1FiiCashChartControls() {
+  if (p1FiiChartInitialized) return;
+  p1FiiChartInitialized = true;
+
+  // Toggle Chart Button
+  const btnToggle = document.getElementById("btnToggleP1FiiChart");
+  const chartWrap = document.getElementById("p1FiiChartWrap");
+  const lblToggle = document.getElementById("lblToggleP1FiiChart");
+  if (btnToggle && chartWrap) {
+    btnToggle.addEventListener("click", () => {
+      const isHidden = chartWrap.style.display === "none";
+      chartWrap.style.display = isHidden ? "block" : "none";
+      if (lblToggle) lblToggle.textContent = isHidden ? "Hide Flow Chart" : "Show Flow Chart";
+      if (isHidden) renderP1FiiCashChart();
+    });
+  }
+
+  // Period Switcher Buttons (Daily / Monthly / Yearly)
+  const periodGroup = document.getElementById("p1FiiPeriodGroup");
+  if (periodGroup) {
+    periodGroup.querySelectorAll(".fii-period-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        periodGroup.querySelectorAll(".fii-period-btn").forEach(b => {
+          b.classList.remove("active");
+          b.style.background = "transparent";
+          b.style.color = "var(--text-secondary)";
+        });
+        btn.classList.add("active");
+        btn.style.background = "#2563eb";
+        btn.style.color = "#ffffff";
+        p1FiiCurrentPeriod = btn.dataset.period || "daily";
+        updateP1FiiChartRows();
+      });
+    });
+  }
+
+  // View Switcher Buttons (Net / FII / DII)
+  const viewGroup = document.getElementById("p1FiiViewGroup");
+  if (viewGroup) {
+    viewGroup.querySelectorAll(".fii-view-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        viewGroup.querySelectorAll(".fii-view-btn").forEach(b => {
+          b.classList.remove("active");
+          b.style.background = "transparent";
+          b.style.color = "var(--text-secondary)";
+        });
+        btn.classList.add("active");
+        btn.style.background = "#2563eb";
+        btn.style.color = "#ffffff";
+        p1FiiCurrentView = btn.dataset.view || "net";
+        renderP1FiiCashChart();
+      });
+    });
+  }
+
+  // Range Selector
+  const rangeSelect = document.getElementById("p1FiiRangeSelect");
+  if (rangeSelect) {
+    rangeSelect.addEventListener("change", () => {
+      p1FiiCurrentRange = rangeSelect.value || "30";
+      updateP1FiiChartRows();
+    });
+  }
+
+  // Canvas Mouse & Touch Events
+  const canvas = document.getElementById("p1FiiDiiCanvas");
+  if (canvas) {
+    canvas.addEventListener("mousemove", handleP1FiiCanvasMouseMove);
+    canvas.addEventListener("mouseleave", handleP1FiiCanvasMouseLeave);
+    canvas.addEventListener("touchmove", e => {
+      if (e.touches && e.touches[0]) {
+        handleP1FiiCanvasMouseMove(e.touches[0]);
+      }
+    }, { passive: true });
+    canvas.addEventListener("touchend", handleP1FiiCanvasMouseLeave);
+  }
+
+  // Window resize debounced
+  window.addEventListener("resize", () => {
+    if (activeTab === "smartMoney" || activeP1FiiSubtab === "cash") {
+      requestAnimationFrame(renderP1FiiCashChart);
+    }
+  });
+}
+
+function renderP1FiiCashDashboard(cashFlow) {
+  initP1FiiCashChartControls();
+  p1FiiCashFlowData = cashFlow;
+  updateP1FiiChartRows();
+}
+
+function updateP1FiiChartRows() {
+  if (!p1FiiCashFlowData) return;
+  let rows = [];
+  if (p1FiiCurrentPeriod === "monthly" && Array.isArray(p1FiiCashFlowData.monthly)) {
+    rows = p1FiiCashFlowData.monthly;
+  } else if (p1FiiCurrentPeriod === "yearly" && Array.isArray(p1FiiCashFlowData.yearly)) {
+    rows = p1FiiCashFlowData.yearly;
+  } else if (Array.isArray(p1FiiCashFlowData.daily)) {
+    rows = p1FiiCashFlowData.daily;
+  }
+
+  // Slice rows by range
+  if (p1FiiCurrentRange !== "all") {
+    const limit = parseInt(p1FiiCurrentRange, 10) || 30;
+    p1FiiChartRows = rows.slice(0, limit);
+  } else {
+    p1FiiChartRows = rows.slice(0, 100);
+  }
+
+  // Update KPI Cards from latest row
+  if (rows && rows.length > 0) {
+    const latest = rows[0];
+    const totNet = Number(latest.totalNet || 0);
+    const fiiNet = Number(latest.fiiNet || 0);
+    const diiNet = Number(latest.diiNet || 0);
+
+    const vTot = document.getElementById("p1FiiValTotal");
+    const bTot = document.getElementById("p1FiiBadgeTotal");
+    if (vTot) {
+      vTot.textContent = `${totNet >= 0 ? "+" : "-"}₹${Math.abs(totNet).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
+      vTot.style.color = totNet >= 0 ? "#10b981" : "#ef4444";
+    }
+    if (bTot) {
+      bTot.textContent = totNet >= 0 ? "NET INFLOW" : "NET OUTFLOW";
+      bTot.style.background = totNet >= 0 ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)";
+      bTot.style.color = totNet >= 0 ? "#10b981" : "#ef4444";
+    }
+
+    const vFii = document.getElementById("p1FiiValFii");
+    const bFii = document.getElementById("p1FiiBadgeFii");
+    const buyFii = document.getElementById("p1FiiBuyVal");
+    const sellFii = document.getElementById("p1FiiSellVal");
+    if (vFii) {
+      vFii.textContent = `${fiiNet >= 0 ? "+" : "-"}₹${Math.abs(fiiNet).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
+      vFii.style.color = fiiNet >= 0 ? "#10b981" : "#ef4444";
+    }
+    if (bFii) {
+      bFii.textContent = fiiNet >= 0 ? "BUYERS" : "SELLERS";
+      bFii.style.background = fiiNet >= 0 ? "rgba(56,189,248,0.15)" : "rgba(239,68,68,0.15)";
+      bFii.style.color = fiiNet >= 0 ? "#38bdf8" : "#ef4444";
+    }
+    if (buyFii) buyFii.textContent = `₹${Math.round(Number(latest.fiiBuy || 0)).toLocaleString("en-IN")} Cr`;
+    if (sellFii) sellFii.textContent = `₹${Math.round(Number(latest.fiiSell || 0)).toLocaleString("en-IN")} Cr`;
+
+    const vDii = document.getElementById("p1FiiValDii");
+    const bDii = document.getElementById("p1FiiBadgeDii");
+    const buyDii = document.getElementById("p1DiiBuyVal");
+    const sellDii = document.getElementById("p1DiiSellVal");
+    if (vDii) {
+      vDii.textContent = `${diiNet >= 0 ? "+" : "-"}₹${Math.abs(diiNet).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
+      vDii.style.color = diiNet >= 0 ? "#10b981" : "#ef4444";
+    }
+    if (bDii) {
+      bDii.textContent = diiNet >= 0 ? "BUYERS" : "SELLERS";
+      bDii.style.background = diiNet >= 0 ? "rgba(56,189,248,0.15)" : "rgba(239,68,68,0.15)";
+      bDii.style.color = diiNet >= 0 ? "#38bdf8" : "#ef4444";
+    }
+    if (buyDii) buyDii.textContent = `₹${Math.round(Number(latest.diiBuy || 0)).toLocaleString("en-IN")} Cr`;
+    if (sellDii) sellDii.textContent = `₹${Math.round(Number(latest.diiSell || 0)).toLocaleString("en-IN")} Cr`;
+
+    const vNifty = document.getElementById("p1FiiValNifty");
+    const sNifty = document.getElementById("p1FiiSubNifty");
+    const bNifty = document.getElementById("p1FiiBadgeNifty");
+    if (vNifty && latest.niftyClose) {
+      vNifty.textContent = Number(latest.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    if (sNifty && latest.niftyPct !== undefined) {
+      const isPos = latest.niftyPct >= 0;
+      sNifty.textContent = `Session Change: ${isPos ? '+' : ''}${latest.niftyPct}%`;
+      sNifty.style.color = isPos ? "#10b981" : "#ef4444";
+    }
+    if (bNifty && latest.niftyPct !== undefined) {
+      bNifty.textContent = `${latest.niftyPct >= 0 ? '+' : ''}${latest.niftyPct}%`;
+      bNifty.style.color = latest.niftyPct >= 0 ? "#10b981" : "#ef4444";
+    }
+  }
+
+  // Also update data table with this period
+  renderP1FiiCashTable(rows);
+  renderP1FiiCashChart();
+}
+
+function renderP1FiiCashChart() {
+  const canvas = document.getElementById("p1FiiDiiCanvas");
+  if (!canvas || !p1FiiChartRows || p1FiiChartRows.length === 0) return;
+
+  const container = document.getElementById("p1FiiChartContainer");
+  const containerWidth = container ? container.clientWidth : 800;
+  if (containerWidth < 100) return;
+
+  const isLightMode = !document.body.classList.contains("theme-dark");
+  const colors = {
+    text: isLightMode ? "#64748b" : "#94a3b8",
+    textBright: isLightMode ? "#0f172a" : "#f8fafc",
+    grid: isLightMode ? "rgba(0, 0, 0, 0.08)" : "rgba(255, 255, 255, 0.08)",
+    teal: isLightMode ? "#0284c7" : "#00e5ff",
+    green: "#10b981",
+    red: "#ef4444"
+  };
+
+  const labelWidth = Math.min(105, Math.max(80, containerWidth * 0.14));
+  const paddingRight = 95;
+  const paddingTop = 45;
+  const paddingBottom = 40;
+  const rowHeight = 28;
+  const barHeight = 16;
+  const totalHeight = paddingTop + p1FiiChartRows.length * rowHeight + paddingBottom;
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = containerWidth * dpr;
+  canvas.height = totalHeight * dpr;
+  canvas.style.width = containerWidth + "px";
+  canvas.style.height = totalHeight + "px";
+
+  const ctx = canvas.getContext("2d");
+  ctx.resetTransform();
+  ctx.scale(dpr, dpr);
+
+  // Update Dynamic Chart Title
+  const periodLabel = p1FiiCurrentPeriod.toUpperCase();
+  const viewLabel = p1FiiCurrentView === "net" ? "FII / FPI & DII Net" : (p1FiiCurrentView === "fii" ? "FII / FPI Net Flow" : "DII Domestic Net Flow");
+  const titleEl = document.getElementById("p1FiiChartTitle");
+  if (titleEl) titleEl.textContent = `${viewLabel} (in Crores.) - ${periodLabel}`;
+
+  // Compute min and max values
+  let valMin = 0;
+  let valMax = 0;
+  p1FiiChartRows.forEach(row => {
+    let val = 0;
+    if (p1FiiCurrentView === "net") val = Number(row.totalNet || 0);
+    else if (p1FiiCurrentView === "fii") val = Number(row.fiiNet || 0);
+    else val = Number(row.diiNet || 0);
+
+    if (val < valMin) valMin = val;
+    if (val > valMax) valMax = val;
+  });
+
+  const absMax = Math.max(Math.abs(valMin), Math.abs(valMax), 1000);
+  const magnitude = Math.pow(10, Math.floor(Math.log10(absMax)));
+  const ceilMax = Math.ceil(absMax / (magnitude / 2)) * (magnitude / 2);
+  const xMin = -ceilMax;
+  const xMax = ceilMax;
+  const chartWidth = containerWidth - labelWidth - paddingRight;
+
+  function xValToPx(v) {
+    return labelWidth + ((v - xMin) / (xMax - xMin)) * chartWidth;
+  }
+
+  const zeroX = xValToPx(0);
+
+  // Draw Vertical Grid Lines & X-Axis labels
+  const stepCount = 8;
+  const stepVal = (xMax - xMin) / stepCount;
+  ctx.font = "10px Inter, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  for (let i = 0; i <= stepCount; i++) {
+    const v = xMin + i * stepVal;
+    const gx = xValToPx(v);
+
+    ctx.beginPath();
+    ctx.strokeStyle = v === 0 ? (isLightMode ? "#0f172a" : "#ffffff") : colors.grid;
+    ctx.lineWidth = v === 0 ? 1.5 : 1;
+    if (v !== 0) ctx.setLineDash([4, 4]);
+    else ctx.setLineDash([]);
+    ctx.moveTo(gx, paddingTop - 10);
+    ctx.lineTo(gx, totalHeight - paddingBottom + 5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label at bottom
+    ctx.fillStyle = v === 0 ? colors.textBright : colors.text;
+    const fmtVal = Math.abs(v) >= 1000 ? (v / 1).toFixed(0) : v.toFixed(0);
+    ctx.fillText(fmtVal, gx, totalHeight - paddingBottom + 8);
+  }
+
+  // Top X-axis label header
+  ctx.fillStyle = colors.text;
+  ctx.textAlign = "right";
+  ctx.fillText("₹ in Crores ➔", containerWidth - paddingRight, 15);
+
+  // Draw Bars for each row
+  p1FiiChartRows.forEach((row, i) => {
+    const yCenter = paddingTop + i * rowHeight + rowHeight / 2;
+    const barTop = yCenter - barHeight / 2;
+    const isHovered = (i === p1FiiHoveredIndex);
+
+    let val = 0;
+    if (p1FiiCurrentView === "net") val = Number(row.totalNet || 0);
+    else if (p1FiiCurrentView === "fii") val = Number(row.fiiNet || 0);
+    else val = Number(row.diiNet || 0);
+
+    const targetX = xValToPx(val);
+    const isPositive = val >= 0;
+
+    // Draw Row Highlight if Hovered
+    if (isHovered) {
+      ctx.fillStyle = isLightMode ? "rgba(37, 99, 235, 0.08)" : "rgba(56, 189, 248, 0.12)";
+      ctx.fillRect(0, paddingTop + i * rowHeight, containerWidth, rowHeight);
+    }
+
+    // Draw Date Label on Left
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.font = isHovered ? "bold 11.5px Inter, sans-serif" : "11px Inter, sans-serif";
+    ctx.fillStyle = isHovered ? (isLightMode ? "#2563eb" : "#38bdf8") : colors.text;
+    const dateText = row.period || row.date || "";
+    ctx.fillText(dateText, labelWidth - 10, yCenter);
+
+    // Create Bar Gradient
+    const barX = isPositive ? zeroX : targetX;
+    const barW = Math.max(2, Math.abs(targetX - zeroX));
+
+    ctx.save();
+    const grad = ctx.createLinearGradient(zeroX, barTop, targetX, barTop);
+    if (isPositive) {
+      grad.addColorStop(0, "#059669");
+      grad.addColorStop(1, "#10b981");
+      if (isHovered) {
+        ctx.shadowColor = "rgba(16, 185, 129, 0.7)";
+        ctx.shadowBlur = 10;
+      }
+    } else {
+      grad.addColorStop(0, "#dc2626");
+      grad.addColorStop(1, "#ef4444");
+      if (isHovered) {
+        ctx.shadowColor = "rgba(239, 68, 68, 0.7)";
+        ctx.shadowBlur = 10;
+      }
+    }
+
+    ctx.fillStyle = grad;
+    const radius = 3;
+    ctx.beginPath();
+    if (isPositive) {
+      ctx.roundRect(barX, barTop, barW, barHeight, [0, radius, radius, 0]);
+    } else {
+      ctx.roundRect(barX, barTop, barW, barHeight, [radius, 0, 0, radius]);
+    }
+    ctx.fill();
+    ctx.restore();
+
+    // Value label near bar tip
+    ctx.font = isHovered ? "bold 11px 'JetBrains Mono', monospace" : "10px 'JetBrains Mono', monospace";
+    ctx.fillStyle = isPositive ? "#10b981" : "#ef4444";
+    ctx.textBaseline = "middle";
+    const sign = val > 0 ? "+" : "";
+    const valStr = `${sign}${val.toLocaleString("en-IN", { maximumFractionDigits: 1 })}`;
+
+    if (isPositive) {
+      ctx.textAlign = "left";
+      ctx.fillText(valStr, targetX + 8, yCenter);
+    } else {
+      ctx.textAlign = "right";
+      ctx.fillText(valStr, targetX - 8, yCenter);
+    }
+  });
+
+  // Draw Crosshair if Active
+  if (p1FiiHoveredIndex >= 0 && p1FiiCrosshairPos) {
+    const activeY = paddingTop + p1FiiHoveredIndex * rowHeight + rowHeight / 2;
+    const mouseX = Math.max(labelWidth, Math.min(containerWidth - paddingRight, p1FiiCrosshairPos.x));
+
+    ctx.save();
+    ctx.strokeStyle = colors.teal;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 4]);
+
+    // Horizontal guideline
+    ctx.beginPath();
+    ctx.moveTo(labelWidth, activeY);
+    ctx.lineTo(containerWidth - paddingRight, activeY);
+    ctx.stroke();
+
+    // Vertical guideline
+    ctx.beginPath();
+    ctx.moveTo(mouseX, paddingTop - 10);
+    ctx.lineTo(mouseX, totalHeight - paddingBottom + 5);
+    ctx.stroke();
+
+    // Value pill on X-axis tracking cursor
+    const cursorVal = xMin + ((mouseX - labelWidth) / chartWidth) * (xMax - xMin);
+    const pillText = (cursorVal >= 0 ? "+" : "") + cursorVal.toFixed(0) + " Cr";
+    ctx.font = "bold 10px 'JetBrains Mono', monospace";
+    const textW = ctx.measureText(pillText).width;
+    const pillW = textW + 12;
+    const pillH = 18;
+    const pillX = mouseX - pillW / 2;
+    const pillY = totalHeight - paddingBottom + 5;
+
+    ctx.setLineDash([]);
+    ctx.fillStyle = colors.teal;
+    ctx.beginPath();
+    ctx.roundRect(pillX, pillY, pillW, pillH, 4);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(pillText, mouseX, pillY + pillH / 2);
+
+    ctx.restore();
+  }
+}
+
+function handleP1FiiCanvasMouseMove(e) {
+  const canvas = document.getElementById("p1FiiDiiCanvas");
+  if (!canvas || !p1FiiChartRows || p1FiiChartRows.length === 0) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  const paddingTop = 45;
+  const rowHeight = 28;
+  const idx = Math.floor((mouseY - paddingTop) / rowHeight);
+
+  if (idx >= 0 && idx < p1FiiChartRows.length) {
+    p1FiiHoveredIndex = idx;
+    p1FiiCrosshairPos = { x: mouseX, y: mouseY };
+    renderP1FiiCashChart();
+    updateP1FiiTooltip(e.clientX, e.clientY, p1FiiChartRows[idx]);
+  } else {
+    handleP1FiiCanvasMouseLeave();
+  }
+}
+
+function handleP1FiiCanvasMouseLeave() {
+  p1FiiHoveredIndex = -1;
+  p1FiiCrosshairPos = null;
+  renderP1FiiCashChart();
+  const tooltip = document.getElementById("p1FiiCrosshairTooltip");
+  if (tooltip) tooltip.style.display = "none";
+}
+
+function updateP1FiiTooltip(clientX, clientY, row) {
+  const tooltip = document.getElementById("p1FiiCrosshairTooltip");
+  if (!tooltip || !row) return;
+
+  const container = document.getElementById("p1FiiChartContainer");
+  if (!container) return;
+  const containerRect = container.getBoundingClientRect();
+  const relX = clientX - containerRect.left;
+  const relY = clientY - containerRect.top;
+
+  const totalNet = Number(row.totalNet || 0);
+  const fiiNet = Number(row.fiiNet || 0);
+  const diiNet = Number(row.diiNet || 0);
+  const fiiBuy = Number(row.fiiBuy || 0);
+  const fiiSell = Number(row.fiiSell || 0);
+  const diiBuy = Number(row.diiBuy || 0);
+  const diiSell = Number(row.diiSell || 0);
+  const niftyClose = row.niftyClose ? Number(row.niftyClose).toFixed(2) : "--";
+  const niftyPct = row.niftyPct !== undefined ? (row.niftyPct > 0 ? `+${row.niftyPct}%` : `${row.niftyPct}%`) : "";
+
+  const totClass = totalNet >= 0 ? "color:#10b981;" : "color:#ef4444;";
+  const fiiClass = fiiNet >= 0 ? "color:#10b981;" : "color:#ef4444;";
+  const diiClass = diiNet >= 0 ? "color:#10b981;" : "color:#ef4444;";
+
+  tooltip.innerHTML = `
+    <div style="font-weight:800; font-size:12px; border-bottom:1px solid rgba(255,255,255,0.15); padding-bottom:6px; margin-bottom:8px; display:flex; justify-content:space-between; gap:12px;">
+      <span>📅 ${row.period || row.date}</span>
+      <span style="color:#38bdf8;">${niftyClose} (${niftyPct})</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; gap:14px; font-size:11.5px; margin-bottom:4px;">
+      <span style="color:#94a3b8;">Combined Net:</span>
+      <strong style="${totClass}">${totalNet >= 0 ? '+' : ''}₹${totalNet.toLocaleString("en-IN", { maximumFractionDigits: 1 })} Cr</strong>
+    </div>
+    <div style="display:flex; justify-content:space-between; gap:14px; font-size:11.5px; margin-bottom:4px;">
+      <span style="color:#94a3b8;">FII / FPI Net:</span>
+      <strong style="${fiiClass}">${fiiNet >= 0 ? '+' : ''}₹${fiiNet.toLocaleString("en-IN", { maximumFractionDigits: 1 })} Cr</strong>
+    </div>
+    <div style="font-size:10px; color:#64748b; margin-bottom:6px; padding-left:4px;">
+      Buy: ₹${Math.round(fiiBuy).toLocaleString("en-IN")} Cr | Sell: ₹${Math.round(fiiSell).toLocaleString("en-IN")} Cr
+    </div>
+    <div style="display:flex; justify-content:space-between; gap:14px; font-size:11.5px; margin-bottom:4px;">
+      <span style="color:#94a3b8;">DII Domestic Net:</span>
+      <strong style="${diiClass}">${diiNet >= 0 ? '+' : ''}₹${diiNet.toLocaleString("en-IN", { maximumFractionDigits: 1 })} Cr</strong>
+    </div>
+    <div style="font-size:10px; color:#64748b; padding-left:4px;">
+      Buy: ₹${Math.round(diiBuy).toLocaleString("en-IN")} Cr | Sell: ₹${Math.round(diiSell).toLocaleString("en-IN")} Cr
+    </div>
+  `;
+
+  tooltip.style.display = "block";
+  tooltip.style.position = "absolute";
+  tooltip.style.background = "rgba(15, 23, 42, 0.95)";
+  tooltip.style.color = "#f8fafc";
+  tooltip.style.padding = "10px 14px";
+  tooltip.style.borderRadius = "8px";
+  tooltip.style.boxShadow = "0 8px 24px rgba(0,0,0,0.35)";
+  tooltip.style.border = "1px solid rgba(56, 189, 248, 0.3)";
+  tooltip.style.minWidth = "230px";
+  tooltip.style.pointerEvents = "none";
+  tooltip.style.zIndex = "1000";
+
+  // Position tooltip safely
+  const tipWidth = 240;
+  const tipHeight = 150;
+  let posX = relX + 15;
+  let posY = relY - tipHeight / 2;
+
+  if (posX + tipWidth > containerRect.width) {
+    posX = relX - tipWidth - 15;
+  }
+  if (posY < 10) posY = 10;
+  if (posY + tipHeight > container.clientHeight) {
+    posY = container.clientHeight - tipHeight - 10;
+  }
+
+  tooltip.style.left = `${Math.max(10, posX)}px`;
+  tooltip.style.top = `${Math.max(10, posY)}px`;
+}
+
 let activeP1FiiSubtab = "cash";
 
 function switchP1FiiSubtab(tabKey) {
@@ -3414,7 +4015,7 @@ function _poiBuildupSignal(netDelta, longDelta, shortDelta) {
   if (netDelta < -2000 && oiRising)   return { label: "SHORT BUILD", bg: "#ef4444", color: "#fff" };
   if (netDelta < -2000 && !oiRising)  return { label: "LONG UNWIND", bg: "#f59e0b", color: "#030712" };
   if (netDelta > 2000 && !oiRising)   return { label: "SHORT COVER", bg: "#8b5cf6", color: "#fff" };
-  return { label: "MINOR Δ", bg: "#334155", color: "#94a3b8" };
+  return { label: "MINOR Δ", bg: "var(--bg-subtle)", color: "var(--text-muted)" };
 }
 
 async function loadPoiDeskData(forceRefresh = false) {
@@ -3484,39 +4085,47 @@ function _renderPoiSignalCards(data, fiiM, trapRadar) {
   const row = document.getElementById("poiSignalRow");
   if (!row) return;
 
-  const zoneBg = fiiM.zone === "BALANCED_RANGE" ? "#334155"
-    : fiiM.zone === "OVERSOLD_SPRINGBOARD" ? "#10b981" : "#ef4444";
-  const zoneTxt = fiiM.zone === "BALANCED_RANGE" ? "#fff" : "#030712";
+  const isSpring = fiiM.zone === "OVERSOLD_SPRINGBOARD";
+  const isOverbought = fiiM.zone === "OVERBOUGHT_CORRECTION" || (fiiM.zone || "").includes("BEAR");
+  const zoneBg = isSpring ? "#10b981" : isOverbought ? "#ef4444" : "var(--bg-subtle)";
+  const zoneTxt = (isSpring || isOverbought) ? "#ffffff" : "var(--text-primary)";
+  const zoneBorder = (isSpring || isOverbought) ? "none" : "1px solid var(--border-default)";
 
-  const trapBg = (trapRadar.level || "").includes("BULL_TRAP") ? "#ef4444"
-    : (trapRadar.level || "").includes("BEAR_TRAP") ? "#f59e0b"
-    : (trapRadar.level || "").includes("ACCUMULATION") ? "#10b981"
-    : (trapRadar.level || "").includes("DISTRIBUTION") ? "#ef4444"
-    : "#334155";
+  const trapLevel = (trapRadar.level || "");
+  const isTrapRed = trapLevel.includes("BULL_TRAP") || trapLevel.includes("DISTRIBUTION");
+  const isTrapGreen = trapLevel.includes("BEAR_TRAP") || trapLevel.includes("ACCUMULATION");
+  const isTrapAmber = trapLevel.includes("WARNING");
+  const trapBg = isTrapRed ? "#ef4444" : isTrapGreen ? "#10b981" : isTrapAmber ? "#f59e0b" : "var(--bg-subtle)";
+  const trapTxt = (isTrapRed || isTrapGreen) ? "#ffffff" : isTrapAmber ? "#030712" : "var(--text-primary)";
+  const trapBorder = (isTrapRed || isTrapGreen || isTrapAmber) ? "none" : "1px solid var(--border-default)";
+  const trapLeftColor = isTrapRed ? "#ef4444" : isTrapGreen ? "#10b981" : isTrapAmber ? "#f59e0b" : "var(--cyan)";
 
   const gpBias = (data.gameplan || {}).bias || "";
-  const gpBg = gpBias.includes("BULLISH") ? "#10b981"
-    : gpBias.includes("BEARISH") ? "#ef4444"
-    : gpBias.includes("SHORT_COVERING") ? "#8b5cf6"
-    : "#334155";
+  const isGpBull = gpBias.includes("BULLISH");
+  const isGpBear = gpBias.includes("BEARISH");
+  const isGpShortCover = gpBias.includes("SHORT_COVERING");
+  const gpBg = isGpBull ? "#10b981" : isGpBear ? "#ef4444" : isGpShortCover ? "#8b5cf6" : "var(--bg-subtle)";
+  const gpTxt = (isGpBull || isGpBear || isGpShortCover) ? "#ffffff" : "var(--text-primary)";
+  const gpBorder = (isGpBull || isGpBear || isGpShortCover) ? "none" : "1px solid var(--border-default)";
+  const gpLeftColor = isGpBull ? "#10b981" : isGpBear ? "#ef4444" : isGpShortCover ? "#8b5cf6" : "var(--cyan)";
 
   row.innerHTML = `
-    <div class="sm-card" style="padding:12px 14px; border-left:3px solid #38bdf8; background:var(--bg-card); border-top:1px solid var(--border-default); border-right:1px solid var(--border-default); border-bottom:1px solid var(--border-default); border-radius:var(--radius-md);">
-      <div style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:4px;">FII Index Futures Zone</div>
-      <div style="font-size:18px; font-weight:800; color:#38bdf8; font-family:'JetBrains Mono',monospace;">${fiiM.longPct || "--"}% Long</div>
-      <div style="margin-top:6px;"><span style="background:${zoneBg}; color:${zoneTxt}; font-size:10px; font-weight:800; padding:2px 8px; border-radius:3px;">${fiiM.zoneBadge || "--"}</span></div>
-      <div style="font-size:11px; color:#94a3b8; margin-top:5px; line-height:1.4;">${fiiM.zoneDesc || ""}</div>
+    <div class="sm-card" style="padding:12px 14px; border-left:3px solid var(--primary); background:var(--bg-card); border-top:1px solid var(--border-default); border-right:1px solid var(--border-default); border-bottom:1px solid var(--border-default); border-radius:var(--radius-md);">
+      <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:4px;">FII Index Futures Zone</div>
+      <div style="font-size:18px; font-weight:800; color:var(--primary); font-family:'JetBrains Mono',monospace;">${fiiM.longPct || "--"}% Long</div>
+      <div style="margin-top:6px;"><span style="background:${zoneBg}; color:${zoneTxt}; border:${zoneBorder}; font-size:10px; font-weight:800; padding:2px 8px; border-radius:3px;">${fiiM.zoneBadge || "--"}</span></div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:5px; line-height:1.4;">${fiiM.zoneDesc || ""}</div>
     </div>
-    <div class="sm-card" style="padding:12px 14px; border-left:3px solid ${trapBg}; background:var(--bg-card); border-top:1px solid var(--border-default); border-right:1px solid var(--border-default); border-bottom:1px solid var(--border-default); border-radius:var(--radius-md);">
-      <div style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:4px;">Trap Radar</div>
-      <div style="margin-top:2px;"><span style="background:${trapBg}; color:#030712; font-size:10px; font-weight:800; padding:2px 8px; border-radius:3px;">${trapRadar.badge || "--"}</span></div>
-      <div style="font-size:12px; font-weight:700; color:#e2e8f0; margin-top:6px;">${trapRadar.title || "--"}</div>
-      <div style="font-size:11px; color:#94a3b8; margin-top:4px; line-height:1.4;">${(trapRadar.desc || "").substring(0, 120)}...</div>
+    <div class="sm-card" style="padding:12px 14px; border-left:3px solid ${trapLeftColor}; background:var(--bg-card); border-top:1px solid var(--border-default); border-right:1px solid var(--border-default); border-bottom:1px solid var(--border-default); border-radius:var(--radius-md);">
+      <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:4px;">Trap Radar</div>
+      <div style="margin-top:2px;"><span style="background:${trapBg}; color:${trapTxt}; border:${trapBorder}; font-size:10px; font-weight:800; padding:2px 8px; border-radius:3px;">${trapRadar.badge || "--"}</span></div>
+      <div style="font-size:12.5px; font-weight:700; color:var(--text-primary); margin-top:6px;">${trapRadar.title || "--"}</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:4px; line-height:1.4;">${(trapRadar.desc || "").substring(0, 120)}...</div>
     </div>
-    <div class="sm-card" style="padding:12px 14px; border-left:3px solid ${gpBg}; background:var(--bg-card); border-top:1px solid var(--border-default); border-right:1px solid var(--border-default); border-bottom:1px solid var(--border-default); border-radius:var(--radius-md);">
-      <div style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:4px;">Market Gameplan Bias</div>
-      <div style="margin-top:2px;"><span style="background:${gpBg}; color:#030712; font-size:10px; font-weight:800; padding:2px 8px; border-radius:3px;">${gpBias.replace(/_/g, " ")}</span></div>
-      <div style="font-size:11px; color:#94a3b8; margin-top:6px; line-height:1.4;">${((data.gameplan || {}).summary || "").substring(0, 140)}...</div>
+    <div class="sm-card" style="padding:12px 14px; border-left:3px solid ${gpLeftColor}; background:var(--bg-card); border-top:1px solid var(--border-default); border-right:1px solid var(--border-default); border-bottom:1px solid var(--border-default); border-radius:var(--radius-md);">
+      <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:4px;">Market Gameplan Bias</div>
+      <div style="margin-top:2px;"><span style="background:${gpBg}; color:${gpTxt}; border:${gpBorder}; font-size:10px; font-weight:800; padding:2px 8px; border-radius:3px;">${gpBias.replace(/_/g, " ")}</span></div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:6px; line-height:1.4;">${((data.gameplan || {}).summary || "").substring(0, 140)}...</div>
     </div>
   `;
 }
@@ -3552,13 +4161,13 @@ function _renderPoiTrendlyneMatrix(lookup) {
     }
   }
 
-  // Participant columns in exact Trendlyne order
+  // Participant columns in exact Trendlyne order with theme-adaptive colors
   const PARTS = [
-    { key: "CLIENT", label: "RETAIL",  colLabel: "RETAIL CLIENTS", color: "#94a3b8" },
-    { key: "DII",    label: "DII",     colLabel: "DII",            color: "#10b981" },
-    { key: "FII",    label: "FII",     colLabel: "FII",            color: "#38bdf8" },
-    { key: "PRO",    label: "PRO",     colLabel: "PRO",            color: "#f59e0b" },
-    { key: "TOTAL",  label: "TOTAL",   colLabel: "TOTAL",          color: "#a78bfa" },
+    { key: "CLIENT", label: "RETAIL",  colLabel: "RETAIL CLIENTS", color: "var(--text-muted)" },
+    { key: "DII",    label: "DII",     colLabel: "DII",            color: "var(--green)" },
+    { key: "FII",    label: "FII",     colLabel: "FII",            color: "var(--cyan)" },
+    { key: "PRO",    label: "PRO",     colLabel: "PRO",            color: "var(--amber)" },
+    { key: "TOTAL",  label: "TOTAL",   colLabel: "TOTAL",          color: "var(--purple)" },
   ];
 
   // Helper to extract first valid number from fallback keys
@@ -3684,27 +4293,27 @@ function _renderPoiTrendlyneMatrix(lookup) {
   if (_poiViewMode !== "detailed") {
     // Clean Compact 6-column header (for both Day Change and Cumulative)
     let trHead = `<tr>
-      <th style="padding:10px 14px; text-align:left; min-width:200px; color:var(--text-secondary); background:var(--bg-card); position:sticky; left:0; z-index:3; border-right:1px solid var(--table-border); font-size:12px; font-weight:800;">CLIENT TYPE</th>`;
+      <th style="padding:10px 14px; text-align:left; min-width:200px; color:var(--table-th-text); background:var(--table-th-bg); position:sticky; left:0; z-index:3; border-right:1px solid var(--table-border); border-bottom:2px solid var(--table-border); font-size:12px; font-weight:800;">CLIENT TYPE</th>`;
     PARTS.forEach((pd, idx) => {
       const borderLeft = idx > 0 ? "border-left:1px solid var(--table-border);" : "";
-      trHead += `<th style="padding:10px 14px; text-align:right; color:${pd.color}; font-size:12px; font-weight:800; ${borderLeft}">${pd.label}</th>`;
+      trHead += `<th style="padding:10px 14px; text-align:right; color:${pd.color}; background:var(--table-th-bg); border-bottom:2px solid var(--table-border); font-size:12px; font-weight:800; ${borderLeft}">${pd.label}</th>`;
     });
     trHead += `</tr>`;
     thead.innerHTML = trHead;
   } else {
     // Full 16-column header with Change & %
-    const TH1 = "padding:8px 10px; background:var(--table-th-bg); border-bottom:1px solid var(--table-border); font-size:11px; font-weight:800; white-space:nowrap; text-align:center;";
-    const TH2 = "padding:6px 8px; background:var(--table-th-bg); border-bottom:1px solid var(--table-border); font-size:10.5px; font-weight:700; white-space:nowrap; text-align:right;";
+    const TH1 = "padding:8px 10px; background:var(--table-th-bg); color:var(--table-th-text); border-bottom:1px solid var(--table-border); font-size:11px; font-weight:800; white-space:nowrap; text-align:center;";
+    const TH2 = "padding:6px 8px; background:var(--table-th-bg); border-bottom:2px solid var(--table-border); font-size:10.5px; font-weight:700; white-space:nowrap; text-align:right;";
 
     let row1 = `<tr>
-      <th rowspan="2" style="${TH1} text-align:left; vertical-align:middle; min-width:180px; color:var(--text-secondary); position:sticky; left:0; z-index:3; background:var(--bg-card); border-right:1px solid var(--table-border);">CLIENT TYPE</th>`;
+      <th rowspan="2" style="${TH1} text-align:left; vertical-align:middle; min-width:180px; color:var(--table-th-text); position:sticky; left:0; z-index:3; background:var(--table-th-bg); border-right:1px solid var(--table-border); border-bottom:2px solid var(--table-border);">CLIENT TYPE</th>`;
     let row2 = `<tr>`;
 
     PARTS.forEach((pd, idx) => {
       const borderLeft = idx > 0 ? "border-left:1px solid var(--table-border);" : "";
       row1 += `<th colspan="3" style="${TH1} color:${pd.color}; ${borderLeft}">${pd.label}</th>`;
       row2 += `
-        <th style="${TH2} color:var(--text-primary); ${borderLeft}">${pd.colLabel}</th>
+        <th style="${TH2} color:var(--table-th-text); ${borderLeft}">${pd.colLabel}</th>
         <th style="${TH2} color:var(--text-muted);">${pd.label} CHANGE</th>
         <th style="${TH2} color:var(--text-muted);">${pd.label} CHANGE %</th>`;
     });
@@ -3719,25 +4328,24 @@ function _renderPoiTrendlyneMatrix(lookup) {
 
   ROWS.forEach((rd, rIdx) => {
     const isNet = rd.isNet;
-    const rowBg = isNet ? "rgba(56, 189, 248, 0.08)" : "transparent";
-    const labelColor = isNet ? "#38bdf8" : "var(--text-primary)";
-    const labelWeight = isNet ? "800" : "500";
+    const rowClass = isNet ? "poi-row-net" : "poi-row-norm";
+    const stickyCellClass = isNet ? "poi-sticky-cell poi-net-cell" : "poi-sticky-cell";
 
     let tds = "";
 
     PARTS.forEach((pd, pIdx) => {
       const p = lookup[pd.key] || {};
-      const borderLeft = pIdx > 0 ? "border-left:1px solid rgba(255,255,255,0.06);" : "";
+      const borderLeft = pIdx > 0 ? "border-left:1px solid var(--table-border);" : "";
 
       if (_poiViewMode === "dayChange") {
         // Mode 1: Clean 6-column Day Change (Today's Net Intraday Shift in Contracts)
         const chg = getNum(p, rd.chgKeys);
         let chgColor = "var(--text-primary)";
         if (isNet || rd.isLong) {
-          chgColor = chg > 0 ? "#10b981" : (chg < 0 ? "#ef4444" : "var(--text-muted)");
+          chgColor = chg > 0 ? "var(--green)" : (chg < 0 ? "var(--red)" : "var(--text-muted)");
         } else if (rd.isLong === false) {
-          // Adding shorts (positive short chg) is bearish (#ef4444); unwinding shorts is bullish (#10b981)
-          chgColor = chg > 0 ? "#ef4444" : (chg < 0 ? "#10b981" : "var(--text-muted)");
+          // Adding shorts (positive short chg) is bearish; unwinding shorts is bullish
+          chgColor = chg > 0 ? "var(--red)" : (chg < 0 ? "var(--green)" : "var(--text-muted)");
         }
         tds += `<td style="padding:9px 14px; ${mono} font-size:12px; text-align:right; color:${chgColor}; font-weight:${isNet ? "800" : "600"}; ${borderLeft}">${fmtChg(chg)}</td>`;
       } else if (_poiViewMode === "cumulative") {
@@ -3745,7 +4353,7 @@ function _renderPoiTrendlyneMatrix(lookup) {
         const val = getNum(p, rd.keys, rd.calc);
         let valColor = "var(--text-primary)";
         if (isNet) {
-          valColor = val > 0 ? "#10b981" : (val < 0 ? "#ef4444" : "var(--text-muted)");
+          valColor = val > 0 ? "var(--green)" : (val < 0 ? "var(--red)" : "var(--text-muted)");
         }
         tds += `<td style="padding:9px 14px; ${mono} font-size:12px; text-align:right; color:${valColor}; font-weight:${isNet ? "800" : "500"}; ${borderLeft}">${fmtVal(val)}</td>`;
       } else {
@@ -3754,9 +4362,9 @@ function _renderPoiTrendlyneMatrix(lookup) {
         const chg = getNum(p, rd.chgKeys);
         const pct = getNum(p, rd.pctKeys);
 
-        const valColor = isNet ? (val >= 0 ? "var(--text-primary)" : "#ef4444") : "var(--text-primary)";
-        const chgColor = chg > 0 ? "#10b981" : (chg < 0 ? "#ef4444" : "var(--text-muted)");
-        const pctColor = pct > 0 ? "#10b981" : (pct < 0 ? "#ef4444" : "var(--text-muted)");
+        const valColor = isNet ? (val >= 0 ? "var(--text-primary)" : "var(--red)") : "var(--text-primary)";
+        const chgColor = chg > 0 ? "var(--green)" : (chg < 0 ? "var(--red)" : "var(--text-muted)");
+        const pctColor = pct > 0 ? "var(--green)" : (pct < 0 ? "var(--red)" : "var(--text-muted)");
 
         tds += `
           <td style="padding:7px 9px; ${mono} font-size:11.5px; text-align:right; color:${valColor}; font-weight:${isNet ? "700" : "500"}; ${borderLeft}">${fmtVal(val)}</td>
@@ -3766,12 +4374,10 @@ function _renderPoiTrendlyneMatrix(lookup) {
     });
 
     const tr = document.createElement("tr");
-    tr.style.cssText = `background:${rowBg}; border-bottom:1px solid rgba(255,255,255,0.04); transition:background 0.15s;`;
-    tr.addEventListener("mouseenter", () => tr.style.background = isNet ? "rgba(56, 189, 248, 0.14)" : "rgba(255,255,255,0.03)");
-    tr.addEventListener("mouseleave", () => tr.style.background = rowBg);
+    tr.className = rowClass;
 
     tr.innerHTML = `
-      <td style="padding:9px 12px; font-size:12px; color:${labelColor}; font-weight:${labelWeight}; border-right:1px solid var(--table-border); white-space:nowrap; position:sticky; left:0; z-index:2; background:${isNet ? "rgba(15, 23, 42, 0.95)" : "var(--bg-card);"}">${rd.label}</td>
+      <td class="${stickyCellClass}" style="padding:9px 12px; font-size:12px;">${rd.label}</td>
       ${tds}
     `;
     tbody.appendChild(tr);
@@ -3780,7 +4386,8 @@ function _renderPoiTrendlyneMatrix(lookup) {
     if (dividerIndices.has(rIdx)) {
       const sep = document.createElement("tr");
       const colSpanCount = _poiViewMode === "detailed" ? 16 : 6;
-      sep.innerHTML = `<td colspan="${colSpanCount}" style="height:3px; background:rgba(255,255,255,0.04); border-bottom:1px solid var(--table-border);"></td>`;
+      sep.className = "poi-sep-row";
+      sep.innerHTML = `<td colspan="${colSpanCount}"></td>`;
       tbody.appendChild(sep);
     }
   });
@@ -3793,16 +4400,23 @@ function _renderPoiDivergenceRadar(data, trapRadar, fiiM) {
   const card  = document.getElementById("poiDivergenceCard");
 
   const level = (trapRadar.level || "BALANCED");
-  const borderColor = level.includes("BULL_TRAP") || level.includes("DISTRIBUTION") ? "#ef4444"
-    : level.includes("BEAR_TRAP") || level.includes("ACCUMULATION") ? "#10b981"
-    : level.includes("SHORT_COVERING") ? "#8b5cf6"
-    : "#38bdf8";
+  const isTrapRed = level.includes("BULL_TRAP") || level.includes("DISTRIBUTION");
+  const isTrapGreen = level.includes("BEAR_TRAP") || level.includes("ACCUMULATION");
+  const isTrapPurple = level.includes("SHORT_COVERING");
+  const isTrapAmber = level.includes("WARNING");
+
+  const borderColor = isTrapRed ? "#ef4444"
+    : isTrapGreen ? "#10b981"
+    : isTrapPurple ? "#8b5cf6"
+    : isTrapAmber ? "#f59e0b"
+    : "var(--cyan)";
   if (card) card.style.borderLeftColor = borderColor;
 
   if (badge) {
     badge.textContent = (trapRadar.badge || "Analyzing").replace(/🚨|🟢|🔴|⚪/g, "").trim();
     badge.style.background = borderColor;
-    badge.style.color = "#030712";
+    badge.style.color = isTrapAmber ? "#030712" : "#ffffff";
+    badge.style.border = "none";
   }
   if (title) title.textContent = trapRadar.title || "--";
   if (desc)  desc.textContent  = trapRadar.desc || "--";
@@ -3845,6 +4459,26 @@ function _renderPoiDivergenceRadar(data, trapRadar, fiiM) {
   if (btnCumulative) btnCumulative.addEventListener("click", () => setPoiViewMode("cumulative"));
   if (btnDetailed) btnDetailed.addEventListener("click", () => setPoiViewMode("detailed"));
 })();
+
+function switchFiiDerivSubtab(sub) {
+  const viewIndex = document.getElementById("p1FiiDerivViewIndex");
+  const viewAction = document.getElementById("p1FiiDerivViewAction");
+  const btnIndex = document.getElementById("btnFiiDerivSubIndex");
+  const btnAction = document.getElementById("btnFiiDerivSubAction");
+
+  if (sub === "index") {
+    if (viewIndex) viewIndex.style.display = "block";
+    if (viewAction) viewAction.style.display = "none";
+    if (btnIndex) btnIndex.classList.add("active");
+    if (btnAction) btnAction.classList.remove("active");
+  } else {
+    if (viewIndex) viewIndex.style.display = "none";
+    if (viewAction) viewAction.style.display = "block";
+    if (btnIndex) btnIndex.classList.remove("active");
+    if (btnAction) btnAction.classList.add("active");
+  }
+}
+window.switchFiiDerivSubtab = switchFiiDerivSubtab;
 
 function renderFiiDerivativesFlow(flowData) {
   if (!flowData) return;
@@ -4264,6 +4898,8 @@ function hideSmHistoryTooltip() {
 let delivDataGlobal = null;
 let delivActiveFilter = "all";
 let delivSearchQuery = "";
+let delivSortBy = "delivTurnoverCr";
+let delivSortDir = "desc";
 
 async function loadDeliveryAnalytics(dateStr) {
   try {
@@ -4276,7 +4912,7 @@ async function loadDeliveryAnalytics(dateStr) {
     const selectedDate = (dateStr !== undefined && dateStr !== "") ? dateStr : ((els.delivSessionSelect && els.delivSessionSelect.value) ? els.delivSessionSelect.value : "");
     const payload = {
       universe: (els.delivUniverseSelect && els.delivUniverseSelect.value) || "nifty50",
-      filter: delivActiveFilter || "all",
+      filter: "all",
       date: selectedDate
     };
 
@@ -4291,6 +4927,7 @@ async function loadDeliveryAnalytics(dateStr) {
     if (!data.ok) throw new Error(data.message || "Failed to load delivery data");
 
     delivDataGlobal = data;
+    delivDataGlobal.allStocks = (data.stocks || []).slice();
     if (els.delivDateInput) {
       if (data.dateIso) els.delivDateInput.value = data.dateIso.slice(0, 10);
       els.delivDateInput.setAttribute("max", new Date().toISOString().slice(0, 10));
@@ -4318,11 +4955,20 @@ async function loadDeliveryAnalytics(dateStr) {
 
 function renderDeliveryDashboard(data) {
   const sum = data.summary || {};
+  const todayPct = sum.todayDeliveryPct ?? sum.avgDeliveryPct ?? 0;
+  const avg5dPct = sum.avg5dDeliveryPct ?? '--';
   if (els.kpiDelivAvgPct) {
-    els.kpiDelivAvgPct.textContent = `${sum.avgDeliveryPct || 0}%`;
-    const dashDeliv = document.getElementById("dashKpiDeliv");
-    if (dashDeliv) dashDeliv.textContent = `${sum.avgDeliveryPct || 0}%`;
+    els.kpiDelivAvgPct.textContent = `${todayPct}%`;
   }
+  const kpi5d = document.getElementById("kpiDeliv5dAvgPct");
+  if (kpi5d) {
+    kpi5d.textContent = `${avg5dPct}%`;
+  }
+  const dashDeliv = document.getElementById("dashKpiDeliv");
+  if (dashDeliv) dashDeliv.textContent = `${todayPct}%`;
+  const dashDelivSub = document.getElementById("dashKpiDelivSub");
+  if (dashDelivSub) dashDelivSub.textContent = `5D Avg: ${avg5dPct}%`;
+
   if (els.kpiDelivValCr) els.kpiDelivValCr.textContent = `₹${(sum.totalDelivTurnoverCr || 0).toLocaleString("en-IN")} Cr`;
   if (els.kpiAccCount) els.kpiAccCount.textContent = sum.accumulationCount || 0;
   if (els.kpiDistCount) els.kpiDistCount.textContent = sum.distributionCount || 0;
@@ -4351,19 +4997,76 @@ function renderDeliveryDashboard(data) {
     const currentUniv = (els.delivUniverseSelect && els.delivUniverseSelect.value) || "nifty50";
     els.delivIndicesGrid.innerHTML = data.majorIndicesDelivery.map(idx => {
       const isSelected = currentUniv === idx.key;
-      const borderStyle = isSelected ? "border:2px solid #2563eb; background:#eff6ff;" : "border:1px solid #e2e8f0; background:#f8fafc;";
-      const sigColor = idx.stance === "STRONG_ACCUMULATION" ? "#10b981" : (idx.stance === "HEAVY_DISTRIBUTION" ? "#ef4444" : "#64748b");
+      const isNifty50 = idx.key === "nifty50";
+      const dailyPct = Number(idx.todayDeliveryPct !== undefined ? idx.todayDeliveryPct : idx.avgDeliveryPct) || 0;
+      const dailyCr = Number(idx.todayDelivCr !== undefined ? idx.todayDelivCr : idx.delivTurnoverCr) || 0;
+      const prevPct = Number(idx.prevDayDeliveryPct !== undefined ? idx.prevDayDeliveryPct : idx.avgDeliveryPct) || 0;
+      const monthPct = Number(idx.monthlyAvgDeliveryPct !== undefined ? idx.monthlyAvgDeliveryPct : (idx.avg5dPct || idx.avgDeliveryPct)) || 0;
+
+      let stanceClass = "neutral";
+      let stanceLabel = "NEUTRAL";
+      if (idx.stance === "STRONG_ACCUMULATION") {
+        stanceClass = "accum";
+        stanceLabel = "ACCUMULATION";
+      } else if (idx.stance === "HEAVY_DISTRIBUTION") {
+        stanceClass = "distrib";
+        stanceLabel = "DISTRIBUTION";
+      }
+
+      const deltaVsMonth = (dailyPct - monthPct).toFixed(1);
+      const deltaSign = deltaVsMonth > 0 ? "+" : "";
+      const deltaBadgeClass = deltaVsMonth > 0 ? "deliv-delta-up" : (deltaVsMonth < 0 ? "deliv-delta-down" : "deliv-delta-flat");
+
+      const progressPct = Math.min(100, Math.max(0, dailyPct));
+      const monthBenchmarkPct = Math.min(100, Math.max(0, monthPct));
+      const progressColor = dailyPct >= monthPct ? "#10b981" : (dailyPct >= 40 ? "#3b82f6" : "#f59e0b");
+
+      const cardSelectedClass = isSelected ? "selected" : (isNifty50 ? "nifty-flag" : "");
+
       return `
-        <div class="deliv-idx-mini-card" onclick="selectDeliveryUniverse('${idx.key}')" style="${borderStyle} border-radius:6px; padding:8px 10px; cursor:pointer; transition:all 0.15s ease;" title="Click to filter matrix by ${idx.label}">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong style="font-size:12px; color:#0f172a;">${idx.label}</strong>
-            <span style="font-size:10px; color:${sigColor}; font-weight:700;">${idx.stance === 'STRONG_ACCUMULATION' ? '🟢 Acc' : (idx.stance === 'HEAVY_DISTRIBUTION' ? '🔴 Dist' : '⚪ Bal')}</span>
+        <div class="deliv-benchmark-card ${cardSelectedClass}" onclick="selectDeliveryUniverse('${idx.key}')" title="Click to filter universe by ${idx.label}">
+          <div class="deliv-card-top">
+            <div class="deliv-card-title">
+              ${isNifty50 ? '<span class="deliv-star">★</span> ' : ''}<span>${idx.label}</span>
+            </div>
+            <span class="deliv-stance-pill ${stanceClass}">
+              ${stanceLabel}
+            </span>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
-            <span style="font-size:14px; font-weight:900; color:#2563eb;">${idx.avgDeliveryPct}%</span>
-            <span style="font-size:10.5px; color:#16a34a; font-weight:700;">₹${Math.round(idx.delivTurnoverCr).toLocaleString("en-IN")} Cr</span>
+
+          <div class="deliv-card-hero">
+            <div class="deliv-hero-pct">${dailyPct.toFixed(1)}%</div>
+            <div class="deliv-hero-cr">₹${Math.round(dailyCr).toLocaleString('en-IN')} Cr</div>
           </div>
-          <div style="font-size:9.5px; color:#64748b; margin-top:2px;">5D Avg: ${idx.avg5dPct}% • ${idx.shockRatio}x</div>
+
+          <div class="deliv-progress-container" title="Delivery: ${dailyPct.toFixed(1)}% (30D Avg: ${monthPct.toFixed(1)}%)">
+            <div class="deliv-progress-track">
+              <div class="deliv-progress-fill" style="width:${progressPct}%; background:${progressColor};"></div>
+              <div class="deliv-progress-pin" style="left:${monthBenchmarkPct}%;" title="30D Benchmark: ${monthPct.toFixed(1)}%"></div>
+            </div>
+          </div>
+
+          <div class="deliv-card-benchmarks">
+            <div class="deliv-bm-item">
+              <span class="deliv-bm-label">Prev Day</span>
+              <span class="deliv-bm-val">${prevPct.toFixed(1)}%</span>
+            </div>
+            <div class="deliv-bm-item">
+              <span class="deliv-bm-label">30D Avg</span>
+              <span class="deliv-bm-val">${monthPct.toFixed(1)}%</span>
+            </div>
+            <div class="deliv-bm-item text-right">
+              <span class="deliv-bm-label">vs Avg</span>
+              <span class="deliv-bm-delta ${deltaBadgeClass}">${deltaSign}${deltaVsMonth}%</span>
+            </div>
+          </div>
+
+          <div class="deliv-card-footer">
+            <button type="button" class="deliv-card-hist-btn" onclick="event.stopPropagation(); inspectDeliveryStock('${idx.label}')" title="Inspect ${idx.label} Historical Delivery Data">
+              <span>📊 History</span>
+              <span class="deliv-arrow">→</span>
+            </button>
+          </div>
         </div>
       `;
     }).join("");
@@ -4416,31 +5119,119 @@ function selectDeliveryUniverse(key) {
   }
 }
 
+function matchDeliveryFilter(s, filterKey) {
+  if (!filterKey || filterKey === "all") return true;
+  if (filterKey === "shocks") return (s.shockRatio || 0) >= 1.3;
+  if (filterKey === "extreme_shocks") return (s.shockRatio || 0) >= 2.0;
+  if (filterKey === "accumulation") return s.signal === "STRONG_ACCUMULATION" || ((s.changePct || 0) > 0.3 && (s.delivPer || 0) >= 50 && (s.shockRatio || 0) >= 1.2);
+  if (filterKey === "distribution") return s.signal === "HEAVY_DISTRIBUTION" || ((s.changePct || 0) < -0.3 && (s.delivPer || 0) >= 50 && (s.shockRatio || 0) >= 1.2);
+  if (filterKey === "high_deliv") return (s.delivPer || 0) >= 60.0;
+  if (filterKey === "turnover_leaders") return (s.delivTurnoverCr || 0) >= 100.0 || (s.turnoverCr || 0) >= 200.0;
+  if (filterKey === "bullish_deliv") return (s.changePct || 0) > 0 && (s.delivPer || 0) >= 45.0;
+  if (filterKey === "bearish_deliv") return (s.changePct || 0) < 0 && (s.delivPer || 0) >= 45.0;
+  return true;
+}
+
+function sortDeliveryStocks(list) {
+  const col = delivSortBy;
+  const isAsc = delivSortDir === "asc";
+  return list.slice().sort((a, b) => {
+    let va = a[col];
+    let vb = b[col];
+    if (col === "symbol") {
+      va = (va || "").toString().toUpperCase();
+      vb = (vb || "").toString().toUpperCase();
+      return isAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    }
+    va = Number(va) || 0;
+    vb = Number(vb) || 0;
+    return isAsc ? va - vb : vb - va;
+  });
+}
+
+function updateDelivSortIcons() {
+  const ths = document.querySelectorAll("#delivTable thead th.deliv-sortable");
+  ths.forEach(th => {
+    const col = th.dataset.sort;
+    const iconSpan = th.querySelector(".sort-icon");
+    if (col === delivSortBy) {
+      th.classList.add("active-sort");
+      if (iconSpan) {
+        iconSpan.textContent = delivSortDir === "asc" ? "▲" : "▼";
+      }
+    } else {
+      th.classList.remove("active-sort");
+      if (iconSpan) {
+        iconSpan.textContent = "↕";
+      }
+    }
+  });
+}
+
+function initDeliverySortHeaders() {
+  const table = document.getElementById("delivTable");
+  if (!table) return;
+  const ths = table.querySelectorAll("thead th.deliv-sortable");
+  ths.forEach(th => {
+    th.addEventListener("click", () => {
+      const col = th.dataset.sort;
+      if (!col) return;
+      if (delivSortBy === col) {
+        delivSortDir = delivSortDir === "desc" ? "asc" : "desc";
+      } else {
+        delivSortBy = col;
+        delivSortDir = col === "symbol" ? "asc" : "desc";
+      }
+      updateDelivSortIcons();
+      applyDeliveryFilterAndRender();
+    });
+  });
+}
+
 function applyDeliveryFilterAndRender() {
   if (!delivDataGlobal) return;
-  let list = delivDataGlobal.stocks || [];
+  const allList = delivDataGlobal.allStocks || delivDataGlobal.stocks || [];
+  let list = allList.filter(s => matchDeliveryFilter(s, delivActiveFilter));
 
   if (delivSearchQuery) {
     const q = delivSearchQuery.toLowerCase().trim();
     list = list.filter(s => s.symbol.toLowerCase().includes(q));
   }
 
-  if (els.delivStockCountBadge) {
-    const totalInUniverse = (delivDataGlobal.summary && delivDataGlobal.summary.universeCount) || (delivDataGlobal.universe === "nifty50" ? 50 : list.length);
-    let filterText = "";
-    if (delivActiveFilter === "shocks") filterText = " • Filter: Delivery Volume Shocks (>1.3x)";
-    else if (delivActiveFilter === "accumulation") filterText = " • Filter: Strong Accumulation";
-    else if (delivActiveFilter === "distribution") filterText = " • Filter: Heavy Distribution";
-    else if (delivActiveFilter === "high_deliv") filterText = " • Filter: Ultra-High Delivery (>60%)";
+  const sortedList = sortDeliveryStocks(list);
 
-    if (delivActiveFilter !== "all" && list.length < totalInUniverse) {
-      els.delivStockCountBadge.textContent = `Showing ${list.length} of ${totalInUniverse} Stocks${filterText}`;
-    } else {
-      els.delivStockCountBadge.textContent = `${list.length} Stocks${filterText}`;
-    }
+  if (els.delivStockCountBadge) {
+    const totalInUniverse = allList.length;
+    const sortLabelMap = {
+      delivTurnoverCr: "Today Deliv (₹ Cr)",
+      delivPer: "Today Delivery %",
+      turnoverCr: "Turnover",
+      shockRatio: "Shock vs 5D",
+      close: "Last Price",
+      changePct: "Change %",
+      tradedQty: "Traded Qty",
+      delivQty: "Delivery Qty",
+      avg5dQty: "5D Avg Qty",
+      avgDelivPer5D: "5D Avg Deliv %",
+      symbol: "Symbol",
+    };
+    const sortName = sortLabelMap[delivSortBy] || delivSortBy;
+    const sortArrow = delivSortDir === "asc" ? "▲" : "▼";
+
+    let filterText = "";
+    if (delivActiveFilter === "shocks") filterText = " • Shocks (>1.3x)";
+    else if (delivActiveFilter === "extreme_shocks") filterText = " • Extreme Surge (>2.0x)";
+    else if (delivActiveFilter === "accumulation") filterText = " • Strong Accumulation";
+    else if (delivActiveFilter === "distribution") filterText = " • Heavy Distribution";
+    else if (delivActiveFilter === "high_deliv") filterText = " • Ultra-High (≥60%)";
+    else if (delivActiveFilter === "turnover_leaders") filterText = " • Value Leaders (>₹100 Cr)";
+    else if (delivActiveFilter === "bullish_deliv") filterText = " • Price Up + Deliv Up";
+    else if (delivActiveFilter === "bearish_deliv") filterText = " • Price Down + Deliv Up";
+
+    els.delivStockCountBadge.textContent = `Showing ${sortedList.length} of ${totalInUniverse} Stocks${filterText} • Sorted by ${sortName} ${sortArrow}`;
   }
 
-  renderSecurityDeliveryTable(list);
+  renderSecurityDeliveryTable(sortedList);
 }
 
 function renderSecurityDeliveryTable(stocks) {
@@ -4448,7 +5239,17 @@ function renderSecurityDeliveryTable(stocks) {
   if (!tbody) return;
 
   if (!stocks.length) {
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:24px; color:var(--text-muted);">No stocks found matching the criteria.</td></tr>`;
+    if (delivSearchQuery) {
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:28px; color:var(--text-muted);">
+        <div style="font-size:13.5px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Stock "<strong>${delivSearchQuery.toUpperCase()}</strong>" not found in selected index universe.</div>
+        <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:10px;">
+          <button type="button" class="ctrl-btn primary" onclick="inspectDeliveryStock('${delivSearchQuery}')" style="padding:6px 16px; font-size:12px; font-weight:700; cursor:pointer;">⚡ Inspect Official Delivery Data</button>
+          <button type="button" class="ctrl-btn" onclick="switchToAllEquitiesUniverse('${delivSearchQuery}')" style="padding:6px 16px; font-size:12px; font-weight:700; cursor:pointer;">🌐 Search All 1800+ Listed Equities</button>
+        </div>
+      </td></tr>`;
+    } else {
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:24px; color:var(--text-muted);">No stocks found matching the criteria.</td></tr>`;
+    }
     return;
   }
 
@@ -4467,27 +5268,13 @@ function renderSecurityDeliveryTable(stocks) {
       shockHtml = `<span class="shock-badge surge">⚡ ${s.shockRatio}x</span>`;
     }
 
-    // Institutional Signal Badge
-    let sigHtml = `<span class="deliv-sig-pill unwind">Neutral</span>`;
-    if (s.signal === "STRONG_ACCUMULATION") {
-      sigHtml = `<span class="deliv-sig-pill acc">🟢 Accumulation</span>`;
-    } else if (s.signal === "HEAVY_DISTRIBUTION") {
-      sigHtml = `<span class="deliv-sig-pill dist">🔴 Distribution</span>`;
-    } else if (s.signal === "SHORT_COVERING") {
-      sigHtml = `<span class="deliv-sig-pill short-cover">🟡 Short Covering</span>`;
-    } else if (s.signal === "LONG_UNWINDING") {
-      sigHtml = `<span class="deliv-sig-pill unwind">⚪ Unwinding</span>`;
-    } else if (s.signal === "HIGH_DELIVERY") {
-      sigHtml = `<span class="deliv-sig-pill high-deliv">💎 High Deliv</span>`;
-    }
-
     return `
-      <tr onclick="inspectStock('${s.symbol}')" style="cursor:pointer;" title="Click to inspect ${s.symbol} delivery details">
-        <td><strong style="color:#0f172a; font-weight:800;">${s.symbol}</strong></td>
+      <tr onclick="inspectDeliveryStock('${s.symbol}')" style="cursor:pointer;" title="Click to inspect ${s.symbol} delivery details">
+        <td><strong style="color:var(--text-primary); font-weight:800;">${s.symbol}</strong></td>
         <td><strong>₹${s.close.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></td>
         <td style="color:${chgColor}; font-weight:700;">${chgPrefix}${s.changePct}%</td>
         <td>${s.tradedQty.toLocaleString("en-IN")}</td>
-        <td><strong>${s.delivQty.toLocaleString("en-IN")}</strong></td>
+        <td><strong style="color:#2563eb;">${s.delivQty.toLocaleString("en-IN")}</strong></td>
         <td>
           <div class="deliv-progress-wrap">
             <span style="font-weight:800; width:45px;">${s.delivPer}%</span>
@@ -4496,11 +5283,11 @@ function renderSecurityDeliveryTable(stocks) {
             </div>
           </div>
         </td>
-        <td style="color:var(--text-muted);">${s.avgDelivPer5D}%</td>
+        <td style="color:var(--text-muted); font-size:11px;">${s.avg5dQty ? Number(s.avg5dQty).toLocaleString("en-IN") : '--'}</td>
+        <td style="color:var(--text-muted); font-weight:700;">${s.avgDelivPer5D}%</td>
         <td>${shockHtml}</td>
         <td>₹${s.turnoverCr.toLocaleString("en-IN")} Cr</td>
         <td style="color:#16a34a; font-weight:800;">₹${s.delivTurnoverCr.toLocaleString("en-IN")} Cr</td>
-        <td>${sigHtml}</td>
         <td>
           <button type="button" class="drilldown-btn" onclick="event.stopPropagation(); openDeliveryDrilldown('${s.symbol}')">📅 History</button>
         </td>
@@ -4509,12 +5296,12 @@ function renderSecurityDeliveryTable(stocks) {
   }).join("");
 }
 
-async function inspectStock(symbol) {
+async function inspectDeliveryStock(symbol) {
   if (!symbol) return;
   const sym = symbol.trim().toUpperCase();
   try {
     if (els.delivStatusBadge) {
-      els.delivStatusBadge.textContent = `🔍 Fetching ${sym} NSE Security Delivery Data...`;
+      els.delivStatusBadge.textContent = `🔍 Fetching ${sym} NSE Delivery Data...`;
       els.delivStatusBadge.style.background = "#eff6ff";
       els.delivStatusBadge.style.color = "#1d4ed8";
     }
@@ -4526,22 +5313,51 @@ async function inspectStock(symbol) {
     });
     const data = await res.json();
     if (!data.ok || !data.current) {
-      alert(`No delivery bhavcopy data found for symbol "${sym}". Please ensure it is a valid NSE listed stock symbol.`);
+      alert(`No delivery bhavcopy data found for "${sym}". Please ensure it is a valid NSE listed stock or index name.`);
       return;
     }
 
     const cur = data.current;
+    const isIndex = !!data.isIndex;
+
     if (els.stockInspectorCard) {
       els.stockInspectorCard.style.display = "block";
       els.stockInspectorCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
     if (els.inspectSymbol) els.inspectSymbol.textContent = data.symbol;
-    if (els.inspectSubtitle) els.inspectSubtitle.textContent = `Official NSE Security-Wise Delivery Position as of ${cur.date || "Latest Session"}`;
-    if (els.inspectClose) els.inspectClose.textContent = `₹${Number(cur.close || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+
+    const badgeEl = document.getElementById("inspectBadge") || els.inspectBadge;
+    if (badgeEl) {
+      if (isIndex) {
+        badgeEl.textContent = `INDEX · ${data.constituentsCount || 50} STOCKS`;
+        badgeEl.style.background = "#ede9fe";
+        badgeEl.style.color = "#6d28d9";
+      } else {
+        badgeEl.textContent = "NSE EQ";
+        badgeEl.style.background = "#e0e7ff";
+        badgeEl.style.color = "#3730a3";
+      }
+    }
+
+    if (els.inspectSubtitle) {
+      els.inspectSubtitle.textContent = isIndex
+        ? `Official NSE Delivery Absorption (${data.constituentsCount || 50} Constituents Aggregated) as of ${cur.date || "Latest Session"}`
+        : `Official NSE Security-Wise Delivery Position as of ${cur.date || "Latest Session"}`;
+    }
+
+    if (els.inspectClose) {
+      els.inspectClose.textContent = isIndex
+        ? `${Number(cur.close || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} pts`
+        : `₹${Number(cur.close || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    }
+
     if (els.inspectChange) {
       const chg = cur.changePct || 0;
       const pts = cur.change || 0;
-      els.inspectChange.textContent = `${chg > 0 ? "+" : ""}${chg}% (${pts > 0 ? "+" : ""}₹${pts})`;
+      const prefix = pts > 0 ? "+" : "";
+      els.inspectChange.textContent = isIndex
+        ? `${chg > 0 ? "+" : ""}${chg}% (${prefix}${pts} pts)`
+        : `${chg > 0 ? "+" : ""}${chg}% (${prefix}₹${pts})`;
       els.inspectChange.style.color = chg > 0 ? "#10b981" : (chg < 0 ? "#ef4444" : "#64748b");
     }
     if (els.inspectTradedQty) els.inspectTradedQty.textContent = Number(cur.tradedQty || 0).toLocaleString("en-IN");
@@ -4552,28 +5368,110 @@ async function inspectStock(symbol) {
     if (els.inspectDelivVal) els.inspectDelivVal.textContent = `₹${Number(cur.delivTurnoverCr || 0).toLocaleString("en-IN")} Cr`;
     if (els.inspectShock) els.inspectShock.textContent = `Volume Shock: ${data.shockRatio}x`;
 
-    if (els.inspectSignalBadge) {
-      let sig = "NORMAL";
-      if (cur.changePct > 0.3 && cur.delivPer >= 50 && data.shockRatio >= 1.2) sig = "STRONG_ACCUMULATION";
-      else if (cur.changePct < -0.3 && cur.delivPer >= 50 && data.shockRatio >= 1.2) sig = "HEAVY_DISTRIBUTION";
-      else if (cur.delivPer >= 60) sig = "HIGH_DELIVERY";
-
-      els.inspectSignalBadge.textContent = sig.replace("_", " ");
-      els.inspectSignalBadge.className = `deliv-sig-pill ${sig === "STRONG_ACCUMULATION" ? "acc" : (sig === "HEAVY_DISTRIBUTION" ? "dist" : "high-deliv")}`;
-    }
-
     if (els.inspectViewHistoryBtn) {
       els.inspectViewHistoryBtn.onclick = () => openDeliveryDrilldown(data.symbol);
     }
 
     if (els.delivStatusBadge) {
-      els.delivStatusBadge.textContent = `🟢 Inspected ${sym}: ${cur.delivPer}% Deliveries Verified`;
+      els.delivStatusBadge.textContent = isIndex
+        ? `🟢 Inspected Index ${data.symbol}: ${cur.delivPer}% Delivery Absorption (${data.constituentsCount || 50} stocks)`
+        : `🟢 Inspected ${sym}: ${cur.delivPer}% Deliveries Verified`;
       els.delivStatusBadge.style.background = "#dcfce7";
       els.delivStatusBadge.style.color = "#15803d";
     }
   } catch (err) {
-    console.error("inspectStock error:", err);
+    console.error("inspectDeliveryStock error:", err);
   }
+}
+window.inspectDeliveryStock = inspectDeliveryStock;
+
+let drillSortBy = "date";
+let drillSortDir = "desc";
+let currentDrillHistory = [];
+let currentDrillIsIndex = false;
+
+function initDrilldownSortHeaders() {
+  const table = document.getElementById("drilldownTable");
+  if (!table) return;
+  const ths = table.querySelectorAll("thead th.drill-sortable");
+  ths.forEach(th => {
+    th.addEventListener("click", () => {
+      const col = th.dataset.sort;
+      if (!col) return;
+      if (drillSortBy === col) {
+        drillSortDir = drillSortDir === "desc" ? "asc" : "desc";
+      } else {
+        drillSortBy = col;
+        drillSortDir = "desc";
+      }
+      updateDrillSortIcons();
+      renderDrilldownRows();
+    });
+  });
+}
+
+function updateDrillSortIcons() {
+  const ths = document.querySelectorAll("#drilldownTable thead th.drill-sortable");
+  ths.forEach(th => {
+    const col = th.dataset.sort;
+    const iconSpan = th.querySelector(".sort-icon");
+    if (col === drillSortBy) {
+      th.classList.add("active-sort");
+      if (iconSpan) {
+        iconSpan.textContent = drillSortDir === "asc" ? "▲" : "▼";
+      }
+    } else {
+      th.classList.remove("active-sort");
+      if (iconSpan) {
+        iconSpan.textContent = "↕";
+      }
+    }
+  });
+}
+
+function renderDrilldownRows() {
+  const tbody = els.drilldownTableBody;
+  if (!tbody || !currentDrillHistory.length) return;
+  const isAsc = drillSortDir === "asc";
+  const list = currentDrillHistory.slice().sort((a, b) => {
+    if (drillSortBy === "date") {
+      const da = new Date(a.dateIso || a.date);
+      const db = new Date(b.dateIso || b.date);
+      return isAsc ? da - db : db - da;
+    }
+    const va = Number(a[drillSortBy]) || 0;
+    const vb = Number(b[drillSortBy]) || 0;
+    return isAsc ? va - vb : vb - va;
+  });
+
+  tbody.innerHTML = list.map(h => {
+    const chgColor = h.changePct > 0 ? "#10b981" : (h.changePct < 0 ? "#ef4444" : "var(--text-muted)");
+    const chgPrefix = h.changePct > 0 ? "+" : "";
+    const fillClass = h.delivPer >= 60 ? "high" : (h.delivPer >= 40 ? "med" : "low");
+    const closeFormatted = currentDrillIsIndex
+      ? `${Number(h.close || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} pts`
+      : `₹${Number(h.close || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+
+    return `
+      <tr>
+        <td><strong>${h.date}</strong></td>
+        <td style="text-align:right;">${closeFormatted}</td>
+        <td style="color:${chgColor}; font-weight:700; text-align:right;">${chgPrefix}${h.changePct}%</td>
+        <td style="text-align:right;">${Number(h.tradedQty || 0).toLocaleString("en-IN")}</td>
+        <td style="text-align:right;"><strong>${Number(h.delivQty || 0).toLocaleString("en-IN")}</strong></td>
+        <td>
+          <div class="deliv-progress-wrap">
+            <span style="font-weight:800; width:45px;">${h.delivPer}%</span>
+            <div class="deliv-progress-bar">
+              <div class="deliv-progress-fill ${fillClass}" style="width: ${Math.min(100, h.delivPer)}%;"></div>
+            </div>
+          </div>
+        </td>
+        <td style="color:#16a34a; font-weight:700; text-align:right;">₹${Number(h.delivTurnoverCr || 0).toLocaleString("en-IN")} Cr</td>
+        <td style="text-align:right;">${Number(h.trades || 0).toLocaleString("en-IN")}</td>
+      </tr>
+    `;
+  }).join("");
 }
 
 async function openDeliveryDrilldown(symbol) {
@@ -4594,37 +5492,20 @@ async function openDeliveryDrilldown(symbol) {
     const data = await res.json();
     if (!data.ok || !data.history) throw new Error("No historical delivery data found");
 
+    if (els.drilldownTitle) {
+      els.drilldownTitle.textContent = `${data.symbol || symbol} - Date-Wise Deliveries`;
+    }
+
     if (els.drilldownSubtitle) {
-      els.drilldownSubtitle.textContent = `Historical multi-session delivery position & Demat absorption across ${data.history.length} trading sessions`;
+      els.drilldownSubtitle.textContent = data.isIndex
+        ? `Historical delivery absorption across ${data.sessionCount || data.history.length} sessions (${data.constituentsCount || 50} Index Constituents Aggregated)`
+        : `Historical multi-session delivery position & Demat absorption across ${data.history.length} trading sessions`;
     }
 
-    if (els.drilldownTableBody) {
-      els.drilldownTableBody.innerHTML = data.history.map(h => {
-        const chgColor = h.changePct > 0 ? "#10b981" : (h.changePct < 0 ? "#ef4444" : "var(--text-muted)");
-        const chgPrefix = h.changePct > 0 ? "+" : "";
-        const fillClass = h.delivPer >= 60 ? "high" : (h.delivPer >= 40 ? "med" : "low");
-
-        return `
-          <tr>
-            <td><strong>${h.date}</strong></td>
-            <td>₹${h.close.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-            <td style="color:${chgColor}; font-weight:700;">${chgPrefix}${h.changePct}%</td>
-            <td>${h.tradedQty.toLocaleString("en-IN")}</td>
-            <td><strong>${h.delivQty.toLocaleString("en-IN")}</strong></td>
-            <td>
-              <div class="deliv-progress-wrap">
-                <span style="font-weight:800; width:45px;">${h.delivPer}%</span>
-                <div class="deliv-progress-bar">
-                  <div class="deliv-progress-fill ${fillClass}" style="width: ${Math.min(100, h.delivPer)}%;"></div>
-                </div>
-              </div>
-            </td>
-            <td style="color:#16a34a; font-weight:700;">₹${h.delivTurnoverCr.toLocaleString("en-IN")} Cr</td>
-            <td>${h.trades.toLocaleString("en-IN")}</td>
-          </tr>
-        `;
-      }).join("");
-    }
+    currentDrillHistory = data.history || [];
+    currentDrillIsIndex = !!data.isIndex;
+    updateDrillSortIcons();
+    renderDrilldownRows();
   } catch (err) {
     if (els.drilldownTableBody) {
       els.drilldownTableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#dc2626; padding:20px;">Failed to load history: ${err.message}</td></tr>`;
@@ -4660,7 +5541,7 @@ Object.defineProperty(window, 'mtfDataGlobal', {
 });
 
 // ── Sub-tab switcher ─────────────────────────────────────────────────────────
-function mtaSwitchTab(name) {
+function mtaSwitchTab(name, updateUrl = true) {
   mtaActiveSubTab = name;
   document.querySelectorAll('.mta-inner-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.subtab === name);
@@ -4669,6 +5550,11 @@ function mtaSwitchTab(name) {
     panel.classList.toggle('active', panel.id === `mtaPanel-${name}`);
   });
   // Lazy-render expensive tabs
+  if (name === 'overview' && mtaData) {
+    mtaRenderOverview(mtaData);
+    mtaRenderSparkline();
+  }
+  if (name === 'topstocks' && mtaData) mtaRenderStockTable(mtaData.stockScreener || []);
   if (name === 'trend' && mtaDailyTotals) mtaRenderTrendChart();
   if (name === 'retail' && mtaData) mtaRenderRetailTab(mtaData);
   if (name === 'movers' && mtaData) mtaRenderMoversTab(mtaData);
@@ -4677,7 +5563,21 @@ function mtaSwitchTab(name) {
   if (name === 'global' && mtaData) mtaRenderGlobalLens(mtaData);
   if (name === 'calculator') mtaInitCalculator();
   if (name === 'compare') mtaInitCompareDesk();
-  if (name === 'fragility' && mtaData) mtaRenderFragilityRadar(mtaData);
+
+  // Push clean SEO sub-route and update metadata
+  if (updateUrl && typeof history !== 'undefined' && history.pushState) {
+    const targetUrl = `/mtf/${name}`;
+    const routeMeta = (typeof ROUTE_CONFIG !== 'undefined' && ROUTE_CONFIG[targetUrl]) || {
+      title: `MTF ${name.charAt(0).toUpperCase() + name.slice(1)} | TradersDesk`,
+      desc: `Margin Trading Facility analytics for ${name}.`
+    };
+    if (window.location.pathname !== targetUrl) {
+      history.pushState({ desk: 'mtf', subview: name }, routeMeta.title, targetUrl);
+    }
+    if (typeof updateSeoMetadata === 'function') {
+      updateSeoMetadata(routeMeta.title, routeMeta.desc, targetUrl);
+    }
+  }
 }
 
 // ── Timeframe selector ───────────────────────────────────────────────────────
@@ -4703,6 +5603,7 @@ async function loadMtfData(options = {}) {
   const selectedDate  = options.date || (els.mtfSessionSelect ? els.mtfSessionSelect.value : '');
   const statusEl      = document.getElementById('mtaAsOfStatus');
 
+  let data = null;
   try {
     if (statusEl) statusEl.textContent = forceRefresh ? 'Syncing latest NSE file…' : 'Loading MTF data…';
     if (els.mtfRefreshBtn) {
@@ -4718,11 +5619,16 @@ async function loadMtfData(options = {}) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    const data = await resp.json();
+    data = await resp.json();
 
     if (data && data.ok) {
       mtaData = data;
+      if (data.dailyTotals && Array.isArray(data.dailyTotals)) {
+        mtaDailyTotals = data.dailyTotals;
+      }
       renderMtfDashboard(data); // keep this name for switchTab compat
+      mtaRenderSparkline();
+      if (mtaActiveSubTab === 'trend') mtaRenderTrendChart();
     } else {
       if (statusEl) statusEl.textContent = 'MTF Data Unavailable';
     }
@@ -4766,6 +5672,10 @@ function renderMtfDashboard(data) {
   const brokers        = data.brokers        || {};
   const screenerSummary= data.screenerSummary|| {};
 
+  if (data.dailyTotals && Array.isArray(data.dailyTotals)) {
+    mtaDailyTotals = data.dailyTotals;
+  }
+
   // ── Hero KPI Strip ────────────────────────────────────────────────────────
   if (summary.display) {
     if (els.mtfNseVal)      els.mtfNseVal.textContent      = summary.display.nse      || mtaCr(summary.bookCrore?.nse);
@@ -4807,14 +5717,15 @@ function renderMtfDashboard(data) {
   const statusEl = document.getElementById('mtaAsOfStatus');
   if (statusEl) {
     const formattedDate = formatMtfDate(data.stockScreenerAsOf || data.asOf || 'Latest');
-    statusEl.innerHTML = `<span style="color:#15803d;font-weight:700;">🟢 Latest NSE Disclosure: ${formattedDate}</span> <span style="color:#64748b;">(Official T+1 broker schedule • Monday 21 Sep due today EOD)</span>`;
+    statusEl.innerHTML = `<span style="color:#15803d;font-weight:700;">🟢 Latest NSE Disclosure: ${formattedDate}</span> <span style="color:#64748b;">(Official T+1 broker schedule)</span>`;
   }
-
 
   // ── Render each sub-panel ─────────────────────────────────────────────────
   mtaRenderOverview(data);
+  mtaRenderSparkline();
   mtaRenderStockTable(data.stockScreener || []);
   // Render active sub-tab specifics
+  if (mtaActiveSubTab === 'trend' && mtaDailyTotals) mtaRenderTrendChart();
   if (mtaActiveSubTab === 'broker')  mtaRenderBrokerDesk(data);
   if (mtaActiveSubTab === 'global')  mtaRenderGlobalLens(data);
   if (mtaActiveSubTab === 'retail')  mtaRenderRetailTab(data);
@@ -4822,23 +5733,31 @@ function renderMtfDashboard(data) {
   if (mtaActiveSubTab === 'sectors') mtaRenderSectorsTab(data);
   if (mtaActiveSubTab === 'calculator') mtaInitCalculator();
   if (mtaActiveSubTab === 'compare') mtaInitCompareDesk();
-  if (mtaActiveSubTab === 'fragility') mtaRenderFragilityRadar(data);
 }
 
 // ── Overview Tab ─────────────────────────────────────────────────────────────
 function mtaRenderOverview(data) {
-  const daily = data.dailyTotals || data.todayStats || {};
+  const dailyList = Array.isArray(data.dailyTotals) ? data.dailyTotals : [];
+  const daily = dailyList.length ? dailyList[dailyList.length - 1] : (data.todayStats || {});
+  const prevDaily = dailyList.length > 1 ? dailyList[dailyList.length - 2] : null;
+
+  let net = (Number(daily.fresh || daily.fresh_exposure || 0)) - (Number(daily.liquid || daily.exposure_squared || 0));
+  if (net === 0 && prevDaily) {
+    net = (Number(daily.nse || daily.combined || 0) - Number(prevDaily.nse || prevDaily.combined || 0));
+  }
+  const fresh = (daily.fresh || daily.fresh_exposure) ? (daily.fresh || daily.fresh_exposure) : (net > 0 ? net : 0);
+  const liquidated = (daily.liquid || daily.exposure_squared) ? (daily.liquid || daily.exposure_squared) : (net < 0 ? Math.abs(net) : 0);
+  const secCount = daily.securities || daily.securities_count || data.screenerSummary?.stockCount || (data.stockScreener ? data.stockScreener.length : 0);
 
   // Fresh exposure hero
   const freshEl = document.getElementById('mtaFreshExposure');
   if (freshEl) {
-    const fresh = daily.fresh_exposure || daily.freshExposure || daily.freshCrore;
-    freshEl.textContent = fresh != null ? mtaCr(fresh) : '—';
+    freshEl.textContent = fresh > 0 ? mtaCr(fresh) : (prevDaily ? (net >= 0 ? '+' : '-') + mtaCr(Math.abs(net)) : '—');
   }
 
   // Session date badge
   const dateBadge = document.getElementById('mtaSessionDateBadge');
-  if (dateBadge) dateBadge.textContent = formatMtfDate(data.stockScreenerAsOf || data.asOf || '—');
+  if (dateBadge) dateBadge.textContent = formatMtfDate(data.stockScreenerAsOf || data.asOf || daily.date || '—');
 
   // Session activity cards
   const fEl   = document.getElementById('mtaDtFresh');
@@ -4846,14 +5765,13 @@ function mtaRenderOverview(data) {
   const nEl   = document.getElementById('mtaDtNet');
   const sEl   = document.getElementById('mtaDtSecurities');
 
-  if (fEl) fEl.textContent = daily.fresh_exposure   != null ? mtaCr(daily.fresh_exposure)   : (daily.freshCrore  != null ? mtaCr(daily.freshCrore)  : '—');
-  if (lEl) lEl.textContent = daily.exposure_squared != null ? mtaCr(daily.exposure_squared) : (daily.liquidCrore != null ? mtaCr(daily.liquidCrore) : '—');
+  if (fEl) fEl.textContent = fresh > 0 ? mtaCr(fresh) : (net > 0 ? '+' + mtaCr(net) : '₹0 Cr');
+  if (lEl) lEl.textContent = liquidated > 0 ? mtaCr(liquidated) : (net < 0 ? mtaCr(Math.abs(net)) : '₹0 Cr');
   if (nEl) {
-    const net = (daily.fresh_exposure || daily.freshCrore || 0) - (daily.exposure_squared || daily.liquidCrore || 0);
-    nEl.textContent  = net !== 0 ? (net > 0 ? '+' : '') + mtaCr(net) : '—';
+    nEl.textContent  = net !== 0 ? (net > 0 ? '+' : '') + mtaCr(net) : '₹0 Cr';
     nEl.className    = 'mta-session-val ' + (net > 0 ? 'text-green' : net < 0 ? 'text-red' : '');
   }
-  if (sEl) sEl.textContent = daily.securities_count || daily.stockCount || (data.screenerSummary?.stockCount) || '—';
+  if (sEl) sEl.textContent = Number(secCount).toLocaleString('en-IN');
 
   // Top 10 table
   mtaRenderTop10(data.stockScreener || []);
@@ -4890,24 +5808,28 @@ function mtaRenderSparkline() {
   const bseVals= last30.map(d => Number(d.bse || d.bse_outstanding || 0));
   const dates  = last30.map(d => d.date || d.dt || '');
 
-  if (!vals.some(v => v > 0)) return;
+  const posVals = vals.filter(v => v > 0);
+  if (!posVals.length) return;
 
   const W = container.clientWidth || 400;
   const H = 120;
   const pad = { t: 10, r: 10, b: 24, l: 48 };
-  const minV = Math.min(...vals.filter(v=>v>0)) * 0.95;
+  const minV = Math.min(...posVals) * 0.95;
   const maxV = Math.max(...vals) * 1.02;
-  const bseMin = Math.min(...bseVals.filter(v=>v>0)) * 0.95 || 0;
-  const bseMax = Math.max(...bseVals) * 1.02 || 1;
 
-  const xScale = i => pad.l + (i / (vals.length - 1)) * (W - pad.l - pad.r);
-  const yScale = v => pad.t + (1 - (v - minV) / (maxV - minV)) * (H - pad.t - pad.b);
-  const yBse   = v => pad.t + (1 - (v - bseMin) / (bseMax - bseMin)) * (H - pad.t - pad.b);
+  const posBse = bseVals.filter(v => v > 0);
+  const hasBse = posBse.length > 0;
+  const bseMin = hasBse ? Math.min(...posBse) * 0.95 : 0;
+  const bseMax = hasBse ? Math.max(...bseVals) * 1.02 : 1;
 
-  const nsePath  = vals.map((v, i) => `${i===0?'M':'L'}${xScale(i)},${yScale(v)}`).join(' ');
-  const bsePath  = bseVals.map((v, i) => `${i===0?'M':'L'}${xScale(i)},${yBse(v)}`).join(' ');
-  const areaPath = vals.map((v, i) => `${i===0?'M':'L'}${xScale(i)},${yScale(v)}`).join(' ')
-    + ` L${xScale(vals.length-1)},${H-pad.b} L${pad.l},${H-pad.b} Z`;
+  const xScale = i => pad.l + (i / Math.max(1, vals.length - 1)) * (W - pad.l - pad.r);
+  const yScale = v => pad.t + (1 - (v - minV) / Math.max(1, maxV - minV)) * (H - pad.t - pad.b);
+  const yBse   = v => hasBse ? pad.t + (1 - (v - bseMin) / Math.max(1, bseMax - bseMin)) * (H - pad.t - pad.b) : (H - pad.b);
+
+  const nsePath  = vals.map((v, i) => `${i===0?'M':'L'}${xScale(i).toFixed(1)},${yScale(v).toFixed(1)}`).join(' ');
+  const bsePath  = hasBse ? bseVals.map((v, i) => `${i===0?'M':'L'}${xScale(i).toFixed(1)},${yBse(v).toFixed(1)}`).join(' ') : '';
+  const areaPath = vals.map((v, i) => `${i===0?'M':'L'}${xScale(i).toFixed(1)},${yScale(v).toFixed(1)}`).join(' ')
+    + ` L${xScale(vals.length-1).toFixed(1)},${H-pad.b} L${pad.l},${H-pad.b} Z`;
 
   // Date labels (first and last)
   const d0  = dates[0]  || '';
@@ -4921,39 +5843,133 @@ function mtaRenderSparkline() {
       </linearGradient>
     </defs>
     <path d="${areaPath}" fill="url(#nseGrad)"/>
-    <path d="${bsePath}" stroke="#16a34a" stroke-width="1.5" fill="none" stroke-dasharray="3,3" opacity="0.7"/>
+    ${hasBse ? `<path d="${bsePath}" stroke="#16a34a" stroke-width="1.5" fill="none" stroke-dasharray="3,3" opacity="0.7"/>` : ''}
     <path d="${nsePath}" stroke="#2563eb" stroke-width="2" fill="none"/>
-    <circle cx="${xScale(vals.length-1)}" cy="${yScale(vals[vals.length-1])}" r="3" fill="#2563eb"/>
+    <circle cx="${xScale(vals.length-1).toFixed(1)}" cy="${yScale(vals[vals.length-1]).toFixed(1)}" r="3" fill="#2563eb"/>
     <text x="${pad.l}" y="${H-6}" font-size="9" fill="#94a3b8">${d0}</text>
-    <text x="${xScale(vals.length-1)}" y="${H-6}" font-size="9" fill="#94a3b8" text-anchor="end">${dN}</text>
-    <text x="${pad.l - 4}" y="${yScale(vals[vals.length-1])}" font-size="9" fill="#2563eb" text-anchor="end">${Math.round(vals[vals.length-1]).toLocaleString('en-IN')}</text>
+    <text x="${xScale(vals.length-1).toFixed(1)}" y="${H-6}" font-size="9" fill="#94a3b8" text-anchor="end">${dN}</text>
+    <text x="${pad.l - 4}" y="${yScale(vals[vals.length-1]).toFixed(1)}" font-size="9" fill="#2563eb" text-anchor="end">${Math.round(vals[vals.length-1]).toLocaleString('en-IN')}</text>
   </svg>`;
+}
+
+let mtfSortCol = "amount";
+let mtfSortDir = "desc";
+let mtfActiveFilterPill = "all";
+
+function updateMtfSortIcons() {
+  const ths = document.querySelectorAll("#mtfStockTable thead th.mtf-sortable");
+  ths.forEach(th => {
+    const col = th.dataset.sort;
+    const iconSpan = th.querySelector(".sort-icon");
+    if (col === mtfSortCol) {
+      th.classList.add("active-sort");
+      if (iconSpan) iconSpan.textContent = mtfSortDir === "asc" ? "▲" : "▼";
+    } else {
+      th.classList.remove("active-sort");
+      if (iconSpan) iconSpan.textContent = "↕";
+    }
+  });
+
+  const sortSelect = document.getElementById("mtfStockSort") || (typeof els !== "undefined" && els.mtfStockSort);
+  if (sortSelect) {
+    if (mtfSortCol === "amount") sortSelect.value = "book";
+    else if (mtfSortCol === "share") sortSelect.value = "share";
+    else if (mtfSortCol === "quantity") sortSelect.value = "quantity";
+    else if (mtfSortCol === "symbol") sortSelect.value = "symbol";
+  }
+}
+
+function initMtfSortHeaders() {
+  const table = document.getElementById("mtfStockTable");
+  if (table) {
+    const ths = table.querySelectorAll("thead th.mtf-sortable");
+    ths.forEach(th => {
+      th.addEventListener("click", () => {
+        const col = th.dataset.sort;
+        if (!col) return;
+        if (mtfSortCol === col) {
+          mtfSortDir = mtfSortDir === "desc" ? "asc" : "desc";
+        } else {
+          mtfSortCol = col;
+          mtfSortDir = (col === "symbol" || col === "name") ? "asc" : "desc";
+        }
+        updateMtfSortIcons();
+        mtaRenderStockTable();
+      });
+    });
+  }
+
+  const pillsGroup = document.getElementById("mtfFilterPillsGroup");
+  if (pillsGroup) {
+    pillsGroup.addEventListener("click", (e) => {
+      const btn = e.target.closest(".filter-pill");
+      if (!btn) return;
+      pillsGroup.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      mtfActiveFilterPill = btn.dataset.mtfFilter || "all";
+      mtaRenderStockTable();
+    });
+  }
+
+  const sortSelect = document.getElementById("mtfStockSort") || (typeof els !== "undefined" && els.mtfStockSort);
+  if (sortSelect) {
+    sortSelect.addEventListener("change", () => {
+      const val = sortSelect.value;
+      mtfSortCol = val === "book" ? "amount" : val;
+      mtfSortDir = (mtfSortCol === "symbol" || mtfSortCol === "name") ? "asc" : "desc";
+      updateMtfSortIcons();
+      mtaRenderStockTable();
+    });
+  }
 }
 
 // ── Stock Table (Top Stocks tab + backward compat renderMtfStockTable) ────────
 function mtaRenderStockTable(stocks, forceFilter) {
-  const tbody     = document.getElementById('mtfStockTableBody');
+  const tbody = document.getElementById('mtfStockTableBody') || (typeof els !== "undefined" && els.mtfStockTableBody);
   if (!tbody) return;
-  const filterMode= forceFilter || (els.mtfStockFilter ? els.mtfStockFilter.value : 'all');
-  const searchQ   = (els.mtfStockSearch ? els.mtfStockSearch.value : '').trim().toUpperCase();
-  const sortMode  = els.mtfStockSort   ? els.mtfStockSort.value   : 'book';
+  const filterSelect = document.getElementById('mtfStockFilter') || (typeof els !== "undefined" && els.mtfStockFilter);
+  const searchInput  = document.getElementById('mtfStockSearch') || (typeof els !== "undefined" && els.mtfStockSearch);
+  const filterMode   = forceFilter || (filterSelect ? filterSelect.value : 'all');
+  const searchQ      = (searchInput ? searchInput.value : '').trim().toUpperCase();
 
-  let list = [...(stocks || mtaData?.stockScreener || [])];
+  const src = (Array.isArray(stocks) && stocks.length > 0) ? stocks : (mtaData?.stockScreener || []);
+  let list = [...src];
 
-  if (filterMode === 'fno')   list = list.filter(s => s.isFnO);
-  else if (filterMode === 'top50') list = list.slice(0, 50);
+  // Quick Filter Pills
+  if (mtfActiveFilterPill === 'leaders') list = list.filter(s => (s.amtFinancedCrore || 0) >= 500);
+  else if (mtfActiveFilterPill === 'fno') list = list.filter(s => s.isFnO);
+  else if (mtfActiveFilterPill === 'cash') list = list.filter(s => !s.isFnO);
+  else if (mtfActiveFilterPill === 'high_share') list = list.filter(s => (s.sharePct || 0) >= 1.0);
+  else if (mtfActiveFilterPill === 'heavy_risk') list = list.filter(s => (s.amtFinancedCrore || 0) >= 500);
+
+  // Dropdown filter fallback
+  if (filterMode === 'fno' && mtfActiveFilterPill === 'all')        list = list.filter(s => s.isFnO);
+  else if (filterMode === 'nse' && mtfActiveFilterPill === 'all')    list = list.filter(s => !s.exchange || s.exchange.toUpperCase() === 'NSE');
+  else if (filterMode === 'bse' && mtfActiveFilterPill === 'all')    list = list.filter(s => s.exchange && s.exchange.toUpperCase() === 'BSE');
+  else if (filterMode === 'top50' && mtfActiveFilterPill === 'all')  list = list.slice(0, 50);
 
   if (searchQ) list = list.filter(s => (s.symbol||'').toUpperCase().includes(searchQ) || (s.name||'').toUpperCase().includes(searchQ));
 
-  if (sortMode === 'quantity') list.sort((a, b) => (b.qtyFinanced||0) - (a.qtyFinanced||0));
-  else if (sortMode === 'symbol') list.sort((a, b) => String(a.symbol||'').localeCompare(String(b.symbol||'')));
-  else if (sortMode === 'share') list.sort((a, b) => (b.sharePct||0) - (a.sharePct||0));
-  else list.sort((a, b) => (b.amtFinancedCrore||0) - (a.amtFinancedCrore||0));
+  // Dynamic Column Sort
+  const isAsc = mtfSortDir === 'asc';
+  if (mtfSortCol === 'quantity') list.sort((a, b) => isAsc ? (a.qtyFinanced||0) - (b.qtyFinanced||0) : (b.qtyFinanced||0) - (a.qtyFinanced||0));
+  else if (mtfSortCol === 'symbol') list.sort((a, b) => isAsc ? String(a.symbol||'').localeCompare(String(b.symbol||'')) : String(b.symbol||'').localeCompare(String(a.symbol||'')));
+  else if (mtfSortCol === 'name') list.sort((a, b) => isAsc ? String(a.name||'').localeCompare(String(b.name||'')) : String(b.name||'').localeCompare(String(a.name||'')));
+  else if (mtfSortCol === 'share') list.sort((a, b) => isAsc ? (a.sharePct||0) - (b.sharePct||0) : (b.sharePct||0) - (a.sharePct||0));
+  else list.sort((a, b) => isAsc ? (a.amtFinancedCrore||0) - (b.amtFinancedCrore||0) : (b.amtFinancedCrore||0) - (a.amtFinancedCrore||0));
 
   const badge = document.getElementById('mtfStockCountBadge');
-  if (badge) badge.textContent = `${list.length} Stocks`;
+  if (badge) {
+    const totalCount = (mtaData?.stockScreener || []).length;
+    badge.textContent = `Showing ${list.length} of ${totalCount} Stocks`;
+  }
 
   const totalBook = list.reduce((s, x) => s + (x.amtFinancedCrore||0), 0);
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">No stocks matching selected criteria.</td></tr>';
+    return;
+  }
 
   tbody.innerHTML = list.slice(0, 500).map((s, i) => {
     const isHeavy  = s.amtFinancedCrore >= 500;
@@ -4986,7 +6002,8 @@ function mtaRenderStockTable(stocks, forceFilter) {
 
 // Backward-compat alias expected by external callers
 function renderMtfStockTable() {
-  if (!mtaData || !mtaData.stockScreener || !els.mtfStockTableBody) return;
+  const tbody = document.getElementById('mtfStockTableBody') || (typeof els !== "undefined" && els.mtfStockTableBody);
+  if (!tbody || !mtaData || !mtaData.stockScreener) return;
   mtaRenderStockTable(mtaData.stockScreener);
 }
 
@@ -5403,32 +6420,36 @@ function mtaRenderTrendChart() {
   const primColor  = showFreshLiq ? '#2563eb' : '#2563eb';
   const secColor   = showFreshLiq ? '#dc2626' : '#16a34a';
 
+  const posPrimary = usePrimary.filter(v => v > 0);
+  const posSecond  = useSecond.filter(v => v > 0);
+  const hasSecond  = posSecond.length > 0;
+
   let minP, maxP, minS, maxS;
   if (showFreshLiq) {
     // Both on same scale for accurate direct comparison
     const combinedFlows = [...freshV, ...liquV].filter(v => v > 0);
-    minP = minS = Math.min(...combinedFlows, 0) * 0.95;
-    maxP = maxS = Math.max(...combinedFlows, 1) * 1.05;
+    minP = minS = combinedFlows.length ? Math.min(...combinedFlows, 0) * 0.95 : 0;
+    maxP = maxS = combinedFlows.length ? Math.max(...combinedFlows, 1) * 1.05 : 100;
   } else {
-    minP = Math.min(...usePrimary.filter(v => v > 0)) * 0.98;
-    maxP = Math.max(...usePrimary) * 1.02;
-    minS = Math.min(...useSecond.filter(v => v > 0)) * 0.98 || 0;
-    maxS = Math.max(...useSecond) * 1.02 || 1;
+    minP = posPrimary.length ? Math.min(...posPrimary) * 0.98 : 0;
+    maxP = posPrimary.length ? Math.max(...usePrimary) * 1.02 : 100;
+    minS = hasSecond ? Math.min(...posSecond) * 0.98 : 0;
+    maxS = hasSecond ? Math.max(...useSecond) * 1.02 : 1;
   }
 
   const n  = usePrimary.length;
   const xS = i => pad.l + (i / Math.max(n - 1, 1)) * iW;
   const yP = v => pad.t + (1 - (v - minP) / Math.max(0.001, maxP - minP)) * iH;
-  const yS = v => pad.t + (1 - (v - minS) / Math.max(0.001, maxS - minS)) * iH;
+  const yS = v => hasSecond ? (pad.t + (1 - (v - minS) / Math.max(0.001, maxS - minS)) * iH) : (pad.t + iH);
 
   // Store for crosshair interaction
   mtaCurrentChartData = {
-    pad, iW, iH, W, H, n, filtered, dates, usePrimary, useSecond, yP, yS, minP, maxP, minS, maxS, showFreshLiq
+    pad, iW, iH, W, H, n, filtered, dates, usePrimary, useSecond, yP, yS, minP, maxP, minS, maxS, showFreshLiq, hasSecond
   };
 
   // SVG Paths
   const primPath = usePrimary.map((v, i) => `${i === 0 ? 'M' : 'L'}${xS(i).toFixed(1)},${yP(v).toFixed(1)}`).join(' ');
-  const secPath  = useSecond.map((v, i) => `${i === 0 ? 'M' : 'L'}${xS(i).toFixed(1)},${yS(v).toFixed(1)}`).join(' ');
+  const secPath  = (hasSecond || showFreshLiq) ? useSecond.map((v, i) => `${i === 0 ? 'M' : 'L'}${xS(i).toFixed(1)},${yS(v).toFixed(1)}`).join(' ') : '';
   const areaPath = usePrimary.map((v, i) => `${i === 0 ? 'M' : 'L'}${xS(i).toFixed(1)},${yP(v).toFixed(1)}`).join(' ')
     + ` L${xS(n - 1).toFixed(1)},${pad.t + iH} L${pad.l},${pad.t + iH} Z`;
 
@@ -5437,10 +6458,10 @@ function mtaRenderTrendChart() {
   for (let t = 0; t <= 4; t++) {
     const yPos = pad.t + (t / 4) * iH;
     const vP   = maxP - (t / 4) * (maxP - minP);
-    const vS   = maxS - (t / 4) * (maxS - minS);
+    const vS   = hasSecond ? (maxS - (t / 4) * (maxS - minS)) : 0;
     gridLines += `<line x1="${pad.l}" y1="${yPos.toFixed(1)}" x2="${W - pad.r}" y2="${yPos.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`;
     yLabels   += `<text x="${pad.l - 8}" y="${(yPos + 4).toFixed(1)}" font-size="10" font-weight="700" fill="#2563eb" text-anchor="end" font-family="'JetBrains Mono',monospace">${mtaFmtAxisVal(vP)}</text>`;
-    if (!showFreshLiq) {
+    if (!showFreshLiq && hasSecond) {
       yLabelsR += `<text x="${W - pad.r + 8}" y="${(yPos + 4).toFixed(1)}" font-size="10" font-weight="700" fill="#16a34a" text-anchor="start" font-family="'JetBrains Mono',monospace">${mtaFmtAxisVal(vS)}</text>`;
     }
   }
@@ -5478,7 +6499,7 @@ function mtaRenderTrendChart() {
 
     <!-- Series Paths -->
     <path d="${areaPath}" fill="url(#trendGrad)" clip-path="url(#chartClip)"/>
-    <path d="${secPath}" stroke="${secColor}" stroke-width="1.8" fill="none" stroke-dasharray="${showFreshLiq ? 'none' : '4,3'}" opacity="0.85" clip-path="url(#chartClip)"/>
+    ${(hasSecond || showFreshLiq) ? `<path d="${secPath}" stroke="${secColor}" stroke-width="1.8" fill="none" stroke-dasharray="${showFreshLiq ? 'none' : '4,3'}" opacity="0.85" clip-path="url(#chartClip)"/>` : ''}
     <path d="${primPath}" stroke="${primColor}" stroke-width="2.5" fill="none" clip-path="url(#chartClip)"/>
 
     <!-- Axis Labels -->
@@ -5499,6 +6520,10 @@ function mtaRenderTrendChart() {
       <g id="mtaCrossYBadge" style="display:none;">
         <rect id="mtaCrossYRect" x="${pad.l - 76}" width="72" height="18" fill="#2563eb" rx="4"/>
         <text id="mtaCrossYText" x="${pad.l - 6}" fill="#ffffff" font-size="9.5" font-weight="700" text-anchor="end" font-family="'JetBrains Mono',monospace"></text>
+      </g>
+      <g id="mtaCrossYBadgeR" style="display:none;">
+        <rect id="mtaCrossYRectR" x="${W - pad.r + 4}" width="72" height="18" fill="${secColor}" rx="4"/>
+        <text id="mtaCrossYTextR" x="${W - pad.r + 8}" fill="#ffffff" font-size="9.5" font-weight="700" text-anchor="start" font-family="'JetBrains Mono',monospace"></text>
       </g>
     </g>
 
@@ -5522,13 +6547,13 @@ function mtaHandleChartMouseMove(e) {
   const mx   = e.clientX - rect.left;
   const my   = e.clientY - rect.top;
 
-  const curXInPlot = mx - d.pad.l;
-  if (curXInPlot < 0 || curXInPlot > d.iW) {
+  // The overlay rect already starts at x=pad.l and y=pad.t, so mx is in [0, iW]
+  if (mx < 0 || mx > d.iW) {
     mtaHandleChartMouseLeave();
     return;
   }
 
-  const frac = Math.max(0, Math.min(1, curXInPlot / d.iW));
+  const frac = Math.max(0, Math.min(1, mx / Math.max(d.iW, 1)));
   const idx  = Math.round(frac * (d.n - 1));
   const item = d.filtered[idx];
   if (!item) return;
@@ -5540,14 +6565,38 @@ function mtaHandleChartMouseMove(e) {
   // Update Crosshair X & Y
   const lineX = document.getElementById('mtaCrosshairX');
   const lineY = document.getElementById('mtaCrosshairY');
-  if (lineX) { lineX.setAttribute('x1', curX); lineX.setAttribute('x2', curX); lineX.style.display = 'block'; }
-  if (lineY) { lineY.setAttribute('y1', my); lineY.setAttribute('y2', my); lineY.style.display = 'block'; }
+  if (lineX) {
+    lineX.setAttribute('x1', curX);
+    lineX.setAttribute('x2', curX);
+    lineX.setAttribute('y1', d.pad.t);
+    lineX.setAttribute('y2', d.pad.t + d.iH);
+    lineX.style.display = 'block';
+  }
+  if (lineY) {
+    lineY.setAttribute('x1', d.pad.l);
+    lineY.setAttribute('x2', d.W - d.pad.r);
+    lineY.setAttribute('y1', curY_P);
+    lineY.setAttribute('y2', curY_P);
+    lineY.style.display = 'block';
+  }
 
   // Update Halo Dots
   const dotP = document.getElementById('mtaCrossDotP');
   const dotS = document.getElementById('mtaCrossDotS');
-  if (dotP) { dotP.setAttribute('cx', curX); dotP.setAttribute('cy', curY_P); dotP.style.display = 'block'; }
-  if (dotS) { dotS.setAttribute('cx', curX); dotS.setAttribute('cy', curY_S); dotS.style.display = 'block'; }
+  if (dotP) {
+    dotP.setAttribute('cx', curX);
+    dotP.setAttribute('cy', curY_P);
+    dotP.style.display = 'block';
+  }
+  if (dotS) {
+    if (d.hasSecond || d.showFreshLiq) {
+      dotS.setAttribute('cx', curX);
+      dotS.setAttribute('cy', curY_S);
+      dotS.style.display = 'block';
+    } else {
+      dotS.style.display = 'none';
+    }
+  }
 
   // Update X Axis Floating Badge
   const badgeX = document.getElementById('mtaCrossXBadge');
@@ -5555,14 +6604,14 @@ function mtaHandleChartMouseMove(e) {
   const rectX  = document.getElementById('mtaCrossXRect');
   if (badgeX && textX && rectX) {
     textX.textContent = formatMtfDate(item.date);
-    const tw = 76;
+    const tw = 86;
     rectX.setAttribute('x', Math.max(d.pad.l, Math.min(curX - tw / 2, d.W - d.pad.r - tw)));
     rectX.setAttribute('width', tw);
     textX.setAttribute('x', Math.max(d.pad.l + tw / 2, Math.min(curX, d.W - d.pad.r - tw / 2)));
     badgeX.style.display = 'block';
   }
 
-  // Update Y Axis Floating Badge
+  // Update Y Axis Floating Badge (Left)
   const badgeY = document.getElementById('mtaCrossYBadge');
   const textY  = document.getElementById('mtaCrossYText');
   const rectY  = document.getElementById('mtaCrossYRect');
@@ -5573,14 +6622,30 @@ function mtaHandleChartMouseMove(e) {
     badgeY.style.display = 'block';
   }
 
+  // Update Y Axis Floating Badge (Right, if secondary series visible)
+  const badgeYR = document.getElementById('mtaCrossYBadgeR');
+  const textYR  = document.getElementById('mtaCrossYTextR');
+  const rectYR  = document.getElementById('mtaCrossYRectR');
+  if (badgeYR && textYR && rectYR) {
+    if ((d.hasSecond || d.showFreshLiq) && d.useSecond && d.useSecond[idx] !== undefined) {
+      textYR.textContent = mtaFmtAxisVal(d.useSecond[idx]);
+      rectYR.setAttribute('y', curY_S - 9);
+      textYR.setAttribute('y', curY_S + 4);
+      badgeYR.style.display = 'block';
+    } else {
+      badgeYR.style.display = 'none';
+    }
+  }
+
   // Update Floating Tooltip Box
   const tip = document.getElementById('mtaChartTooltip');
   if (tip) {
     tip.style.display = 'block';
     const tipW = 240;
-    const leftPos = (mx + 20 + tipW > d.W) ? (mx - tipW - 16) : (mx + 20);
+    // Position relative to chart container: curX is already in SVG/container pixel space
+    const leftPos = (curX + 18 + tipW > d.W) ? (curX - tipW - 14) : (curX + 18);
     tip.style.left = `${Math.max(12, leftPos)}px`;
-    tip.style.top  = `${Math.max(10, Math.min(my - 30, d.H - 180))}px`;
+    tip.style.top  = `${Math.max(10, Math.min(curY_P - 40, d.H - 180))}px`;
 
     const netChange = (item.fresh || 0) - (item.liquid || 0);
     const isPos     = netChange >= 0;
@@ -5617,7 +6682,7 @@ function mtaHandleChartMouseMove(e) {
 }
 
 function mtaHandleChartMouseLeave() {
-  const ids = ['mtaCrosshairX', 'mtaCrosshairY', 'mtaCrossDotP', 'mtaCrossDotS', 'mtaCrossXBadge', 'mtaCrossYBadge', 'mtaChartTooltip'];
+  const ids = ['mtaCrosshairX', 'mtaCrosshairY', 'mtaCrossDotP', 'mtaCrossDotS', 'mtaCrossXBadge', 'mtaCrossYBadge', 'mtaCrossYBadgeR', 'mtaChartTooltip'];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
@@ -5983,7 +7048,7 @@ function mtaRenderStockTrendChart(records, container) {
   if (!container || !records || !records.length) return;
   const W = container.clientWidth || 660;
   const H = 160;
-  const pad = { t: 16, r: 20, b: 24, l: 50 };
+  const pad = { t: 16, r: 20, b: 24, l: 52 };
 
   const vals = records.map(r => r.amtFinancedCrore || 0);
   const minV = Math.min(...vals) * 0.96;
@@ -5994,42 +7059,122 @@ function mtaRenderStockTrendChart(records, container) {
   const xFor = i => pad.l + (i / Math.max(n - 1, 1)) * (W - pad.l - pad.r);
   const yFor = v => pad.t + (1 - (v - minV) / range) * (H - pad.t - pad.b);
 
-  const linePath = records.map((r, i) => `${i === 0 ? 'M' : 'L'}${xFor(i)},${yFor(r.amtFinancedCrore)}`).join(' ');
-  const areaPath = linePath + ` L${xFor(n - 1)},${H - pad.b} L${pad.l},${H - pad.b} Z`;
+  const linePath = records.map((r, i) => `${i === 0 ? 'M' : 'L'}${xFor(i).toFixed(1)},${yFor(r.amtFinancedCrore).toFixed(1)}`).join(' ');
+  const areaPath = linePath + ` L${xFor(n - 1).toFixed(1)},${H - pad.b} L${pad.l},${H - pad.b} Z`;
 
   const circles = records.map((r, i) => {
-    const cx = xFor(i);
-    const cy = yFor(r.amtFinancedCrore);
-    return `<circle cx="${cx}" cy="${cy}" r="3.5" fill="#2563eb" stroke="#ffffff" stroke-width="1.5">
-      <title>${r.dateFormatted}: ₹${r.amtFinancedCrore.toFixed(1)} Cr</title>
-    </circle>`;
+    const cx = xFor(i).toFixed(1);
+    const cy = yFor(r.amtFinancedCrore).toFixed(1);
+    return `<circle cx="${cx}" cy="${cy}" r="3" fill="#2563eb" stroke="#ffffff" stroke-width="1.5"></circle>`;
   }).join('');
 
-  container.innerHTML = `<svg width="${W}" height="${H}" style="display:block;overflow:visible;">
-    <defs>
-      <linearGradient id="mtaModalStockGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#2563eb" stop-opacity="0.28"/>
-        <stop offset="100%" stop-color="#2563eb" stop-opacity="0.02"/>
-      </linearGradient>
-    </defs>
-    <!-- Background Grid Lines -->
-    <line x1="${pad.l}" y1="${yFor(maxV)}" x2="${W - pad.r}" y2="${yFor(maxV)}" stroke="#f1f5f9" stroke-width="1"/>
-    <line x1="${pad.l}" y1="${yFor(minV)}" x2="${W - pad.r}" y2="${yFor(minV)}" stroke="#f1f5f9" stroke-width="1"/>
-    <line x1="${pad.l}" y1="${H - pad.b}" x2="${W - pad.r}" y2="${H - pad.b}" stroke="#cbd5e1" stroke-width="1"/>
+  container.innerHTML = `
+    <div style="position:relative;width:100%;height:${H}px;user-select:none;">
+      <svg width="${W}" height="${H}" style="display:block;overflow:visible;cursor:crosshair;">
+        <defs>
+          <linearGradient id="mtaModalStockGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2563eb" stop-opacity="0.28"/>
+            <stop offset="100%" stop-color="#2563eb" stop-opacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <!-- Background Grid Lines -->
+        <line x1="${pad.l}" y1="${yFor(maxV).toFixed(1)}" x2="${W - pad.r}" y2="${yFor(maxV).toFixed(1)}" stroke="#f1f5f9" stroke-width="1"/>
+        <line x1="${pad.l}" y1="${yFor(minV).toFixed(1)}" x2="${W - pad.r}" y2="${yFor(minV).toFixed(1)}" stroke="#f1f5f9" stroke-width="1"/>
+        <line x1="${pad.l}" y1="${H - pad.b}" x2="${W - pad.r}" y2="${H - pad.b}" stroke="#cbd5e1" stroke-width="1"/>
 
-    <!-- Fill Area -->
-    <path d="${areaPath}" fill="url(#mtaModalStockGrad)"/>
-    <!-- Line -->
-    <path d="${linePath}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <!-- Session Dots -->
-    ${circles}
+        <!-- Fill Area -->
+        <path d="${areaPath}" fill="url(#mtaModalStockGrad)"/>
+        <!-- Line -->
+        <path d="${linePath}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Session Dots -->
+        ${circles}
 
-    <!-- Labels -->
-    <text x="${pad.l}" y="${H - 6}" font-size="9.5" fill="#64748b">${records[0].dateFormatted || records[0].date}</text>
-    <text x="${xFor(n - 1)}" y="${H - 6}" font-size="9.5" fill="#64748b" text-anchor="end">${records[n - 1].dateFormatted || records[n - 1].date}</text>
-    <text x="${pad.l - 6}" y="${yFor(maxV) + 3}" font-size="9" fill="#2563eb" text-anchor="end" font-family="'JetBrains Mono', monospace">₹${Math.round(maxV)} Cr</text>
-    <text x="${pad.l - 6}" y="${yFor(minV) + 3}" font-size="9" fill="#64748b" text-anchor="end" font-family="'JetBrains Mono', monospace">₹${Math.round(minV)} Cr</text>
-  </svg>`;
+        <!-- Interactive Crosshair Elements -->
+        <line id="mtaStockCrosshairLine" x1="0" y1="${pad.t}" x2="0" y2="${H - pad.b}" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>
+        <circle id="mtaStockCrosshairDot" cx="0" cy="0" r="5" fill="#2563eb" stroke="#ffffff" stroke-width="2" opacity="0" pointer-events="none"/>
+
+        <!-- Labels -->
+        <text x="${pad.l}" y="${H - 6}" font-size="9.5" fill="#64748b">${records[0].dateFormatted || records[0].date}</text>
+        <text x="${xFor(n - 1).toFixed(1)}" y="${H - 6}" font-size="9.5" fill="#64748b" text-anchor="end">${records[n - 1].dateFormatted || records[n - 1].date}</text>
+        <text x="${pad.l - 6}" y="${yFor(maxV) + 3}" font-size="9" fill="#2563eb" text-anchor="end" font-family="'JetBrains Mono', monospace">₹${Math.round(maxV)} Cr</text>
+        <text x="${pad.l - 6}" y="${yFor(minV) + 3}" font-size="9" fill="#64748b" text-anchor="end" font-family="'JetBrains Mono', monospace">₹${Math.round(minV)} Cr</text>
+
+        <!-- Transparent Overlay for Pointer Events -->
+        <rect id="mtaStockCrossOverlay" x="${pad.l}" y="${pad.t}" width="${W - pad.l - pad.r}" height="${H - pad.t - pad.b}" fill="transparent" style="cursor:crosshair;"/>
+      </svg>
+      <div id="mtaStockCrosshairTooltip" style="display:none;position:absolute;pointer-events:none;background:rgba(15,23,42,0.94);backdrop-filter:blur(8px);color:#f8fafc;padding:7px 11px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;box-shadow:0 10px 25px rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);z-index:30;white-space:nowrap;line-height:1.45;"></div>
+    </div>
+  `;
+
+  // Attach interactive crosshair tracker
+  const overlay = container.querySelector('#mtaStockCrossOverlay');
+  const crossLine = container.querySelector('#mtaStockCrosshairLine');
+  const crossDot = container.querySelector('#mtaStockCrosshairDot');
+  const tooltip = container.querySelector('#mtaStockCrosshairTooltip');
+
+  if (!overlay || !crossLine || !crossDot || !tooltip) return;
+
+  function handlePointer(clientX) {
+    const rect = overlay.getBoundingClientRect();
+    const relX = clientX - rect.left;
+    const chartW = W - pad.l - pad.r;
+    if (chartW <= 0) return;
+    const ratio = Math.max(0, Math.min(1, relX / chartW));
+    const idx = Math.min(Math.max(0, Math.round(ratio * (n - 1))), n - 1);
+    const rec = records[idx];
+    if (!rec) return;
+
+    const cx = xFor(idx);
+    const cy = yFor(rec.amtFinancedCrore);
+
+    crossLine.setAttribute('x1', cx);
+    crossLine.setAttribute('x2', cx);
+    crossLine.setAttribute('opacity', '1');
+
+    crossDot.setAttribute('cx', cx);
+    crossDot.setAttribute('cy', cy);
+    crossDot.setAttribute('opacity', '1');
+
+    let deltaHtml = '';
+    if (idx > 0) {
+      const prev = records[idx - 1];
+      const dCr = (rec.amtFinancedCrore || 0) - (prev.amtFinancedCrore || 0);
+      const dPct = prev.amtFinancedCrore ? (dCr / prev.amtFinancedCrore) * 100 : 0;
+      const col = dCr >= 0 ? '#10b981' : '#ef4444';
+      const sign = dCr >= 0 ? '+' : '';
+      deltaHtml = `<div style="font-size:10px;color:${col};font-weight:700;">Delta: ${sign}₹${dCr.toFixed(1)} Cr (${sign}${dPct.toFixed(1)}%)</div>`;
+    }
+
+    tooltip.innerHTML = `
+      <div style="color:#94a3b8;font-size:10px;margin-bottom:2px;">📅 ${rec.dateFormatted || rec.date}</div>
+      <div style="font-size:12px;font-weight:800;color:#60a5fa;">MTF Book: ₹${(rec.amtFinancedCrore || 0).toFixed(1)} Cr</div>
+      ${rec.qtyFinanced ? `<div style="font-size:10.5px;color:#cbd5e1;">Financed Qty: ${Number(rec.qtyFinanced).toLocaleString('en-IN')}</div>` : ''}
+      ${deltaHtml}
+    `;
+
+    tooltip.style.display = 'block';
+    const tipW = 165;
+    let tipLeft = cx + 12;
+    if (tipLeft + tipW > W) tipLeft = cx - tipW - 12;
+    tooltip.style.left = `${Math.max(6, tipLeft)}px`;
+    tooltip.style.top = `${Math.max(4, Math.min(H - 65, cy - 35))}px`;
+  }
+
+  function hideCrosshair() {
+    crossLine.setAttribute('opacity', '0');
+    crossDot.setAttribute('opacity', '0');
+    tooltip.style.display = 'none';
+  }
+
+  overlay.addEventListener('mousemove', e => handlePointer(e.clientX));
+  overlay.addEventListener('mouseleave', hideCrosshair);
+  overlay.addEventListener('touchstart', e => {
+    if (e.touches && e.touches[0]) handlePointer(e.touches[0].clientX);
+  }, { passive: true });
+  overlay.addEventListener('touchmove', e => {
+    if (e.touches && e.touches[0]) handlePointer(e.touches[0].clientX);
+  }, { passive: true });
+  overlay.addEventListener('touchend', hideCrosshair);
 }
 
 function mtaCloseStockModal() {
@@ -6044,9 +7189,33 @@ function mtaJumpToDesk(desk) {
   mtaCloseStockModal();
 
   if (desk === 'options') {
-    switchTab('options');
+    // Open Option Chain Pro and auto-focus this security
+    if (typeof instNav === 'function') {
+      instNav('upstoxChain');
+    } else {
+      switchTab('upstoxChain');
+    }
+
+    const cleanSym = String(sym).trim().toUpperCase();
+    const upstoxKey = (cleanSym.startsWith('NSE_EQ|') || cleanSym.startsWith('NSE_INDEX|') || cleanSym.startsWith('BSE_INDEX|'))
+      ? cleanSym
+      : `NSE_EQ|${cleanSym}`;
+
+    if (window.upstoxOptionChain && typeof window.upstoxOptionChain.setInstrument === 'function') {
+      window.upstoxOptionChain.setInstrument(upstoxKey);
+    } else {
+      setTimeout(() => {
+        if (window.upstoxOptionChain && typeof window.upstoxOptionChain.setInstrument === 'function') {
+          window.upstoxOptionChain.setInstrument(upstoxKey);
+        }
+      }, 180);
+    }
   } else if (desk === 'delivery') {
-    switchTab('delivery');
+    if (typeof instNav === 'function') {
+      instNav('delivery');
+    } else {
+      switchTab('delivery');
+    }
     const delivSearch = document.getElementById('delivSearchInput');
     if (delivSearch) {
       delivSearch.value = sym;
@@ -6130,6 +7299,17 @@ function mtaAutoSyncDates(latestIso) {
    🧮 MTF MARGIN & CARRYING COST CALCULATOR
    ========================================================================== */
 let mtaCalcStockOptionsPopulated = false;
+let mtaCustomSymbolTimer = null;
+let mtaCurrentCalcQuote = null;
+
+function mtaFormatCurrencyWords(num) {
+  const n = Math.round(Number(num) || 0);
+  const formatted = '₹' + n.toLocaleString('en-IN');
+  if (n >= 10000000) return `${formatted} (${(n / 10000000).toFixed(2).replace(/\.00$/, '')} Crore)`;
+  if (n >= 100000) return `${formatted} (${(n / 100000).toFixed(2).replace(/\.00$/, '')} Lakh)`;
+  if (n >= 1000) return `${formatted} (${(n / 1000).toFixed(0)} Thousand)`;
+  return formatted;
+}
 
 function mtaInitCalculator() {
   const select = document.getElementById('mtaCalcStockSelect');
@@ -6137,25 +7317,180 @@ function mtaInitCalculator() {
     const stocks = (mtaData?.stockScreener || []).filter(s => s.amtFinancedCrore > 0);
     const sorted = [...stocks].sort((a, b) => (b.amtFinancedCrore || 0) - (a.amtFinancedCrore || 0));
     
-    let html = '<option value="">-- Choose Stock to Pre-fill --</option>';
+    let html = '<option value="">-- Choose Stock (Populates Live CMP) --</option>';
     sorted.slice(0, 150).forEach(s => {
-      const price = (s.qtyFinanced && s.amtFinancedCrore) ? Math.round((s.amtFinancedCrore * 1e7) / s.qtyFinanced) : 0;
-      html += `<option value="${s.symbol}" data-price="${price}" data-name="${s.name}">${s.symbol} (₹${price ? price.toLocaleString('en-IN') : '—'}) — Book: ₹${Math.round(s.amtFinancedCrore)} Cr</option>`;
+      const estPrice = (s.qtyFinanced && s.amtFinancedCrore) ? Math.round((s.amtFinancedCrore * 1e7) / s.qtyFinanced) : 0;
+      html += `<option value="${s.symbol}" data-price="${estPrice}" data-name="${s.name}">${s.symbol} — Book: ₹${Math.round(s.amtFinancedCrore)} Cr</option>`;
     });
     select.innerHTML = html;
     mtaCalcStockOptionsPopulated = true;
   }
+
+  // Set friendly defaults if empty
+  const priceInput = document.getElementById('mtaCalcPrice');
+  if (priceInput && (!priceInput.value || parseFloat(priceInput.value) <= 0)) {
+    priceInput.value = "200";
+  }
+  const capInput = document.getElementById('mtaCalcCapital');
+  if (capInput && (!capInput.value || parseFloat(capInput.value) <= 0)) {
+    capInput.value = "10000";
+  }
+
   mtaCalculateMargin();
+}
+
+async function mtaFetchLiveQuote(symbol) {
+  if (!symbol) return;
+  const sym = symbol.trim().toUpperCase();
+  const badge = document.getElementById('mtaCalcLiveBadge');
+  const priceInput = document.getElementById('mtaCalcPrice');
+  const refreshBtn = document.getElementById('mtaCalcRefreshBtn');
+
+  if (badge) {
+    badge.textContent = `⏳ Fetching Live ${sym} Quote...`;
+    badge.style.display = 'inline-block';
+    badge.style.background = '#eff6ff';
+    badge.style.color = '#2563eb';
+    badge.style.borderColor = '#bfdbfe';
+  }
+  if (refreshBtn) refreshBtn.textContent = '⏳ Fetching...';
+
+  try {
+    const res = await fetch(`/api/quote?symbol=${encodeURIComponent(sym)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    const q = data?.quotes ? data.quotes[sym] : null;
+    if (q && q.ltp && q.ltp > 0) {
+      mtaCurrentCalcQuote = q;
+      if (priceInput) {
+        priceInput.value = q.ltp;
+      }
+      if (badge) {
+        const sign = (q.changePct || 0) >= 0 ? '+' : '';
+        const chgStr = `${sign}${(q.changePct || 0).toFixed(2)}%`;
+        const isUp = (q.changePct || 0) >= 0;
+        badge.textContent = `🟢 ${sym} CMP: ₹${q.ltp.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${chgStr}) LIVE NSE`;
+        badge.style.background = isUp ? '#f0fdf4' : '#fef2f2';
+        badge.style.color = isUp ? '#15803d' : '#b91c1c';
+        badge.style.borderColor = isUp ? '#86efac' : '#fca5a5';
+        badge.style.display = 'inline-block';
+      }
+      mtaCalculateMargin();
+    } else {
+      // Fallback from MTF screener data if quote API didn't have it
+      const screener = mtaData?.stockScreener || [];
+      const stock = screener.find(s => s.symbol === sym);
+      if (stock && stock.qtyFinanced && stock.amtFinancedCrore) {
+        const estPrice = Math.round((stock.amtFinancedCrore * 1e7) / stock.qtyFinanced);
+        if (estPrice > 0) {
+          if (priceInput) priceInput.value = estPrice;
+          if (badge) {
+            badge.textContent = `ℹ️ ${sym} MTF Est CMP: ₹${estPrice.toLocaleString('en-IN')}`;
+            badge.style.background = '#f8fafc';
+            badge.style.color = '#475569';
+            badge.style.borderColor = '#cbd5e1';
+            badge.style.display = 'inline-block';
+          }
+          mtaCalculateMargin();
+        }
+      } else if (badge) {
+        badge.textContent = `⚠️ Live quote not found for ${sym}`;
+        badge.style.display = 'inline-block';
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch live quote:', err);
+    if (badge) {
+      badge.textContent = `⚠️ Live quote unavailable for ${sym}`;
+      badge.style.display = 'inline-block';
+    }
+  } finally {
+    if (refreshBtn) refreshBtn.textContent = '🔄 Fetch Live CMP';
+  }
+}
+
+function mtaRefreshLivePrice() {
+  const symInput = document.getElementById('mtaCalcSymbolInput');
+  const select = document.getElementById('mtaCalcStockSelect');
+  let sym = (symInput ? symInput.value : '').trim().toUpperCase();
+  if (!sym && select && select.value) sym = select.value.trim().toUpperCase();
+  if (!sym) sym = 'RELIANCE';
+  mtaFetchLiveQuote(sym);
+}
+
+function mtaSelectQuickStock(symbol) {
+  const symInput = document.getElementById('mtaCalcSymbolInput');
+  const select = document.getElementById('mtaCalcStockSelect');
+  if (symInput) symInput.value = symbol;
+  if (select) {
+    const opt = Array.from(select.options).find(o => o.value === symbol);
+    if (opt) select.value = symbol;
+    else select.value = "";
+  }
+  mtaFetchLiveQuote(symbol);
 }
 
 function mtaOnCalcStockChange() {
   const select = document.getElementById('mtaCalcStockSelect');
+  const symInput = document.getElementById('mtaCalcSymbolInput');
   if (!select) return;
-  const opt = select.selectedOptions[0];
-  if (opt && opt.dataset.price && Number(opt.dataset.price) > 0) {
-    const priceInput = document.getElementById('mtaCalcPrice');
-    if (priceInput) priceInput.value = opt.dataset.price;
+  const sym = select.value;
+  if (sym) {
+    if (symInput) symInput.value = sym;
+    mtaFetchLiveQuote(sym);
   }
+}
+
+function mtaOnCustomSymbolInput() {
+  clearTimeout(mtaCustomSymbolTimer);
+  const input = document.getElementById('mtaCalcSymbolInput');
+  if (!input) return;
+  const sym = input.value.trim().toUpperCase();
+  if (!sym) {
+    const badge = document.getElementById('mtaCalcLiveBadge');
+    if (badge) badge.style.display = 'none';
+    return;
+  }
+  mtaCustomSymbolTimer = setTimeout(() => {
+    mtaFetchLiveQuote(sym);
+  }, 350);
+}
+
+function mtaOnPriceInput() {
+  const badge = document.getElementById('mtaCalcLiveBadge');
+  if (badge && !badge.textContent.includes('(Manual Entry)')) {
+    badge.textContent = '✏️ Custom Entry Price';
+    badge.style.background = '#fef3c7';
+    badge.style.color = '#92400e';
+    badge.style.borderColor = '#fde68a';
+    badge.style.display = 'inline-block';
+  }
+  mtaCalculateMargin();
+}
+
+function mtaOnCapitalInput() {
+  mtaCalculateMargin();
+}
+
+function mtaSetCalcPrice(val) {
+  const priceInput = document.getElementById('mtaCalcPrice');
+  if (priceInput) priceInput.value = val;
+  mtaOnPriceInput();
+}
+
+function mtaSetCalcCapital(val) {
+  const capInput = document.getElementById('mtaCalcCapital');
+  if (capInput) capInput.value = val;
+  mtaCalculateMargin();
+}
+
+function mtaSetCalcLev(lev) {
+  const slider = document.getElementById('mtaCalcLevSlider');
+  const label = document.getElementById('mtaCalcLevLabel');
+  if (slider) slider.value = lev;
+  const marginPct = (100 / lev).toFixed(1);
+  if (label) label.textContent = `${lev.toFixed(1)}x (${marginPct}% Margin)`;
   mtaCalculateMargin();
 }
 
@@ -6201,11 +7536,21 @@ function mtaCalculateMargin() {
 
   if (!priceEl || !capEl || !levEl || !daysEl || !rateEl) return;
 
-  const price = Math.max(0.01, parseFloat(priceEl.value) || 1500);
-  const capital = Math.max(100, parseFloat(capEl.value) || 50000);
+  const price = Math.max(0.01, parseFloat(priceEl.value) || 200);
+  const capital = Math.max(100, parseFloat(capEl.value) || 10000);
   const lev = Math.max(1, parseFloat(levEl.value) || 4);
   const days = Math.max(1, parseInt(daysEl.value, 10) || 30);
   const ratePct = Math.max(0, parseFloat(rateEl.value) || 12.5);
+
+  // Update Input Preview Badges
+  const pricePreview = document.getElementById('mtaCalcPricePreview');
+  if (pricePreview) {
+    pricePreview.textContent = `₹${price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / share`;
+  }
+  const capitalPreview = document.getElementById('mtaCalcCapitalPreview');
+  if (capitalPreview) {
+    capitalPreview.textContent = mtaFormatCurrencyWords(capital);
+  }
 
   // Purchasing power & loan mathematics
   const totalPower = capital * lev;
@@ -6223,9 +7568,11 @@ function mtaCalculateMargin() {
   const maintMarginPct = 0.20;
   let liqPrice = 0;
   let maxDropPct = 0;
+  let dropAmt = 0;
   if (shares > 0 && (1 - maintMarginPct) > 0) {
     liqPrice = brokerLoan / ((1 - maintMarginPct) * shares);
     maxDropPct = ((liqPrice - price) / price) * 100;
+    dropAmt = Math.max(0, price - liqPrice);
   }
 
   // Update DOM Outputs
@@ -6240,11 +7587,12 @@ function mtaCalculateMargin() {
   const lPrice = document.getElementById('mtaResLiqPrice');
   const lDrop = document.getElementById('mtaResLiqDropPct');
   const lNote = document.getElementById('mtaResLiqPriceNote');
+  const lDropAmt = document.getElementById('mtaResLiqDropAmt');
 
   if (pPower) pPower.textContent = '₹' + Math.round(actualInvestment || totalPower).toLocaleString('en-IN');
   if (bLoan) bLoan.textContent = '₹' + Math.round(brokerLoan).toLocaleString('en-IN');
   if (sQty) sQty.textContent = `${Number(shares).toLocaleString('en-IN')} Qty`;
-  if (sName) sName.textContent = `Based on ₹${price.toLocaleString('en-IN')}/sh`;
+  if (sName) sName.textContent = `Based on ₹${price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/sh`;
   if (dCost) dCost.textContent = `₹${dailyInterest.toFixed(2)} / day`;
   if (tCost) tCost.textContent = '₹' + Math.round(totalInterest).toLocaleString('en-IN');
   if (dSub) dSub.textContent = `For ${days} days holding (${ratePct}% p.a.)`;
@@ -6253,6 +7601,108 @@ function mtaCalculateMargin() {
   if (lPrice) lPrice.textContent = liqPrice > 0 ? `₹${liqPrice.toFixed(2)}` : '—';
   if (lDrop) lDrop.textContent = maxDropPct < 0 ? `${maxDropPct.toFixed(2)}%` : '—';
   if (lNote) lNote.textContent = liqPrice > 0 ? `₹${liqPrice.toFixed(2)}` : 'liquidation trigger';
+  if (lDropAmt) lDropAmt.textContent = dropAmt > 0 ? `₹${dropAmt.toFixed(2)}` : '₹0.00';
+
+  // Strategy Simulation Returns
+  const sim15Gross = actualInvestment * 0.05;
+  const sim15Int = dailyInterest * 15;
+  const sim15Net = Math.round(sim15Gross - sim15Int);
+  const sim15Cash = Math.round(capital * 0.05);
+
+  const sim30Gross = actualInvestment * 0.08;
+  const sim30Int = dailyInterest * 30;
+  const sim30Net = Math.round(sim30Gross - sim30Int);
+  const sim30Cash = Math.round(capital * 0.08);
+
+  const sim45Gross = actualInvestment * 0.04;
+  const sim45Int = dailyInterest * 45;
+  const sim45Net = Math.round(sim45Gross - sim45Int);
+  const sim45Cash = Math.round(capital * 0.04);
+
+  const el15Net = document.getElementById('mtaIdea15Net');
+  const el15Sub = document.getElementById('mtaIdea15Sub');
+  const el30Net = document.getElementById('mtaIdea30Net');
+  const el30Sub = document.getElementById('mtaIdea30Sub');
+  const el45Net = document.getElementById('mtaIdea45Net');
+  const el45Sub = document.getElementById('mtaIdea45Sub');
+
+  if (el15Net) el15Net.textContent = `+₹${sim15Net.toLocaleString('en-IN')}`;
+  if (el15Sub) el15Sub.textContent = `vs ₹${sim15Cash.toLocaleString('en-IN')} cash (${(sim15Net / Math.max(1, sim15Cash)).toFixed(1)}x)`;
+
+  if (el30Net) el30Net.textContent = `+₹${sim30Net.toLocaleString('en-IN')}`;
+  if (el30Sub) el30Sub.textContent = `vs ₹${sim30Cash.toLocaleString('en-IN')} cash (${(sim30Net / Math.max(1, sim30Cash)).toFixed(1)}x)`;
+
+  if (el45Net) el45Net.textContent = `+₹${sim45Net.toLocaleString('en-IN')}`;
+  if (el45Sub) el45Sub.textContent = `vs ₹${sim45Cash.toLocaleString('en-IN')} cash (${(sim45Net / Math.max(1, sim45Cash)).toFixed(1)}x)`;
+
+  // Interactive Idea Target Controls
+  mtaUpdateInteractiveIdea(actualInvestment, dailyInterest, capital, lev);
+}
+
+function mtaUpdateInteractiveIdea(actualInvestment, dailyInterest, capital, lev) {
+  const targetSlider = document.getElementById('mtaIdeaTargetSlider');
+  const daysSlider = document.getElementById('mtaIdeaDaysSlider');
+  const targetLabel = document.getElementById('mtaIdeaTargetLabel');
+  const daysLabel = document.getElementById('mtaIdeaDaysLabel');
+
+  if (!targetSlider || !daysSlider) return;
+
+  const targetPct = parseFloat(targetSlider.value) || 5;
+  const durationDays = parseInt(daysSlider.value, 10) || 15;
+
+  if (targetLabel) targetLabel.textContent = `+${targetPct.toFixed(1)}%`;
+  if (daysLabel) daysLabel.textContent = `${durationDays} Days`;
+
+  const cashProfit = Math.round(capital * (targetPct / 100));
+  const grossProfit = actualInvestment * (targetPct / 100);
+  const interestCost = dailyInterest * durationDays;
+  const mtfNetProfit = Math.round(grossProfit - interestCost);
+  const mtfRoic = capital > 0 ? ((mtfNetProfit / capital) * 100).toFixed(1) : '0';
+  const multiplier = cashProfit > 0 ? (mtfNetProfit / cashProfit).toFixed(1) : '0';
+  const extraGain = Math.max(0, mtfNetProfit - cashProfit);
+
+  const elCashProf = document.getElementById('mtaIdeaCashProfit');
+  const elCashRoic = document.getElementById('mtaIdeaCashRoic');
+  const elMtfProf = document.getElementById('mtaIdeaMtfProfit');
+  const elMtfRoic = document.getElementById('mtaIdeaMtfRoic');
+  const elLevBadge = document.getElementById('mtaIdeaLevBadge');
+  const elIntDeduct = document.getElementById('mtaIdeaInterestDeduct');
+  const elMultiplier = document.getElementById('mtaIdeaMultiplier');
+  const elExtraCash = document.getElementById('mtaIdeaExtraCash');
+
+  if (elCashProf) elCashProf.textContent = `₹${cashProfit.toLocaleString('en-IN')}`;
+  if (elCashRoic) elCashRoic.textContent = `+${targetPct.toFixed(1)}% Return on Capital`;
+  if (elMtfProf) elMtfProf.textContent = `₹${mtfNetProfit.toLocaleString('en-IN')}`;
+  if (elMtfRoic) elMtfRoic.textContent = `+${mtfRoic}% Net Return on Capital`;
+  if (elLevBadge) elLevBadge.textContent = `${lev.toFixed(1)}x`;
+  if (elIntDeduct) elIntDeduct.textContent = `After ₹${Math.round(interestCost).toLocaleString('en-IN')} interest deduction`;
+  if (elMultiplier) elMultiplier.textContent = `${multiplier}x Higher`;
+  if (elExtraCash) elExtraCash.textContent = `+₹${extraGain.toLocaleString('en-IN')} Extra Net Profit`;
+}
+
+function mtaOnIdeaChange() {
+  mtaCalculateMargin();
+}
+
+function mtaOnIdeaDaysChange() {
+  mtaCalculateMargin();
+}
+
+function mtaApplyTradingIdea(type) {
+  const targetSlider = document.getElementById('mtaIdeaTargetSlider');
+  const daysSlider = document.getElementById('mtaIdeaDaysSlider');
+
+  if (type === 'swing') {
+    if (targetSlider) targetSlider.value = 5;
+    if (daysSlider) daysSlider.value = 15;
+  } else if (type === 'breakout') {
+    if (targetSlider) targetSlider.value = 8;
+    if (daysSlider) daysSlider.value = 30;
+  } else if (type === 'conservative') {
+    if (targetSlider) targetSlider.value = 4;
+    if (daysSlider) daysSlider.value = 45;
+  }
+  mtaCalculateMargin();
 }
 
 /* ==========================================================================
@@ -6376,135 +7826,116 @@ function mtaRenderCompareChart(histA, histB, symA, symB) {
   const pathA = normA.map((d, i) => `${i === 0 ? 'M' : 'L'}${xS(i, normA.length).toFixed(1)},${yS(d.pct).toFixed(1)}`).join(' ');
   const pathB = normB.map((d, i) => `${i === 0 ? 'M' : 'L'}${xS(i, normB.length).toFixed(1)},${yS(d.pct).toFixed(1)}`).join(' ');
 
-  const dotsA = normA.map((d, i) => `<circle cx="${xS(i, normA.length).toFixed(1)}" cy="${yS(d.pct).toFixed(1)}" r="3" fill="#2563eb"><title>${symA} (${d.date}): ${d.pct >= 0 ? '+' : ''}${d.pct.toFixed(1)}% (₹${Math.round(d.cr)} Cr)</title></circle>`).join('');
-  const dotsB = normB.map((d, i) => `<circle cx="${xS(i, normB.length).toFixed(1)}" cy="${yS(d.pct).toFixed(1)}" r="3" fill="#16a34a"><title>${symB} (${d.date}): ${d.pct >= 0 ? '+' : ''}${d.pct.toFixed(1)}% (₹${Math.round(d.cr)} Cr)</title></circle>`).join('');
+  const dotsA = normA.map((d, i) => `<circle cx="${xS(i, normA.length).toFixed(1)}" cy="${yS(d.pct).toFixed(1)}" r="3" fill="#2563eb"></circle>`).join('');
+  const dotsB = normB.map((d, i) => `<circle cx="${xS(i, normB.length).toFixed(1)}" cy="${yS(d.pct).toFixed(1)}" r="3" fill="#16a34a"></circle>`).join('');
 
-  container.innerHTML = `<svg width="${W}" height="${H}" style="display:block;overflow:visible;">
-    <!-- Baseline 0% line -->
-    <line x1="${pad.l}" y1="${zeroY.toFixed(1)}" x2="${W - pad.r}" y2="${zeroY.toFixed(1)}" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="3,3"/>
-    
-    <!-- Paths -->
-    ${pathA ? `<path d="${pathA}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>` : ''}
-    ${pathB ? `<path d="${pathB}" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"/>` : ''}
-    
-    ${dotsA}
-    ${dotsB}
+  container.innerHTML = `
+    <div style="position:relative;width:100%;height:${H}px;user-select:none;">
+      <svg width="${W}" height="${H}" style="display:block;overflow:visible;cursor:crosshair;">
+        <!-- Baseline 0% line -->
+        <line x1="${pad.l}" y1="${zeroY.toFixed(1)}" x2="${W - pad.r}" y2="${zeroY.toFixed(1)}" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="3,3"/>
+        
+        <!-- Paths -->
+        ${pathA ? `<path d="${pathA}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>` : ''}
+        ${pathB ? `<path d="${pathB}" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"/>` : ''}
+        
+        ${dotsA}
+        ${dotsB}
 
-    <!-- Y Axis Labels -->
-    <text x="${pad.l - 8}" y="${yS(maxPct) + 4}" font-size="9" fill="#2563eb" text-anchor="end" font-family="'JetBrains Mono', monospace">+${maxPct.toFixed(0)}%</text>
-    <text x="${pad.l - 8}" y="${zeroY + 3}" font-size="9" fill="#64748b" text-anchor="end" font-family="'JetBrains Mono', monospace">0%</text>
-    <text x="${pad.l - 8}" y="${yS(minPct) + 4}" font-size="9" fill="#dc2626" text-anchor="end" font-family="'JetBrains Mono', monospace">${minPct.toFixed(0)}%</text>
-    
-    <!-- Footnote -->
-    <text x="${W / 2}" y="${H - 8}" font-size="9.5" fill="#64748b" text-anchor="middle">Sessions Progression (Normalized % growth from first session)</text>
-  </svg>`;
-}
+        <!-- Interactive Crosshair Elements -->
+        <line id="mtaCompCrosshairLine" x1="0" y1="${pad.t}" x2="0" y2="${H - pad.b}" stroke="#64748b" stroke-width="1.2" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>
+        <circle id="mtaCompCrossDotA" cx="0" cy="0" r="5" fill="#2563eb" stroke="#ffffff" stroke-width="2" opacity="0" pointer-events="none"/>
+        <circle id="mtaCompCrossDotB" cx="0" cy="0" r="5" fill="#16a34a" stroke="#ffffff" stroke-width="2" opacity="0" pointer-events="none"/>
 
-/* ==========================================================================
-   🎯 LEVERAGE VULNERABILITY / FRAGILITY RADAR
-   ========================================================================== */
-let mtaFragilityFilter = 'ALL';
+        <!-- Y Axis Labels -->
+        <text x="${pad.l - 8}" y="${yS(maxPct) + 4}" font-size="9" fill="#2563eb" text-anchor="end" font-family="'JetBrains Mono', monospace">+${maxPct.toFixed(0)}%</text>
+        <text x="${pad.l - 8}" y="${zeroY + 3}" font-size="9" fill="#64748b" text-anchor="end" font-family="'JetBrains Mono', monospace">0%</text>
+        <text x="${pad.l - 8}" y="${yS(minPct) + 4}" font-size="9" fill="#dc2626" text-anchor="end" font-family="'JetBrains Mono', monospace">${minPct.toFixed(0)}%</text>
+        
+        <!-- Footnote -->
+        <text x="${W / 2}" y="${H - 8}" font-size="9.5" fill="#64748b" text-anchor="middle">Sessions Progression (Normalized % growth from first session)</text>
 
-function mtaRenderFragilityRadar(data) {
-  const stocks = data?.stockScreener || [];
-  const tbody = document.getElementById('mtaFragilityTableBody');
-  if (!tbody || !stocks.length) return;
+        <!-- Transparent Overlay for Pointer Events -->
+        <rect id="mtaCompCrossOverlay" x="${pad.l}" y="${pad.t}" width="${W - pad.l - pad.r}" height="${H - pad.t - pad.b}" fill="transparent" style="cursor:crosshair;"/>
+      </svg>
+      <div id="mtaCompCrossTooltip" style="display:none;position:absolute;pointer-events:none;background:rgba(15,23,42,0.95);backdrop-filter:blur(8px);color:#f8fafc;padding:8px 12px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;box-shadow:0 10px 25px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.12);z-index:30;white-space:nowrap;line-height:1.5;"></div>
+    </div>
+  `;
 
-  // Compute fragility score for each stock
-  const scored = stocks.map(s => {
-    const book = s.amtFinancedCrore || 0;
-    const share = s.sharePct || 0;
-    const estPrice = (s.qtyFinanced && book) ? (book * 1e7) / s.qtyFinanced : 0;
-    const deltaCr = s.deltaAmtCrore || 0;
+  // Attach interactive crosshair tracker
+  const overlay = container.querySelector('#mtaCompCrossOverlay');
+  const crossLine = container.querySelector('#mtaCompCrosshairLine');
+  const crossDotA = container.querySelector('#mtaCompCrossDotA');
+  const crossDotB = container.querySelector('#mtaCompCrossDotB');
+  const tooltip = container.querySelector('#mtaCompCrossTooltip');
 
-    // Quantitative Fragility Formulation:
-    // 1. Book concentration weight (up to 35 pts)
-    const concWeight = Math.min(35, share * 12);
-    // 2. Retail/Speculative profile penalty (up to 30 pts)
-    const retailPenalty = (s._cls === 'SPECULATIVE') ? 30 : (s._cls === 'RETAIL HEAVY') ? 22 : (s.isFnO ? 10 : 5);
-    // 3. Price elasticity / low price ticket risk (up to 20 pts)
-    const ticketRisk = (estPrice > 0 && estPrice < 100) ? 20 : (estPrice < 300) ? 12 : 4;
-    // 4. Deleverage velocity (recent outflow delta) (up to 15 pts)
-    const velocityRisk = deltaCr < 0 ? Math.min(15, Math.abs(deltaCr) * 2) : 0;
+  if (!overlay || !crossLine || !tooltip) return;
 
-    const totalScore = Math.min(99, Math.max(8, Math.round(concWeight + retailPenalty + ticketRisk + velocityRisk)));
-    
-    let rating = 'STABLE';
-    let badgeClass = 'mta-badge';
-    let badgeStyle = 'background:#dcfce7;color:#15803d;border:1px solid #86efac;';
-    let riskNote = 'Institutional anchor; stable balance sheet support.';
+  function handleComparePointer(clientX) {
+    const rect = overlay.getBoundingClientRect();
+    const relX = clientX - rect.left;
+    const chartW = W - pad.l - pad.r;
+    if (chartW <= 0) return;
+    const ratio = Math.max(0, Math.min(1, relX / chartW));
 
-    if (totalScore >= 70) {
-      rating = 'HIGH';
-      badgeStyle = 'background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;';
-      riskNote = '🚨 Overleveraged retail cluster; high cascade liquidation vulnerability.';
-    } else if (totalScore >= 40) {
-      rating = 'MODERATE';
-      badgeStyle = 'background:#fef3c7;color:#92400e;border:1px solid #fde68a;';
-      riskNote = '⚠️ Elevated leverage; susceptible during broad market pullbacks.';
+    const idxA = normA.length ? Math.min(Math.max(0, Math.round(ratio * (normA.length - 1))), normA.length - 1) : 0;
+    const idxB = normB.length ? Math.min(Math.max(0, Math.round(ratio * (normB.length - 1))), normB.length - 1) : 0;
+
+    const da = normA[idxA];
+    const db = normB[idxB];
+
+    const cx = xS(idxA, normA.length || 1);
+    crossLine.setAttribute('x1', cx);
+    crossLine.setAttribute('x2', cx);
+    crossLine.setAttribute('opacity', '1');
+
+    if (da && crossDotA) {
+      crossDotA.setAttribute('cx', cx);
+      crossDotA.setAttribute('cy', yS(da.pct));
+      crossDotA.setAttribute('opacity', '1');
     }
 
-    return {
-      ...s,
-      estPrice,
-      fragilityScore: totalScore,
-      rating,
-      badgeStyle,
-      riskNote
-    };
-  });
+    if (db && crossDotB) {
+      const cxB = xS(idxB, normB.length || 1);
+      crossDotB.setAttribute('cx', cxB);
+      crossDotB.setAttribute('cy', yS(db.pct));
+      crossDotB.setAttribute('opacity', '1');
+    }
 
-  // Update pill counts
-  const countAll = scored.length;
-  const countHigh = scored.filter(s => s.rating === 'HIGH').length;
-  const countMod = scored.filter(s => s.rating === 'MODERATE').length;
-  const countSafe = scored.filter(s => s.rating === 'STABLE').length;
+    const dateStr = (da && da.date) || (db && db.date) || 'Session';
+    let tHtml = `<div style="font-weight:700;color:#94a3b8;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:2px;">📅 ${dateStr}</div>`;
+    if (da) {
+      tHtml += `<div style="color:#60a5fa;display:flex;justify-content:space-between;gap:12px;"><span>● ${symA}:</span><b>${da.pct >= 0 ? '+' : ''}${da.pct.toFixed(2)}% (₹${Math.round(da.cr)} Cr)</b></div>`;
+    }
+    if (db) {
+      tHtml += `<div style="color:#4ade80;display:flex;justify-content:space-between;gap:12px;"><span>● ${symB}:</span><b>${db.pct >= 0 ? '+' : ''}${db.pct.toFixed(2)}% (₹${Math.round(db.cr)} Cr)</b></div>`;
+    }
 
-  const elAll = document.getElementById('mtaFragCountAll');
-  const elHigh = document.getElementById('mtaFragCountHigh');
-  const elMod = document.getElementById('mtaFragCountMod');
-  const elSafe = document.getElementById('mtaFragCountSafe');
+    tooltip.innerHTML = tHtml;
+    tooltip.style.display = 'block';
 
-  if (elAll) elAll.textContent = countAll;
-  if (elHigh) elHigh.textContent = countHigh;
-  if (elMod) elMod.textContent = countMod;
-  if (elSafe) elSafe.textContent = countSafe;
-
-  // Filter list
-  let filtered = [...scored].sort((a, b) => b.fragilityScore - a.fragilityScore);
-  if (mtaFragilityFilter !== 'ALL') {
-    filtered = filtered.filter(s => s.rating === mtaFragilityFilter);
+    let left = cx + 12;
+    if (left + 220 > W) left = cx - 225;
+    tooltip.style.left = `${Math.max(8, left)}px`;
+    tooltip.style.top = `${pad.t + 10}px`;
   }
 
-  tbody.innerHTML = filtered.slice(0, 150).map((s, idx) => {
-    const barColor = s.rating === 'HIGH' ? '#dc2626' : s.rating === 'MODERATE' ? '#d97706' : '#16a34a';
-    return `<tr style="cursor:pointer;" onclick="inspectStock('${s.symbol}')">
-      <td style="color:var(--text-muted);font-weight:600;">#${idx + 1}</td>
-      <td><strong class="mta-sym">${s.symbol}</strong></td>
-      <td style="font-size:11.5px;color:var(--text-secondary);">${s.name}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;">₹${Number(s.amtFinancedCrore).toLocaleString('en-IN', { maximumFractionDigits: 0 })} Cr</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;">${Number(s.qtyFinanced || 0).toLocaleString('en-IN')}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;">${s.estPrice > 0 ? '₹' + Math.round(s.estPrice).toLocaleString('en-IN') : '—'}</td>
-      <td style="text-align:center;"><span class="mta-badge" style="${s.badgeStyle}">${s.rating} RISK</span></td>
-      <td>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div style="background:var(--border-default);border-radius:4px;height:7px;flex:1;overflow:hidden;">
-            <div style="width:${s.fragilityScore}%;background:${barColor};height:100%;"></div>
-          </div>
-          <span style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:11px;color:${barColor};width:24px;">${s.fragilityScore}</span>
-        </div>
-      </td>
-      <td style="font-size:11px;color:var(--text-muted);">${s.riskNote}</td>
-    </tr>`;
-  }).join('');
+  overlay.addEventListener('mousemove', e => handleComparePointer(e.clientX));
+  overlay.addEventListener('mouseleave', () => {
+    crossLine.setAttribute('opacity', '0');
+    if (crossDotA) crossDotA.setAttribute('opacity', '0');
+    if (crossDotB) crossDotB.setAttribute('opacity', '0');
+    tooltip.style.display = 'none';
+  });
 }
 
-function mtaFilterFragility(mode) {
-  mtaFragilityFilter = mode;
-  document.querySelectorAll('#mtaPanel-fragility .mta-pill').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.frag === mode);
-  });
-  if (mtaData) mtaRenderFragilityRadar(mtaData);
+
+function updateBrandLogoTheme(theme) {
+  const isLight = theme === 'light';
+  const darkLogos = document.querySelectorAll('.inst-brand-logo-dark');
+  const lightLogos = document.querySelectorAll('.inst-brand-logo-light');
+  darkLogos.forEach(el => el.style.setProperty('display', isLight ? 'none' : 'block', 'important'));
+  lightLogos.forEach(el => el.style.setProperty('display', isLight ? 'block' : 'none', 'important'));
 }
 
 /* ==========================================================================
@@ -6518,6 +7949,8 @@ function toggleTheme() {
   localStorage.setItem('breadth_theme', next);
   const btn = document.getElementById('themeToggleBtn');
   if (btn) btn.textContent = next === 'dark' ? '☀️ Light' : '🌙 Dark';
+
+  updateBrandLogoTheme(next);
 
   // Re-render all canvas charts to pick up new theme colors
   if (latestData) {
@@ -6541,6 +7974,10 @@ function toggleTheme() {
   if (typeof window.upstoxOptionChain !== 'undefined' && window.upstoxOptionChain.renderVisualizer) {
     window.upstoxOptionChain.renderVisualizer();
   }
+  // Re-render Futures Desk (heatmap, cards) if active
+  if (typeof window.futuresDesk !== 'undefined' && window.futuresDesk.refreshCurrentSubTab) {
+    window.futuresDesk.refreshCurrentSubTab();
+  }
 }
 
 // Auto-restore saved theme on startup
@@ -6551,96 +7988,128 @@ function toggleTheme() {
   window.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('themeToggleBtn');
     if (btn) btn.textContent = saved === 'dark' ? '☀️ Light' : '🌙 Dark';
+    updateBrandLogoTheme(saved);
   });
 })();
 
 function switchTab(tab) {
-  [els.tabBreadth, els.tabOptions, els.tabSmartMoney, els.tabDelivery, els.tabMtf, els.tabTools, els.tabSettings].forEach(el => el && el.classList.remove("active"));
-  [els.panelBreadth, els.panelOptions, els.panelSmartMoney, els.panelDelivery, els.panelMtf, els.panelTools, els.panelSettings, document.getElementById("panelUpstoxChain"), document.getElementById("panelFutures")].forEach(el => {
+  try {
+    const tabButtons = [
+      document.getElementById("tabBreadth"),
+      document.getElementById("tabOptions"),
+      document.getElementById("tabSmartMoney"),
+      document.getElementById("tabDelivery"),
+      document.getElementById("tabMtf"),
+      document.getElementById("tabTools"),
+      document.getElementById("tabSettings")
+    ];
+    tabButtons.forEach(el => el && el.classList.remove("active"));
+  } catch(e) {}
+
+  document.querySelectorAll(".tab-panel").forEach(el => {
     if (el) {
       el.classList.remove("active");
       el.style.display = "none";
     }
   });
+
+  const showPanel = (panelId, tabBtnId) => {
+    const p = document.getElementById(panelId);
+    if (p) {
+      p.classList.add("active");
+      p.style.display = "block";
+    }
+    if (tabBtnId) {
+      const b = document.getElementById(tabBtnId);
+      if (b) b.classList.add("active");
+    }
+    return p;
+  };
+
   if (tab === "breadth") {
     isOptionsTabActive = false;
-    els.tabBreadth.classList.add("active");
-    els.panelBreadth.classList.add("active");
-    els.panelBreadth.style.display = "block";
-    resizeCanvas();
-    resizeNiftyCanvas();
-    resizeNiftyAdCanvas();
-    resizeAdCanvases();
+    showPanel("panelBreadth", "tabBreadth");
+    try { if (typeof resizeCanvas === "function") resizeCanvas(); } catch(e){}
+    try { if (typeof resizeNiftyCanvas === "function") resizeNiftyCanvas(); } catch(e){}
+    try { if (typeof resizeNiftyAdCanvas === "function") resizeNiftyAdCanvas(); } catch(e){}
+    try { if (typeof resizeAdCanvases === "function") resizeAdCanvases(); } catch(e){}
+    try {
+      if (!autoRefreshTimer && els.autoRefresh && els.autoRefresh.checked) {
+        scheduleAutoRefresh();
+      }
+    } catch(e){}
   } else if (tab === "futures") {
     isOptionsTabActive = false;
-    const p = document.getElementById("panelFutures");
-    if (p) {
-      p.classList.add("active");
-      p.style.display = "block";
-    }
-    if (window.futuresDesk) {
-      window.futuresDesk.init();
-    }
-  } else if (tab === "options") {
-    isOptionsTabActive = true;
-    els.tabOptions.classList.add("active");
-    els.panelOptions.classList.add("active");
-    els.panelOptions.style.display = "block";
-    resizeOptCanvases();
-    resetAutoRefreshTimer();
-    loadOptionChain();
-  } else if (tab === "smartMoney") {
+    showPanel("panelFutures", "navFutures");
+    try {
+      if (window.futuresDesk && typeof window.futuresDesk.init === "function") {
+        window.futuresDesk.init();
+      }
+    } catch(e){}
+  } else if (tab === "globalMarkets" || tab === "global") {
     isOptionsTabActive = false;
-    els.tabSmartMoney.classList.add("active");
-    els.panelSmartMoney.classList.add("active");
-    els.panelSmartMoney.style.display = "block";
-    loadSmartMoneyData();
+    showPanel("panelGlobalMarkets", "navGlobalMarkets");
+    try {
+      if (window.globalMarketsDesk && typeof window.globalMarketsDesk.init === "function") {
+        window.globalMarketsDesk.init();
+      }
+    } catch(e){}
+  } else if (tab === "options" || tab === "upstoxChain") {
+    isOptionsTabActive = true;
+    showPanel("panelUpstoxChain", "navOptions");
+    try {
+      const navBtn2 = document.getElementById("navUpstoxChain");
+      if (navBtn2) navBtn2.classList.add("active");
+      if (window.upstoxOptionChain && typeof window.upstoxOptionChain.refresh === "function") {
+        window.upstoxOptionChain.refresh();
+      }
+      if (typeof loadOptionChain === "function") {
+        loadOptionChain();
+      }
+    } catch(e){}
+  } else if (tab === "smartMoney" || tab === "smartmoney") {
+    isOptionsTabActive = false;
+    showPanel("panelSmartMoney", "navFiiDii");
+    try {
+      const b = document.getElementById("tabSmartMoney");
+      if (b) b.classList.add("active");
+      loadSmartMoneyData();
+    } catch(e){}
   } else if (tab === "delivery") {
     isOptionsTabActive = false;
-    els.tabDelivery.classList.add("active");
-    els.panelDelivery.classList.add("active");
-    els.panelDelivery.style.display = "block";
-    loadDeliveryAnalytics();
+    showPanel("panelDelivery", "navDelivery");
+    try {
+      const b = document.getElementById("tabDelivery");
+      if (b) b.classList.add("active");
+      loadDeliveryAnalytics();
+    } catch(e){}
   } else if (tab === "mtf") {
     isOptionsTabActive = false;
-    if (els.tabMtf) els.tabMtf.classList.add("active");
-    if (els.panelMtf) {
-      els.panelMtf.classList.add("active");
-      els.panelMtf.style.display = "block";
-    }
-    loadMtfData();
+    showPanel("panelMtf", "navMtf");
+    try {
+      const b = document.getElementById("tabMtf");
+      if (b) b.classList.add("active");
+      loadMtfData();
+    } catch(e){}
   } else if (tab === "tools") {
     isOptionsTabActive = false;
-    if (els.tabTools) els.tabTools.classList.add("active");
-    if (els.panelTools) {
-      els.panelTools.classList.add("active");
-      els.panelTools.style.display = "block";
-    }
-    if (typeof loadActiveTool === "function") {
-      loadActiveTool();
-    }
+    showPanel("panelTools", "tabTools");
+    try {
+      if (typeof loadActiveTool === "function") {
+        loadActiveTool();
+      }
+    } catch(e){}
   } else if (tab === "settings") {
     isOptionsTabActive = false;
-    if (els.tabSettings) els.tabSettings.classList.add("active");
-    if (els.panelSettings) {
-      els.panelSettings.classList.add("active");
-      els.panelSettings.style.display = "block";
-    }
-    if (typeof loadBrokerSettings === "function") {
-      loadBrokerSettings();
-    }
-  } else if (tab === "upstoxChain") {
-    isOptionsTabActive = false;
-    const p = document.getElementById("panelUpstoxChain");
-    if (p) {
-      p.classList.add("active");
-      p.style.display = "block";
-    }
-    if (window.upstoxOptionChain) {
-      window.upstoxOptionChain.refresh();
-    }
+    showPanel("panelSettings", "tabSettings");
+    try {
+      if (typeof loadBrokerSettings === "function") {
+        loadBrokerSettings();
+      }
+    } catch(e){}
   }
 }
+window.switchTab = switchTab;
 
 /* ==========================================================================
    ⚡ Quant Options Desk & Intraday Straddle Engine Implementation
@@ -8444,6 +9913,13 @@ async function loadStatus() {
   if (els.endDateInput) els.endDateInput.value = today;
   if (els.participantOiDate) els.participantOiDate.value = today;
 
+  if (data.marketOpen !== undefined) {
+    _isMarketOpenState = Boolean(data.marketOpen);
+  }
+  if (data.isHoliday) {
+    _isMarketOpenState = false;
+  }
+
   const bName = (data.activeBroker || "ANGEL").toUpperCase();
   window.__activeBroker = bName;
   const brokerDisplayName = {
@@ -8470,22 +9946,24 @@ async function loadStatus() {
     }
   }
 
-  if (data.brokerConfigured) {
+  const isConnected = Boolean(data.brokerConnected || data.angelConnected);
+
+  if (isConnected) {
     const label = brokerLabels[bName] || `${bName}: Connected`;
     els.apiStatus.textContent = `🟢 ${label}`;
     els.apiStatus.className = "status ready";
     els.dataSource.value = "broker";
     applyDataSourceDefaults("broker");
-  } else if (data.angelConfigured) {
-    els.apiStatus.textContent = `🟢 Angel SmartAPI: Connected (${data.clientCode})`;
-    els.apiStatus.className = "status ready";
-    els.dataSource.value = "broker";
-    applyDataSourceDefaults("broker");
+  } else if (data.brokerConfigured || data.angelConfigured) {
+    els.apiStatus.textContent = `🟡 ${brokerDisplayName}: Session Offline (Bhavcopy Ready)`;
+    els.apiStatus.className = "status idle";
+    els.dataSource.value = "bhavcopy";
+    applyDataSourceDefaults("bhavcopy");
   } else {
-    els.apiStatus.textContent = "⚪ Broker Offline (Demo Mode)";
+    els.apiStatus.textContent = "⚪ Broker Offline (Bhavcopy Mode)";
     els.apiStatus.className = "status not-configured";
-    els.dataSource.value = "sample";
-    applyDataSourceDefaults("sample");
+    els.dataSource.value = "bhavcopy";
+    applyDataSourceDefaults("bhavcopy");
   }
 }
 
@@ -8729,41 +10207,271 @@ if (els.delivUniverseSelect) {
   els.delivUniverseSelect.addEventListener("change", () => loadDeliveryAnalytics());
 }
 if (els.delivFilterGroup) {
-  els.delivFilterGroup.querySelectorAll(".filter-pill").forEach(btn => {
-    btn.addEventListener("click", () => {
-      els.delivFilterGroup.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      delivActiveFilter = btn.dataset.filter || "all";
-      loadDeliveryAnalytics();
-    });
-  });
-}
-if (els.delivSearchInput) {
-  let searchTimer = null;
-  els.delivSearchInput.addEventListener("input", () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-      delivSearchQuery = els.delivSearchInput.value.trim();
+  els.delivFilterGroup.addEventListener("click", (e) => {
+    const btn = e.target.closest(".filter-pill");
+    if (!btn) return;
+    els.delivFilterGroup.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    delivActiveFilter = btn.dataset.filter || "all";
+    if (delivDataGlobal && delivDataGlobal.allStocks) {
       applyDeliveryFilterAndRender();
-    }, 150);
-  });
-  els.delivSearchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const sym = els.delivSearchInput.value.trim();
-      if (sym) inspectStock(sym);
+    } else {
+      loadDeliveryAnalytics();
     }
   });
 }
+
+// Initialize dynamic table sortable headers
+initDeliverySortHeaders();
+initDrilldownSortHeaders();
+initMtfSortHeaders();
+let activeDelivSubtab = "scan";
+
+function switchDelivSubtab(subtab, pushHistory = true) {
+  activeDelivSubtab = subtab;
+  const btnScan = document.getElementById("btnDelivSubtabScan");
+  const btnInspect = document.getElementById("btnDelivSubtabInspect");
+  const inspectorCard = document.getElementById("stockInspectorCard");
+  const searchInput = document.getElementById("delivSearchInput");
+
+  if (btnScan) btnScan.classList.toggle("active", subtab === "scan");
+  if (btnInspect) btnInspect.classList.toggle("active", subtab === "inspect");
+
+  if (subtab === "inspect") {
+    if (inspectorCard) inspectorCard.style.display = "block";
+    if (searchInput) {
+      searchInput.focus();
+      if (!searchInput.value.trim()) {
+        searchInput.value = "RELIANCE";
+      }
+      inspectDeliveryStock(searchInput.value.trim());
+    }
+  } else {
+    // In scan mode, keep inspector collapsed unless user explicitly inspected a stock
+    if (inspectorCard && !window._delivLastInspected) {
+      inspectorCard.style.display = "none";
+    }
+  }
+
+  if (pushHistory && typeof history !== "undefined" && history.pushState) {
+    const targetUrl = subtab === "inspect" ? "/delivery/inspect" : "/delivery/scan";
+    const routeMeta = (typeof ROUTE_CONFIG !== "undefined" && ROUTE_CONFIG[targetUrl]) || {
+      title: `Delivery ${subtab.toUpperCase()} | TradersDesk`,
+      desc: `Cash delivery analytics and ${subtab} intelligence.`
+    };
+    if (window.location.pathname !== targetUrl) {
+      history.pushState({ desk: "delivery", subtab }, routeMeta.title, targetUrl);
+    }
+    if (typeof updateSeoMetadata === "function") {
+      updateSeoMetadata(routeMeta.title, routeMeta.desc, targetUrl);
+    }
+  }
+}
+window.switchDelivSubtab = switchDelivSubtab;
+
+const btnDelivScan = document.getElementById("btnDelivSubtabScan");
+const btnDelivInspect = document.getElementById("btnDelivSubtabInspect");
+if (btnDelivScan) btnDelivScan.addEventListener("click", () => switchDelivSubtab("scan"));
+if (btnDelivInspect) btnDelivInspect.addEventListener("click", () => switchDelivSubtab("inspect"));
+
+// Live Autocomplete Suggestions for Delivery Stock Search
+if (els.delivSearchInput) {
+  const input = els.delivSearchInput;
+  const suggestionsBox = document.getElementById("delivSearchSuggestions");
+  let activeSuggestIndex = -1;
+
+  function hideSuggestions() {
+    if (suggestionsBox) {
+      suggestionsBox.style.display = "none";
+      suggestionsBox.innerHTML = "";
+    }
+    activeSuggestIndex = -1;
+  }
+
+  const INDICES_SUGGEST = [
+    { symbol: "NIFTY 50", desc: "Benchmark Index (50 Stocks)" },
+    { symbol: "BANK NIFTY", desc: "Banking Sector Index (12 Stocks)" },
+    { symbol: "FINNIFTY", desc: "Financial Services Index" },
+    { symbol: "MIDCPNIFTY", desc: "Nifty Midcap Select Index" },
+    { symbol: "NIFTY IT", desc: "Information Technology Index" },
+    { symbol: "NIFTY AUTO", desc: "Automobile Sector Index" },
+    { symbol: "NIFTY PHARMA", desc: "Pharmaceutical Sector Index" },
+    { symbol: "NIFTY METAL", desc: "Metal & Mining Sector Index" },
+    { symbol: "NIFTY FMCG", desc: "FMCG Sector Index" },
+    { symbol: "NIFTY ENERGY", desc: "Energy Sector Index" },
+    { symbol: "NIFTY NEXT 50", desc: "Large Cap Next 50 Index" },
+    { symbol: "NIFTY MIDCAP 100", desc: "Midcap 100 Benchmark Index" },
+    { symbol: "BSE SENSEX", desc: "BSE 30 Benchmark Index" }
+  ];
+
+  function showSuggestions(q) {
+    if (!suggestionsBox) return;
+    const query = (q || "").trim().toUpperCase();
+    if (!query) {
+      hideSuggestions();
+      return;
+    }
+    const cleanQ = query.replace(/\s+/g, "");
+
+    // 1. Check for index matches first
+    const matchedIndices = INDICES_SUGGEST.filter(idx => {
+      const sym = idx.symbol.toUpperCase();
+      const cleanSym = sym.replace(/\s+/g, "");
+      return sym.includes(query) || cleanSym.includes(cleanQ) || query.includes(sym);
+    });
+
+    // 2. Source pool from active delivery stock rows, fall back to global symbols
+    const pool = (allDeliveryStocksGlobal && allDeliveryStocksGlobal.length)
+      ? allDeliveryStocksGlobal
+      : (window.allUniverseSymbols || []).map(s => ({ symbol: s, close: 0, delivPer: 0 }));
+
+    const maxStockSlots = Math.max(2, 8 - matchedIndices.length);
+    const matchedStocks = pool.filter(s => {
+      const sym = (s.symbol || "").toUpperCase();
+      return sym.startsWith(query) || sym.includes(query);
+    }).slice(0, maxStockSlots);
+
+    if (!matchedIndices.length && !matchedStocks.length) {
+      suggestionsBox.innerHTML = `<div style="padding:10px 14px; font-size:12px; color:var(--text-muted); text-align:center;">No stock or index matching "${query}"</div>`;
+      suggestionsBox.style.display = "block";
+      return;
+    }
+
+    let html = "";
+    matchedIndices.forEach((idxItem, i) => {
+      html += `
+        <div class="deliv-suggest-row" data-sym="${idxItem.symbol}" data-idx="idx_${i}" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; cursor:pointer; border-bottom:1px solid var(--border-subtle, #f1f5f9); background:rgba(99,102,241,0.04); transition:background 0.15s ease;">
+          <div>
+            <strong style="color:var(--text-primary, #0f172a); font-size:12.5px;">${idxItem.symbol}</strong>
+            <span style="font-size:10px; background:#ede9fe; color:#6d28d9; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:800;">INDEX</span>
+          </div>
+          <div style="font-size:11px; color:#6366f1; font-weight:600;">
+            ${idxItem.desc}
+          </div>
+        </div>
+      `;
+    });
+
+    matchedStocks.forEach((s, idx) => {
+      const priceStr = s.close ? `₹${Number(s.close).toLocaleString("en-IN")}` : "";
+      const delivStr = s.delivPer ? `${s.delivPer}% deliv` : "";
+      html += `
+        <div class="deliv-suggest-row" data-sym="${s.symbol}" data-idx="${idx}" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; cursor:pointer; border-bottom:1px solid var(--border-subtle, #f1f5f9); transition:background 0.15s ease;">
+          <div>
+            <strong style="color:var(--text-primary, #0f172a); font-size:12.5px;">${s.symbol}</strong>
+            <span style="font-size:10px; color:#38bdf8; margin-left:6px; font-weight:700;">NSE EQ</span>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11.5px; font-weight:700; color:var(--text-primary); font-family:'JetBrains Mono',monospace;">${priceStr}</div>
+            <div style="font-size:10px; color:#10b981; font-weight:700;">${delivStr}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    suggestionsBox.innerHTML = html;
+    suggestionsBox.style.display = "block";
+
+    suggestionsBox.querySelectorAll(".deliv-suggest-row").forEach(row => {
+      row.addEventListener("click", () => {
+        const sym = row.dataset.sym;
+        input.value = sym;
+        hideSuggestions();
+        window._delivLastInspected = sym;
+        inspectDeliveryStock(sym);
+      });
+      row.addEventListener("mouseenter", () => {
+        suggestionsBox.querySelectorAll(".deliv-suggest-row").forEach(r => r.style.background = r.querySelector("span[style*='INDEX']") ? "rgba(99,102,241,0.04)" : "transparent");
+        row.style.background = "rgba(37, 99, 235, 0.08)";
+      });
+    });
+  }
+
+  let searchTimer = null;
+  input.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      delivSearchQuery = input.value.trim();
+      applyDeliveryFilterAndRender();
+      showSuggestions(input.value);
+    }, 150);
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (!suggestionsBox || suggestionsBox.style.display === "none") {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const sym = input.value.trim();
+        if (sym) {
+          window._delivLastInspected = sym;
+          inspectDeliveryStock(sym);
+        }
+      }
+      return;
+    }
+
+    const rows = suggestionsBox.querySelectorAll(".deliv-suggest-row");
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!rows.length) return;
+      activeSuggestIndex = (activeSuggestIndex + 1) % rows.length;
+      rows.forEach((r, i) => r.style.background = i === activeSuggestIndex ? "rgba(37, 99, 235, 0.12)" : "transparent");
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!rows.length) return;
+      activeSuggestIndex = (activeSuggestIndex - 1 + rows.length) % rows.length;
+      rows.forEach((r, i) => r.style.background = i === activeSuggestIndex ? "rgba(37, 99, 235, 0.12)" : "transparent");
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeSuggestIndex >= 0 && rows[activeSuggestIndex]) {
+        const sym = rows[activeSuggestIndex].dataset.sym;
+        input.value = sym;
+        hideSuggestions();
+        window._delivLastInspected = sym;
+        inspectDeliveryStock(sym);
+      } else {
+        const sym = input.value.trim();
+        hideSuggestions();
+        if (sym) {
+          window._delivLastInspected = sym;
+          inspectDeliveryStock(sym);
+        }
+      }
+    } else if (e.key === "Escape") {
+      hideSuggestions();
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!input.contains(e.target) && !suggestionsBox.contains(e.target)) {
+      hideSuggestions();
+    }
+  });
+}
+
+function switchToAllEquitiesUniverse(query = "") {
+  if (els.delivUniverseSelect) {
+    els.delivUniverseSelect.value = "all";
+    if (query && els.delivSearchInput) {
+      els.delivSearchInput.value = query;
+      delivSearchQuery = query.trim();
+    }
+    fetchDeliveryData();
+  }
+}
+window.switchToAllEquitiesUniverse = switchToAllEquitiesUniverse;
+
 if (els.delivInspectBtn) {
   els.delivInspectBtn.addEventListener("click", () => {
     const sym = (els.delivSearchInput && els.delivSearchInput.value.trim()) || "RELIANCE";
-    inspectStock(sym);
+    window._delivLastInspected = sym;
+    inspectDeliveryStock(sym);
   });
 }
 if (els.closeInspectorBtn) {
   els.closeInspectorBtn.addEventListener("click", () => {
     if (els.stockInspectorCard) els.stockInspectorCard.style.display = "none";
+    window._delivLastInspected = null;
   });
 }
 if (els.drilldownCloseBtn) {
@@ -8926,11 +10634,11 @@ if (els.wpcrModeGroup) {
   });
 }
 
-// Options desk controls listeners
-els.optIndexSelect.addEventListener("change", () => loadOptionChain());
-els.optExpirySelect.addEventListener("change", () => loadOptionChain());
-els.optStrikeRange.addEventListener("change", () => loadOptionChain());
-els.optShowGreeks.addEventListener("change", applyTableDisplaySettings);
+// Options desk controls listeners (safely guarded)
+if (els.optIndexSelect) els.optIndexSelect.addEventListener("change", () => loadOptionChain());
+if (els.optExpirySelect) els.optExpirySelect.addEventListener("change", () => loadOptionChain());
+if (els.optStrikeRange) els.optStrikeRange.addEventListener("change", () => loadOptionChain());
+if (els.optShowGreeks) els.optShowGreeks.addEventListener("change", applyTableDisplaySettings);
 if (els.optShowModelFair) {
   els.optShowModelFair.addEventListener("change", applyTableDisplaySettings);
 }
@@ -8944,8 +10652,8 @@ document.querySelectorAll("#edgeFilterGroup .edge-filter-btn").forEach(btn => {
     }
   });
 });
-els.optCompact.addEventListener("change", applyTableDisplaySettings);
-els.optRefreshButton.addEventListener("click", () => loadOptionChain());
+if (els.optCompact) els.optCompact.addEventListener("change", applyTableDisplaySettings);
+if (els.optRefreshButton) els.optRefreshButton.addEventListener("click", () => loadOptionChain());
 
 window.addEventListener("resize", () => {
   resizeCanvas();
@@ -8967,8 +10675,9 @@ window.addEventListener("resize", () => {
     els.optIndexSelect.value = els.indexSelect.value;
   }
 
-  // 1. Auto-run Market Breadth on page load in background
+  // 1. Auto-run Market Breadth on page load in background and schedule continuous auto-refresh
   runBreadth({ fastRefresh: true });
+  scheduleAutoRefresh();
   
   // 2. Pre-fetch background data for Options, Smart Money, Delivery & MTF desks
   loadOptionChain({ isBackground: true });
@@ -9504,10 +11213,14 @@ async function saveBrokerSettings() {
   });
 
   try {
+    const adminKey = localStorage.getItem("breadthlab_admin_secret") || "";
     // Also save to server session if applicable
     await fetch("/api/settings", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(adminKey ? { "X-Admin-Secret": adminKey } : {})
+      },
       body: JSON.stringify(payload),
     }).catch(() => {});
 
@@ -10091,61 +11804,365 @@ if (document.readyState === "loading") {
     initMarketTickerTape();
     initBrokerSettingsControls();
     initQuantTools();
-    initInstNavState();
   });
 } else {
   initMarketTickerTape();
   initBrokerSettingsControls();
   initQuantTools();
-  initInstNavState();
 }
 
 /* ==========================================================================
-   INSTITUTIONAL NAVIGATION ROUTER
-   Maps the new mega-menu nav to the existing tab panel system
+   INSTITUTIONAL NAVIGATION ROUTER & CLEAN URL ENGINE
+   Maps clean SEO URLs to tab panels & provides bidirectional HTML5 history
    ========================================================================== */
+
+// Clean SEO Route Configuration
+const ROUTE_CONFIG = {
+  "/": {
+    desk: "dashboard",
+    title: "Market Dashboard | Live Nifty 50 & Real-Time Institutional Intelligence - TradersDesk",
+    desc: "Real-time executive trading dashboard with live Nifty 50, GIFT Nifty, India VIX, FII/DII flow, MTF book, and market breadth pulse."
+  },
+  "/dashboard": {
+    desk: "dashboard",
+    title: "Market Dashboard | Live Nifty 50 & Real-Time Institutional Intelligence - TradersDesk",
+    desc: "Real-time executive trading dashboard with live Nifty 50, GIFT Nifty, India VIX, FII/DII flow, MTF book, and market breadth pulse."
+  },
+  "/global-markets": {
+    desk: "globalMarkets",
+    title: "Global Markets & Macro Desk | World Indices, Commodities & Currencies - TradersDesk",
+    desc: "Real-time global market tracker for Indian traders. Live GIFT Nifty, US Futures (S&P 500, Nasdaq, Dow), European & Asian Indices, Brent Crude, Gold, US 10Y Yields, DXY, and Indian ADRs."
+  },
+  "/global": {
+    desk: "globalMarkets",
+    title: "Global Markets & Macro Desk | World Indices, Commodities & Currencies - TradersDesk",
+    desc: "Real-time global market tracker for Indian traders. Live GIFT Nifty, US Futures (S&P 500, Nasdaq, Dow), European & Asian Indices, Brent Crude, Gold, US 10Y Yields, DXY, and Indian ADRs."
+  },
+  "/option-chain-pro": {
+    desk: "upstoxChain",
+    title: "Option Chain Pro - Live Option Greeks, PCR & Multi-Strike OI Scanner | TradersDesk",
+    desc: "Direct exchange streaming Option Chain Pro with real-time Option Greeks (Delta, Gamma, Theta, Vega, IV), ATM Straddles & dynamic weekly/monthly expiries."
+  },
+  "/option-chain": {
+    desk: "upstoxChain",
+    title: "Option Chain Pro - Live Option Greeks, PCR & Multi-Strike OI Scanner | TradersDesk",
+    desc: "Direct exchange streaming Option Chain Pro with real-time Option Greeks (Delta, Gamma, Theta, Vega, IV), ATM Straddles & dynamic weekly/monthly expiries."
+  },
+  "/options": {
+    desk: "upstoxChain",
+    title: "Option Chain Pro - Live Option Greeks, PCR & Multi-Strike OI Scanner | TradersDesk",
+    desc: "Direct exchange streaming Option Chain Pro with real-time Option Greeks (Delta, Gamma, Theta, Vega, IV), ATM Straddles & dynamic weekly/monthly expiries."
+  },
+  "/futures": {
+    desk: "futures",
+    subview: "matrix",
+    title: "Futures Intelligence Desk - Live Open Interest, Buildup & MWPL Ban Tracker | TradersDesk",
+    desc: "Institutional futures desk tracking live Open Interest buildup, Long/Short unwinding, MWPL exposure, F&O ban period, and sector heatmaps."
+  },
+  "/futures/marketwatch": {
+    desk: "futures",
+    subview: "matrix",
+    title: "Futures Marketwatch - Live F&O Contracts Screener | TradersDesk",
+    desc: "Real-time futures contracts screener, Open Interest volume, and basis premiums across NSE equities."
+  },
+  "/futures/dashboard": {
+    desk: "futures",
+    subview: "matrix",
+    title: "Futures Intelligence Desk - Live Open Interest Screener | TradersDesk",
+    desc: "Real-time futures contracts screener, Open Interest volume, and basis premiums across NSE equities."
+  },
+  "/futures/screener": {
+    desk: "futures",
+    subview: "matrix",
+    title: "Futures Intelligence Desk - Live Open Interest Screener | TradersDesk",
+    desc: "Real-time futures contracts screener, Open Interest volume, and basis premiums across NSE equities."
+  },
+  "/futures/buildup": {
+    desk: "futures",
+    subview: "buildup",
+    title: "Futures Buildup Quadrant - Long & Short Buildup Scanner | TradersDesk",
+    desc: "Real-time Long Buildup, Short Buildup, Short Covering, and Long Unwinding quadrants across NSE F&O equities and indices."
+  },
+  "/futures/heatmap": {
+    desk: "futures",
+    subview: "heatmap",
+    title: "Futures & Options Heatmap - Sector & Stock Heatmaps | TradersDesk",
+    desc: "Multi-sector institutional F&O heatmap visualizing price vs OI change clusters and sector leadership."
+  },
+  "/futures/heatmaps": {
+    desk: "futures",
+    subview: "heatmap",
+    title: "Futures & Options Heatmap - Sector & Stock Heatmaps | TradersDesk",
+    desc: "Multi-sector institutional F&O heatmap visualizing price vs OI change clusters and sector leadership."
+  },
+  "/futures/indices": {
+    desk: "futures",
+    subview: "indices",
+    title: "Index Futures Intelligence Desk - Nifty, Bank Nifty & Fin Nifty | TradersDesk",
+    desc: "Deep-dive analysis into Index Futures contracts, rollover cost, and institutional basis."
+  },
+  "/futures/mwpl": {
+    desk: "futures",
+    subview: "mwpl",
+    title: "MWPL & F&O Ban Tracker Desk - Market-Wide Position Limit | TradersDesk",
+    desc: "Real-time Market-Wide Position Limit (MWPL) utilization tracker and upcoming NSE F&O ban and exit alerts."
+  },
+  "/futures/rollover": {
+    desk: "futures",
+    subview: "rollover",
+    title: "Futures Rollover Matrix - Expiry Rollover Tracker | TradersDesk",
+    desc: "Institutional expiry rollover matrix, rollover percentage, and rollover cost tracking."
+  },
+  "/market-breadth": {
+    desk: "breadth",
+    title: "Market Breadth & Point and Figure (PnF) Analytics Desk | TradersDesk",
+    desc: "Institutional Market Breadth engine with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum."
+  },
+  "/breadth": {
+    desk: "breadth",
+    title: "Market Breadth & Point and Figure (PnF) Analytics Desk | TradersDesk",
+    desc: "Institutional Market Breadth engine with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum."
+  },
+  "/fii-dii": {
+    desk: "smartmoney",
+    title: "FII / DII Smart Money Flow - Institutional Cash & Derivatives Positioning | TradersDesk",
+    desc: "Track institutional smart money flows, FII/DII net daily purchases, Index Futures long/short positioning, and options activity."
+  },
+  "/smart-money": {
+    desk: "smartmoney",
+    title: "FII / DII Smart Money Flow - Institutional Cash & Derivatives Positioning | TradersDesk",
+    desc: "Track institutional smart money flows, FII/DII net daily purchases, Index Futures long/short positioning, and options activity."
+  },
+  "/fii-dii-derivatives": {
+    desk: "smartmoney",
+    title: "FII / DII Smart Money Flow - Institutional Derivatives Positioning | TradersDesk",
+    desc: "Track institutional smart money flows, FII/DII net daily purchases, Index Futures long/short positioning, and options activity."
+  },
+  "/mtf-analytics": {
+    desk: "mtf",
+    title: "MTF Analytics - Margin Trading Facility Book & Stock Leverage Tracker | TradersDesk",
+    desc: "Comprehensive Margin Trading Facility (MTF) analytics tracking stock leverage, aggregate MTF loan exposure, daily financing trends, and category distribution."
+  },
+  "/mtf": {
+    desk: "mtf",
+    title: "MTF Analytics - Margin Trading Facility Book & Stock Leverage Tracker | TradersDesk",
+    desc: "Comprehensive Margin Trading Facility (MTF) analytics tracking stock leverage, aggregate MTF loan exposure, daily financing trends, and category distribution."
+  },
+  "/mtf/overview": {
+    desk: "mtf",
+    subview: "overview",
+    title: "MTF Overview & Market Summary - Margin Trading Facility | TradersDesk",
+    desc: "Aggregate MTF book overview, total funded margin, and daily debt financing trend across NSE listed equities."
+  },
+  "/mtf/topstocks": {
+    desk: "mtf",
+    subview: "topstocks",
+    title: "Top MTF Stocks Screener - Margin Trading Facility Book | TradersDesk",
+    desc: "Ranked screener of top stocks by MTF loan exposure, daily financing change, and concentration."
+  },
+  "/mtf/retail": {
+    desk: "mtf",
+    subview: "retail",
+    title: "MTF Retail Speculation Cluster - Retail Heavy Stocks | TradersDesk",
+    desc: "Analysis of retail speculative leverage, low-priced stock concentration, and debt acceleration."
+  },
+  "/mtf/movers": {
+    desk: "mtf",
+    subview: "movers",
+    title: "MTF Top Inflows & Outflows - Daily Financing Velocity | TradersDesk",
+    desc: "Daily MTF book expansion and deleveraging leaders across NSE equities."
+  },
+  "/mtf/sectors": {
+    desk: "mtf",
+    subview: "sectors",
+    title: "MTF Sector Heatmap & Debt Distribution | TradersDesk",
+    desc: "Sector-wise aggregate margin financing exposure and sectoral leverage concentration."
+  },
+  "/mtf/trend": {
+    desk: "mtf",
+    subview: "trend",
+    title: "MTF Multi-Session Debt Growth Trend | TradersDesk",
+    desc: "Historical MTF debt trajectory, cumulative exposure charts, and leverage growth velocity."
+  },
+  "/mtf/broker": {
+    desk: "mtf",
+    subview: "broker",
+    title: "MTF Broker Terms, Interest Rates & Haircuts | TradersDesk",
+    desc: "Comprehensive broker comparison matrix for MTF interest charges, leverage multipliers, and holding tenures."
+  },
+  "/mtf/calculator": {
+    desk: "mtf",
+    subview: "calculator",
+    title: "MTF Leverage & Interest Cost Calculator | TradersDesk",
+    desc: "Interactive MTF calculator simulating capital required, holding interest cost, and liquidation buffer."
+  },
+  "/mtf/compare": {
+    desk: "mtf",
+    subview: "compare",
+    title: "MTF Stock Comparison Desk | TradersDesk",
+    desc: "Side-by-side MTF metrics comparison between two equities including book size, debt growth, and risk rating."
+  },
+  "/delivery-analytics": {
+    desk: "delivery",
+    title: "Delivery Analytics Desk - High Delivery Volume & Institutional Accumulation | TradersDesk",
+    desc: "Live delivery analytics detecting institutional accumulation, spike in delivery percentage, block deals, and high conviction cash volume."
+  },
+  "/delivery": {
+    desk: "delivery",
+    title: "Delivery Analytics Desk - High Delivery Volume & Institutional Accumulation | TradersDesk",
+    desc: "Live delivery analytics detecting institutional accumulation, spike in delivery percentage, block deals, and high conviction cash volume."
+  },
+  "/delivery/scan": {
+    desk: "delivery",
+    subview: "scan",
+    title: "Delivery Scanner - High Delivery Volume & Institutional Accumulation | TradersDesk",
+    desc: "Scan cash market delivery volume, 5-day averages, delivery percentage spikes, and accumulation signals."
+  },
+  "/delivery/inspect": {
+    desk: "delivery",
+    subview: "inspect",
+    title: "Stock Delivery Inspector - Real-Time Demat Absorption | TradersDesk",
+    desc: "Inspect stock-wise deliverable quantity, cash absorption value, turnover, and historical delivery patterns."
+  },
+  "/quant-tools": {
+    desk: "dashboard",
+    title: "Market Pulse & Derivatives Terminal | TradersDesk",
+    desc: "Institutional-grade financial trading terminal with real-time analytics."
+  },
+  "/tools": {
+    desk: "dashboard",
+    title: "Market Pulse & Derivatives Terminal | TradersDesk",
+    desc: "Institutional-grade financial trading terminal with real-time analytics."
+  },
+  "/settings": {
+    desk: "settings",
+    title: "Terminal Settings & Broker Gateway | TradersDesk",
+    desc: "Configure trading terminal feeds, Upstox API credentials, Angel One integration, theme settings, and auto-refresh intervals."
+  },
+  "/straddle": {
+    desk: "straddle",
+    title: "Straddle Desk - Live Options Premium Decay & Greeks | TradersDesk",
+    desc: "Real-time Options Straddle chart tracking combined CE+PE premium decay, live intraday delta-neutral curves, IV crush, and synthetic futures."
+  },
+  "/atm-straddle": {
+    desk: "straddle",
+    title: "Straddle Desk - Live Options Premium Decay & Greeks | TradersDesk",
+    desc: "Real-time Options Straddle chart tracking combined CE+PE premium decay, live intraday delta-neutral curves, IV crush, and synthetic futures."
+  }
+};
+
+const DESK_TO_URL = {
+  dashboard:     "/",
+  globalMarkets: "/global-markets",
+  global:        "/global-markets",
+  upstoxChain:   "/option-chain-pro",
+  options:       "/option-chain-pro",
+  straddle:      "/straddle",
+  futures:       "/futures",
+  breadth:       "/breadth",
+  smartmoney:    "/fii-dii",
+  smartMoney:    "/fii-dii",
+  fiidii:        "/fii-dii",
+  mtf:           "/mtf",
+  delivery:      "/delivery",
+  tools:         "/quant-tools",
+  settings:      "/settings"
+};
+
+function getUrlForDesk(key, subview) {
+  if (key === "futures" && subview) {
+    if (subview === "buildup") return "/futures/buildup";
+    if (subview === "heatmap") return "/futures/heatmap";
+    if (subview === "mwpl") return "/futures/mwpl";
+    if (subview === "indices") return "/futures/indices";
+    if (subview === "rollover") return "/futures/rollover";
+    if (subview === "matrix" || subview === "marketwatch") return "/futures/marketwatch";
+    return "/futures";
+  }
+  if ((key === "mtf" || key === "mta") && subview) {
+    return `/mtf/${subview}`;
+  }
+  if ((key === "delivery" || key === "deliv") && subview) {
+    return `/delivery/${subview}`;
+  }
+  if ((key === "smartMoney" || key === "smartmoney" || key === "fiidii") && subview === "oi") {
+    return "/fii-dii#oi";
+  }
+  return DESK_TO_URL[key] || "/";
+}
+
+function updateSeoMetadata(title, desc, path) {
+  try {
+    if (title) document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc && desc) metaDesc.setAttribute("content", desc);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle && title) ogTitle.setAttribute("content", title);
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc && desc) ogDesc.setAttribute("content", desc);
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl && path) ogUrl.setAttribute("content", "https://tradersdesk.in" + path);
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical && path) canonical.setAttribute("href", "https://tradersdesk.in" + (path === "/dashboard" ? "/" : path));
+  } catch (_) {}
+}
 
 // Map of instNav keys → which old switchTab() key they correspond to
 const INST_NAV_MAP = {
-  dashboard:   null,          // new dashboard panel
-  breadth:     "breadth",
-  futures:     "futures",     // Dedicated Institutional Futures Intelligence Desk
-  options:     "options",
-  upstoxChain: "upstoxChain", // Dedicated Upstox Option Chain Pro
-  analytics:   "breadth",
-  smartmoney:  "smartMoney",
-  fiidii:      "smartMoney",
-  mtf:         "mtf",
-  delivery:    "delivery",
-  tools:       "tools",
-  settings:    "settings",
-  resources:   "tools",
+  dashboard:     null,          // new dashboard panel
+  globalMarkets: "globalMarkets",
+  global:        "globalMarkets",
+  breadth:       "breadth",
+  futures:       "futures",     // Dedicated Institutional Futures Intelligence Desk
+  options:       "upstoxChain",
+  upstoxChain:   "upstoxChain", // Dedicated Option Chain Pro
+  analytics:     "breadth",
+  smartmoney:    "smartMoney",
+  smartMoney:    "smartMoney",
+  fiidii:        "smartMoney",
+  mtf:           "mtf",
+  delivery:      "delivery",
+  tools:         "tools",
+  settings:      "settings",
 };
 
-// All institutional nav buttons (6 primary pillars + legacy)
+// All institutional nav buttons (primary suites + utilities + legacy aliases)
 const INST_NAV_BTN_IDS = [
-  "navDashboard", "navBreadth", "navDerivatives", "navSmartMoney", "navAlgoDesk", "navTools",
-  "navFutures", "navOptions", "navUpstoxChain", "navAnalytics", "navFiiDii", "navMtf", "navDelivery", "navResources"
+  "navDashboard", "navFutures", "navOptions", "navStraddle",
+  "navGlobalMarkets", "navToolsMenu",
+  "navUpstoxChain", "navBreadthContrib", "navFiiDii", "navMtf", "navDelivery", "navBreadth", "navAnalytics"
 ];
 
 // Map from old tab key → which inst-nav-btn to highlight
 const INST_NAV_ACTIVE_MAP = {
-  dashboard:   "navDashboard",
-  breadth:     "navBreadth",
-  futures:     "navFutures",
-  options:     "navOptions",
-  upstoxChain: "navUpstoxChain",
-  smartMoney:  "navFiiDii",
-  smartmoney:  "navFiiDii",
-  fiidii:      "navFiiDii",
-  mtf:         "navMtf",
-  delivery:    "navDelivery",
-  tools:       "navResources",
-  settings:    "navResources",
-  resources:   "navResources",
+  dashboard:     "navDashboard",
+  globalMarkets: "navGlobalMarkets",
+  global:        "navGlobalMarkets",
+  futures:       "navFutures",
+  options:       "navOptions",
+  upstoxChain:   "navOptions",
+  breadth:       "navOptions",
+  breadthContrib:"navOptions",
+  straddle:      "navOptions",
+  smartMoney:    "navFiiDii",
+  smartmoney:    "navFiiDii",
+  fiidii:        "navFiiDii",
+  mtf:           "navMtf",
+  delivery:      "navDelivery",
+  tools:         "navToolsMenu",
+  settings:      "navToolsMenu",
 };
 
-function instNav(key, subview) {
+function instNav(key, subview, updateHistory = true, shouldScroll = false) {
+  if (key === "straddle") {
+    window.location.href = "/straddle";
+    return;
+  }
+  if (key === "breadthContrib" || key === "contribution") {
+    window.location.href = "/breadth-contribution";
+    return;
+  }
+
   const panelDashboard = document.getElementById("panelDashboard");
 
   // Clear all inst-nav-btn active states
@@ -10154,13 +12171,14 @@ function instNav(key, subview) {
     if (btn) btn.classList.remove("active");
   });
 
+  // Always hide ALL panels before displaying the target
+  const allPanels = document.querySelectorAll(".tab-panel");
+  allPanels.forEach(p => {
+    p.classList.remove("active");
+    p.style.display = "none";
+  });
+
   if (key === "dashboard") {
-    // Show dashboard panel, hide all others
-    const allPanels = document.querySelectorAll(".tab-panel");
-    allPanels.forEach(p => {
-      p.classList.remove("active");
-      p.style.display = "none";
-    });
     if (panelDashboard) {
       panelDashboard.classList.add("active");
       panelDashboard.style.display = "block";
@@ -10171,11 +12189,6 @@ function instNav(key, subview) {
       loadDashboardData();
     }
   } else {
-    // Hide dashboard, route to existing panel via switchTab()
-    if (panelDashboard) {
-      panelDashboard.classList.remove("active");
-      panelDashboard.style.display = "none";
-    }
     const tabKey = INST_NAV_MAP[key] || key;
     if (tabKey && typeof switchTab === "function") {
       switchTab(tabKey);
@@ -10187,12 +12200,102 @@ function instNav(key, subview) {
       if (btn) btn.classList.add("active");
     }
 
-    // If subview provided (e.g. futures sub-desk)
-    if (tabKey === "futures" && subview && window.futuresDesk && typeof window.futuresDesk.switchSubTab === "function") {
-      window.futuresDesk.switchSubTab(subview);
+    // If subview provided (e.g. futures sub-desk, MTF sub-desk, Delivery sub-desk)
+    if (tabKey === "futures" && window.futuresDesk && typeof window.futuresDesk.switchSubTab === "function") {
+      window.futuresDesk.switchSubTab(subview || "matrix");
+    }
+    if ((tabKey === "mtf" || key === "mtf") && subview) {
+      setTimeout(() => {
+        if (typeof mtaSwitchTab === "function") {
+          mtaSwitchTab(subview, false);
+        }
+      }, 80);
+    }
+    if ((tabKey === "delivery" || key === "delivery") && subview) {
+      setTimeout(() => {
+        if (typeof switchDelivSubtab === "function") {
+          switchDelivSubtab(subview, false);
+        }
+      }, 80);
+    }
+    if ((tabKey === "smartMoney" || key === "smartMoney" || key === "smartmoney") && subview === "oi") {
+      setTimeout(() => {
+        const b = document.getElementById("btnFiiSubtabOi");
+        if (b) b.click();
+      }, 120);
     }
   }
+
+  // Synchronize URL and SEO Metadata
+  const targetUrl = getUrlForDesk(key, subview);
+  const routeMeta = ROUTE_CONFIG[targetUrl] || ROUTE_CONFIG["/" + key] || {
+    title: `${String(key).toUpperCase()} | TradersDesk Institutional Terminal`,
+    desc: "Institutional-grade financial trading terminal with real-time analytics."
+  };
+
+  if (updateHistory && typeof history !== "undefined" && history.pushState) {
+    if (window.location.pathname !== targetUrl && (window.location.pathname + window.location.hash) !== targetUrl) {
+      history.pushState({ desk: key, subview }, routeMeta.title, targetUrl);
+    }
+  }
+  updateSeoMetadata(routeMeta.title, routeMeta.desc, targetUrl);
+
+  if (shouldScroll) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
+
+function navigateDesk(targetKey, subview, explicitUrl, ev) {
+  if (ev) {
+    try { ev.preventDefault(); } catch (_) {}
+  }
+
+  const standalonePages = [
+    "/straddle", "/atm-straddle", "/breadth-contribution", "/contribution",
+    "/fii-dii-cash", "/calendar_studio.html", "/calendar", "/calendar-studio",
+    "/admin.html", "/admin", "/disclaimer.html", "/privacy.html", "/terms.html", "/about.html"
+  ];
+  if (explicitUrl && standalonePages.some(p => explicitUrl === p || explicitUrl.startsWith(p + "?") || explicitUrl.startsWith(p + "#"))) {
+    window.location.href = explicitUrl;
+    return false;
+  }
+
+  const curPath = (window.location.pathname || "/").toLowerCase();
+  if (curPath.includes("calendar") || curPath.includes("page2") || curPath.includes("admin") || curPath.includes("about") || curPath.includes("disclaimer") || curPath.includes("privacy") || curPath.includes("terms")) {
+    window.location.href = explicitUrl || getUrlForDesk(targetKey, subview);
+    return false;
+  }
+
+  const deskKey = INST_NAV_MAP[targetKey] ? targetKey : (targetKey || "dashboard");
+  instNav(deskKey, subview, true, true);
+
+  if (explicitUrl && typeof history !== "undefined" && history.pushState) {
+    if ((window.location.pathname + window.location.hash) !== explicitUrl) {
+      const cleanPath = explicitUrl.split('#')[0].split('?')[0];
+      const routeMeta = ROUTE_CONFIG[cleanPath] || ROUTE_CONFIG["/" + deskKey] || {};
+      history.pushState({ desk: deskKey, subview }, routeMeta.title || document.title, explicitUrl);
+      if (routeMeta.title) {
+        updateSeoMetadata(routeMeta.title, routeMeta.desc, explicitUrl);
+      }
+    }
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  return false;
+}
+window.navigateDesk = navigateDesk;
+window.instNav = instNav;
+
+// PopState Listener: Seamless browser Back & Forward button navigation
+window.addEventListener("popstate", (e) => {
+  const currentPath = (window.location.pathname || "/").toLowerCase().replace(/\/$/, "") || "/";
+  const route = ROUTE_CONFIG[currentPath];
+  if (route) {
+    instNav(route.desk, route.subview, false);
+  } else {
+    instNav("dashboard", null, false);
+  }
+});
 
 async function loadDashboardMacroRibbon() {
   try {
@@ -10211,6 +12314,20 @@ async function loadDashboardMacroRibbon() {
       if (chg && hm.giftNifty.changePct !== undefined) {
         chg.textContent = (hm.giftNifty.changePct >= 0 ? "+" : "") + hm.giftNifty.changePct + "%";
         chg.className = "mp-chg " + (hm.giftNifty.changePct >= 0 ? "positive" : "negative");
+      }
+
+      // Live GIFT NIFTY KPI Card (just like India VIX)
+      const kVal = document.getElementById("dashKpiGiftNifty");
+      const kSub = document.getElementById("dashKpiGiftNiftySub");
+      if (kVal && hm.giftNifty.ltp) {
+        kVal.textContent = hm.giftNifty.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+      }
+      if (kSub && hm.giftNifty.changePct !== undefined) {
+        const sign = hm.giftNifty.changePct >= 0 ? "+" : "";
+        const ptStr = hm.giftNifty.change !== undefined ? `${sign}${Number(hm.giftNifty.change).toFixed(1)} ` : "";
+        kSub.textContent = `${ptStr}(${sign}${Number(hm.giftNifty.changePct).toFixed(2)}%)`;
+        kSub.style.color = hm.giftNifty.changePct >= 0 ? "#10b981" : "#ef4444";
+        kSub.style.fontWeight = "700";
       }
     }
     if (hm.brentCrude) {
@@ -10405,22 +12522,28 @@ async function loadDashboardData(force = false) {
           }
         }).catch(e => console.warn("Dashboard breadth error:", e)),
 
-      // 3. Real Smart Money FII Net Futures Value
+      // 3. Real Smart Money FII Cash Net
       fetch("/api/smart-money", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date: dateVal })
       }).then(r => r.ok ? r.json() : null)
         .then(data => {
-          if (data && data.fiiMetrics) {
-            const kpi = document.getElementById("dashKpiFii");
-            if (kpi) {
-              const val = data.fiiMetrics.netFuturesValueCr;
-              if (val !== undefined && val !== null) {
-                const absVal = Math.abs(Math.round(val)).toLocaleString("en-IN");
-                kpi.textContent = `₹${val < 0 ? "-" : "+"}${absVal} Cr`;
-                kpi.style.color = val >= 0 ? "#10b981" : "#ef4444";
-              }
+          const kpi = document.getElementById("dashKpiFii");
+          if (!kpi || !data) return;
+          const daily = data.cashFlow?.daily;
+          const latest = daily && daily.length ? daily[0] : null;
+          if (latest && latest.fiiNet !== undefined && latest.fiiNet !== null) {
+            const fn = Number(latest.fiiNet);
+            const absVal = Math.abs(fn).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            kpi.textContent = `₹${fn < 0 ? "-" : "+"}${absVal} Cr`;
+            kpi.style.color = fn >= 0 ? "#10b981" : "#ef4444";
+          } else if (data.fiiMetrics) {
+            const val = data.fiiMetrics.fiiCashNetCr ?? data.fiiMetrics.netFuturesValueCr;
+            if (val !== undefined && val !== null) {
+              const absVal = Math.abs(Math.round(val)).toLocaleString("en-IN");
+              kpi.textContent = `₹${val < 0 ? "-" : "+"}${absVal} Cr`;
+              kpi.style.color = val >= 0 ? "#10b981" : "#ef4444";
             }
           }
         }).catch(e => console.warn("Dashboard FII error:", e)),
@@ -10443,7 +12566,7 @@ async function loadDashboardData(force = false) {
           }
         }).catch(e => console.warn("Dashboard MTF error:", e)),
 
-      // 5. Real Delivery Desk Avg %
+      // 5. Real Delivery Desk Today % and 5D Avg %
       fetch("/api/delivery-analytics", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -10452,8 +12575,14 @@ async function loadDashboardData(force = false) {
         .then(data => {
           if (data && data.summary) {
             const kpi = document.getElementById("dashKpiDeliv");
-            if (kpi && data.summary.avgDeliveryPct !== undefined) {
-              kpi.textContent = Number(data.summary.avgDeliveryPct).toFixed(1) + "%";
+            const sub = document.getElementById("dashKpiDelivSub");
+            const todayPct = data.summary.todayDeliveryPct ?? data.summary.avgDeliveryPct;
+            const avg5d = data.summary.avg5dDeliveryPct;
+            if (kpi && todayPct !== undefined) {
+              kpi.textContent = Number(todayPct).toFixed(1) + "%";
+            }
+            if (sub && avg5d !== undefined) {
+              sub.textContent = `5D Avg: ${Number(avg5d).toFixed(1)}%`;
             }
           }
         }).catch(e => console.warn("Dashboard delivery error:", e))
@@ -10466,19 +12595,45 @@ async function loadDashboardData(force = false) {
 }
 
 function initInstNavState() {
-  // Check URL query param or hash for deep linking (e.g. ?tab=upstoxChain)
-  try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tabParam = urlParams.get('tab') || (window.location.hash ? window.location.hash.replace('#', '') : null);
-    if (tabParam && (INST_NAV_MAP[tabParam] || tabParam === 'dashboard')) {
-      instNav(tabParam);
-      return;
-    }
-  } catch (_) {}
+  // Always kick off real-time ticking market clock on load immediately
+  try { startLiveMarketClock(); } catch(e) { console.warn("Clock init err:", e); }
 
-  // On initial load, show dashboard
+  const currentPath = (window.location.pathname || "/").toLowerCase().replace(/\/$/, "") || "/";
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get("tab") || (window.location.hash ? window.location.hash.replace("#", "") : null);
+
+  // 1. Direct path routing via clean SEO URLs
+  if (ROUTE_CONFIG[currentPath]) {
+    const route = ROUTE_CONFIG[currentPath];
+    instNav(route.desk, route.subview, false);
+    updateSeoMetadata(route.title, route.desc, currentPath);
+
+    // If on dashboard, load macro ribbon & data
+    if (route.desk === "dashboard") {
+      try { loadDashboardMacroRibbon(); } catch(e){}
+      try { loadDashboardData(); } catch(e){}
+    } else {
+      // Also load macro ribbon in background for market pulse
+      try { loadDashboardMacroRibbon(); } catch(e){}
+    }
+
+    if (els.dateInput) {
+      els.dateInput.addEventListener("change", () => {
+        try { loadDashboardData(true); } catch(e){}
+      });
+    }
+    return;
+  }
+
+  // 2. Query param or legacy hash routing
+  if (tabParam && (INST_NAV_MAP[tabParam] || tabParam === "dashboard")) {
+    instNav(tabParam, null, true);
+    try { loadDashboardMacroRibbon(); } catch(e){}
+    return;
+  }
+
+  // 3. Fallback: show dashboard
   const panelDashboard = document.getElementById("panelDashboard");
-  // Hide all existing panels first
   const allPanels = document.querySelectorAll(".tab-panel");
   allPanels.forEach(p => {
     if (p.id !== "panelDashboard") {
@@ -10490,26 +12645,99 @@ function initInstNavState() {
     panelDashboard.classList.add("active");
     panelDashboard.style.display = "block";
   }
-  // Activate the Dashboard nav button
   const navDash = document.getElementById("navDashboard");
   if (navDash) navDash.classList.add("active");
 
-  // Load Macro ribbon data & full dashboard real data
-  loadDashboardMacroRibbon();
-  loadDashboardData();
+  try { loadDashboardMacroRibbon(); } catch(e){}
+  try { loadDashboardData(); } catch(e){}
 
-  // Wire dateInput listener to refresh dashboard
   if (els.dateInput) {
     els.dateInput.addEventListener("change", () => {
-      loadDashboardData(true);
+      try { loadDashboardData(true); } catch(e){}
     });
   }
 }
 
+function startLiveMarketClock() {
+  function updateClock() {
+    const now = new Date();
+    // Indian Standard Time (UTC + 5:30)
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const istDate = new Date(utc + istOffset);
+
+    const h = istDate.getHours();
+    const m = istDate.getMinutes();
+    const s = istDate.getSeconds();
+    const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} IST`;
+
+    const day = istDate.getDay(); // 0 is Sunday, 6 is Saturday
+    const isWeekday = day >= 1 && day <= 5;
+    const currentMinutes = h * 60 + m;
+    // Market regular hours: 09:15 to 15:30 IST (555 to 930 mins)
+    const isMarketOpen = isWeekday && currentMinutes >= 555 && currentMinutes < 930;
+
+    const elClock = document.getElementById("instLiveClock");
+    if (elClock) elClock.textContent = timeStr;
+    const heroClock = document.getElementById("dashHeroClock");
+    if (heroClock) heroClock.textContent = timeStr;
+
+    const pill = document.getElementById("topMarketStatusPill");
+    const statusText = document.getElementById("marketStatusText");
+    const sessionBadge = document.getElementById("dashSessionBadge");
+    const sessionText = document.getElementById("dashSessionText");
+
+    if (isMarketOpen) {
+      if (pill) pill.className = "inst-market-pill open";
+      if (statusText) statusText.textContent = "NSE LIVE";
+      if (sessionBadge) sessionBadge.className = "dash-session-badge live";
+      if (sessionText) sessionText.textContent = "NSE Regular Trading Session Active (09:15 - 15:30 IST)";
+    } else {
+      if (pill) pill.className = "inst-market-pill closed";
+      if (statusText) statusText.textContent = "MARKET CLOSED";
+      if (sessionBadge) sessionBadge.className = "dash-session-badge closed";
+      if (sessionText) {
+        if (isWeekday && currentMinutes < 555) {
+          sessionText.textContent = "Pre-Market Session Opens at 09:00 IST";
+        } else {
+          sessionText.textContent = "Market Closed (Next Session: 09:15 IST)";
+        }
+      }
+    }
+  }
+
+  updateClock();
+  if (!window._istClockInterval) {
+    window._istClockInterval = setInterval(updateClock, 1000);
+  }
+}
+
 // Expose instNav & dashboard loaders globally
+window._realInstNav = instNav;
 window.instNav = instNav;
+window.navigateDesk = navigateDesk;
 window.loadDashboardData = loadDashboardData;
 window.updateDashboardIndices = updateDashboardIndices;
+window.startLiveMarketClock = startLiveMarketClock;
+window.initInstNavState = initInstNavState;
+
+// Drain queued navigation requests if any happened before app.js loaded
+if (Array.isArray(window._instNavQueue) && window._instNavQueue.length > 0) {
+  const queued = window._instNavQueue.pop();
+  window._instNavQueue = [];
+  try {
+    instNav.apply(null, queued);
+  } catch(e) {}
+}
+
+// Initialize route navigation state now that ROUTE_CONFIG, instNav and panels are ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    initInstNavState();
+  });
+} else {
+  initInstNavState();
+}
 
 
 /* ==============================================================================
@@ -10688,6 +12916,14 @@ async function fetchGlobalMarketPulse() {
       _lastPulseSpots['indiavix'] = vix.spot;
     }
 
+    // 6. Real-time ATM Straddle (Navbar badge)
+    if (data.atmStraddle && data.atmStraddle.price) {
+      const stBadge = document.getElementById('navStraddleValueBadge');
+      if (stBadge) {
+        stBadge.textContent = '₹' + Number(data.atmStraddle.price).toFixed(1);
+      }
+    }
+
     // Update status badge
     const apiStat = document.getElementById('apiStatus');
     if (apiStat) {
@@ -10743,3 +12979,53 @@ function startGlobalMarketPulse() {
 startGlobalMarketPulse();
 window.startGlobalMarketPulse = startGlobalMarketPulse;
 window.fetchGlobalMarketPulse = fetchGlobalMarketPulse;
+
+// ── Dynamic 4-Column Footer Hydration ──────────────────────────────────────
+async function initDynamicFooter() {
+  const container = document.getElementById("footerFourColumnsGrid");
+  if (!container) return;
+  try {
+    const res = await fetch("/api/footer-links");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.columns) && data.columns.length === 4) {
+      const titleColors = { col1: "#38bdf8", col2: "#a78bfa", col3: "#34d399", col4: "#f59e0b" };
+      container.innerHTML = data.columns.map(col => {
+        const color = titleColors[col.id] || "var(--text-primary)";
+        return `
+          <div class="footer-link-group" data-col="${col.id}">
+            <h4 style="display:flex; align-items:center; gap:6px; color:${color}; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+              ${col.title}
+            </h4>
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+              ${(col.links || []).map(link => {
+                const targetAttr = link.target === "_blank" ? 'target="_blank" rel="noopener"' : '';
+                let clickHandler = '';
+                if (link.target === "_blank") {
+                  // external link
+                } else if (link.type === 'tab' || link.type === 'inst') {
+                  const targetStr = link.target || '';
+                  const parts = targetStr.split(':');
+                  const key = parts[0];
+                  const sub = parts[1] || '';
+                  clickHandler = `onclick="return navigateDesk('${key}', '${sub}', '${link.url}', event);"`;
+                } else if (link.url) {
+                  clickHandler = `onclick="return navigateDesk('', '', '${link.url}', event);"`;
+                }
+                return `<a href="${link.url}" ${targetAttr} ${clickHandler}>${link.label}</a>`;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  } catch (err) {
+    // Gracefully use existing markup
+  }
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDynamicFooter);
+} else {
+  initDynamicFooter();
+}
+window.initDynamicFooter = initDynamicFooter;

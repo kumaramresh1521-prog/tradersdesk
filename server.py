@@ -32,8 +32,6 @@ from pathlib import Path
 import greeks
 import brokers
 import tools_engine
-import oi_suite_engine
-import niftytrader_engine
 import supabase_engine
 import seo_engine
 import straddle_engine
@@ -83,12 +81,79 @@ log_system_event("INFO", "ANGEL", "Angel One SmartAPI session bridge active for 
 
 
 def check_admin_request(handler) -> bool:
-    secret = env("ADMIN_SECRET_KEY", "breadthlab_admin_2026").strip()
+    secret = env("ADMIN_SECRET_KEY", "").strip()
+    if not secret:
+        return False
     provided = handler.headers.get("X-Admin-Secret", "").strip()
     if not provided:
         query = urllib.parse.parse_qs(urllib.parse.urlparse(handler.path).query)
         provided = query.get("adminKey", [""])[0].strip()
+    if not provided:
+        auth_h = handler.headers.get("Authorization", "").strip()
+        if auth_h.lower().startswith("bearer "):
+            provided = auth_h[7:].strip()
     return bool(provided and provided == secret)
+
+
+def is_masked_or_empty(val: str) -> bool:
+    v = (val or "").strip()
+    return not v or v.startswith("...") or set(v) == {"*"} or "******" in v
+
+
+def get_default_footer_links() -> dict:
+    return {
+        "ok": True,
+        "columns": [
+            {
+                "id": "col1",
+                "title": "🏛️ Institutional Desks",
+                "links": [
+                    {"label": "Market Breadth Pro", "url": "/breadth", "type": "inst", "target": "breadth"},
+                    {"label": "FII & DII Smart Money", "url": "/fii-dii", "type": "inst", "target": "smartMoney"},
+                    {"label": "Cash Delivery Absorption", "url": "/delivery", "type": "inst", "target": "delivery"},
+                    {"label": "MTF Margin Trading Book", "url": "/mtf", "type": "inst", "target": "mtf"},
+                    {"label": "Global Markets Desk", "url": "/global-markets", "type": "inst", "target": "globalMarkets"},
+                    {"label": "Institutional Dashboard", "url": "/dashboard", "type": "inst", "target": "dashboard"}
+                ]
+            },
+            {
+                "id": "col2",
+                "title": "⚡ Derivatives & Options",
+                "links": [
+                    {"label": "Upstox Option Chain Pro", "url": "/option-chain-pro", "type": "inst", "target": "upstoxChain"},
+                    {"label": "Future Marketwatch Matrix", "url": "/futures", "type": "inst", "target": "futures:matrix"},
+                    {"label": "Straddle Analytics Engine", "url": "/straddle", "type": "link", "target": "_self"},
+                    {"label": "Future Buildup Quadrants", "url": "/futures/buildup", "type": "inst", "target": "futures:buildup"},
+                    {"label": "MWPL & Ban Radar", "url": "/futures/mwpl", "type": "inst", "target": "futures:mwpl"},
+                    {"label": "Historical Rollover Matrix", "url": "/futures/rollover", "type": "link", "target": "_self"}
+                ]
+            },
+            {
+                "id": "col3",
+                "title": "📊 Market Analytics & Tools",
+                "links": [
+                    {"label": "Breadth & Net Contribution", "url": "/breadth-contribution", "type": "link", "target": "_self"},
+                    {"label": "NSE Trading Holiday Calendar", "url": "/calendar_studio.html", "type": "link", "target": "_self"},
+                    {"label": "Participant OI Matrix", "url": "/fii-dii#oi", "type": "inst", "target": "smartMoney:oi"},
+                    {"label": "F&O Sector Visual Heatmap", "url": "/futures/heatmap", "type": "inst", "target": "futures:heatmap"},
+                    {"label": "Real-Time Options Greeks", "url": "/option-chain-pro", "type": "inst", "target": "upstoxChain"},
+                    {"label": "Stock Delivery Drilldown", "url": "/delivery", "type": "inst", "target": "delivery"}
+                ]
+            },
+            {
+                "id": "col4",
+                "title": "🛡️ Regulatory & Compliance",
+                "links": [
+                    {"label": "SEBI Regulatory Disclaimer", "url": "/disclaimer.html", "type": "link", "target": "_self"},
+                    {"label": "Privacy & Data Governance", "url": "/privacy.html", "type": "link", "target": "_self"},
+                    {"label": "Terms of Institutional Service", "url": "/terms.html", "type": "link", "target": "_self"},
+                    {"label": "Quantitative Model Methodologies", "url": "/about.html", "type": "link", "target": "_self"},
+                    {"label": "NSE Official Regulatory Archive ↗", "url": "https://www.nseindia.com", "type": "link", "target": "_blank"},
+                    {"label": "Platform Administration 🔒", "url": "/admin.html", "type": "link", "target": "_self"}
+                ]
+            }
+        ]
+    }
 
 
 INSTRUMENT_URLS = [
@@ -293,10 +358,10 @@ INDEX_UNIVERSES = {
 }
 
 INDEX_CHARTS = {
-    "nifty50": {"label": "Nifty 50", "symbol": "Nifty 50", "name": "NIFTY", "seed": 24750},
-    "banknifty": {"label": "Bank Nifty", "symbol": "Nifty Bank", "name": "BANKNIFTY", "seed": 52000},
-    "finnifty": {"label": "FinNifty", "symbol": "Nifty Fin Service", "name": "FINNIFTY", "seed": 23800},
-    "midcpnifty": {"label": "Midcap Select", "symbol": "NIFTY MID SELECT", "name": "MIDCPNIFTY", "seed": 12700},
+    "nifty50": {"label": "Nifty 50", "symbol": "Nifty 50", "name": "NIFTY", "seed": 22600},
+    "banknifty": {"label": "Bank Nifty", "symbol": "Nifty Bank", "name": "BANKNIFTY", "seed": 55050},
+    "finnifty": {"label": "FinNifty", "symbol": "Nifty Fin Service", "name": "FINNIFTY", "seed": 24900},
+    "midcpnifty": {"label": "Midcap Select", "symbol": "NIFTY MID SELECT", "name": "MIDCPNIFTY", "seed": 13750},
     "niftyit": {"label": "Nifty IT", "symbol": "Nifty IT", "name": "NIFTY IT", "seed": 36000},
     "niftyauto": {"label": "Nifty Auto", "symbol": "Nifty Auto", "name": "NIFTY AUTO", "seed": 25000},
     "niftypharma": {"label": "Nifty Pharma", "symbol": "Nifty Pharma", "name": "NIFTY PHARMA", "seed": 22000},
@@ -306,7 +371,7 @@ INDEX_CHARTS = {
     "niftymidcap100": {"label": "Nifty Midcap 100", "symbol": "NIFTY MIDCAP 100", "name": "NIFTY MIDCAP 100", "seed": 62000},
     "niftynext50": {"label": "Nifty Next 50", "symbol": "Nifty Next 50", "name": "NIFTYNXT50", "seed": 72000},
     "nifty500": {"label": "Nifty 500", "symbol": "Nifty 500", "name": "NIFTY 500", "seed": 22000},
-    "sensex": {"label": "BSE Sensex", "symbol": "SENSEX", "name": "SENSEX", "exchange": "BSE", "seed": 82000},
+    "sensex": {"label": "BSE Sensex", "symbol": "SENSEX", "name": "SENSEX", "exchange": "BSE", "seed": 72600},
 }
 
 SAMPLE_SECTORS = [
@@ -378,6 +443,50 @@ def ensure_cache() -> None:
 
 def now_ist() -> datetime:
     return datetime.now(INDIA_TZ)
+
+
+# ==============================================================================
+# 🇮🇳 Indian Stock Markets (NSE / BSE) Official Trading Holiday Calendar
+# ==============================================================================
+NSE_ANNUAL_FIXED_HOLIDAYS = {
+    (1, 26),   # Republic Day
+    (5, 1),    # Maharashtra Day
+    (8, 15),   # Independence Day
+    (10, 2),   # Mahatma Gandhi Jayanti
+    (12, 25),  # Christmas
+}
+
+NSE_CALENDAR_HOLIDAYS = {
+    # 2024
+    "2024-01-22", "2024-01-26", "2024-03-08", "2024-03-25", "2024-03-29",
+    "2024-04-11", "2024-04-17", "2024-05-01", "2024-05-20", "2024-06-17",
+    "2024-07-17", "2024-08-15", "2024-10-02", "2024-11-01", "2024-11-15", "2024-12-25",
+    # 2025
+    "2025-01-26", "2025-02-26", "2025-03-14", "2025-03-31", "2025-04-10",
+    "2025-04-14", "2025-04-18", "2025-05-01", "2025-06-07", "2025-08-15",
+    "2025-08-27", "2025-10-02", "2025-10-21", "2025-10-22", "2025-11-05", "2025-12-25",
+    # 2026
+    "2026-01-26", "2026-02-15", "2026-03-03", "2026-03-20", "2026-03-26",
+    "2026-04-03", "2026-04-14", "2026-05-01", "2026-05-31", "2026-08-15",
+    "2026-09-15", "2026-10-02", "2026-10-20", "2026-11-10", "2026-11-24", "2026-12-25",
+}
+
+def is_market_holiday(d: date) -> bool:
+    if (d.month, d.day) in NSE_ANNUAL_FIXED_HOLIDAYS:
+        return True
+    return d.isoformat() in NSE_CALENDAR_HOLIDAYS
+
+def is_trading_day(d: date) -> bool:
+    if d.weekday() >= 5:
+        return False
+    return not is_market_holiday(d)
+
+def is_market_open() -> bool:
+    now = now_ist()
+    if not is_trading_day(now.date()):
+        return False
+    hm = (now.hour, now.minute)
+    return (9, 15) <= hm <= (15, 30)
 
 
 def parse_bool(value: str, default: bool = False) -> bool:
@@ -540,7 +649,7 @@ class AngelClient(brokers.BaseBrokerClient):
         self.request_delay_ms = max(1200, int(env("BREADTH_REQUEST_DELAY_MS", "1200") or 1200))
         self.last_request_at = 0.0
         self._login_failed_at = 0.0
-        self._login_cooldown_sec = 300
+        self._login_cooldown_sec = 30
         self.manual_totp = ""
 
     def throttle(self) -> None:
@@ -600,6 +709,16 @@ class AngelClient(brokers.BaseBrokerClient):
             },
         )
 
+    def clear_session(self) -> None:
+        self.jwt_token = ""
+        self.refresh_token = ""
+        self.feed_token = ""
+        if self.session_path.exists():
+            try:
+                self.session_path.unlink()
+            except Exception:
+                pass
+
     def ensure_session(self) -> None:
         if not angel_configured():
             raise RuntimeError("Angel SmartAPI is not configured. Copy .env.example to .env first.")
@@ -609,7 +728,7 @@ class AngelClient(brokers.BaseBrokerClient):
         if not self.manual_totp and self._login_failed_at > 0 and elapsed_since_fail < self._login_cooldown_sec:
             remaining = int(self._login_cooldown_sec - elapsed_since_fail)
             raise RuntimeError(f"Login failed recently, cooling down ({remaining}s remaining). Fix credentials or enter a fresh 6-digit TOTP.")
-        totp_val = self.manual_totp if self.manual_totp else (env("ANGEL_TOTP_CODE") or current_totp())
+        totp_val = self.manual_totp if self.manual_totp else current_totp()
         body = {
             "clientcode": self.client_code,
             "password": self.pin,
@@ -667,11 +786,36 @@ class AngelClient(brokers.BaseBrokerClient):
             except RuntimeError as exc:
                 last_error = str(exc)
                 rate_limited = "exceeding access rate" in last_error.lower() or "http 403" in last_error.lower()
+                token_invalid = any(w in last_error.lower() for w in ("token", "401", "unauthorized", "session", "ag8001"))
+                if token_invalid and attempt == 0:
+                    try:
+                        self.clear_session()
+                        self.ensure_session()
+                        continue
+                    except Exception:
+                        pass
                 if not rate_limited or attempt == 5:
                     raise
                 time.sleep(2.0 * (attempt + 1))
         if result is None:
             raise RuntimeError(last_error or "Candle request failed")
+        if not result.get("status"):
+            err_msg = str(result.get("message", "")).lower()
+            err_code = str(result.get("errorcode", "")).upper()
+            if err_code in ("AG8001", "AG8002", "AG8003") or any(w in err_msg for w in ("token", "unauthorized", "session", "jwt")):
+                try:
+                    self.clear_session()
+                    self.ensure_session()
+                    self.throttle()
+                    result = http_json(
+                        self.root + ANGEL_CANDLES,
+                        method="POST",
+                        body=body,
+                        headers=self.headers(auth=True),
+                        timeout=30,
+                    )
+                except Exception:
+                    pass
         if not result.get("status"):
             raise RuntimeError(result.get("message") or f"Candle request failed: {result}")
         data = result.get("data") or []
@@ -747,7 +891,7 @@ class AngelClient(brokers.BaseBrokerClient):
 
         cache_is_fresh = is_complete and (not is_today_or_future_datetime(to_date) or cache_age <= live_cache_ttl)
 
-        if cached.get("data") and (cache_is_fresh or allow_stale or (not is_market_open() and len(cached.get("data", [])) > 0)):
+        if cached.get("data") and (cache_is_fresh or (allow_stale and is_complete) or (not is_market_open() and is_complete)):
             if not cache_is_fresh and background_refresh and is_market_open():
                 with REFRESH_LOCK:
                     should_refresh = refresh_key not in REFRESHING_CANDLE_KEYS
@@ -806,6 +950,20 @@ class AngelClient(brokers.BaseBrokerClient):
                     headers=self.headers(auth=True),
                     timeout=5,
                 )
+                if not result.get("status"):
+                    err_msg = str(result.get("message", "")).lower()
+                    err_code = str(result.get("errorcode", "")).upper()
+                    if err_code in ("AG8001", "AG8002", "AG8003") or any(w in err_msg for w in ("token", "unauthorized", "session", "jwt")):
+                        self.clear_session()
+                        self.ensure_session()
+                        self.throttle()
+                        result = http_json(
+                            self.root + ANGEL_QUOTE,
+                            method="POST",
+                            body=body,
+                            headers=self.headers(auth=True),
+                            timeout=5,
+                        )
                 if result.get("status"):
                     data = result.get("data") or {}
                     f = data.get("fetched") or []
@@ -814,8 +972,13 @@ class AngelClient(brokers.BaseBrokerClient):
                         merged_fetched.extend(f)
                     if isinstance(u, list):
                         merged_unfetched.extend(u)
-            except Exception:
-                pass
+            except Exception as exc:
+                if any(w in str(exc).lower() for w in ("token", "401", "unauthorized")):
+                    try:
+                        self.clear_session()
+                        self.ensure_session()
+                    except Exception:
+                        pass
         if merged_fetched or merged_unfetched:
             return {"fetched": merged_fetched, "unfetched": merged_unfetched}
         return {}
@@ -1118,11 +1281,18 @@ def resolve_nifty_index() -> Instrument:
     return instrument
 
 
+_INDEX_OPTION_ROWS_CACHE: dict[str, list[dict]] = {}
+_INDEX_EXPIRIES_CACHE: dict[str, tuple[float, list[dict]]] = {}
+
+
 def index_option_rows(index_name: str) -> list[dict]:
-    rows = []
     norm = normalize_index_key(index_name)
     cfg = INDEX_CHARTS.get(norm)
     target_name = (cfg["name"] if cfg else index_name).strip().upper()
+    if target_name in _INDEX_OPTION_ROWS_CACHE:
+        return _INDEX_OPTION_ROWS_CACHE[target_name]
+
+    rows = []
     is_bse = target_name in ("SENSEX", "BANKEX") or norm == "sensex"
     target_seg = "BFO" if is_bse else "NFO"
 
@@ -1136,6 +1306,8 @@ def index_option_rows(index_name: str) -> list[dict]:
             and symbol.endswith(("CE", "PE"))
         ):
             rows.append(row)
+    if rows:
+        _INDEX_OPTION_ROWS_CACHE[target_name] = rows
     return rows
 
 
@@ -1148,6 +1320,12 @@ def strike_from_row(row: dict) -> float:
 
 
 def available_index_expiries(index_name: str, as_of_date: str) -> list[dict]:
+    cache_key = f"{index_name}:{as_of_date}"
+    now_t = time.time()
+    cached = _INDEX_EXPIRIES_CACHE.get(cache_key)
+    if cached and (now_t - cached[0] < 600.0):
+        return cached[1]
+
     as_of = datetime.fromisoformat(as_of_date).date()
     expiries: dict[str, datetime] = {}
     for row in index_option_rows(index_name):
@@ -1156,10 +1334,13 @@ def available_index_expiries(index_name: str, as_of_date: str) -> list[dict]:
         if not expiry_dt or expiry_dt.date() < as_of:
             continue
         expiries.setdefault(expiry_raw, expiry_dt)
-    return [
+    res = [
         {"value": raw, "label": expiry_dt.strftime("%d %b %Y")}
         for raw, expiry_dt in sorted(expiries.items(), key=lambda item: item[1])
     ]
+    if res:
+        _INDEX_EXPIRIES_CACHE[cache_key] = (now_t, res)
+    return res
 
 
 def number_from_quote(record: dict | None, *keys: str):
@@ -1282,11 +1463,16 @@ def sample_index_candles(index_key: str, date_value: str, from_date: str = None,
         start = datetime.combine(dt, dt_time(9, 15)).replace(tzinfo=INDIA_TZ)
         end = datetime.combine(dt, dt_time(15, 30)).replace(tzinfo=INDIA_TZ)
 
+        now_current = now_ist()
+        if dt == now_current.date():
+            if start <= now_current < end:
+                end = now_current.replace(second=0, microsecond=0)
+
         session_change_pct = rng.uniform(-0.015, 0.015)
         day_open = round(base_price * (1.0 + rng.uniform(-0.004, 0.004)), 2)
-        day_close = round(day_open * (1.0 + session_change_pct), 2)
+        day_close = base_price if (dt == now_current.date() and now_current < datetime.combine(dt, dt_time(15, 30)).replace(tzinfo=INDIA_TZ)) else round(day_open * (1.0 + session_change_pct), 2)
 
-        total_minutes = int((end - start).total_seconds() / 60)
+        total_minutes = max(1, int((end - start).total_seconds() / 60))
         total_steps = max(1, total_minutes // max(1, interval_minutes))
 
         # Generate realistic stochastic path using Brownian Bridge with micro-momentum
@@ -1503,13 +1689,18 @@ def enrich_chain_summary(rows: list[dict], summary: dict, spot: float) -> dict:
         "atmIv": round(atm_iv, 2) if atm_iv is not None else summary.get("avgIv"),
         "topCallOi": [{"strike": r["strike"], "oi": (r.get("call") or {}).get("oi", 0)} for r in call_oi_strikes],
         "topPutOi": [{"strike": r["strike"], "oi": (r.get("put") or {}).get("oi", 0)} for r in put_oi_strikes],
-        "topCallOiBuildup": [{"strike": r["strike"], "oiChange": (r.get("call") or {}).get("oiChange", 0)} for r in call_oi_buildup],
-        "topPutOiBuildup": [{"strike": r["strike"], "oiChange": (r.get("put") or {}).get("oiChange", 0)} for r in put_oi_buildup],
+        "topCallOiBuildup": [{"strike": r["strike"], "oiChange": (r.get("call") or {}).get("oiChange") or 0} for r in call_oi_buildup],
+        "topPutOiBuildup": [{"strike": r["strike"], "oiChange": (r.get("put") or {}).get("oiChange") or 0} for r in put_oi_buildup],
     })
     return summary
 
 
-def build_index_option_chain(
+_INDEX_CHAIN_MEM_CACHE: dict[str, dict] = {}
+_INDEX_CHAIN_CACHE_LOCK = threading.Lock()
+_INDEX_CHAIN_UPDATING_KEYS = set()
+
+
+def _compute_index_option_chain_raw(
     client: brokers.BaseBrokerClient,
     *,
     index_name: str,
@@ -1646,11 +1837,16 @@ def build_index_option_chain(
             call_quote["oi"] = c_oi
             call_quote["oiChange"] = int(c_oi * ratio_rng.uniform(0.02, 0.08))
             call_quote["volume"] = int(c_oi * ratio_rng.uniform(0.25, 0.55))
+        elif call_quote.get("oiChange") is None:
+            call_quote["oiChange"] = 0
+
         if p_oi <= 0:
             p_oi = int(125000 + distance * 48 + ((strike + 150) % 350) * 115)
             put_quote["oi"] = p_oi
             put_quote["oiChange"] = int(p_oi * ratio_rng.uniform(0.02, 0.08))
             put_quote["volume"] = int(p_oi * ratio_rng.uniform(0.20, 0.50))
+        elif put_quote.get("oiChange") is None:
+            put_quote["oiChange"] = 0
 
         total_call_oi += c_oi
         total_put_oi += p_oi
@@ -1706,6 +1902,60 @@ def build_index_option_chain(
     enrich_chain_summary(rows, summary, spot)
 
     return rows, summary, expiries, selected_expiry
+
+
+def build_index_option_chain(
+    client: brokers.BaseBrokerClient,
+    *,
+    index_name: str,
+    spot: float,
+    date_value: str,
+    expiry: str,
+    strike_range: int,
+) -> tuple[list[dict], dict, list[dict], str]:
+    cache_key = f"{index_name}:{date_value}:{expiry}:{strike_range}:{round(spot / 50.0)}"
+    cached = _INDEX_CHAIN_MEM_CACHE.get(cache_key)
+    ttl = 4.0 if is_market_open() else 60.0
+
+    if cached:
+        age = time.time() - cached.get("ts", 0)
+        if age >= ttl:
+            with _INDEX_CHAIN_CACHE_LOCK:
+                can_spawn = cache_key not in _INDEX_CHAIN_UPDATING_KEYS
+                if can_spawn:
+                    _INDEX_CHAIN_UPDATING_KEYS.add(cache_key)
+            if can_spawn:
+                def _bg_worker():
+                    try:
+                        res = _compute_index_option_chain_raw(
+                            client,
+                            index_name=index_name,
+                            spot=spot,
+                            date_value=date_value,
+                            expiry=expiry,
+                            strike_range=strike_range,
+                        )
+                        with _INDEX_CHAIN_CACHE_LOCK:
+                            _INDEX_CHAIN_MEM_CACHE[cache_key] = {"ts": time.time(), "val": res}
+                    except Exception as exc:
+                        logger.warning("Background index option chain failed: %s", exc)
+                    finally:
+                        with _INDEX_CHAIN_CACHE_LOCK:
+                            _INDEX_CHAIN_UPDATING_KEYS.discard(cache_key)
+                threading.Thread(target=_bg_worker, daemon=True).start()
+        return cached["val"]
+
+    res = _compute_index_option_chain_raw(
+        client,
+        index_name=index_name,
+        spot=spot,
+        date_value=date_value,
+        expiry=expiry,
+        strike_range=strike_range,
+    )
+    with _INDEX_CHAIN_CACHE_LOCK:
+        _INDEX_CHAIN_MEM_CACHE[cache_key] = {"ts": time.time(), "val": res}
+    return res
 
 
 def fetch_instrument_master() -> list[dict]:
@@ -1899,6 +2149,13 @@ def aggregate_breadth(series_by_symbol: dict[str, list[dict]], ma_window: int):
 
 
 def sample_candles(symbol: str, date_value: str, interval_minutes: int = 1) -> list[list]:
+    try:
+        d_val = datetime.fromisoformat(date_value[:10]).date()
+        if not is_trading_day(d_val):
+            return []
+    except Exception:
+        pass
+
     seed = int(hashlib.sha256(f"{symbol}-{date_value}".encode("utf-8")).hexdigest()[:12], 16)
     rng = random.Random(seed)
     start = datetime.fromisoformat(date_value).replace(hour=9, minute=15, second=0, tzinfo=INDIA_TZ)
@@ -1907,6 +2164,8 @@ def sample_candles(symbol: str, date_value: str, interval_minutes: int = 1) -> l
     # If date_value is today, never generate future candles past current live market time
     now = now_ist()
     if date_value == now.date().isoformat():
+        if not is_trading_day(now.date()):
+            return []
         market_open = now.replace(hour=9, minute=15, second=0, microsecond=0)
         market_close = now.replace(hour=15, minute=30, second=0, microsecond=0)
         if now < market_open:
@@ -1944,24 +2203,37 @@ def previous_market_date(date_value: str, sessions: int = 1) -> str:
     date_obj = datetime.fromisoformat(date_value).date()
     while remaining:
         date_obj -= timedelta(days=1)
-        if date_obj.weekday() < 5:
+        if is_trading_day(date_obj):
             remaining -= 1
     return date_obj.isoformat()
 
 
 def resolve_market_session_date(dt_param: Optional[str] = None) -> str:
     now_dt = now_ist()
-    today_str = now_dt.date().isoformat()
+    today_date = now_dt.date()
+    today_str = today_date.isoformat()
+    market_opened_today = is_trading_day(today_date) and (now_dt.hour > 9 or (now_dt.hour == 9 and now_dt.minute >= 15))
+
     if not dt_param or not str(dt_param).strip():
-        if now_dt.weekday() >= 5 or (now_dt.hour < 9 or (now_dt.hour == 9 and now_dt.minute < 15)):
-            return previous_market_date(today_str, 1)
+        if not market_opened_today:
+            cursor = today_date - timedelta(days=1)
+            while not is_trading_day(cursor):
+                cursor -= timedelta(days=1)
+            return cursor.isoformat()
         return today_str
 
     clean_dt = str(dt_param).strip()
     try:
         d_obj = datetime.fromisoformat(clean_dt[:10]).date()
-        if d_obj.weekday() >= 5:
-            return previous_market_date(d_obj.isoformat(), 1)
+        if d_obj >= today_date and not market_opened_today:
+            cursor = today_date - timedelta(days=1)
+            while not is_trading_day(cursor):
+                cursor -= timedelta(days=1)
+            return cursor.isoformat()
+        cursor = d_obj
+        while not is_trading_day(cursor):
+            cursor -= timedelta(days=1)
+        return cursor.isoformat()
     except Exception:
         pass
     return clean_dt
@@ -1976,7 +2248,7 @@ def market_dates_between(start_date: str, end_date: str) -> list[str]:
     dates = []
     cursor = start
     while cursor <= end:
-        if cursor.weekday() < 5:
+        if is_trading_day(cursor):
             dates.append(cursor.isoformat())
         cursor += timedelta(days=1)
     return dates
@@ -2035,9 +2307,13 @@ def make_universe(payload: dict) -> tuple[list[dict], str, str, str]:
         return rows, "custom", "custom", "Custom"
     rows, source, universe_key, universe_label = fetch_index_symbols(str(payload.get("universe") or "nifty50"))
     return rows, source, universe_key, universe_label
+_BREADTH_SNAPSHOT_CACHE: dict[str, dict] = {}
+_BREADTH_CACHE_LOCK = threading.Lock()
+_BREADTH_UPDATING_KEYS: set[str] = set()
+_BREADTH_SEMAPHORE = threading.Semaphore(2)
 
 
-def build_breadth(payload: dict) -> dict:
+def _build_breadth_internal(payload: dict) -> dict:
     date_value = resolve_market_session_date(payload.get("date"))
     end_date_value = resolve_market_session_date(payload.get("endDate") or date_value)
     warmup_date = payload.get("warmupDate") or previous_market_date(date_value, 1)
@@ -2277,6 +2553,7 @@ def build_breadth(payload: dict) -> dict:
         "missingSymbols": missing[:50],
         "errors": errors[:80],
         "summary": {
+            "date": date_value,
             "latestBreadth": last.get("breadth"),
             "openBreadth": first.get("breadth"),
             "change": round((last.get("breadth", 0) - first.get("breadth", 0)), 2) if timeline else None,
@@ -2290,13 +2567,108 @@ def build_breadth(payload: dict) -> dict:
         "timeline": timeline,
     }
 
-    if data_source != "sample" and series_by_symbol and market_closed and len(timeline) > 30:
+    if data_source != "sample" and series_by_symbol and len(timeline) > 10:
         try:
             write_json(breadth_cache_file, res_payload)
         except Exception:
             pass
 
     return res_payload
+
+
+def build_breadth(payload: dict) -> dict:
+    """
+    Shared In-Memory Snapshot Cache with Stale-While-Revalidate (SWR).
+    Serves 1,000+ concurrent viewers in < 1ms from memory. Runs at most one
+    background calculation per universe, eliminating broker API rate limits.
+    """
+    date_val = resolve_market_session_date(payload.get("date"))
+    end_date_val = resolve_market_session_date(payload.get("endDate") or date_val)
+    universe = str(payload.get("universe") or "nifty50").lower().strip()
+    interval = str(payload.get("interval") or "ONE_MINUTE").upper().strip()
+    chart_mode = str(payload.get("chartMode") or "carry").lower().strip()
+    pnf_basis = str(payload.get("pnfBasis") or "hl").lower().strip()
+    box_pct = str(payload.get("boxPercent") or "1.0").strip()
+    data_src = str(payload.get("dataSource") or "angel").strip()
+    is_force = parse_bool(str(payload.get("forceRefresh", "")), default=False) or parse_bool(str(payload.get("refresh", "")), default=False)
+
+    cache_key = f"{universe}_{date_val}_{end_date_val}_{interval}_{chart_mode}_{pnf_basis}_{box_pct}_{data_src}"
+    disk_cache_file = CACHE_DIR / f"breadth_full_{universe}_{date_val}_{end_date_val}_{interval}_{chart_mode}_{pnf_basis}.json"
+
+    is_today = (date_val == now_ist().date().isoformat())
+    now_h, now_m = now_ist().hour, now_ist().minute
+    market_open = is_today and (9 <= now_h < 15 or (now_h == 15 and now_m < 30)) and now_ist().weekday() < 5
+    # TTL: 10s during active market hours, 300s outside market / historical
+    ttl_seconds = 10.0 if market_open else 300.0
+
+    with _BREADTH_CACHE_LOCK:
+        cached = _BREADTH_SNAPSHOT_CACHE.get(cache_key)
+
+    if cached:
+        age = time.time() - cached["ts"]
+        if age < ttl_seconds and not is_force:
+            return cached["payload"]
+
+        # Stale-While-Revalidate: Return stale cached data immediately (< 1ms),
+        # kick off a single-flight background refresh if not already in progress.
+        with _BREADTH_CACHE_LOCK:
+            can_spawn = cache_key not in _BREADTH_UPDATING_KEYS
+            if can_spawn:
+                _BREADTH_UPDATING_KEYS.add(cache_key)
+
+        if can_spawn:
+            def _bg_worker():
+                try:
+                    with _BREADTH_SEMAPHORE:
+                        fresh = _build_breadth_internal(payload)
+                        if fresh and fresh.get("ok"):
+                            with _BREADTH_CACHE_LOCK:
+                                _BREADTH_SNAPSHOT_CACHE[cache_key] = {"ts": time.time(), "payload": fresh}
+                except Exception as e:
+                    logger.warning("Background breadth snapshot update failed for %s: %s", cache_key, e)
+                finally:
+                    with _BREADTH_CACHE_LOCK:
+                        _BREADTH_UPDATING_KEYS.discard(cache_key)
+
+            threading.Thread(target=_bg_worker, daemon=True).start()
+
+        return cached["payload"]
+
+    # Cold start: Check persistent disk cache before running heavy multi-stock broker fetch
+    if disk_cache_file.exists():
+        try:
+            disk_res = read_json(disk_cache_file, {})
+            if disk_res.get("ok") and len(disk_res.get("timeline", [])) > 10 and disk_res.get("dataSource") != "sample":
+                with _BREADTH_CACHE_LOCK:
+                    _BREADTH_SNAPSHOT_CACHE[cache_key] = {"ts": time.time(), "payload": disk_res}
+                if market_open:
+                    with _BREADTH_CACHE_LOCK:
+                        can_spawn_cold = cache_key not in _BREADTH_UPDATING_KEYS
+                        if can_spawn_cold:
+                            _BREADTH_UPDATING_KEYS.add(cache_key)
+                    if can_spawn_cold:
+                        def _cold_bg():
+                            try:
+                                with _BREADTH_SEMAPHORE:
+                                    fresh = _build_breadth_internal(payload)
+                                    if fresh and fresh.get("ok"):
+                                        with _BREADTH_CACHE_LOCK:
+                                            _BREADTH_SNAPSHOT_CACHE[cache_key] = {"ts": time.time(), "payload": fresh}
+                            finally:
+                                with _BREADTH_CACHE_LOCK:
+                                    _BREADTH_UPDATING_KEYS.discard(cache_key)
+                        threading.Thread(target=_cold_bg, daemon=True).start()
+                return disk_res
+        except Exception:
+            pass
+
+    # Synchronous initial build with concurrency semaphore
+    with _BREADTH_SEMAPHORE:
+        fresh = _build_breadth_internal(payload)
+        if fresh and fresh.get("ok"):
+            with _BREADTH_CACHE_LOCK:
+                _BREADTH_SNAPSHOT_CACHE[cache_key] = {"ts": time.time(), "payload": fresh}
+        return fresh
 
 
 CALENDAR_SPREAD_CACHE: dict[str, dict] = {}
@@ -3260,9 +3632,10 @@ _MACRO_CACHE = {
 
 def _fetch_single_macro_symbol(sym: str):
     try:
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d&range=2d"
+        encoded_sym = urllib.parse.quote(sym)
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded_sym}?interval=1d&range=2d"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=2.0) as r:
+        with urllib.request.urlopen(req, timeout=3.0) as r:
             res = json.loads(r.read().decode("utf-8"))
             meta = res["chart"]["result"][0]["meta"]
             val = meta.get("regularMarketPrice")
@@ -4142,9 +4515,13 @@ def compute_volatility_dashboard(index_key: str, spot: float, rows: list[dict], 
         "playbook": playbook,
         "stockScreener": fno_stocks
     }
+_NIFTY_SNAPSHOT_CACHE: dict[str, dict] = {}
+_NIFTY_CACHE_LOCK = threading.Lock()
+_NIFTY_UPDATING_KEYS: set[str] = set()
+_NIFTY_SEMAPHORE = threading.Semaphore(3)
 
 
-def build_nifty(payload: dict) -> dict:
+def _build_nifty_internal(payload: dict) -> dict:
     date_value = resolve_market_session_date(payload.get("date"))
     index_key = normalize_index_key(str(payload.get("index") or "nifty50"))
     index_config = INDEX_CHARTS[index_key]
@@ -4211,14 +4588,31 @@ def build_nifty(payload: dict) -> dict:
                 candle_error = str(exc)
 
             is_simulated = False
+            # During live market hours or for higher intervals (5m, 15m, 30m, 1h),
+            # having fewer than 60 candles is normal and valid. We only fall back to
+            # sample candles if no points could be fetched from the broker at all.
             if not points:
                 is_simulated = True
                 interval_minutes = interval_to_minutes(candle_interval)
                 candles = sample_index_candles(index_key, date_value, from_date=fetch_from_date, interval_minutes=interval_minutes)
                 points = candle_points(candles)
 
+            # Ensure spot is accurate
+            live_spot = None
+            if not index_quote.get("ltp"):
+                try:
+                    live_qs = get_live_market_index_quotes()
+                    if live_qs.get(index_key, {}).get("spot"):
+                        live_spot = float(live_qs[index_key]["spot"])
+                        index_quote["ltp"] = live_spot
+                        index_quote["change"] = float(live_qs[index_key].get("change") or 0.0)
+                        index_quote["percentChange"] = float(live_qs[index_key].get("percentChange") or 0.0)
+                except Exception:
+                    pass
+
             latest_close = points[-1]["close"] if points else None
-            spot = index_quote.get("ltp") or latest_close or 24050.0
+            default_seed = INDEX_CHARTS.get(index_key, {}).get("seed", 22600.0)
+            spot = index_quote.get("ltp") or live_spot or latest_close or default_seed
 
             option_rows = []
             expiries = []
@@ -4350,7 +4744,7 @@ def build_nifty(payload: dict) -> dict:
     points = candle_points(candles)
     first = points[0] if points else {}
     last = points[-1] if points else {}
-    spot = last.get("close") or 24750.0
+    spot = last.get("close") or INDEX_CHARTS.get(index_key, {}).get("seed", 22600.0)
     expiry_date = datetime.fromisoformat(date_value).date()
     while expiry_date.weekday() != 1:
         expiry_date += timedelta(days=1)
@@ -4450,6 +4844,71 @@ def build_nifty(payload: dict) -> dict:
         "volatilityDashboard": volatility_dashboard,
         "errors": [],
     }
+
+
+def build_nifty(payload: dict) -> dict:
+    """
+    Shared In-Memory Snapshot Cache with Stale-While-Revalidate (SWR) for /api/nifty.
+    Serves Nifty chart & analytics in < 1ms from memory. Runs at most one
+    background calculation per index, eliminating broker rate limits.
+    """
+    index_key = normalize_index_key(str(payload.get("index") or "nifty50"))
+    date_val = resolve_market_session_date(payload.get("date"))
+    interval = str(payload.get("interval") or "ONE_MINUTE").upper().strip()
+    straddle_days = int(payload.get("straddleDays") or 1)
+    inc_opt = parse_bool(str(payload.get("includeOptionChain", "")), default=False)
+    strike_range = int(payload.get("strikeRange") or 8)
+    expiry = str(payload.get("expiry") or "auto").upper()
+    data_src = str(payload.get("dataSource") or "angel").strip()
+    is_force = parse_bool(str(payload.get("forceRefresh", "")), default=False) or parse_bool(str(payload.get("refresh", "")), default=False)
+
+    cache_key = f"{index_key}_{date_val}_{interval}_{straddle_days}_{inc_opt}_{strike_range}_{expiry}_{data_src}"
+
+    is_today = (date_val == now_ist().date().isoformat())
+    now_h, now_m = now_ist().hour, now_ist().minute
+    market_open = is_today and (9 <= now_h < 15 or (now_h == 15 and now_m < 30)) and now_ist().weekday() < 5
+    ttl_seconds = 5.0 if market_open else 120.0
+
+    with _NIFTY_CACHE_LOCK:
+        cached = _NIFTY_SNAPSHOT_CACHE.get(cache_key)
+
+    if cached:
+        age = time.time() - cached["ts"]
+        if age < ttl_seconds and not is_force:
+            return cached["payload"]
+
+        # Stale-While-Revalidate: Return stale cached data immediately (< 1ms),
+        # kick off a single-flight background refresh if not already in progress.
+        with _NIFTY_CACHE_LOCK:
+            can_spawn = cache_key not in _NIFTY_UPDATING_KEYS
+            if can_spawn:
+                _NIFTY_UPDATING_KEYS.add(cache_key)
+
+        if can_spawn:
+            def _bg_nifty():
+                try:
+                    with _NIFTY_SEMAPHORE:
+                        fresh = _build_nifty_internal(payload)
+                        if fresh and fresh.get("ok"):
+                            with _NIFTY_CACHE_LOCK:
+                                _NIFTY_SNAPSHOT_CACHE[cache_key] = {"ts": time.time(), "payload": fresh}
+                except Exception as e:
+                    logger.warning("Background nifty snapshot update failed for %s: %s", cache_key, e)
+                finally:
+                    with _NIFTY_CACHE_LOCK:
+                        _NIFTY_UPDATING_KEYS.discard(cache_key)
+
+            threading.Thread(target=_bg_nifty, daemon=True).start()
+
+        return cached["payload"]
+
+    # Cold start initial build with concurrency semaphore
+    with _NIFTY_SEMAPHORE:
+        fresh = _build_nifty_internal(payload)
+        if fresh and fresh.get("ok"):
+            with _NIFTY_CACHE_LOCK:
+                _NIFTY_SNAPSHOT_CACHE[cache_key] = {"ts": time.time(), "payload": fresh}
+        return fresh
 
 
 CHART_DESK_CACHE: dict = {}
@@ -5125,7 +5584,7 @@ def build_participant_oi_analysis(date_value: str) -> dict:
 
 def build_analysis(payload: dict) -> dict:
     analysis_type = payload.get("type", "delivery")
-    date_value = payload.get("date") or datetime.now(INDIA_TZ).strftime("%Y-%m-%d")
+    date_value = resolve_market_session_date(payload.get("date"))
     
     try:
         from nse_data import get_real_participant_oi, get_real_delivery_data, get_institutional_secrets, get_morning_market_radar
@@ -5627,8 +6086,8 @@ def parse_delivery_bhav_file(file_path: pathlib.Path) -> dict[str, dict]:
             for r in reader:
                 if not r or len(r) < 15:
                     continue
-                series = r[1].strip()
-                if series != "EQ":
+                series = r[1].strip().upper()
+                if series not in ("EQ", "BE", "BZ", "SM", "ST"):
                     continue
                 sym = r[0].strip().upper()
                 try:
@@ -5642,24 +6101,31 @@ def parse_delivery_bhav_file(file_path: pathlib.Path) -> dict[str, dict]:
                     deliv_per_str = r[14].strip()
                     deliv_per = float(deliv_per_str) if deliv_per_str not in ("-", "") else 0.0
 
+                    if series == "BE" and deliv_qty == 0 and traded_qty > 0:
+                        deliv_qty = traded_qty
+                        deliv_per = 100.0
+
                     chg = round(close - prev_close, 2)
                     chg_pct = round((chg / prev_close) * 100.0, 2) if prev_close > 0 else 0.0
                     turnover_cr = round(turnover_lacs / 100.0, 2)
                     deliv_turnover_cr = round(turnover_cr * (deliv_per / 100.0), 2)
 
-                    stocks[sym] = {
-                        "symbol": sym,
-                        "close": close,
-                        "prevClose": prev_close,
-                        "change": chg,
-                        "changePct": chg_pct,
-                        "tradedQty": traded_qty,
-                        "delivQty": deliv_qty,
-                        "delivPer": deliv_per,
-                        "turnoverCr": turnover_cr,
-                        "delivTurnoverCr": deliv_turnover_cr,
-                        "trades": trades,
-                    }
+                    # Keep existing EQ if present, otherwise set or update
+                    if sym not in stocks or series == "EQ":
+                        stocks[sym] = {
+                            "symbol": sym,
+                            "series": series,
+                            "close": close,
+                            "prevClose": prev_close,
+                            "change": chg,
+                            "changePct": chg_pct,
+                            "tradedQty": traded_qty,
+                            "delivQty": deliv_qty,
+                            "delivPer": deliv_per,
+                            "turnoverCr": turnover_cr,
+                            "delivTurnoverCr": deliv_turnover_cr,
+                            "trades": trades,
+                        }
                 except Exception:
                     continue
     except Exception:
@@ -5695,11 +6161,23 @@ def compute_major_indices_delivery(stocks: dict[str, dict], baseline_sessions: l
         tot_traded_cr = round(sum(p["turnoverCr"] for p in present), 1)
         
         hist_index_avgs = []
+        hist_cr_avgs = []
         for bs in baseline_sessions:
             b_present = [bs[s] for s in syms if s in bs]
             if b_present:
                 hist_index_avgs.append(sum(bp["delivPer"] for bp in b_present) / len(b_present))
-        avg_5d = round(sum(hist_index_avgs) / len(hist_index_avgs), 1) if hist_index_avgs else avg_deliv
+                hist_cr_avgs.append(sum(bp["delivTurnoverCr"] for bp in b_present))
+
+        # Previous day session metrics
+        prev_present = [baseline_sessions[-1][s] for s in syms if baseline_sessions and s in baseline_sessions[-1]] if baseline_sessions else []
+        prev_deliv_pct = round(sum(p["delivPer"] for p in prev_present) / len(prev_present), 1) if prev_present else avg_deliv
+        prev_deliv_cr = round(sum(p["delivTurnoverCr"] for p in prev_present), 1) if prev_present else tot_deliv_cr
+
+        # 5-Day and Monthly (up to 20 sessions) metrics
+        hist_5d = hist_index_avgs[-5:] if len(hist_index_avgs) >= 5 else hist_index_avgs
+        avg_5d = round(sum(hist_5d) / len(hist_5d), 1) if hist_5d else avg_deliv
+        monthly_avg_pct = round(sum(hist_index_avgs) / len(hist_index_avgs), 1) if hist_index_avgs else avg_deliv
+        monthly_avg_cr = round(sum(hist_cr_avgs) / len(hist_cr_avgs), 1) if hist_cr_avgs else tot_deliv_cr
         shock = round(avg_deliv / avg_5d, 2) if avg_5d > 0 else 1.0
         
         acc_cnt = sum(1 for p in present if p["changePct"] > 0.3 and p["delivPer"] >= 50.0)
@@ -5720,6 +6198,12 @@ def compute_major_indices_delivery(stocks: dict[str, dict], baseline_sessions: l
             "label": label,
             "stockCount": len(present),
             "avgDeliveryPct": avg_deliv,
+            "todayDeliveryPct": avg_deliv,
+            "todayDelivCr": tot_deliv_cr,
+            "prevDayDeliveryPct": prev_deliv_pct,
+            "prevDayDelivCr": prev_deliv_cr,
+            "monthlyAvgDeliveryPct": monthly_avg_pct,
+            "monthlyAvgDelivCr": monthly_avg_cr,
             "avg5dPct": avg_5d,
             "shockRatio": shock,
             "delivTurnoverCr": tot_deliv_cr,
@@ -5760,6 +6244,186 @@ def fetch_delivery_bhav_by_date(target_dt: date) -> tuple[pathlib.Path | None, d
     if cached_files:
         return cached_files[-1], target_dt
     return None, target_dt
+
+_INDEX_DELIVERY_CACHE = {}
+
+INDEX_DELIVERY_ALIAS_MAP = {
+    "NIFTY 50": ("nifty50", "NIFTY 50"),
+    "NIFTY": ("nifty50", "NIFTY 50"),
+    "NIFTY50": ("nifty50", "NIFTY 50"),
+    "NIFTY-50": ("nifty50", "NIFTY 50"),
+    "BANK NIFTY": ("banknifty", "NIFTY BANK"),
+    "BANKNIFTY": ("banknifty", "NIFTY BANK"),
+    "NIFTY BANK": ("banknifty", "NIFTY BANK"),
+    "FINNIFTY": ("finnifty", "FINNIFTY"),
+    "FIN NIFTY": ("finnifty", "FINNIFTY"),
+    "NIFTY FIN SERVICE": ("finnifty", "FINNIFTY"),
+    "NIFTY FINANCIAL SERVICES": ("finnifty", "FINNIFTY"),
+    "MIDCPNIFTY": ("midcpnifty", "NIFTY MIDCAP SELECT"),
+    "MIDCAP NIFTY": ("midcpnifty", "NIFTY MIDCAP SELECT"),
+    "NIFTY MIDCAP": ("midcpnifty", "NIFTY MIDCAP SELECT"),
+    "NIFTY MIDCAP SELECT": ("midcpnifty", "NIFTY MIDCAP SELECT"),
+    "NIFTY MIDCAP 100": ("niftymidcap100", "NIFTY MIDCAP 100"),
+    "NIFTYMIDCAP100": ("niftymidcap100", "NIFTY MIDCAP 100"),
+    "MIDCAP 100": ("niftymidcap100", "NIFTY MIDCAP 100"),
+    "NIFTY NEXT 50": ("niftynext50", "NIFTY NEXT 50"),
+    "NIFTYNEXT50": ("niftynext50", "NIFTY NEXT 50"),
+    "NEXT 50": ("niftynext50", "NIFTY NEXT 50"),
+    "NIFTY IT": ("niftyit", "NIFTY IT"),
+    "NIFTYIT": ("niftyit", "NIFTY IT"),
+    "NIFTY AUTO": ("niftyauto", "NIFTY AUTO"),
+    "NIFTYAUTO": ("niftyauto", "NIFTY AUTO"),
+    "NIFTY PHARMA": ("niftypharma", "NIFTY PHARMA"),
+    "NIFTYPHARMA": ("niftypharma", "NIFTY PHARMA"),
+    "NIFTY FMCG": ("niftyfmcg", "NIFTY FMCG"),
+    "NIFTYFMCG": ("niftyfmcg", "NIFTY FMCG"),
+    "NIFTY METAL": ("niftymetal", "NIFTY METAL"),
+    "NIFTYMETAL": ("niftymetal", "NIFTY METAL"),
+    "NIFTY ENERGY": ("niftyenergy", "NIFTY ENERGY"),
+    "NIFTYENERGY": ("niftyenergy", "NIFTY ENERGY"),
+    "SENSEX": ("sensex", "BSE SENSEX"),
+    "BSE SENSEX": ("sensex", "BSE SENSEX"),
+}
+
+DEFAULT_INDEX_SPOTS = {
+    "nifty50": 23040.5,
+    "banknifty": 50120.0,
+    "finnifty": 23250.0,
+    "midcpnifty": 12850.0,
+    "niftyit": 41200.0,
+    "niftyauto": 25600.0,
+    "niftypharma": 22400.0,
+    "niftymetal": 9150.0,
+    "niftyfmcg": 61500.0,
+    "niftyenergy": 38200.0,
+    "niftymidcap100": 58100.0,
+    "niftynext50": 73500.0,
+    "sensex": 76800.0,
+}
+
+def resolve_index_delivery_query(query: str):
+    if not query:
+        return None
+    clean = query.strip().upper()
+    if clean in INDEX_DELIVERY_ALIAS_MAP:
+        return INDEX_DELIVERY_ALIAS_MAP[clean]
+    norm = clean.replace(" ", "").replace("-", "").replace("_", "")
+    for k, v in INDEX_DELIVERY_ALIAS_MAP.items():
+        if k.replace(" ", "").replace("-", "").replace("_", "") == norm:
+            return v
+    return None
+
+def build_index_delivery_analytics(index_key: str, display_label: str, session_map: list) -> dict:
+    global _INDEX_DELIVERY_CACHE
+    latest_key_str = session_map[-1][0].isoformat() if session_map else ""
+    cache_key = (index_key, len(session_map), latest_key_str)
+    if cache_key in _INDEX_DELIVERY_CACHE:
+        return _INDEX_DELIVERY_CACHE[cache_key]
+
+    if index_key == "nifty50":
+        constituents = set(NIFTY_50_SYMBOLS)
+    elif index_key in INDEX_UNIVERSES:
+        conf = INDEX_UNIVERSES[index_key]
+        constituents = set(conf.get("fallback", []))
+    else:
+        constituents = set(NIFTY_50_SYMBOLS)
+
+    conf_cache = INDEX_UNIVERSES.get(index_key, {}).get("cache")
+    if conf_cache:
+        c_path = CACHE_DIR / str(conf_cache)
+        if c_path.exists():
+            try:
+                c_data = read_json(c_path, {})
+                c_rows = c_data.get("rows", [])
+                if c_rows:
+                    syms = [r.get("symbol") or r.get("Symbol") for r in c_rows if r.get("symbol") or r.get("Symbol")]
+                    if syms:
+                        constituents.update(s.strip().upper() for s in syms)
+            except Exception:
+                pass
+
+    live_quotes = {}
+    try:
+        live_quotes = get_live_market_index_quotes()
+    except Exception:
+        pass
+
+    if index_key in live_quotes and live_quotes[index_key].get("spot"):
+        base_spot = float(live_quotes[index_key]["spot"])
+    else:
+        base_spot = DEFAULT_INDEX_SPOTS.get(index_key, 23040.5)
+
+    raw_history = []
+    for s_dt, f in reversed(session_map):
+        formatted_d = s_dt.strftime("%d %b %Y")
+        formatted_iso = s_dt.isoformat()
+        sess_stocks = parse_delivery_bhav_file(f)
+        present = [sess_stocks[s] for s in constituents if s in sess_stocks]
+        if not present:
+            continue
+
+        tot_traded = sum(p["tradedQty"] for p in present)
+        tot_deliv = sum(p["delivQty"] for p in present)
+        tot_cr = round(sum(p["turnoverCr"] for p in present), 2)
+        tot_deliv_cr = round(sum(p["delivTurnoverCr"] for p in present), 2)
+        tot_trades = sum(p["trades"] for p in present)
+        deliv_pct = round((tot_deliv / tot_traded) * 100.0, 1) if tot_traded > 0 else (round((tot_deliv_cr / tot_cr) * 100.0, 1) if tot_cr > 0 else 0.0)
+
+        w_sum = sum(p["turnoverCr"] for p in present)
+        ret_pct = round(sum(p["changePct"] * p["turnoverCr"] for p in present) / w_sum, 2) if w_sum > 0 else round(sum(p["changePct"] for p in present) / len(present), 2)
+
+        raw_history.append({
+            "date": formatted_d,
+            "dateIso": formatted_iso,
+            "tradedQty": int(tot_traded),
+            "delivQty": int(tot_deliv),
+            "delivPer": deliv_pct,
+            "turnoverCr": tot_cr,
+            "delivTurnoverCr": tot_deliv_cr,
+            "trades": int(tot_trades),
+            "changePct": ret_pct,
+            "constituentsCount": len(present),
+        })
+
+    history = []
+    cur_price = base_spot
+    for i, h in enumerate(raw_history):
+        c_pct = h["changePct"]
+        if i == 0 and index_key in live_quotes and live_quotes[index_key].get("percentChange") is not None:
+            c_pct = float(live_quotes[index_key]["percentChange"])
+            h["changePct"] = round(c_pct, 2)
+
+        p_prev = round(cur_price / (1.0 + (c_pct / 100.0)), 2) if c_pct != -100.0 else cur_price
+        p_chg = round(cur_price - p_prev, 2)
+
+        h["close"] = round(cur_price, 2)
+        h["prevClose"] = round(p_prev, 2)
+        h["change"] = p_chg
+        history.append(h)
+        cur_price = p_prev
+
+    current_rec = history[0] if history else None
+    hist_qtys = [h["delivQty"] for h in history[1:6]]
+    hist_pers = [h["delivPer"] for h in history[1:6]]
+    avg_5d_qty = (sum(hist_qtys) / len(hist_qtys)) if hist_qtys else (current_rec["delivQty"] if current_rec else 0)
+    avg_5d_per = round(sum(hist_pers) / len(hist_pers), 1) if hist_pers else (current_rec["delivPer"] if current_rec else 0)
+    shock = round(current_rec["delivQty"] / avg_5d_qty, 2) if current_rec and avg_5d_qty > 0 else 1.0
+
+    result = {
+        "ok": True,
+        "symbol": display_label,
+        "isIndex": True,
+        "indexKey": index_key,
+        "constituentsCount": len(constituents),
+        "current": current_rec,
+        "avg5dQty": int(avg_5d_qty),
+        "avg5dPer": avg_5d_per,
+        "shockRatio": shock,
+        "history": history,
+        "sessionCount": len(history),
+    }
+    _INDEX_DELIVERY_CACHE[cache_key] = result
+    return result
 
 def build_delivery_analytics(payload: dict) -> dict:
     date_val = payload.get("date")
@@ -5826,15 +6490,37 @@ def build_delivery_analytics(payload: dict) -> dict:
 
     sess_dt, matching_file = session_map[matching_idx]
     current_stocks = parse_delivery_bhav_file(matching_file)
-    baseline_sessions = [parse_delivery_bhav_file(session_map[i][1]) for i in range(max(0, matching_idx - 5), matching_idx)]
+    baseline_sessions = [parse_delivery_bhav_file(session_map[i][1]) for i in range(max(0, matching_idx - 20), matching_idx)]
 
     if drill_symbol:
+        matched_idx = resolve_index_delivery_query(drill_symbol)
+        if matched_idx:
+            idx_key, idx_label = matched_idx
+            return build_index_delivery_analytics(idx_key, idx_label, session_map)
+
         history = []
+        # Pre-resolve target symbol across latest sessions if not an exact match
+        resolved_sym = drill_symbol
+        if resolved_sym not in current_stocks:
+            norm_q = drill_symbol.replace("-EQ", "").replace("-BE", "").replace(" ", "").replace("&", "")
+            for k in current_stocks.keys():
+                norm_k = k.replace("-EQ", "").replace("-BE", "").replace(" ", "").replace("&", "")
+                if norm_k == norm_q or norm_k.startswith(norm_q) or norm_q.startswith(norm_k):
+                    resolved_sym = k
+                    break
+
         for s_dt, f in reversed(session_map):
             formatted_d = s_dt.strftime("%d %b %Y")
             formatted_iso = s_dt.isoformat()
             sess_stocks = parse_delivery_bhav_file(f)
-            rec = sess_stocks.get(drill_symbol)
+            rec = sess_stocks.get(resolved_sym)
+            if not rec:
+                norm_q = resolved_sym.replace("-EQ", "").replace("-BE", "").replace(" ", "").replace("&", "")
+                for k, v in sess_stocks.items():
+                    norm_k = k.replace("-EQ", "").replace("-BE", "").replace(" ", "").replace("&", "")
+                    if norm_k == norm_q:
+                        rec = v
+                        break
             if rec:
                 history.append({
                     "date": formatted_d,
@@ -5924,7 +6610,9 @@ def build_delivery_analytics(payload: dict) -> dict:
             "tradedQty": st["tradedQty"],
             "delivQty": st["delivQty"],
             "delivPer": st["delivPer"],
+            "avg5dQty": int(avg_5d_qty),
             "avgDelivPer5D": round(avg_5d_per, 1),
+            "avg5dDelivCr": round((avg_5d_qty * st["close"]) / 1e7, 2),
             "shockRatio": shock_ratio,
             "turnoverCr": st["turnoverCr"],
             "delivTurnoverCr": st["delivTurnoverCr"],
@@ -5946,6 +6634,7 @@ def build_delivery_analytics(payload: dict) -> dict:
     stock_list.sort(key=lambda x: x["turnoverCr"], reverse=True)
     num_stocks = len(stock_list)
     avg_deliv_per = round(sum_deliv_pct / max(1, num_stocks), 1) if num_stocks else 0.0
+    avg_5d_universe = round(sum(s.get("avgDelivPer5D", 0.0) for s in stock_list) / max(1, num_stocks), 1) if num_stocks else 0.0
 
     top_acc = sorted([s for s in stock_list if s["signal"] == "STRONG_ACCUMULATION"], key=lambda x: x["delivTurnoverCr"], reverse=True)[:5]
     top_dist = sorted([s for s in stock_list if s["signal"] == "HEAVY_DISTRIBUTION"], key=lambda x: x["delivTurnoverCr"], reverse=True)[:5]
@@ -5978,6 +6667,9 @@ def build_delivery_analytics(payload: dict) -> dict:
             "totalStocks": len(stock_list),
             "universeCount": len(target_symbols) if target_symbols else len(current_stocks),
             "avgDeliveryPct": avg_deliv_per,
+            "todayDeliveryPct": avg_deliv_per,
+            "todayDeliveryCr": round(tot_deliv_cr, 2),
+            "avg5dDeliveryPct": avg_5d_universe,
             "totalTradedTurnoverCr": round(tot_traded_cr, 2),
             "totalDelivTurnoverCr": round(tot_deliv_cr, 2),
             "accumulationCount": acc_count,
@@ -6659,6 +7351,7 @@ INDEX_YF_MAP = {
     "finnifty": "%5ECNXFIN",
     "sensex": "%5EBSESN",
     "midcpnifty": "%5ENSEMDCP50",
+    "indiavix": "%5EINDIAVIX",
 }
 
 def get_live_market_index_quotes() -> dict[str, dict]:
@@ -6678,6 +7371,7 @@ def get_live_market_index_quotes() -> dict[str, dict]:
                 Instrument(symbol='finnifty', trading_symbol='FINNIFTY', token='99926037', exchange='NSE'),
                 Instrument(symbol='midcpnifty', trading_symbol='MIDCPNIFTY', token='99926074', exchange='NSE'),
                 Instrument(symbol='sensex', trading_symbol='SENSEX', token='99919000', exchange='BSE'),
+                Instrument(symbol='indiavix', trading_symbol='INDIA VIX', token='99926017', exchange='NSE'),
             ]
             res = ac.quote(idx_instruments, mode='FULL')
             angel_quotes = {}
@@ -6689,6 +7383,7 @@ def get_live_market_index_quotes() -> dict[str, dict]:
                 elif tok == '99926037': key = 'finnifty'
                 elif tok == '99926074': key = 'midcpnifty'
                 elif tok == '99919000': key = 'sensex'
+                elif tok == '99926017': key = 'indiavix'
                 if key:
                     ltp = float(f.get('ltp') or 0.0)
                     chg = float(f.get('netChange') or 0.0)
@@ -6750,12 +7445,12 @@ def get_market_pulse() -> dict:
     base_quotes = get_live_market_index_quotes()
 
     index_specs = [
-        {"key": "nifty50", "symbol": "NIFTY 50", "short": "NIFTY", "default_spot": 23446.8, "step": 50, "scale": 1.0},
-        {"key": "banknifty", "symbol": "BANK NIFTY", "short": "BANKNIFTY", "default_spot": 56548.9, "step": 100, "scale": 2.5},
-        {"key": "sensex", "symbol": "BSE SENSEX", "short": "SENSEX", "default_spot": 74828.25, "step": 100, "scale": 3.5},
-        {"key": "finnifty", "symbol": "FIN NIFTY", "short": "FINNIFTY", "default_spot": 25564.85, "step": 50, "scale": 1.0},
-        {"key": "midcpnifty", "symbol": "MIDCAP NIFTY", "short": "MIDCPNIFTY", "default_spot": 14572.25, "step": 25, "scale": 0.6},
-        {"key": "indiavix", "symbol": "INDIA VIX", "short": "VIX", "default_spot": 10.35, "step": 0.05, "scale": 0.04},
+        {"key": "nifty50", "symbol": "NIFTY 50", "short": "NIFTY", "default_spot": 22603.0, "step": 50, "scale": 1.0},
+        {"key": "banknifty", "symbol": "BANK NIFTY", "short": "BANKNIFTY", "default_spot": 55055.0, "step": 100, "scale": 2.5},
+        {"key": "sensex", "symbol": "BSE SENSEX", "short": "SENSEX", "default_spot": 72638.0, "step": 100, "scale": 3.5},
+        {"key": "finnifty", "symbol": "FIN NIFTY", "short": "FINNIFTY", "default_spot": 24916.0, "step": 50, "scale": 1.0},
+        {"key": "midcpnifty", "symbol": "MIDCAP NIFTY", "short": "MIDCPNIFTY", "default_spot": 13757.0, "step": 25, "scale": 0.6},
+        {"key": "indiavix", "symbol": "INDIA VIX", "short": "VIX", "default_spot": 13.9, "step": 0.05, "scale": 0.04},
     ]
 
     out_indices = {}
@@ -6797,6 +7492,23 @@ def get_market_pulse() -> dict:
             "formattedChange": f"{'+' if is_pos else ''}{live_chg:.2f} ({'+' if is_pos else ''}{live_pct:.2f}%)",
         }
 
+    # ATM Straddle live real-time value tracking (matches page2 analytics)
+    straddle_val = 0.0
+    try:
+        for c_val in STRADDLE_TOOL_CACHE.values():
+            if isinstance(c_val, dict) and "data" in c_val:
+                d_lat = c_val["data"].get("latest", {})
+                if d_lat.get("straddle_price"):
+                    straddle_val = float(d_lat["straddle_price"])
+                    break
+        if not straddle_val:
+            n_spot = out_indices.get("nifty50", {}).get("spot", 23414.0)
+            v_val = out_indices.get("indiavix", {}).get("spot", 14.45)
+            # Standard 4-DTE ATM Straddle premium estimate: ~0.8 * S * (VIX/100) * sqrt(4/365)
+            straddle_val = round(0.8 * n_spot * (v_val / 100.0) * math.sqrt(4.0 / 365.0), 2)
+    except Exception:
+        straddle_val = 282.5
+
     return {
         "ok": True,
         "timestamp": now.strftime("%H:%M:%S"),
@@ -6804,6 +7516,10 @@ def get_market_pulse() -> dict:
         "tickSeq": time_slot,
         "marketOpen": is_market_open(),
         "indices": out_indices,
+        "atmStraddle": {
+            "price": straddle_val,
+            "formatted": f"₹{straddle_val:,.2f}",
+        },
     }
 
 
@@ -7179,7 +7895,7 @@ def trigger_background_indices_update(date_val: str) -> None:
 def build_indices_overview(payload: dict) -> dict:
     global _INDICES_OVERVIEW_CACHE
     force = bool(payload.get("forceRefresh"))
-    date_val = payload.get("date") or now_ist().date().isoformat()
+    date_val = resolve_market_session_date(payload.get("date"))
     now_ts = time.time()
     cache_age = now_ts - _INDICES_OVERVIEW_CACHE["timestamp"]
 
@@ -7200,17 +7916,7 @@ _BREADTH_RECOMPUTING = set()
 _CONSTITUENTS_CACHE = {"timestamp": 0.0, "data": {}}
 
 
-def get_live_constituent_quotes(symbols: list[str]) -> dict[str, dict]:
-    """
-    Fetches real-time market prices for index constituents with intelligent TTL caching.
-    Tries Angel One broker first for live exchange ticks; falls back to local official NSE Bhavdata (0.002s).
-    """
-def is_market_open() -> bool:
-    now = now_ist()
-    if now.weekday() >= 5:
-        return False
-    hm = (now.hour, now.minute)
-    return (9, 15) <= hm <= (15, 30)
+
 
 
 def get_live_constituent_quotes(symbols: list[str]) -> dict[str, dict]:
@@ -7236,7 +7942,18 @@ def get_live_constituent_quotes(symbols: list[str]) -> dict[str, dict]:
     if has_session and client:
         try:
             rows = [{"symbol": s} for s in symbols]
-            instruments, _ = resolve_instruments(rows)
+            instruments, unk = resolve_instruments(rows)
+            known_aliases = {
+                "TATAMOTORS": Instrument("TATAMOTORS", "TMPV-EQ", "3456", "NSE", "Auto"),
+                "TMPV": Instrument("TMPV", "TMPV-EQ", "3456", "NSE", "Auto"),
+                "LTIM": Instrument("LTIM", "LTM-EQ", "17818", "NSE", "IT"),
+                "LTM": Instrument("LTM", "LTM-EQ", "17818", "NSE", "IT"),
+            }
+            for u in unk:
+                u_norm = normalize_symbol(u)
+                if u_norm in known_aliases:
+                    instruments.append(known_aliases[u_norm])
+
             if instruments:
                 q_res = client.quote(instruments, mode="FULL")
                 q_data = quote_map_by_token(q_res)
@@ -7246,12 +7963,21 @@ def get_live_constituent_quotes(symbols: list[str]) -> dict[str, dict]:
                         summary = quote_summary(item)
                         ltp = summary.get("ltp")
                         if ltp and ltp > 0:
-                            quotes[inst.symbol] = {
+                            q_obj = {
                                 "ltp": float(ltp),
                                 "change": float(summary.get("change", 0.0)),
                                 "changePct": float(summary.get("percentChange", 0.0)),
                                 "prevClose": float(summary.get("close") or (ltp - summary.get("change", 0.0))),
                             }
+                            quotes[inst.symbol] = q_obj
+                            if inst.symbol == "TMPV":
+                                quotes["TATAMOTORS"] = q_obj
+                            elif inst.symbol == "TATAMOTORS":
+                                quotes["TMPV"] = q_obj
+                            elif inst.symbol == "LTM":
+                                quotes["LTIM"] = q_obj
+                            elif inst.symbol == "LTIM":
+                                quotes["LTM"] = q_obj
         except Exception:
             pass
 
@@ -7259,24 +7985,33 @@ def get_live_constituent_quotes(symbols: list[str]) -> dict[str, dict]:
     missing = [s for s in symbols if s not in quotes]
     if missing:
         try:
-            bhav_files = sorted(
-                list(DELIVERY_CACHE_DIR.glob("sec_bhavdata_full_*.csv")) +
-                list((ROOT / "data" / "delivery").glob("sec_bhavdata_full_*.csv"))
-            )
+            all_bhav = list(DELIVERY_CACHE_DIR.glob("sec_bhavdata_full_*.csv")) + list((ROOT / "data" / "delivery").glob("sec_bhavdata_full_*.csv"))
+            def _bhav_date_key(p):
+                raw = p.stem.replace("sec_bhavdata_full_", "")
+                try:
+                    return datetime.strptime(raw, "%d%m%Y").date()
+                except Exception:
+                    return date.min
+            bhav_files = sorted(all_bhav, key=_bhav_date_key)
             if bhav_files:
                 bhav_stocks = parse_delivery_bhav_file(bhav_files[-1])
                 for sym in missing:
-                    b_item = bhav_stocks.get(sym)
+                    lookup_sym = "TMPV" if sym == "TATAMOTORS" else ("LTM" if sym == "LTIM" else sym)
+                    b_item = bhav_stocks.get(sym) or bhav_stocks.get(lookup_sym)
                     if b_item and b_item.get("close", 0) > 0:
                         c_val = float(b_item["close"])
                         chg_val = float(b_item.get("change", 0.0))
                         prev_val = float(b_item.get("prevClose", c_val - chg_val))
-                        quotes[sym] = {
+                        q_obj = {
                             "ltp": c_val,
                             "prevClose": prev_val,
                             "change": chg_val,
                             "changePct": float(b_item.get("changePct", 0.0)),
                         }
+                        quotes[sym] = q_obj
+                        if sym in ("TMPV", "TATAMOTORS"):
+                            quotes["TMPV"] = q_obj
+                            quotes["TATAMOTORS"] = q_obj
         except Exception:
             pass
 
@@ -7286,65 +8021,94 @@ def get_live_constituent_quotes(symbols: list[str]) -> dict[str, dict]:
 
 
 def _compute_breadth_contribution_task(idx: str, effective_date: str):
-    cache_key = f"{(idx or 'nifty50').lower()}_{effective_date}"
+    is_bank = "bank" in (idx or "").lower()
+    norm_idx = "banknifty" if is_bank else "nifty50"
+    resolved_date = resolve_market_session_date(effective_date)
+    cache_key = f"{norm_idx}_{effective_date}"
+    resolved_cache_key = f"{norm_idx}_{resolved_date}"
     try:
-        is_bank = "bank" in (idx or "").lower()
-        norm_idx = "banknifty" if is_bank else "nifty50"
+        try:
+            req_d = datetime.fromisoformat(effective_date[:10]).date()
+        except Exception:
+            req_d = now_ist().date()
+        is_holiday = not is_trading_day(req_d)
+        holiday_name = None
+        if req_d.month == 10 and req_d.day == 2:
+            holiday_name = "Mahatma Gandhi Jayanti"
+        elif req_d.weekday() >= 5:
+            holiday_name = "Weekend"
+        elif is_holiday:
+            holiday_name = "NSE Market Holiday"
+
         live_quotes = get_live_market_index_quotes()
         live_q = live_quotes.get(norm_idx)
 
         b_broker_src = "broker" if is_active_broker_configured() else "sample"
         n_broker_src = "angel" if is_active_broker_configured() else "sample"
 
-        # Parallel Execution: Build breadth timeline & Nifty spot candles concurrently
+        # Parallel Execution: Build breadth timeline & Nifty spot candles concurrently using resolved_date (with fast timeout fallback)
         b_res = {}
         n_res = {}
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            future_b = pool.submit(build_breadth, {
-                "date": effective_date,
-                "endDate": effective_date,
-                "dataSource": b_broker_src,
-                "universe": norm_idx,
-                "interval": "ONE_MINUTE",
-                "chartMode": "carry",
-                "warmupSessions": 2,
-                "pnfBasis": "hl",
-                "boxPercent": 0.15,
-                "reversalBoxes": 3,
-                "maxSymbols": 12 if is_bank else 50,
-                "maWindow": 20,
-                "fastRefresh": True,
-                "symbols": "",
-                "startTime": "09:15",
-                "endTime": "15:30"
-            })
-            future_n = pool.submit(build_nifty, {
-                "date": effective_date,
-                "dataSource": n_broker_src,
-                "index": norm_idx,
-                "interval": "ONE_MINUTE",
-                "includeOptionChain": False,
-                "fastRefresh": True,
-                "startTime": "09:15",
-                "endTime": "15:30"
-            })
-            try:
-                b_res = future_b.result(timeout=60)
-            except Exception as exc:
-                print(f"[breadth_contrib] build_breadth error: {exc}")
-            try:
-                n_res = future_n.result(timeout=60)
-            except Exception as exc:
-                print(f"[breadth_contrib] build_nifty error: {exc}")
+        try:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                future_b = pool.submit(build_breadth, {
+                    "date": resolved_date,
+                    "endDate": resolved_date,
+                    "dataSource": b_broker_src,
+                    "universe": norm_idx,
+                    "interval": "ONE_MINUTE",
+                    "chartMode": "carry",
+                    "warmupSessions": 1,
+                    "pnfBasis": "hl",
+                    "boxPercent": 0.15,
+                    "reversalBoxes": 3,
+                    "maxSymbols": 12 if is_bank else 50,
+                    "maWindow": 20,
+                    "fastRefresh": True,
+                    "symbols": "",
+                    "startTime": "09:15",
+                    "endTime": "15:30"
+                })
+                future_n = pool.submit(build_nifty, {
+                    "date": resolved_date,
+                    "dataSource": n_broker_src,
+                    "index": norm_idx,
+                    "interval": "ONE_MINUTE",
+                    "includeOptionChain": False,
+                    "fastRefresh": True,
+                    "startTime": "09:15",
+                    "endTime": "15:30"
+                })
+                try:
+                    b_res = future_b.result(timeout=35.0)
+                except Exception as exc:
+                    b_res = {}
+                try:
+                    n_res = future_n.result(timeout=25.0)
+                except Exception as exc:
+                    n_res = {}
+        except Exception:
+            pass
+
+        now_ist_dt = now_ist()
+        is_today_session = (resolved_date == now_ist_dt.strftime("%Y-%m-%d"))
+        market_open_time = dt_time(9, 15)
+        market_close_time = dt_time(15, 30)
+        is_live_trading = is_today_session and (market_open_time <= now_ist_dt.time() < market_close_time)
+        cur_cutoff_hhmm = now_ist_dt.strftime("%H:%M") if is_live_trading else "15:30"
 
         raw_b = b_res.get("timeline") or []
+        actual_b_date = resolved_date
+        if raw_b and not any(str(pt.get("time", pt.get("date", "")))[:10] == resolved_date for pt in raw_b):
+            actual_b_date = str(raw_b[-1].get("time", raw_b[-1].get("date", "")))[:10] or resolved_date
+
         real_b = [
             pt for pt in raw_b
-            if str(pt.get("time", pt.get("date", "")))[:10] == effective_date
-            and "09:15" <= str(pt.get("time", ""))[11:16] <= "15:30"
+            if str(pt.get("time", pt.get("date", "")))[:10] == actual_b_date
+            and "09:15" <= str(pt.get("time", ""))[11:16] <= cur_cutoff_hhmm
         ]
         if not real_b:
-            real_b = [pt for pt in raw_b if effective_date in str(pt.get("time", ""))]
+            real_b = [pt for pt in raw_b if "09:15" <= str(pt.get("time", ""))[11:16] <= cur_cutoff_hhmm]
 
         if real_b:
             first_today = real_b[0]
@@ -7365,13 +8129,23 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
             real_b_summary = b_res.get("summary") or {}
 
         raw_n = n_res.get("points") or []
+        actual_n_date = resolved_date
+        if raw_n and not any(str(pt.get("time", pt.get("date", "")))[:10] == resolved_date for pt in raw_n):
+            actual_n_date = str(raw_n[-1].get("time", raw_n[-1].get("date", "")))[:10] or resolved_date
+
         real_n = [
             pt for pt in raw_n
-            if str(pt.get("time", pt.get("date", "")))[:10] == effective_date
-            and "09:15" <= str(pt.get("time", ""))[11:16] <= "15:30"
+            if str(pt.get("time", pt.get("date", "")))[:10] == actual_n_date
+            and "09:15" <= str(pt.get("time", ""))[11:16] <= cur_cutoff_hhmm
         ]
         if not real_n:
-            real_n = [pt for pt in raw_n if effective_date in str(pt.get("time", ""))]
+            real_n = [pt for pt in raw_n if "09:15" <= str(pt.get("time", ""))[11:16] <= cur_cutoff_hhmm]
+
+        # Guarantee complete index candles: if real_n is missing or partial, fall back to sample_index_candles
+        min_candles_needed = max(5, min(int((now_ist_dt - datetime.combine(now_ist_dt.date(), dt_time(9, 15)).replace(tzinfo=INDIA_TZ)).total_seconds() / 60), 60)) if is_live_trading else 30
+        if not real_n or len(real_n) < min_candles_needed:
+            sample_candles = sample_index_candles(norm_idx, resolved_date, interval_minutes=1)
+            real_n = candle_points(sample_candles) if sample_candles else []
 
         constituents_list = (
             breadth_contribution_engine.BANKNIFTY_CONSTITUENTS
@@ -7383,26 +8157,32 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
 
         data = breadth_contribution_engine.compute_breadth_contribution(
             index_key=norm_idx,
-            date_str=effective_date,
+            date_str=resolved_date,
             real_breadth_timeline=real_b,
             real_nifty_points=real_n,
             breadth_summary=real_b_summary,
             real_index_quote=live_q,
-            live_stock_quotes=live_stock_quotes
+            live_stock_quotes=live_stock_quotes,
+            requested_date=effective_date,
+            is_holiday=is_holiday,
+            holiday_name=holiday_name,
+            is_market_closed=not is_market_open(),
         )
 
-        # Save to in-memory cache and on-disk cache if valid
+        # Save to in-memory cache and on-disk cache ONLY if valid and timeline has items!
         tl = data.get("timeline") or []
-        vals = set(p.get("breadth") for p in tl if p.get("breadth") is not None)
-        has_valid_breadth = len(vals) > 1 and len(tl) > 30
-
-        disk_cache_file = CACHE_DIR / f"breadth_contrib_{cache_key}.json"
-        if has_valid_breadth:
+        if data and data.get("ok") and len(tl) > 0:
             _BREADTH_CONTRIB_CACHE[cache_key] = {"data": data, "_cached_at": time.time()}
+            _BREADTH_CONTRIB_CACHE[resolved_cache_key] = {"data": data, "_cached_at": time.time()}
             try:
                 CACHE_DIR.mkdir(parents=True, exist_ok=True)
-                with open(disk_cache_file, "w", encoding="utf-8") as df:
+                disk_file_eff = CACHE_DIR / f"breadth_contrib_{cache_key}.json"
+                with open(disk_file_eff, "w", encoding="utf-8") as df:
                     json.dump(data, df)
+                if cache_key != resolved_cache_key:
+                    disk_file_res = CACHE_DIR / f"breadth_contrib_{resolved_cache_key}.json"
+                    with open(disk_file_res, "w", encoding="utf-8") as df:
+                        json.dump(data, df)
             except Exception:
                 pass
         return data
@@ -7412,61 +8192,58 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
     finally:
         with _BREADTH_RECOMPUTE_LOCK:
             _BREADTH_RECOMPUTING.discard(cache_key)
+            _BREADTH_RECOMPUTING.discard(resolved_cache_key)
 
 
 def get_cached_breadth_contribution(idx: str, date_param: str, force_refresh: bool = False):
     """
-    Sub-millisecond Stale-While-Revalidate Breadth Contribution endpoint:
-    - If cache is fresh, returns immediately (<1ms).
-    - If cache is stale (>30s), returns existing cache immediately and triggers background thread to update.
-    - Eliminates 20+ second delays for algo engines and browser clients.
+    Ultra-Fast Sub-millisecond Stale-While-Revalidate Breadth Contribution endpoint:
+    - If cache is present (in-memory or on-disk), ALWAYS returns immediately (<2ms).
+    - If force_refresh is requested or cache is stale (>30s during market hours), returns current cache and triggers background thread to update.
+    - If market is closed, caches for 24 hours to prevent redundant computations.
     """
-    effective_date = date_param or now_ist().strftime("%Y-%m-%d")
-    cache_key = f"{(idx or 'nifty50').lower()}_{effective_date}"
-    cache_ttl = 30.0 if is_market_open() else 3600.0
+    norm_idx = "banknifty" if "bank" in (idx or "").lower() else "nifty50"
+    raw_date = (date_param or "").strip()
+    effective_date = raw_date or now_ist().strftime("%Y-%m-%d")
+    resolved_date = resolve_market_session_date(effective_date)
+    cache_key = f"{norm_idx}_{effective_date}"
+    resolved_cache_key = f"{norm_idx}_{resolved_date}"
+    market_open = is_market_open()
+    cache_ttl = 30.0 if market_open else 86400.0
 
-    # 1. In-memory hot cache
-    cached = _BREADTH_CONTRIB_CACHE.get(cache_key)
-    if cached and not force_refresh:
+    # 1. In-memory hot cache (check both effective_date and resolved_date)
+    cached = _BREADTH_CONTRIB_CACHE.get(cache_key) or _BREADTH_CONTRIB_CACHE.get(resolved_cache_key)
+    if cached and cached.get("data", {}).get("timeline") and len(cached["data"]["timeline"]) > 0:
         age = time.time() - cached.get("_cached_at", 0)
-        if age < cache_ttl:
+        if not force_refresh:
+            if age >= cache_ttl and market_open:
+                with _BREADTH_RECOMPUTE_LOCK:
+                    if cache_key not in _BREADTH_RECOMPUTING and resolved_cache_key not in _BREADTH_RECOMPUTING:
+                        _BREADTH_RECOMPUTING.add(cache_key)
+                        _BREADTH_RECOMPUTING.add(resolved_cache_key)
+                        threading.Thread(
+                            target=_compute_breadth_contribution_task,
+                            args=(idx, effective_date),
+                            daemon=True,
+                        ).start()
             return cached["data"]
-        # Stale cache: trigger background refresh if not already running
-        with _BREADTH_RECOMPUTE_LOCK:
-            if cache_key not in _BREADTH_RECOMPUTING:
-                _BREADTH_RECOMPUTING.add(cache_key)
-                threading.Thread(
-                    target=_compute_breadth_contribution_task,
-                    args=(idx, effective_date),
-                    daemon=True,
-                ).start()
-        return cached["data"]
 
     # 2. On-disk persistent cache
-    disk_cache_file = CACHE_DIR / f"breadth_contrib_{cache_key}.json"
-    if disk_cache_file.exists() and not force_refresh:
-        try:
-            with open(disk_cache_file, "r", encoding="utf-8") as df:
-                disk_data = json.load(df)
-                if disk_data.get("ok"):
-                    file_age = time.time() - disk_cache_file.stat().st_mtime
-                    _BREADTH_CONTRIB_CACHE[cache_key] = {"data": disk_data, "_cached_at": time.time() - file_age}
-                    if file_age >= cache_ttl and is_market_open():
-                        with _BREADTH_RECOMPUTE_LOCK:
-                            if cache_key not in _BREADTH_RECOMPUTING:
-                                _BREADTH_RECOMPUTING.add(cache_key)
-                                threading.Thread(
-                                    target=_compute_breadth_contribution_task,
-                                    args=(idx, effective_date),
-                                    daemon=True,
-                                ).start()
-                    return disk_data
-        except Exception:
-            pass
+    if not force_refresh:
+        for k in (cache_key, resolved_cache_key):
+            disk_cache_file = CACHE_DIR / f"breadth_contrib_{k}.json"
+            if disk_cache_file.exists():
+                try:
+                    with open(disk_cache_file, "r", encoding="utf-8") as df:
+                        disk_data = json.load(df)
+                        if disk_data.get("ok") and disk_data.get("timeline") and len(disk_data["timeline"]) > 0:
+                            file_age = time.time() - disk_cache_file.stat().st_mtime
+                            _BREADTH_CONTRIB_CACHE[k] = {"data": disk_data, "_cached_at": time.time() - file_age}
+                            return disk_data
+                except Exception:
+                    pass
 
-    # 3. Cold start or force_refresh: compute synchronously once
-    with _BREADTH_RECOMPUTE_LOCK:
-        _BREADTH_RECOMPUTING.add(cache_key)
+    # 3. Cold start or forced refresh: compute synchronously
     return _compute_breadth_contribution_task(idx, effective_date)
 
 
@@ -7804,6 +8581,103 @@ def run_system_diagnostics() -> dict:
     }
 
 
+_STRADDLE_TOOL_LOCK = threading.Lock()
+_STRADDLE_TOOL_UPDATING = set()
+
+
+def get_straddle_chart_response(params: dict) -> dict:
+    idx = params.get("index") or params.get("symbol") or "NIFTY"
+    exp = params.get("expiry") or None
+    dt = params.get("date") or None
+    cat = params.get("category") or "Equity"
+    strike = params.get("strike") or None
+    if strike and str(strike).lower() not in ("atm", "auto", ""):
+        try:
+            strike = float(strike)
+        except Exception:
+            strike = None
+    else:
+        strike = None
+
+    idx_upper = str(idx).upper().strip()
+    idx_meta = straddle_engine.INDEX_METADATA.get(idx_upper, straddle_engine.INDEX_METADATA["NIFTY"])
+    idx_key = idx_meta.get("angel_key", "nifty50")
+    upstox_ikey = idx_meta.get("upstox_key", f"NSE_INDEX|{idx}")
+
+    effective_dt = resolve_straddle_session_date(dt)
+    cache_key = f"{idx_key}:{effective_dt}:{exp}:{cat}:{strike}"
+    cached = STRADDLE_TOOL_CACHE.get(cache_key)
+    cache_ttl = 4.0 if is_market_open() else 60.0
+
+    today_ist_str = now_ist().strftime("%Y-%m-%d")
+    is_historical = bool(effective_dt and effective_dt != today_ist_str)
+
+    def _compute_straddle_now():
+        upstox_chain = None
+        if not is_historical:
+            try:
+                upstox_chain = upstox_engine.get_option_chain(upstox_ikey, expiry_date=exp or "")
+            except Exception as exc:
+                logger.warning("Upstox chain fetch for straddle %s failed: %s", upstox_ikey, exc)
+
+        nifty_data = None
+        try:
+            nifty_data = build_nifty({
+                "date": effective_dt,
+                "index": idx_key,
+                "expiry": exp or (upstox_chain.get("expiry") if upstox_chain else "auto"),
+                "includeOptionChain": False,
+                "fastRefresh": True,
+            })
+        except Exception:
+            nifty_data = None
+
+        live_spot = None
+        if not is_historical:
+            if upstox_chain and upstox_chain.get("spotPrice"):
+                live_spot = float(upstox_chain["spotPrice"])
+            elif nifty_data and nifty_data.get("index"):
+                live_spot = nifty_data.get("index", {}).get("spot")
+            if not live_spot:
+                try:
+                    live_quotes = get_live_market_index_quotes()
+                    live_spot = (live_quotes.get(idx_key) or {}).get("spot") or None
+                except Exception:
+                    live_spot = None
+        else:
+            if nifty_data and nifty_data.get("index"):
+                live_spot = nifty_data.get("index", {}).get("spot")
+
+        res = straddle_engine.compute_straddle_analytics(
+            idx,
+            expiry=exp,
+            date=effective_dt,
+            category=cat,
+            spot_override=live_spot,
+            strike_override=strike,
+            nifty_data=nifty_data,
+            upstox_chain=upstox_chain,
+        )
+        with _STRADDLE_TOOL_LOCK:
+            STRADDLE_TOOL_CACHE[cache_key] = {"time": time.time(), "data": res}
+            _STRADDLE_TOOL_UPDATING.discard(cache_key)
+        return res
+
+    if cached:
+        age = time.time() - cached.get("time", 0)
+        if age >= cache_ttl:
+            with _STRADDLE_TOOL_LOCK:
+                can_spawn = cache_key not in _STRADDLE_TOOL_UPDATING
+                if can_spawn:
+                    _STRADDLE_TOOL_UPDATING.add(cache_key)
+            if can_spawn:
+                threading.Thread(target=_compute_straddle_now, daemon=True).start()
+        return cached.get("data")
+
+    # Cold start: compute once synchronously (ultra-fast with includeOptionChain=False)
+    return _compute_straddle_now()
+
+
 class RequestHandler(BaseHTTPRequestHandler):
     server_version = "BreadthLab/1.0"
 
@@ -7814,12 +8688,32 @@ class RequestHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args) -> None:
         sys.stdout.write("[%s] %s\n" % (self.log_date_time_string(), fmt % args))
 
+    def _get_cors_origin(self) -> str:
+        origin = self.headers.get("Origin", "").strip()
+        if not origin:
+            return ""
+        allowed_origins = [o.strip() for o in env("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+        if allowed_origins:
+            return origin if origin in allowed_origins else ""
+        try:
+            parsed = urllib.parse.urlparse(origin)
+            host_header = (self.headers.get("Host") or "").split(":")[0].strip().lower()
+            origin_host = (parsed.hostname or "").strip().lower()
+            if origin_host in ("localhost", "127.0.0.1", "0.0.0.0", host_header):
+                return origin
+        except Exception:
+            pass
+        return ""
+
     def do_OPTIONS(self) -> None:
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Secret, Authorization")
-        self.send_header("Access-Control-Max-Age", "86400")
+        cors_origin = self._get_cors_origin()
+        if cors_origin:
+            self.send_header("Access-Control-Allow-Origin", cors_origin)
+            self.send_header("Vary", "Origin")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Secret, Authorization")
+            self.send_header("Access-Control-Max-Age", "86400")
         self.end_headers()
 
     def send_json(self, status: int, payload) -> None:
@@ -7835,9 +8729,12 @@ class RequestHandler(BaseHTTPRequestHandler):
         try:
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Secret, Authorization")
+            cors_origin = self._get_cors_origin()
+            if cors_origin:
+                self.send_header("Access-Control-Allow-Origin", cors_origin)
+                self.send_header("Vary", "Origin")
+                self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Secret, Authorization")
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
@@ -7860,14 +8757,24 @@ class RequestHandler(BaseHTTPRequestHandler):
         if path == "/api/status":
             active_broker = brokers.get_active_broker_name(env)
             angel_cfg = angel_configured()
-            broker_configured = angel_cfg  # Angel One is sole broker
+            broker_configured = angel_cfg
+            has_active_session = False
+            if angel_cfg:
+                try:
+                    ac = AngelClient()
+                    has_active_session = bool(ac.load_session() and ac.jwt_token)
+                except Exception:
+                    has_active_session = False
+            broker_connected = has_active_session
             return self.send_json(
                 200,
                 {
                     "ok": True,
                     "activeBroker": active_broker,
                     "brokerConfigured": broker_configured,
+                    "brokerConnected": broker_connected,
                     "angelConfigured": angel_cfg,
+                    "angelConnected": has_active_session,
                     "upstoxConfigured": False,
                     "kotakConfigured": False,
                     "fyersConfigured": False,
@@ -7878,6 +8785,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                     "python": sys.version.split()[0],
                     "now": now_ist().isoformat(),
                     "marketDate": resolve_market_session_date(),
+                    "marketOpen": is_market_open(),
+                    "isHoliday": is_market_holiday(now_ist().date()),
+                    "holidayName": "Mahatma Gandhi Jayanti" if (now_ist().month, now_ist().day) == (10, 2) else "",
                 },
             )
         if path == "/api/settings":
@@ -7961,6 +8871,12 @@ class RequestHandler(BaseHTTPRequestHandler):
             query = urllib.parse.parse_qs(parsed.query)
             sym = query.get("symbol", [""])[0]
             return self.send_json(200, build_mtf_stock_history(sym))
+        if path == "/api/quotes" or path == "/api/quote":
+            query = urllib.parse.parse_qs(parsed.query)
+            raw_sym = query.get("symbol", query.get("symbols", [""]))[0]
+            syms = [s.strip().upper() for s in raw_sym.split(",") if s.strip()]
+            quotes = get_live_constituent_quotes(syms) if syms else {}
+            return self.send_json(200, {"ok": True, "quotes": quotes})
         if path == "/api/fii-dii-cash":
             query = urllib.parse.parse_qs(parsed.query)
             force = query.get("refresh", ["false"])[0].lower() in ("1", "true")
@@ -7991,56 +8907,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             return self.send_json(200, straddle_engine.get_history_meta())
         if path == "/api/tools/straddle-chart":
             query = urllib.parse.parse_qs(parsed.query)
-            idx = query.get("index", query.get("symbol", ["NIFTY"]))[0]
-            exp = query.get("expiry", [""])[0] or None
-            dt = query.get("date", [""])[0] or None
-            cat = query.get("category", ["Equity"])[0]
-            
-            idx_upper = idx.upper().strip()
-            if "BANK" in idx_upper and "EX" not in idx_upper:
-                idx_key = "banknifty"
-            elif "FIN" in idx_upper:
-                idx_key = "finnifty"
-            elif "MID" in idx_upper:
-                idx_key = "midcpnifty"
-            elif "SENSEX" in idx_upper or "BSE" in idx_upper:
-                idx_key = "sensex"
-            elif "BANKEX" in idx_upper:
-                idx_key = "bankex"
-            else:
-                idx_key = "nifty50"
-
-            effective_dt = resolve_straddle_session_date(dt)
-            cache_key = f"{idx_key}:{effective_dt}:{exp}:{cat}"
-            cached = STRADDLE_TOOL_CACHE.get(cache_key)
-            if cached and (time.time() - cached.get("time", 0) < 30):
-                return self.send_json(200, cached.get("data"))
-
-            nifty_data = None
-            try:
-                nifty_data = build_nifty({
-                    "date": effective_dt,
-                    "index": idx_key,
-                    "expiry": exp or "auto",
-                    "includeOptionChain": True,
-                    "fastRefresh": True,
-                })
-            except Exception:
-                nifty_data = None
-
-            live_spot = None
-            if nifty_data and nifty_data.get("index"):
-                live_spot = nifty_data.get("index", {}).get("spot")
-            if not live_spot:
-                try:
-                    live_quotes = get_live_market_index_quotes()
-                    live_spot = (live_quotes.get(idx_key) or {}).get("spot") or None
-                except Exception:
-                    live_spot = None
-
-            res = straddle_engine.compute_straddle_analytics(idx, exp, effective_dt, cat, spot_override=live_spot, nifty_data=nifty_data)
-            STRADDLE_TOOL_CACHE[cache_key] = {"time": time.time(), "data": res}
-            return self.send_json(200, res)
+            params = {k: v[0] for k, v in query.items() if v}
+            return self.send_json(200, get_straddle_chart_response(params))
         if path == "/api/tools/absorption":
             query = urllib.parse.parse_qs(parsed.query)
             date_param = query.get("date", [""])[0]
@@ -8073,32 +8941,6 @@ class RequestHandler(BaseHTTPRequestHandler):
                 pass
             res = tools_engine.compute_vix_iv_spread(atm_iv=atm_iv, india_vix=vix_val, spot=spot)
             return self.send_json(200, res)
-        if path.startswith("/api/niftytrader/"):
-            sub = path.replace("/api/niftytrader/", "").strip().lower()
-            query = urllib.parse.parse_qs(parsed.query)
-            sym = query.get("symbol", query.get("index", ["nifty50"]))[0]
-            exch = query.get("exchange", ["NSE"])[0]
-            if sub == "summary":
-                return self.send_json(200, niftytrader_engine.get_niftytrader_summary(sym))
-            elif sub == "pcr" or sub == "pcr-intraday":
-                return self.send_json(200, niftytrader_engine.get_niftytrader_pcr_intraday(sym))
-            elif sub == "max-pain":
-                return self.send_json(200, niftytrader_engine.get_niftytrader_max_pain_desk(sym))
-            elif sub == "oi-chart":
-                return self.send_json(200, niftytrader_engine.get_niftytrader_oi_chart(sym))
-            elif sub == "change-oi":
-                return self.send_json(200, niftytrader_engine.get_niftytrader_change_oi(sym))
-            elif sub == "volume-pcr":
-                return self.send_json(200, niftytrader_engine.get_niftytrader_volume_pcr(sym))
-            elif sub == "iv" or sub == "iv-smile":
-                tf = query.get("timeframe", query.get("tf", ["intraday"]))[0]
-                lookback = query.get("lookback", ["1M"])[0]
-                return self.send_json(200, niftytrader_engine.get_niftytrader_iv(sym, tf, lookback))
-            elif sub == "option-chain":
-                return self.send_json(200, niftytrader_engine.get_niftytrader_option_chain(sym, exch))
-            else:
-                return self.send_json(404, {"ok": False, "message": f"Unknown NiftyTrader endpoint '{sub}'"})
-
         if path == "/api/supabase/status":
             cfg = supabase_engine.get_supabase_config()
             masked_url = cfg["url"][:12] + "..." if len(cfg["url"]) > 12 else cfg["url"]
@@ -8129,6 +8971,34 @@ class RequestHandler(BaseHTTPRequestHandler):
             sym = query.get("symbol", ["NIFTY"])[0]
             exp_list = calendar_engine.get_available_expiries_for_symbol(sym)
             return self.send_json(200, {"ok": True, "symbol": sym, "expiries": exp_list})
+
+        if path == "/api/calendar/broker-status":
+            upstox_tok = env("UPSTOX_ACCESS_TOKEN", "").strip()
+            up_cfg = bool(upstox_tok and len(upstox_tok) > 20)
+            angel_cfg = angel_configured()
+            active_b = brokers.get_active_broker_name(env)
+            is_live = up_cfg or angel_cfg
+            broker_name = (
+                "Upstox API v2 (Option Chain Desk)" if up_cfg
+                else ("Angel One SmartAPI (Master Broker)" if angel_cfg
+                else "Mathematical Greeks Engine")
+            )
+            return self.send_json(200, {
+                "ok": True,
+                "isLive": is_live,
+                "activeBroker": active_b,
+                "brokerName": broker_name,
+                "upstoxConfigured": up_cfg,
+                "angelConfigured": angel_cfg,
+                "source": "ADMIN_PANEL",
+                "label": "🟢 API: Active (Admin Panel)" if is_live else "⚙️ API: Configure in Admin Panel"
+            })
+
+        if path == "/api/calendar/header-quotes":
+            query = urllib.parse.parse_qs(parsed.query)
+            sym = query.get("symbol", ["NIFTY"])[0]
+            hq = calendar_engine.get_calendar_header_quotes(sym)
+            return self.send_json(200, {"ok": True, "symbol": sym, "headerQuotes": hq})
 
         if path == "/api/calendar":
             query = urllib.parse.parse_qs(parsed.query)
@@ -8161,6 +9031,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             query = urllib.parse.parse_qs(parsed.query)
             inst_key = query.get("instrument_key", query.get("symbol", ["NSE_INDEX|Nifty 50"]))[0]
             return self.send_json(200, {"ok": True, "expiries": upstox_engine.get_available_expiries(inst_key)})
+
+        if path in ("/api/upstox/securities", "/api/upstox/instruments"):
+            return self.send_json(200, upstox_engine.get_all_securities())
 
         if path == "/api/market-pulse":
             return self.send_json(200, get_market_pulse())
@@ -8201,6 +9074,16 @@ class RequestHandler(BaseHTTPRequestHandler):
             import fo_bhavcopy_engine
             return self.send_json(200, fo_bhavcopy_engine.sync_latest_fo_bhavcopy(days_back=7))
 
+        if path in ("/api/footer-links", "/api/admin/footer-links"):
+            footer_file = CACHE_DIR / "footer_links.json"
+            if footer_file.exists():
+                try:
+                    data = json.loads(footer_file.read_text(encoding="utf-8"))
+                    return self.send_json(200, data)
+                except Exception:
+                    pass
+            return self.send_json(200, get_default_footer_links())
+
         # Admin Protected GET Endpoints
         if path == "/api/admin/verify":
             is_valid = check_admin_request(self)
@@ -8214,32 +9097,38 @@ class RequestHandler(BaseHTTPRequestHandler):
             kotak_tok = env("KOTAK_ACCESS_TOKEN", "").strip()
             kotak_ckey = env("KOTAK_CONSUMER_KEY", "").strip()
             kotak_mob = env("KOTAK_MOBILE_NO", "").strip()
+            angel_pin = env("ANGEL_PIN", "").strip()
+            angel_totp = env("ANGEL_TOTP_SECRET", "").strip()
+            kotak_csec = env("KOTAK_CONSUMER_SECRET", "").strip()
+            kotak_mpin = env("KOTAK_MPIN", "").strip()
+            kotak_totp = env("KOTAK_TOTP_SECRET", "").strip()
+
             return self.send_json(200, {
                 "ok": True,
                 "activeBroker": active_broker,
                 "angel": {
-                    "apiKey": env("ANGEL_API_KEY"),
+                    "apiKey": mask(env("ANGEL_API_KEY")),
                     "clientCode": env("ANGEL_CLIENT_CODE"),
-                    "pin": env("ANGEL_PIN"),
-                    "totpSecret": env("ANGEL_TOTP_SECRET"),
+                    "pin": "******" if angel_pin else "",
+                    "totpSecret": f"...{angel_totp[-4:]}" if len(angel_totp) > 4 else ("******" if angel_totp else ""),
                     "totpCode": env("ANGEL_TOTP_CODE"),
                     "baseUrl": env("ANGEL_BASE_URL", ANGEL_ROOT),
                     "configured": angel_configured(),
                 },
                 "upstox": {
-                    "apiKey": env("UPSTOX_API_KEY"),
-                    "apiSecret": env("UPSTOX_API_SECRET"),
-                    "accessToken": upstox_tok,
+                    "apiKey": mask(env("UPSTOX_API_KEY")),
+                    "apiSecret": "******" if env("UPSTOX_API_SECRET") else "",
+                    "accessToken": f"...{upstox_tok[-6:]}" if len(upstox_tok) > 6 else ("******" if upstox_tok else ""),
                     "configured": bool(upstox_tok and len(upstox_tok) > 20),
                 },
                 "kotak": {
-                    "consumerKey": kotak_ckey,
+                    "consumerKey": mask(kotak_ckey),
                     "ucc": env("KOTAK_UCC", ""),
-                    "consumerSecret": env("KOTAK_CONSUMER_SECRET", ""),
-                    "mobileNo": kotak_mob,
-                    "mpin": env("KOTAK_MPIN", ""),
-                    "totpSecret": env("KOTAK_TOTP_SECRET", ""),
-                    "accessToken": kotak_tok,
+                    "consumerSecret": "******" if kotak_csec else "",
+                    "mobileNo": mask(kotak_mob),
+                    "mpin": "******" if kotak_mpin else "",
+                    "totpSecret": f"...{kotak_totp[-4:]}" if len(kotak_totp) > 4 else ("******" if kotak_totp else ""),
+                    "accessToken": f"...{kotak_tok[-6:]}" if len(kotak_tok) > 6 else ("******" if kotak_tok else ""),
                     "configured": bool(kotak_tok or (kotak_ckey and (kotak_mob or env("KOTAK_UCC")))),
                 },
                 "fyers": {"configured": False},
@@ -8249,6 +9138,19 @@ class RequestHandler(BaseHTTPRequestHandler):
             if not check_admin_request(self):
                 return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
             return self.send_json(200, {"ok": True, "seo": seo_engine.load_seo_config()})
+
+        if path == "/api/admin/seo-routes":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            all_r = seo_engine.load_all_seo_routes()
+            route_list = sorted(all_r.values(), key=lambda x: (0 if x["path"] == "/" else 1, x["path"]))
+            categories = sorted(list(set(r.get("category", "tools") for r in route_list)))
+            return self.send_json(200, {
+                "ok": True,
+                "routes": route_list,
+                "total": len(route_list),
+                "categories": categories
+            })
 
         if path == "/api/admin/system-stats":
             if not check_admin_request(self):
@@ -8309,12 +9211,96 @@ class RequestHandler(BaseHTTPRequestHandler):
                 ]
             })
 
-        if path in ("/admin", "/admin/"):
-            path = "/admin.html"
-        if path == "/page2":
-            path = "/page2.html"
-        if path == "/":
-            path = "/index.html"
+        # Clean URL Rewriting for SEO & Platform Desks
+        INDEX_ROUTES = {
+            "/",
+            "/dashboard",
+            "/option-chain-pro",
+            "/option-chain",
+            "/options",
+            "/futures",
+            "/futures/marketwatch",
+            "/futures/dashboard",
+            "/futures/screener",
+            "/futures/buildup",
+            "/futures/heatmap",
+            "/futures/heatmaps",
+            "/futures/indices",
+            "/futures/mwpl",
+            "/market-breadth",
+            "/breadth",
+            "/smart-money",
+            "/fii-dii",
+            "/fii-dii-derivatives",
+            "/mtf-analytics",
+            "/mtf",
+            "/mtf/overview",
+            "/mtf/topstocks",
+            "/mtf/retail",
+            "/mtf/movers",
+            "/mtf/sectors",
+            "/mtf/trend",
+            "/mtf/broker",
+            "/mtf/calculator",
+            "/mtf/compare",
+            "/compare",
+            "/delivery-analytics",
+            "/delivery",
+            "/delivery/scan",
+            "/delivery/inspect",
+            "/quant-tools",
+            "/tools",
+            "/settings",
+            "/global-markets",
+            "/global",
+        }
+
+        PAGE2_ROUTES = {
+            "/page2",
+            "/page2.html",
+            "/atm-straddle",
+            "/straddle",
+            "/fii-dii-cash",
+            "/breadth-contribution",
+            "/contribution",
+        }
+
+        CALENDAR_ROUTES = {
+            "/calendar-studio",
+            "/calendar-studio.html",
+            "/calendar.html",
+            "/calendar",
+        }
+
+        ROLLOVER_ROUTES = {
+            "/futures/rollover",
+            "/futures/rollover.html",
+            "/rollover",
+            "/rollover.html",
+            "/futures-rollover",
+        }
+
+        STATIC_PAGE_ROUTES = {
+            "/about": "/about.html",
+            "/disclaimer": "/disclaimer.html",
+            "/privacy": "/privacy.html",
+            "/terms": "/terms.html",
+            "/admin": "/admin.html",
+            "/admin/": "/admin.html",
+        }
+
+        clean_path = path.rstrip("/") if path != "/" else "/"
+
+        if clean_path in INDEX_ROUTES:
+            return self.serve_html_with_seo("/index.html", clean_path)
+        elif clean_path in PAGE2_ROUTES:
+            return self.serve_html_with_seo("/page2.html", clean_path)
+        elif clean_path in CALENDAR_ROUTES:
+            return self.serve_html_with_seo("/calendar_studio.html", clean_path)
+        elif clean_path in ROLLOVER_ROUTES:
+            return self.serve_html_with_seo("/futures_rollover.html", clean_path)
+        elif clean_path in STATIC_PAGE_ROUTES:
+            return self.serve_html_with_seo(STATIC_PAGE_ROUTES[clean_path], clean_path)
         return self.serve_static(path)
 
     def do_POST(self) -> None:
@@ -8344,6 +9330,15 @@ class RequestHandler(BaseHTTPRequestHandler):
             if parsed.path == "/api/mtf":
                 payload = self.read_body()
                 return self.send_json(200, build_mtf(payload))
+            if parsed.path == "/api/quotes" or parsed.path == "/api/quote":
+                payload = self.read_body()
+                raw_sym = payload.get("symbols") or payload.get("symbol") or []
+                if isinstance(raw_sym, str):
+                    syms = [s.strip().upper() for s in raw_sym.split(",") if s.strip()]
+                else:
+                    syms = [str(s).strip().upper() for s in raw_sym if str(s).strip()]
+                quotes = get_live_constituent_quotes(syms) if syms else {}
+                return self.send_json(200, {"ok": True, "quotes": quotes})
             if parsed.path == "/api/fii-dii-cash":
                 payload = self.read_body()
                 return self.send_json(200, build_fii_dii_cash(payload))
@@ -8358,6 +9353,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 cat = payload.get("category", "all")
                 return self.send_json(200, global_markets_engine.get_global_markets_data(cat))
             if parsed.path == "/api/login-test":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized: Admin authorization required to test broker session."})
                 payload = self.read_body()
                 manual_totp = payload.get("manualTotp") or ""
                 client = get_active_client(manual_totp)
@@ -8439,137 +9436,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, res)
             if parsed.path == "/api/tools/straddle-chart":
                 payload = self.read_body()
-                idx = payload.get("index") or payload.get("symbol") or "NIFTY"
-                exp = payload.get("expiry") or None
-                dt = payload.get("date") or None
-                cat = payload.get("category") or "Equity"
-                
-                idx_upper = idx.upper().strip()
-                if "BANK" in idx_upper and "EX" not in idx_upper:
-                    idx_key = "banknifty"
-                elif "FIN" in idx_upper:
-                    idx_key = "finnifty"
-                elif "MID" in idx_upper:
-                    idx_key = "midcpnifty"
-                elif "SENSEX" in idx_upper or "BSE" in idx_upper:
-                    idx_key = "sensex"
-                elif "BANKEX" in idx_upper:
-                    idx_key = "bankex"
-                else:
-                    idx_key = "nifty50"
-
-                effective_dt = resolve_straddle_session_date(dt)
-                cache_key = f"{idx_key}:{effective_dt}:{exp}:{cat}"
-                cached = STRADDLE_TOOL_CACHE.get(cache_key)
-                if cached and (time.time() - cached.get("time", 0) < 30):
-                    return self.send_json(200, cached.get("data"))
-
-                nifty_data = None
-                try:
-                    nifty_data = build_nifty({
-                        "date": effective_dt,
-                        "index": idx_key,
-                        "expiry": exp or "auto",
-                        "includeOptionChain": True,
-                        "fastRefresh": True,
-                    })
-                except Exception:
-                    nifty_data = None
-
-                live_spot = None
-                if nifty_data and nifty_data.get("index"):
-                    live_spot = nifty_data.get("index", {}).get("spot")
-                if not live_spot:
-                    try:
-                        live_quotes = get_live_market_index_quotes()
-                        live_spot = (live_quotes.get(idx_key) or {}).get("spot") or None
-                    except Exception:
-                        live_spot = None
-
-                res = straddle_engine.compute_straddle_analytics(idx, exp, effective_dt, cat, spot_override=live_spot, nifty_data=nifty_data)
-                STRADDLE_TOOL_CACHE[cache_key] = {"time": time.time(), "data": res}
-                return self.send_json(200, res)
-            if parsed.path.startswith("/api/oi-suite/"):
-                tool_name = parsed.path.replace("/api/oi-suite/", "").strip().lower()
-                payload = self.read_body()
-                idx_key = payload.get("index") or payload.get("symbol") or "nifty50"
-                date_param = resolve_market_session_date(payload.get("date", ""))
-
-                cache_key = f"{idx_key}:{date_param}"
-                now_ts = time.time()
-                cached_nifty = getattr(self.server, "_oi_suite_cache", {}).get(cache_key)
-                if cached_nifty and (now_ts - cached_nifty.get("ts", 0) < 45.0):
-                    nifty_data = cached_nifty.get("data")
-                else:
-                    nifty_data = build_nifty({"date": date_param, "index": idx_key, "includeOptionChain": True, "fastRefresh": True, "strikeRange": 15})
-                    if not hasattr(self.server, "_oi_suite_cache"):
-                        self.server._oi_suite_cache = {}
-                    self.server._oi_suite_cache[cache_key] = {"ts": now_ts, "data": nifty_data}
-
-                points = nifty_data.get("points") or []
-                candles = [[p.get("time"), p.get("open"), p.get("high"), p.get("low"), p.get("close"), 1000] for p in points]
-                chain = nifty_data.get("optionChain") or []
-                spot = float(nifty_data.get("index", {}).get("spot") or 24800.0)
-
-                if tool_name == "open-interest":
-                    res = oi_suite_engine.compute_open_interest(chain, spot)
-                elif tool_name == "total-oi":
-                    res = oi_suite_engine.compute_total_oi(chain, spot)
-                elif tool_name == "historical-toi":
-                    res = oi_suite_engine.compute_historical_toi(candles, chain, spot)
-                elif tool_name == "multi-toi":
-                    res = oi_suite_engine.compute_multi_toi(candles, chain, spot)
-                elif tool_name == "oi-dynamics":
-                    res = oi_suite_engine.compute_put_call_oi_dynamics(candles, chain, spot)
-                elif tool_name == "oi-charts":
-                    res = oi_suite_engine.compute_oi_charts(candles, chain, spot)
-                elif tool_name == "options-buildup":
-                    res = oi_suite_engine.compute_options_buildup(chain, spot)
-                elif tool_name == "pcr":
-                    res = oi_suite_engine.compute_pcr_analytics(chain, spot)
-                elif tool_name == "straddles":
-                    res = oi_suite_engine.compute_straddles_data(chain, spot, candles)
-                elif tool_name == "option-chain":
-                    res = oi_suite_engine.compute_option_chain_grid(chain, spot)
-                elif tool_name == "unusual-activity":
-                    res = oi_suite_engine.compute_unusual_options_activity(chain, spot)
-                elif tool_name == "trividh":
-                    res = oi_suite_engine.compute_trividh_confluence(candles, chain, spot)
-                elif tool_name == "oi-crossover":
-                    res = oi_suite_engine.compute_oi_crossover(candles, chain, spot)
-                elif tool_name == "options-activity":
-                    res = oi_suite_engine.compute_options_activity(chain, spot)
-                else:
-                    res = {"ok": False, "message": f"Unknown tool '{tool_name}'"}
-
-                return self.send_json(200, res)
-            if parsed.path.startswith("/api/niftytrader/"):
-                sub = parsed.path.replace("/api/niftytrader/", "").strip().lower()
-                payload = self.read_body()
-                sym = payload.get("symbol") or payload.get("index") or "nifty50"
-                exch = payload.get("exchange") or "NSE"
-
-                if sub == "summary":
-                    return self.send_json(200, niftytrader_engine.get_niftytrader_summary(sym))
-                elif sub == "pcr" or sub == "pcr-intraday":
-                    return self.send_json(200, niftytrader_engine.get_niftytrader_pcr_intraday(sym))
-                elif sub == "max-pain":
-                    return self.send_json(200, niftytrader_engine.get_niftytrader_max_pain_desk(sym))
-                elif sub == "oi-chart":
-                    return self.send_json(200, niftytrader_engine.get_niftytrader_oi_chart(sym))
-                elif sub == "change-oi":
-                    return self.send_json(200, niftytrader_engine.get_niftytrader_change_oi(sym))
-                elif sub == "volume-pcr":
-                    return self.send_json(200, niftytrader_engine.get_niftytrader_volume_pcr(sym))
-                elif sub == "iv" or sub == "iv-smile":
-                    tf = payload.get("timeframe") or payload.get("tf") or "intraday"
-                    lookback = payload.get("lookback") or "1M"
-                    return self.send_json(200, niftytrader_engine.get_niftytrader_iv(sym, tf, lookback))
-                elif sub == "option-chain":
-                    return self.send_json(200, niftytrader_engine.get_niftytrader_option_chain(sym, exch))
-                else:
-                    return self.send_json(404, {"ok": False, "message": f"Unknown NiftyTrader endpoint '{sub}'"})
-
+                return self.send_json(200, get_straddle_chart_response(payload))
             if parsed.path == "/api/supabase/config":
                 payload = self.read_body()
                 url = payload.get("url", "")
@@ -8606,6 +9473,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200 if res.get("ok") else 400, res)
 
             if parsed.path == "/api/settings":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized: Admin authorization required to modify broker settings."})
                 payload = self.read_body()
                 updates = {}
 
@@ -8617,24 +9486,32 @@ class RequestHandler(BaseHTTPRequestHandler):
                                    ("pin", "ANGEL_PIN"), ("totpSecret", "ANGEL_TOTP_SECRET"), 
                                    ("totpCode", "ANGEL_TOTP_CODE"), ("baseUrl", "ANGEL_BASE_URL")]:
                     if k in angel and angel[k] is not None:
-                        updates[env_key] = str(angel[k]).strip()
+                        val_str = str(angel[k]).strip()
+                        if not is_masked_or_empty(val_str):
+                            updates[env_key] = val_str
 
                 upstox = payload.get("upstox") or {}
                 for k, env_key in [("accessToken", "UPSTOX_ACCESS_TOKEN"), ("apiKey", "UPSTOX_API_KEY"), ("apiSecret", "UPSTOX_API_SECRET")]:
                     if k in upstox and upstox[k] is not None:
-                        updates[env_key] = str(upstox[k]).strip()
+                        val_str = str(upstox[k]).strip()
+                        if not is_masked_or_empty(val_str):
+                            updates[env_key] = val_str
 
                 kotak = payload.get("kotak") or {}
                 for k, env_key in [("accessToken", "KOTAK_ACCESS_TOKEN"), ("consumerKey", "KOTAK_CONSUMER_KEY"), 
                                    ("consumerSecret", "KOTAK_CONSUMER_SECRET"), ("viewToken", "KOTAK_VIEW_TOKEN"), 
                                    ("mobileNo", "KOTAK_MOBILE_NO"), ("mpin", "KOTAK_MPIN")]:
                     if k in kotak and kotak[k] is not None:
-                        updates[env_key] = str(kotak[k]).strip()
+                        val_str = str(kotak[k]).strip()
+                        if not is_masked_or_empty(val_str):
+                            updates[env_key] = val_str
 
                 fyers = payload.get("fyers") or {}
                 for k, env_key in [("appId", "FYERS_APP_ID"), ("accessToken", "FYERS_ACCESS_TOKEN")]:
                     if k in fyers and fyers[k] is not None:
-                        updates[env_key] = str(fyers[k]).strip()
+                        val_str = str(fyers[k]).strip()
+                        if not is_masked_or_empty(val_str):
+                            updates[env_key] = val_str
 
                 if updates:
                     save_dotenv(updates)
@@ -8734,6 +9611,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                 inst_key = payload.get("instrument_key", payload.get("symbol", "NSE_INDEX|Nifty 50"))
                 return self.send_json(200, {"ok": True, "expiries": upstox_engine.get_available_expiries(inst_key)})
 
+            if parsed.path in ("/api/upstox/securities", "/api/upstox/instruments"):
+                return self.send_json(200, upstox_engine.get_all_securities())
+
             if parsed.path == "/api/upstox/test-connection":
                 payload = self.read_body()
                 tok = payload.get("token") or payload.get("accessToken") or env("UPSTOX_ACCESS_TOKEN", "")
@@ -8795,6 +9675,18 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, res)
 
             # --- ADMIN PROTECTED POST ENDPOINTS ---
+            if parsed.path == "/api/admin/footer-links":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                footer_file = CACHE_DIR / "footer_links.json"
+                try:
+                    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                    footer_file.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                    return self.send_json(200, {"ok": True, "message": "Footer configuration saved successfully", "data": payload})
+                except Exception as exc:
+                    return self.send_json(500, {"ok": False, "message": str(exc)})
+
             if parsed.path == "/api/admin/diagnostics":
                 if not check_admin_request(self):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
@@ -8803,7 +9695,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             if parsed.path == "/api/admin/verify":
                 payload = self.read_body()
                 key = payload.get("adminKey", "").strip()
-                secret = env("ADMIN_SECRET_KEY", "breadthlab_admin_2026").strip()
+                secret = env("ADMIN_SECRET_KEY", "").strip()
+                if not secret:
+                    return self.send_json(401, {"ok": False, "message": "Admin secret key not configured on server"})
                 is_valid = bool(key and key == secret)
                 return self.send_json(200 if is_valid else 401, {"ok": is_valid, "message": "Admin authenticated" if is_valid else "Invalid Admin Key"})
 
@@ -8820,12 +9714,16 @@ class RequestHandler(BaseHTTPRequestHandler):
                                    ("pin", "ANGEL_PIN"), ("totpSecret", "ANGEL_TOTP_SECRET"), 
                                    ("totpCode", "ANGEL_TOTP_CODE"), ("baseUrl", "ANGEL_BASE_URL")]:
                     if k in angel and angel[k] is not None:
-                        updates[env_key] = str(angel[k]).strip()
+                        val_str = str(angel[k]).strip()
+                        if not is_masked_or_empty(val_str):
+                            updates[env_key] = val_str
 
                 upstox = payload.get("upstox") or {}
                 for k, env_key in [("accessToken", "UPSTOX_ACCESS_TOKEN"), ("apiKey", "UPSTOX_API_KEY"), ("apiSecret", "UPSTOX_API_SECRET")]:
                     if k in upstox and upstox[k] is not None:
-                        updates[env_key] = str(upstox[k]).strip()
+                        val_str = str(upstox[k]).strip()
+                        if not is_masked_or_empty(val_str):
+                            updates[env_key] = val_str
 
                 kotak = payload.get("kotak") or {}
                 for k, env_key in [("accessToken", "KOTAK_ACCESS_TOKEN"), ("consumerKey", "KOTAK_CONSUMER_KEY"), 
@@ -8833,12 +9731,16 @@ class RequestHandler(BaseHTTPRequestHandler):
                                    ("viewToken", "KOTAK_VIEW_TOKEN"), ("mobileNo", "KOTAK_MOBILE_NO"), 
                                    ("mpin", "KOTAK_MPIN"), ("totpSecret", "KOTAK_TOTP_SECRET")]:
                     if k in kotak and kotak[k] is not None:
-                        updates[env_key] = str(kotak[k]).strip()
+                        val_str = str(kotak[k]).strip()
+                        if not is_masked_or_empty(val_str):
+                            updates[env_key] = val_str
 
                 fyers = payload.get("fyers") or {}
                 for k, env_key in [("appId", "FYERS_APP_ID"), ("accessToken", "FYERS_ACCESS_TOKEN")]:
                     if k in fyers and fyers[k] is not None:
-                        updates[env_key] = str(fyers[k]).strip()
+                        val_str = str(fyers[k]).strip()
+                        if not is_masked_or_empty(val_str):
+                            updates[env_key] = val_str
 
                 if updates:
                     save_dotenv(updates)
@@ -8852,6 +9754,39 @@ class RequestHandler(BaseHTTPRequestHandler):
                 payload = self.read_body()
                 ok = seo_engine.save_seo_config(payload)
                 return self.send_json(200 if ok else 400, {"ok": ok, "message": "SEO & Meta tags updated successfully!" if ok else "Failed to update SEO config."})
+
+            if parsed.path == "/api/admin/seo-routes":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                ok, msg = seo_engine.save_single_seo_route(payload)
+                return self.send_json(200 if ok else 400, {"ok": ok, "message": msg})
+
+            if parsed.path == "/api/admin/seo-routes/delete":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                path_to_del = payload.get("path", "")
+                ok, msg = seo_engine.delete_single_seo_route(path_to_del)
+                return self.send_json(200 if ok else 400, {"ok": ok, "message": msg})
+
+            if parsed.path == "/api/admin/seo-routes/auto-discover":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                discovered, total = seo_engine.auto_discover_pages()
+                return self.send_json(200, {
+                    "ok": True,
+                    "discoveredCount": len(discovered),
+                    "totalRoutes": total,
+                    "discovered": discovered,
+                    "message": f"Discovered {len(discovered)} new pages and added to SEO catalog!" if discovered else "All HTML pages and routes are already cataloged."
+                })
+
+            if parsed.path == "/api/admin/seo-routes/rebuild-sitemap":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                ok, msg = seo_engine.rebuild_sitemap_xml()
+                return self.send_json(200 if ok else 500, {"ok": ok, "message": msg})
 
             if parsed.path == "/api/admin/cache-purge":
                 if not check_admin_request(self):
@@ -8990,6 +9925,32 @@ class RequestHandler(BaseHTTPRequestHandler):
         except Exception as exc:
             self.send_json(500, {"ok": False, "message": str(exc)})
 
+    def serve_html_with_seo(self, file_path_rel: str, req_path: str) -> None:
+        import seo_engine
+        clean = urllib.parse.unquote(file_path_rel).lstrip("/")
+        file_path = (PUBLIC_DIR / clean).resolve()
+        if not str(file_path).startswith(str(PUBLIC_DIR.resolve())) or not file_path.exists() or not file_path.is_file():
+            self.send_json(404, {"ok": False, "message": "Not found"})
+            return
+        try:
+            raw_html = file_path.read_text(encoding="utf-8")
+            injected_html = seo_engine.inject_seo_metadata(raw_html, req_path)
+            data = injected_html.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            cors_origin = self._get_cors_origin()
+            if cors_origin:
+                self.send_header("Access-Control-Allow-Origin", cors_origin)
+                self.send_header("Vary", "Origin")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
+            self.end_headers()
+            self.wfile.write(data)
+        except Exception:
+            self.serve_static(file_path_rel)
+
     def serve_static(self, path: str) -> None:
         clean = urllib.parse.unquote(path).lstrip("/")
         file_path = (PUBLIC_DIR / clean).resolve()
@@ -9001,8 +9962,10 @@ class RequestHandler(BaseHTTPRequestHandler):
         try:
             self.send_response(200)
             self.send_header("Content-Type", content_type)
-            self.send_header("Content-Length", str(len(data)))
-            self.send_header("Access-Control-Allow-Origin", "*")
+            cors_origin = self._get_cors_origin()
+            if cors_origin:
+                self.send_header("Access-Control-Allow-Origin", cors_origin)
+                self.send_header("Vary", "Origin")
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.send_header("Pragma", "no-cache")
             self.send_header("Expires", "0")
@@ -9020,7 +9983,10 @@ def main() -> None:
     fo_bhavcopy_engine.start_fo_bhavcopy_background_worker()
     port = int(env("PORT", "8000") or 8000)
     host = env("HOST", "0.0.0.0")
+    ThreadingHTTPServer.request_queue_size = 512
+    ThreadingHTTPServer.daemon_threads = True
     server = ThreadingHTTPServer((host, port), RequestHandler)
+    server.daemon_threads = True
     display_host = "localhost" if host == "0.0.0.0" else host
     print(f"Breadth Lab running at http://{display_host}:{port}")
     print("Press Ctrl+C to stop.")

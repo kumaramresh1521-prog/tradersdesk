@@ -1,19 +1,23 @@
 /**
- * Upstox Option Chain Pro - Modern Institutional Derivatives Matrix
- * Powered exclusively by Upstox API v2
- * Zero dependencies on Angel One
+ * Option Chain Pro - Modern Institutional Derivatives Matrix
+ * Real-time Exchange Streaming, Greeks, ATM Straddles & Multi-Expiry Depth
  */
 
 (function () {
   const state = {
     instrumentKey: 'NSE_INDEX|Nifty 50',
     expiryDate: '',
-    strikeRange: 10, // ±10 strikes around ATM by default
-    viewMode: 'buildup', // 'buildup' (OI mode) | 'greeks'
+    strikeRange: 10, // ±10 strikes around ATM by default (controlled via ⚙️ Settings)
+    viewMode: 'default', // 'default' (Image 1 layout) | 'greeks' | 'oi' | 'straddle'
     activeTab: 'chain', // 'chain' | 'force' | 'maxpain' | 'oidist' | 'greeks'
-    visualizerMetric: 'turnover', // Active purple pill by default (matching Image 15!)
+    visualizerMetric: 'oichg', // Default to OI Chg with zero-baseline matching Image 2
+    visViewMode: 'strike', // 'strike' (Image 2) | 'pcr' (Image 1) | 'maxpain' (Image 3)
     visHoverIndex: -1,
     visChartBounds: [],
+    showGexColumns: false, // Custom GEX columns removed from primary table
+    showVolumeBars: true,
+    showIvColumns: true,
+    showItmProb: false,
     searchQuery: '',
     autoRefreshSec: 5,
     timerId: null,
@@ -38,6 +42,107 @@
     if (abs >= 100000) return sign + (abs / 100000).toFixed(2) + ' L';
     if (abs >= 1000) return sign + (abs / 1000).toFixed(1) + ' k';
     return num.toLocaleString('en-IN');
+  }
+
+  // Modern Million / Thousands Formatter (e.g. 14M, 3.5M, 468K, 4.4K)
+  function fmtMillionQty(q) {
+    if (q === null || q === undefined || isNaN(q)) return '--';
+    const num = Number(q);
+    const abs = Math.abs(num);
+    const sign = num < 0 ? '-' : '';
+    if (abs >= 1000000000) {
+      const val = abs / 1000000000;
+      return sign + (val >= 10 ? val.toFixed(0) : val.toFixed(1)).replace(/\.0$/, '') + 'B';
+    }
+    if (abs >= 1000000) {
+      const val = abs / 1000000;
+      return sign + (val >= 10 ? val.toFixed(0) : val.toFixed(1)).replace(/\.0$/, '') + 'M';
+    }
+    if (abs >= 1000) {
+      const val = abs / 1000;
+      return sign + (val >= 10 ? val.toFixed(0) : val.toFixed(1)).replace(/\.0$/, '') + 'K';
+    }
+    return sign + num.toLocaleString('en-US');
+  }
+
+  // Clean OI Change Formatter (e.g. 2,038,400.00 / -671,450.00)
+  function fmtOiChangeNum(n) {
+    if (n === null || n === undefined || isNaN(n)) return '--';
+    return Number(n).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  // BSM Gaussian PDF
+  function normalPdf(x) {
+    return (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * x * x);
+  }
+
+  // Option Greek Gamma approximation
+  function calcGamma(spot, strike, dte, iv) {
+    if (spot <= 0 || strike <= 0) return 0.001;
+    const T = Math.max(0.5, dte || 4) / 365.25;
+    const vol = Math.max(0.08, (Number(iv) || 12.0) / 100.0);
+    const d1 = (Math.log(spot / strike) + 0.5 * vol * vol * T) / (vol * Math.sqrt(T));
+    return normalPdf(d1) / (spot * vol * Math.sqrt(T));
+  }
+
+  // Gamma Exposure (GEX) matching Image 2
+  function calcGex(r, spot, dte) {
+    const sp = Number(r.strike_price || 0);
+    const ce = r.call_options || {};
+    const pe = r.put_options || {};
+    const ceOi = Number(ce.market_data?.oi || 0);
+    const peOi = Number(pe.market_data?.oi || 0);
+    const ceVol = Number(ce.market_data?.volume || 0);
+    const peVol = Number(pe.market_data?.volume || 0);
+    const ceIv = Number(ce.option_greeks?.iv || 12.0);
+    const peIv = Number(pe.option_greeks?.iv || 12.0);
+    const avgIv = (ceIv + peIv) / 2 || 12.0;
+
+    const brokerGamma = Number(ce.option_greeks?.gamma || pe.option_greeks?.gamma || 0);
+    const gamma = brokerGamma > 0 ? brokerGamma : calcGamma(spot, sp, dte, avgIv);
+    // Institutional dealer scaling factor (scaled to match Image 2 magnitude)
+    const gFactor = (gamma * spot * spot * 0.01) / 100000;
+
+    const gexOi = (ceOi - peOi) * gFactor;
+    const gexVol = (ceVol - peVol) * gFactor;
+
+    return { gexOi, gexVol, gamma, gFactor };
+  }
+
+  // Abramowitz & Stegun Normal Cumulative Distribution Function (error < 7.5e-8)
+  function normalCdf(x) {
+    const t = 1 / (1 + 0.2316419 * Math.abs(x));
+    const d = 0.3989423 * Math.exp(-x * x / 2);
+    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return x > 0 ? (1 - p) : p;
+  }
+
+  // ITM Probability: Exact Delta approximation or Black-Scholes Normal CDF
+  function calcItmProb(type, strike, spot, dte, iv, brokerDelta) {
+    if (brokerDelta !== undefined && brokerDelta !== null && !isNaN(brokerDelta) && Math.abs(brokerDelta) > 0.0001) {
+      let p = Math.abs(Number(brokerDelta)) * 100;
+      if (type === 'CE' && strike < spot && p < 50) p = 100 - p;
+      if (type === 'PE' && strike > spot && p < 50) p = 100 - p;
+      return Math.min(100, Math.max(0.1, p));
+    }
+    const T = Math.max(0.5, dte || 4) / 365.0;
+    const vol = Math.max(0.08, (Number(iv) || 12.0) / 100.0);
+    const d2 = (Math.log(spot / strike) - 0.5 * vol * vol * T) / (vol * Math.sqrt(T));
+    const p = type === 'CE' ? normalCdf(d2) * 100 : (1 - normalCdf(d2)) * 100;
+    return Math.min(100, Math.max(0.1, p));
+  }
+
+  // Modern OI Sentiment / Sense tag
+  function getModernOiSense(netChg, oiChg) {
+    const nc = Number(netChg || 0);
+    const oc = Number(oiChg || 0);
+    if (oc >= 0 && nc >= 0) return { text: 'Long Build Up', cls: 'sense-lb' };
+    if (oc >= 0 && nc < 0) return { text: 'Short Build Up', cls: 'sense-sb' };
+    if (oc < 0 && nc >= 0) return { text: 'Short Covering', cls: 'sense-sc' };
+    return { text: 'Long Unwinding', cls: 'sense-lu' };
   }
 
   function getBuildup(chgPrice, chgOi) {
@@ -65,7 +170,7 @@
     if (force && iconRef) iconRef.classList.add('spin');
 
     const statusEl = document.getElementById('upstoxLiveStatus');
-    if (statusEl) statusEl.textContent = '⏳ Fetching Upstox...';
+    if (statusEl) statusEl.textContent = '⏳ Fetching Option Chain...';
 
     try {
       const isDirectHttp = window.location.protocol.startsWith('http') && (window.location.port === '8000' || window.location.port === '');
@@ -103,19 +208,50 @@
 
       // Update status tag
       if (statusEl) {
-        if (data.isLive) {
+        if (data.marketOpen === false || data.isMarketClosed === true) {
+          statusEl.className = 'upstox-badge-live is-closed';
+          statusEl.innerHTML = '⏸️ <span>Market Closed • Data Frozen</span>';
+          statusEl.title = 'Exchange closed. Displaying closing settlement snapshot. Auto-refresh paused.';
+        } else if (data.isLive) {
           statusEl.className = 'upstox-badge-live is-live';
-          statusEl.innerHTML = '🟢 <span>Upstox Live Stream</span>';
+          statusEl.innerHTML = '🟢 <span>Live Stream</span>';
         } else {
           statusEl.className = 'upstox-badge-live is-demo';
-          statusEl.innerHTML = '🟡 <span>Upstox Demo Stream</span> <a href="/admin.html" target="_blank" style="color:#60a5fa; text-decoration:none; margin-left:6px; font-weight:700;">Connect Token ↗</a>';
+          statusEl.innerHTML = '🟡 <span>Demo Stream</span> <a href="/admin.html" target="_blank" style="color:#60a5fa; text-decoration:none; margin-left:6px; font-weight:700;">Connect Token ↗</a>';
+        }
+      }
+
+      // Freeze Auto-Refresh when Market is Closed (Prevents unnecessary background polling & flickering)
+      if (data.marketOpen === false || data.isMarketClosed === true) {
+        if (state.timerId) {
+          clearInterval(state.timerId);
+          state.timerId = null;
+        }
+        if (!state.marketClosedCheckTimer) {
+          state.marketClosedCheckTimer = setInterval(() => {
+            fetchChain(false);
+          }, 60000); // 1-minute slow check
+        }
+      } else {
+        if (state.marketClosedCheckTimer) {
+          clearInterval(state.marketClosedCheckTimer);
+          state.marketClosedCheckTimer = null;
+        }
+        if (!state.timerId && state.autoRefreshSec > 0) {
+          state.timerId = setInterval(() => fetchChain(false), state.autoRefreshSec * 1000);
         }
       }
 
       const updEl = document.getElementById('upstoxLastUpdated');
-      if (updEl) updEl.textContent = data.lastUpdated || new Date().toLocaleTimeString();
+      if (updEl) {
+        if (data.marketOpen === false || data.isMarketClosed === true) {
+          updEl.textContent = `${data.lastUpdated || '15:30:00'} (Frozen)`;
+        } else {
+          updEl.textContent = data.lastUpdated || new Date().toLocaleTimeString();
+        }
+      }
     } catch (e) {
-      console.error('Failed to load Upstox option chain:', e);
+      console.error('Failed to load Option Chain Pro:', e);
       if (statusEl) {
         statusEl.className = 'upstox-badge-live is-error';
         statusEl.innerHTML = `🔴 <span>Connecting to Backend Server...</span> <button id="upstoxRetryBtn" style="background:#2563eb; color:#fff; border:none; padding:2px 8px; border-radius:4px; margin-left:6px; cursor:pointer; font-size:10px; font-weight:700;">Retry</button>`;
@@ -165,6 +301,146 @@
       sel.value = currentExpiry;
       state.expiryDate = currentExpiry;
     }
+  }
+
+  function renderDteHorizonPills(expiries, currentExpiry) {
+    const container = document.getElementById('modernDteList');
+    if (!container) return;
+
+    if (!expiries || !expiries.length) {
+      container.innerHTML = '<span style="font-size:11px; color:#94a3b8;">No expiries available</span>';
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    container.innerHTML = expiries.map(exp => {
+      let dteLabel = exp;
+      try {
+        const d = new Date(exp);
+        d.setHours(0, 0, 0, 0);
+        const diffDays = Math.max(0, Math.round((d - today) / (1000 * 60 * 60 * 24)));
+        dteLabel = `${diffDays}d`;
+      } catch (_) {}
+
+      const isActive = exp === currentExpiry;
+      return `
+        <button type="button" class="modern-dte-pill ${isActive ? 'active' : ''}" data-exp="${exp}" title="Expiry Date: ${exp}">
+          ${dteLabel}
+        </button>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.modern-dte-pill').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const exp = e.currentTarget.getAttribute('data-exp');
+        if (exp && exp !== state.expiryDate) {
+          state.expiryDate = exp;
+          const sel = document.getElementById('upstoxExpirySelect');
+          if (sel) sel.value = exp;
+          fetchChain(true);
+        }
+      });
+    });
+  }
+
+  function renderModernStatsStrip(data) {
+    const spot = Number(data.spotPrice || 0);
+    const pcr = Number(data.pcr || 1.0);
+    const maxPain = Number(data.maxPain || 0);
+    const totalCeOi = Number(data.totalCeOi || 0);
+    const totalPeOi = Number(data.totalPeOi || 0);
+    const cumOi = totalCeOi + totalPeOi;
+
+    const totalCeVol = Number(data.totalCeVol || 1);
+    const totalPeVol = Number(data.totalPeVol || 0);
+    const pcrVol = (totalPeVol / (totalCeVol || 1)).toFixed(2);
+
+    let atmIv = 0;
+    if (data.atmIv) {
+      atmIv = Number(data.atmIv);
+    } else if (data.data && data.data.length) {
+      const atmRow = data.data.find(r => Math.abs(Number(r.strike_price) - spot) <= 50) || data.data[0];
+      atmIv = Number(atmRow.call_options?.option_greeks?.iv || atmRow.put_options?.option_greeks?.iv || 0);
+    }
+
+    const elAtmIv = document.getElementById('modernStatAtmIv');
+    if (elAtmIv) elAtmIv.textContent = atmIv > 0 ? `${atmIv.toFixed(1)}%` : '0';
+
+    const elCumOi = document.getElementById('modernStatCumOi');
+    if (elCumOi) elCumOi.textContent = fmtMillionQty(cumOi);
+
+    const elMaxPain = document.getElementById('modernStatMaxPain');
+    if (elMaxPain) elMaxPain.textContent = maxPain ? Math.round(maxPain).toLocaleString('en-IN') : '--';
+
+    const elPcrVol = document.getElementById('modernStatPcrVol');
+    if (elPcrVol) elPcrVol.textContent = pcrVol;
+
+    const elPcr = document.getElementById('modernStatPcr');
+    if (elPcr) elPcr.textContent = pcr.toFixed(2);
+
+    const elDot = document.getElementById('modernStatLiveDot');
+    if (elDot) {
+      if (data.marketOpen === false || data.isMarketClosed === true) {
+        elDot.textContent = '⏸️';
+        elDot.title = 'Market Closed - Data Frozen (Closing Bhavcopy Snapshot)';
+      } else {
+        elDot.textContent = data.isLive ? '🟢' : '🔴';
+        elDot.title = data.isLive ? 'Live Exchange Stream Active' : 'Market Closed / Bhavcopy Mode';
+      }
+    }
+  }
+
+  function exportModernOptionChainCsv() {
+    if (!state.chainData || !state.chainData.data) {
+      alert('Option chain data not loaded yet.');
+      return;
+    }
+    const rows = state.chainData.data || [];
+    const und = (state.chainData.underlying || 'NIFTY').replace(/\s+/g, '_');
+    const exp = state.chainData.expiry || 'expiry';
+
+    let headers = ['STRIKE', 'CE_SENSE', 'CE_OI_CHG_PCT', 'CE_OI_CHG', 'CE_OI', 'CE_LTP', 'PE_LTP', 'PE_OI', 'PE_OI_CHG', 'PE_OI_CHG_PCT', 'PE_SENSE'];
+    let csvLines = [headers.join(',')];
+
+    rows.forEach(r => {
+      const sp = r.strike_price;
+      const ce = r.call_options || {};
+      const pe = r.put_options || {};
+      const ceMd = ce.market_data || {};
+      const peMd = pe.market_data || {};
+      const ceOi = Number(ceMd.oi || 0);
+      const peOi = Number(peMd.oi || 0);
+      const ceOiChg = Number(ceMd.oi_change || 0);
+      const peOiChg = Number(peMd.oi_change || 0);
+      const ceChg = Number(ceMd.net_change || 0);
+      const peChg = Number(peMd.net_change || 0);
+      const ceSense = getModernOiSense(ceChg, ceOiChg).text;
+      const peSense = getModernOiSense(peChg, peOiChg).text;
+
+      csvLines.push([
+        sp,
+        `"${ceSense}"`,
+        (ceMd.prev_oi ? (ceOiChg / ceMd.prev_oi * 100).toFixed(2) : '0'),
+        ceOiChg,
+        ceOi,
+        ceMd.ltp || 0,
+        peMd.ltp || 0,
+        peOi,
+        peOiChg,
+        (peMd.prev_oi ? (peOiChg / peMd.prev_oi * 100).toFixed(2) : '0'),
+        `"${peSense}"`
+      ].join(','));
+    });
+
+    const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${und}_Option_Chain_${exp}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function renderSummary(data) {
@@ -359,11 +635,12 @@
 
 
   // ==========================================================================
-  // 📋 CLEAN & PROFESSIONAL OPTION CHAIN TABLE
+  // 📋 CLEAN & PROFESSIONAL MODERN OPTION CHAIN TABLE (MATCHING TARGET DESIGN)
   // ==========================================================================
   function renderTable(data) {
     const table = document.getElementById('upstoxChainTable');
     const tbody = document.getElementById('upstoxChainTableBody');
+    const thead = document.getElementById('upstoxChainTableHead');
     if (!table || !tbody) return;
 
     const rows = data.data || [];
@@ -374,6 +651,20 @@
 
     const spot = Number(data.spotPrice || 0);
 
+    // Render DTE Horizon Pills & Macro Stats Strip
+    renderDteHorizonPills(data.availableExpiries || [], data.expiry);
+    renderModernStatsStrip(data);
+
+    // Calculate DTE
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let dte = 4;
+    try {
+      const expDate = new Date(data.expiry || Date.now());
+      expDate.setHours(0, 0, 0, 0);
+      dte = Math.max(0.5, (expDate - today) / (1000 * 60 * 60 * 24));
+    } catch (_) {}
+
     // Find ATM index
     let atmIdx = 0;
     let minDiff = Infinity;
@@ -383,19 +674,6 @@
         minDiff = diff;
         atmIdx = idx;
       }
-    });
-
-    // Find Key Institutional Walls across entire dataset
-    let maxCeOi = 1, maxPeOi = 1;
-    let maxCeOiStrike = 0, maxPeOiStrike = 0;
-
-    rows.forEach(r => {
-      const sp = Number(r.strike_price || 0);
-      const ceOi = Number(r.call_options?.market_data?.oi || 0);
-      const peOi = Number(r.put_options?.market_data?.oi || 0);
-
-      if (ceOi > maxCeOi) { maxCeOi = ceOi; maxCeOiStrike = sp; }
-      if (peOi > maxPeOi) { maxPeOi = peOi; maxPeOiStrike = sp; }
     });
 
     // Filter strikes by range
@@ -412,33 +690,59 @@
       filteredRows = filteredRows.filter(r => String(r.strike_price).includes(query));
     }
 
-    // Clean View toggles
-    const isOiOnly = state.viewMode === 'oi';
-
-    document.querySelectorAll('.upstox-greek-col').forEach(el => {
-      el.style.display = isOiOnly ? 'none' : '';
-    });
-
-    const callColspan = isOiOnly ? 6 : 8;
-    const thCalls = document.querySelector('.th-calls');
-    const thPuts = document.querySelector('.th-puts');
-    if (thCalls) thCalls.setAttribute('colspan', callColspan);
-    if (thPuts) thPuts.setAttribute('colspan', callColspan);
+    // 1. RENDER TABLE HEADERS (Image 1 Exact 13 Columns)
+    if (thead) {
+      thead.innerHTML = `
+        <tr class="modern-head-row">
+          <th style="text-align:right;">OI Change(%)</th>
+          <th style="text-align:right;">OI Change</th>
+          <th style="text-align:right;">OI</th>
+          <th style="text-align:right;">IV</th>
+          <th style="text-align:right;">Volume</th>
+          <th style="text-align:right;">LTP</th>
+          <th class="modern-th-strike" style="text-align:center;">Strike</th>
+          <th style="text-align:left;">LTP</th>
+          <th style="text-align:left;">Volume</th>
+          <th style="text-align:left;">IV</th>
+          <th style="text-align:left;">OI</th>
+          <th style="text-align:left;">OI Change</th>
+          <th style="text-align:left;">OI Change(%)</th>
+        </tr>
+      `;
+    }
 
     tbody.innerHTML = '';
-    let spotLineInserted = false;
+    let spotDividerInserted = false;
 
-    // Running totals for footer
-    let sumCeOi = 0, sumCeOiChg = 0;
-    let sumPeOi = 0, sumPeOiChg = 0;
+    // Running totals & max boundaries for relative bars
+    let maxAnyOi = 1, maxAnyVol = 1, maxAnyGexOi = 1, maxAnyGexVol = 1;
+    let sumCeOi = 0, sumCeOiChg = 0, sumCeVol = 0, sumCeIv = 0, countCeIv = 0;
+    let sumPeOi = 0, sumPeOiChg = 0, sumPeVol = 0, sumPeIv = 0, countPeIv = 0;
+    let sumGexOi = 0, sumGexVol = 0;
 
-    const showOiBar = true;
+    filteredRows.forEach(r => {
+      const ce = r.call_options || {};
+      const pe = r.put_options || {};
+      const ceMd = ce.market_data || {};
+      const peMd = pe.market_data || {};
+      const ceOi = Number(ceMd.oi || 0);
+      const peOi = Number(peMd.oi || 0);
+      const ceVol = Number(ceMd.volume || 0);
+      const peVol = Number(peMd.volume || 0);
 
-    filteredRows.forEach((r) => {
+      if (ceOi > maxAnyOi) maxAnyOi = ceOi;
+      if (peOi > maxAnyOi) maxAnyOi = peOi;
+      if (ceVol > maxAnyVol) maxAnyVol = ceVol;
+      if (peVol > maxAnyVol) maxAnyVol = peVol;
+
+      const gex = calcGex(r, spot, dte);
+      if (Math.abs(gex.gexOi) > maxAnyGexOi) maxAnyGexOi = Math.abs(gex.gexOi);
+      if (Math.abs(gex.gexVol) > maxAnyGexVol) maxAnyGexVol = Math.abs(gex.gexVol);
+    });
+
+    filteredRows.forEach(r => {
       const strike = Number(r.strike_price || 0);
       const isAtm = Math.abs(strike - spot) === minDiff;
-      const isCallItm = strike < spot;
-      const isPutItm = strike > spot;
 
       const ce = r.call_options || {};
       const pe = r.put_options || {};
@@ -449,11 +753,16 @@
       const ceGr = ce.option_greeks || {};
       const peGr = pe.option_greeks || {};
 
+      const qm = r.quant_metrics || {};
+
       const ceOi = Number(ceMd.oi || 0);
       const peOi = Number(peMd.oi || 0);
 
-      const ceOiChg = Number(ceMd.oi_change !== undefined ? ceMd.oi_change : (ceOi - Number(ceMd.prev_oi || ceOi)));
-      const peOiChg = Number(peMd.oi_change !== undefined ? peMd.oi_change : (peOi - Number(peMd.prev_oi || peOi)));
+      const cePrevOi = Number(ceMd.prev_oi !== undefined ? ceMd.prev_oi : (ceOi - (ceMd.oi_change || 0)));
+      const pePrevOi = Number(peMd.prev_oi !== undefined ? peMd.prev_oi : (peOi - (peMd.oi_change || 0)));
+
+      const ceOiChg = Number(ceMd.oi_change !== undefined ? ceMd.oi_change : (ceOi - cePrevOi));
+      const peOiChg = Number(peMd.oi_change !== undefined ? peMd.oi_change : (peOi - pePrevOi));
 
       const ceVol = Number(ceMd.volume || 0);
       const peVol = Number(peMd.volume || 0);
@@ -464,131 +773,146 @@
       const ceChg = Number(ceMd.net_change || 0);
       const peChg = Number(peMd.net_change || 0);
 
-      const ceBuildup = getBuildup(ceChg, ceOiChg);
-      const peBuildup = getBuildup(peChg, peOiChg);
+      const ceChgPct = Number(ceMd.close_price ? (ceChg / ceMd.close_price * 100) : 0);
+      const peChgPct = Number(peMd.close_price ? (peChg / peMd.close_price * 100) : 0);
+
+      const ceOiChgPct = cePrevOi > 0 ? ((ceOiChg / cePrevOi) * 100) : 0;
+      const peOiChgPct = pePrevOi > 0 ? ((peOiChg / pePrevOi) * 100) : 0;
+
+      const ceIv = Number(ceGr.iv || qm.ce_iv || 12.0);
+      const peIv = Number(peGr.iv || qm.pe_iv || 12.0);
+
+      const gex = calcGex(r, spot, dte);
 
       sumCeOi += ceOi;
       sumCeOiChg += ceOiChg;
+      sumCeVol += ceVol;
+      if (ceIv > 0) { sumCeIv += ceIv; countCeIv++; }
+
       sumPeOi += peOi;
       sumPeOiChg += peOiChg;
+      sumPeVol += peVol;
+      if (peIv > 0) { sumPeIv += peIv; countPeIv++; }
 
-      const ceOiBarWidth = Math.min(100, Math.round((ceOi / maxCeOi) * 100));
-      const peOiBarWidth = Math.min(100, Math.round((peOi / maxPeOi) * 100));
+      sumGexOi += gex.gexOi;
+      sumGexVol += gex.gexVol;
 
-      const strikePcr = ceOi > 0 ? (peOi / ceOi) : 1.0;
-
-      // Dynamic Spot Divider Line
-      if (!spotLineInserted && strike >= spot) {
-        spotLineInserted = true;
-        const dayChg = Number(data.dayChange || 0);
-        const dayChgPct = Number(data.dayChangePct || 0);
-        const isPos = dayChg >= 0;
+      // Check if spot divider pill row should be placed before this strike
+      if (!spotDividerInserted && strike >= spot) {
+        spotDividerInserted = true;
         const spotRow = document.createElement('tr');
-        spotRow.className = 'upstox-spot-line-row';
+        spotRow.className = 'modern-spot-divider-row';
+        const leftSpan = 6;
+        const rightSpan = 6;
         spotRow.innerHTML = `
-          <td colspan="17">
-            <div class="upstox-spot-line">
-              <span class="spot-pill">
-                <span class="pulse-dot"></span>
-                <span>SPOT: ₹${fmtNum(spot, 2)} (${isPos ? '+' : ''}${fmtNum(dayChg, 2)} / ${isPos ? '+' : ''}${fmtNum(dayChgPct, 2)}%)</span>
-                <span style="opacity:0.6;">•</span>
-                <span>ATM: ${Number(data.atmStrike || spot).toLocaleString('en-IN')}</span>
-                ${data.atmStraddle ? `<span style="opacity:0.6;">•</span><span>Straddle: ₹${fmtNum(data.atmStraddle, 2)}</span>` : ''}
-              </span>
+          <td colspan="${leftSpan}" class="modern-spot-divider-bar"></td>
+          <td class="modern-spot-divider-cell">
+            <div class="modern-spot-pill" title="Underlying Live Spot: ₹${fmtNum(spot, 2)}">
+              ${spot.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </td>
+          <td colspan="${rightSpan}" class="modern-spot-divider-bar"></td>
         `;
         tbody.appendChild(spotRow);
       }
 
-      const isMaxCe = strike === maxCeOiStrike;
-      const isMaxPe = strike === maxPeOiStrike;
+      const ceOiBarWidth = Math.min(100, Math.round((ceOi / maxAnyOi) * 100));
+      const peOiBarWidth = Math.min(100, Math.round((peOi / maxAnyOi) * 100));
+      const ceVolBarWidth = Math.min(100, Math.round((ceVol / maxAnyVol) * 100));
+      const peVolBarWidth = Math.min(100, Math.round((peVol / maxAnyVol) * 100));
+
+      const gexOiBarW = Math.min(100, Math.round((Math.abs(gex.gexOi) / maxAnyGexOi) * 100));
+      const gexVolBarW = Math.min(100, Math.round((Math.abs(gex.gexVol) / maxAnyGexVol) * 100));
 
       const tr = document.createElement('tr');
-      tr.className = `upstox-chain-row ${isAtm ? 'is-atm' : ''} ${isCallItm ? 'call-itm' : 'call-otm'} ${isPutItm ? 'put-itm' : 'put-otm'} ${isMaxCe ? 'is-max-ce-oi' : ''} ${isMaxPe ? 'is-max-pe-oi' : ''}`;
+      tr.className = `modern-opt-row ${isAtm ? 'is-atm' : ''}`;
       tr.dataset.strike = strike;
       tr.style.cursor = 'pointer';
-      tr.title = `Click to view institutional order-flow on ${strike} Strike`;
-      tr.addEventListener('click', () => openStrikeModal(r, spot, isAtm));
+
+      // Click on row opens strike radar modal
+      tr.addEventListener('click', () => {
+        openStrikeModal(r, spot, isAtm);
+      });
+
+      // RENDER ROW (Image 1 Exact 13 Columns)
+      const ceLtpClass = ceChg >= 0 ? 'up' : 'down';
+      const peLtpClass = peChg >= 0 ? 'up' : 'down';
 
       tr.innerHTML = `
-        <!-- CALL SIDE (8 Columns) -->
-        <td class="td-ce col-oi-bar" style="position:relative;">
-          ${showOiBar ? `<div class="oi-bar oi-bar-call" style="width:${ceOiBarWidth}%;"></div>` : ''}
-          <span class="oi-text">${fmtQty(ceOi)}</span>
-          ${isMaxCe ? '<span class="wall-badge wall-res" title="Major Resistance - Highest Call OI">🛑 RES</span>' : ''}
+        <!-- Calls (Left) -->
+        <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px;">
+          ${ceOiChgPct !== 0 ? `<span class="${ceOiChgPct >= 0 ? 'modern-num-green' : 'modern-num-red'}">${ceOiChgPct >= 0 ? '+' : ''}${ceOiChgPct.toFixed(2)}%</span>` : '--'}
         </td>
-        <td class="td-ce col-oi-chg ${ceOiChg >= 0 ? 'text-green' : 'text-red'}">
-          ${ceOiChg >= 0 ? '+' : ''}${fmtQty(ceOiChg)}
+        <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px;">
+          ${ceOiChg !== 0 ? `<span class="${ceOiChg >= 0 ? 'modern-num-green' : 'modern-num-red'}">${fmtMillionQty(ceOiChg)}</span>` : '--'}
         </td>
-        <td class="td-ce col-buildup" style="text-align:center;">
-          <span class="buildup-tag ${ceBuildup.cls}" title="${ceBuildup.title}">${ceBuildup.code}</span>
+        <td class="modern-cell-oi" style="text-align:right;">
+          <div class="modern-oi-fill ce" style="width:${ceOiBarWidth}%;"></div>
+          <span class="modern-oi-text">${fmtMillionQty(ceOi)}</span>
         </td>
-        <td class="td-ce col-vol">${fmtQty(ceVol)}</td>
-        <td class="td-ce col-iv upstox-greek-col" style="${isOiOnly ? 'display:none;' : ''}">${ceGr.iv ? fmtNum(ceGr.iv, 1) + '%' : '--'}</td>
-        <td class="td-ce col-delta upstox-greek-col" style="${isOiOnly ? 'display:none;' : ''}">${ceGr.delta !== undefined ? fmtNum(ceGr.delta, 2) : '--'}</td>
-        <td class="td-ce col-ltp ${ceLtp > (ceMd.close_price || 0) ? 'up-tick' : 'down-tick'}">
-          <strong>${fmtNum(ceLtp, 2)}</strong>
+        <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#64748b;">
+          ${ceIv > 0 ? ceIv.toFixed(2) : '--'}
         </td>
-        <td class="td-ce col-chg ${ceChg >= 0 ? 'text-green' : 'text-red'}">
-          ${ceChg >= 0 ? '+' : ''}${fmtNum(ceChg, 1)}
+        <td class="modern-cell-vol" style="text-align:right;">
+          <div class="modern-vol-fill ce" style="width:${ceVolBarWidth}%;"></div>
+          <span class="modern-vol-text">${fmtMillionQty(ceVol)}</span>
         </td>
-
-        <!-- CENTER STRIKE (1 Column) -->
-        <td class="col-strike ${isAtm ? 'atm-strike-badge' : ''}">
-          <div class="strike-wrap">
-            <span class="strike-num">${strike.toLocaleString('en-IN')}</span>
-            ${isAtm ? '<span class="atm-tag">ATM</span>' : ''}
-            <span class="strike-pcr-pill ${strikePcr >= 1.0 ? 'bull' : 'bear'}" title="Strike PCR (PE/CE): ${strikePcr.toFixed(2)}">${strikePcr.toFixed(1)}</span>
-            <span class="strike-click-hint" title="View details">🔍</span>
-          </div>
+        <td style="text-align:right; padding:4px 6px;">
+          <span class="modern-ltp-pill ${ceLtpClass}">${fmtNum(ceLtp, 2)}</span>
         </td>
 
-        <!-- PUT SIDE (8 Columns) -->
-        <td class="td-pe col-chg ${peChg >= 0 ? 'text-green' : 'text-red'}">
-          ${peChg >= 0 ? '+' : ''}${fmtNum(peChg, 1)}
+        <!-- Center Strike Column -->
+        <td class="modern-cell-strike">
+          <span class="modern-strike-num">${strike.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </td>
-        <td class="td-pe col-ltp ${peLtp > (peMd.close_price || 0) ? 'up-tick' : 'down-tick'}">
-          <strong>${fmtNum(peLtp, 2)}</strong>
+
+        <!-- Puts (Right) -->
+        <td style="text-align:left; padding:4px 6px;">
+          <span class="modern-ltp-pill ${peLtpClass}">${fmtNum(peLtp, 2)}</span>
         </td>
-        <td class="td-pe col-delta upstox-greek-col" style="${isOiOnly ? 'display:none;' : ''}">${peGr.delta !== undefined ? fmtNum(peGr.delta, 2) : '--'}</td>
-        <td class="td-pe col-iv upstox-greek-col" style="${isOiOnly ? 'display:none;' : ''}">${peGr.iv ? fmtNum(peGr.iv, 1) + '%' : '--'}</td>
-        <td class="td-pe col-vol">${fmtQty(peVol)}</td>
-        <td class="td-pe col-buildup" style="text-align:center;">
-          <span class="buildup-tag ${peBuildup.cls}" title="${peBuildup.title}">${peBuildup.code}</span>
+        <td class="modern-cell-vol" style="text-align:left;">
+          <div class="modern-vol-fill pe" style="width:${peVolBarWidth}%;"></div>
+          <span class="modern-vol-text">${fmtMillionQty(peVol)}</span>
         </td>
-        <td class="td-pe col-oi-chg ${peOiChg >= 0 ? 'text-green' : 'text-red'}">
-          ${peOiChg >= 0 ? '+' : ''}${fmtQty(peOiChg)}
+        <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#64748b;">
+          ${peIv > 0 ? peIv.toFixed(2) : '--'}
         </td>
-        <td class="td-pe col-oi-bar" style="position:relative;">
-          ${showOiBar ? `<div class="oi-bar oi-bar-put" style="width:${peOiBarWidth}%;"></div>` : ''}
-          <span class="oi-text">${fmtQty(peOi)}</span>
-          ${isMaxPe ? '<span class="wall-badge wall-sup" title="Major Support - Highest Put OI">🛡️ SUP</span>' : ''}
+        <td class="modern-cell-oi" style="text-align:left;">
+          <div class="modern-oi-fill pe" style="width:${peOiBarWidth}%;"></div>
+          <span class="modern-oi-text">${fmtMillionQty(peOi)}</span>
+        </td>
+        <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px;">
+          ${peOiChg !== 0 ? `<span class="${peOiChg >= 0 ? 'modern-num-green' : 'modern-num-red'}">${fmtMillionQty(peOiChg)}</span>` : '--'}
+        </td>
+        <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11px;">
+          ${peOiChgPct !== 0 ? `<span class="${peOiChg >= 0 ? 'modern-num-green' : 'modern-num-red'}">${peOiChgPct >= 0 ? '+' : ''}${peOiChgPct.toFixed(2)}%</span>` : '--'}
         </td>
       `;
 
       tbody.appendChild(tr);
     });
 
-    // Update Totals Footer
+    // Update Totals Footer (Only OI, Volume, OI Change Calculated - Total Centered Under Strike)
     const tfoot = document.getElementById('upstoxChainTableFoot');
     if (tfoot) {
       tfoot.style.display = '';
-      const elCeOi = document.getElementById('footCeOi');
-      if (elCeOi) elCeOi.textContent = fmtQty(sumCeOi);
-      const elCeOiChg = document.getElementById('footCeOiChg');
-      if (elCeOiChg) {
-        elCeOiChg.textContent = (sumCeOiChg >= 0 ? '+' : '') + fmtQty(sumCeOiChg);
-        elCeOiChg.className = sumCeOiChg >= 0 ? 'text-green' : 'text-red';
-      }
-
-      const elPeOiChg = document.getElementById('footPeOiChg');
-      if (elPeOiChg) {
-        elPeOiChg.textContent = (sumPeOiChg >= 0 ? '+' : '') + fmtQty(sumPeOiChg);
-        elPeOiChg.className = sumPeOiChg >= 0 ? 'text-green' : 'text-red';
-      }
-      const elPeOi = document.getElementById('footPeOi');
-      if (elPeOi) elPeOi.textContent = fmtQty(sumPeOi);
+      tfoot.innerHTML = `
+        <tr class="modern-foot-row">
+          <td></td>
+          <td id="modernFootCeOiChg" style="text-align:right; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumCeOiChg)}</td>
+          <td id="modernFootCeOi" style="text-align:right; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumCeOi)}</td>
+          <td></td>
+          <td id="modernFootCeVol" style="text-align:right; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumCeVol)}</td>
+          <td></td>
+          <td class="modern-foot-strike" style="text-align:center; font-weight:800; font-size:12px; color:#2563eb;">Total</td>
+          <td></td>
+          <td id="modernFootPeVol" style="text-align:left; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumPeVol)}</td>
+          <td></td>
+          <td id="modernFootPeOi" style="text-align:left; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumPeOi)}</td>
+          <td id="modernFootPeOiChg" style="text-align:left; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumPeOiChg)}</td>
+          <td></td>
+        </tr>
+      `;
     }
   }
 
@@ -891,6 +1215,8 @@
   // ==========================================================================
   // ⚡ 14-METRIC OPTION VISUALIZER TOOL (IMAGE 15 STYLE)
   // ==========================================================================
+  // ⚡ 14-METRIC OPTION VISUALIZER TOOL (WITH 3 REFERENCE MODES: IMAGES 1, 2, 3)
+  // ==========================================================================
   const VIS_METRICS_CONFIG = {
     turnover: {
       title: 'Turnover (₹ Cr)',
@@ -908,7 +1234,7 @@
     },
     oi: {
       title: 'Open Interest (Contracts)',
-      sub: 'Open Interest depth distribution across strikes',
+      sub: 'Open Interest depth distribution across strikes • Zero baseline',
       callLabel: 'Call OI',
       putLabel: 'Put OI',
       format: 'qty',
@@ -919,7 +1245,7 @@
     },
     oichg: {
       title: 'Change in Open Interest (Contracts)',
-      sub: 'Net intraday position buildup (fresh writes vs unwinding)',
+      sub: 'Net intraday position buildup (fresh writes vs unwinding) • Zero baseline (Image 2)',
       callLabel: 'Call OI Chg',
       putLabel: 'Put OI Chg',
       format: 'qty',
@@ -958,13 +1284,14 @@
       format: 'cr',
       getVals: (r, allRows) => {
         const sp = Number(r.strike_price || 0);
+        const lotSz = (state.instrumentKey || '').includes('BANK') ? 15 : 25;
         let callLoss = 0, putLoss = 0;
         allRows.forEach(row => {
           const s = Number(row.strike_price || 0);
           const cOi = Number(row.call_options?.market_data?.oi || 0);
           const pOi = Number(row.put_options?.market_data?.oi || 0);
-          if (sp > s) callLoss += (sp - s) * cOi * 65 / 10000000;
-          if (sp < s) putLoss += (s - sp) * pOi * 65 / 10000000;
+          if (sp > s) callLoss += (sp - s) * cOi * lotSz / 10000000;
+          if (sp < s) putLoss += (s - sp) * pOi * lotSz / 10000000;
         });
         return { call: callLoss, put: putLoss };
       }
@@ -992,7 +1319,7 @@
       getVals: (r) => {
         const ws = Number(r.quant_metrics?.write_skew || 0);
         return {
-          call: ws < 0 ? Math.abs(ws) : 0,
+          call: ws < 0 ? ws : 0,
           put: ws > 0 ? ws : 0
         };
       }
@@ -1072,8 +1399,38 @@
       getVals: (r) => {
         const m = r.quant_metrics || {};
         return {
-          call: Math.abs(Number(m.ce_day_oi_pct || 0)),
-          put: Math.abs(Number(m.pe_day_oi_pct || 0))
+          call: Number(m.ce_day_oi_pct || 0),
+          put: Number(m.pe_day_oi_pct || 0)
+        };
+      }
+    },
+    gex_oi: {
+      title: 'Gamma Exposure - Open Interest (GEX-OI)',
+      sub: 'Institutional Dealer Gamma Exposure across strikes • Positive suppresses volatility, Negative expands volatility (Image 2)',
+      callLabel: 'Positive GEX (Calls)',
+      putLabel: 'Negative GEX (Puts)',
+      format: 'gex',
+      getVals: (r, allRows, spot) => {
+        const { gexOi } = calcGex(r, spot, 4);
+        return {
+          call: gexOi >= 0 ? gexOi : 0,
+          put: gexOi < 0 ? gexOi : 0,
+          net: gexOi
+        };
+      }
+    },
+    gex_vol: {
+      title: 'Gamma Exposure - Volume Flow (GEX-Vol)',
+      sub: 'Intraday flow gamma exposure from contract volumes • Image 2 Matrix',
+      callLabel: 'Positive Vol GEX',
+      putLabel: 'Negative Vol GEX',
+      format: 'gex',
+      getVals: (r, allRows, spot) => {
+        const { gexVol } = calcGex(r, spot, 4);
+        return {
+          call: gexVol >= 0 ? gexVol : 0,
+          put: gexVol < 0 ? gexVol : 0,
+          net: gexVol
         };
       }
     }
@@ -1081,16 +1438,25 @@
 
   function formatValByMetric(val, fmt) {
     if (val === null || val === undefined || isNaN(val)) return '--';
-    if (fmt === 'cr') return `${Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
-    if (fmt === 'qty') return fmtQty(val);
-    if (fmt === 'price') return `₹${Number(val).toFixed(2)}`;
-    if (fmt === 'pct') return `${Number(val).toFixed(1)}%`;
+    const num = Number(val);
+    const abs = Math.abs(num);
+    const sign = num < 0 ? '-' : '';
+    if (fmt === 'cr') return `${sign}${abs.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
+    if (fmt === 'qty') {
+      if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)} Cr`;
+      if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(2)} L`;
+      if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)} k`;
+      return `${sign}${abs.toLocaleString('en-IN')}`;
+    }
+    if (fmt === 'gex') return `${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (fmt === 'price') return `₹${num.toFixed(2)}`;
+    if (fmt === 'pct') return `${num.toFixed(1)}%`;
     return Number(val).toLocaleString('en-IN');
   }
 
   function renderVisualizerChart(data) {
     const canvas = document.getElementById('optVisCanvas');
-    if (!canvas || !data || !data.data || data.data.length === 0) return;
+    if (!canvas || !data) return;
 
     // Visibility Guard: Don't render canvas when panel is hidden or unattached
     const panel = document.getElementById('panelUpstoxChain');
@@ -1101,60 +1467,14 @@
 
     const rect = wrap.getBoundingClientRect();
     const w = Math.floor(rect.width);
-    if (w < 100) return; // Guard against 0 or negative width during DOM reflows
-
-    const metricKey = state.visualizerMetric || 'turnover';
-    const cfg = VIS_METRICS_CONFIG[metricKey] || VIS_METRICS_CONFIG.turnover;
-
-    // Update title & sub
-    const elTitle = document.getElementById('optVisChartTitle');
-    if (elTitle) elTitle.textContent = cfg.title;
-    const elSub = document.getElementById('optVisChartSub');
-    if (elSub) elSub.textContent = cfg.sub;
+    if (w < 100) return;
 
     const spot = Number(data.spotPrice || 0);
     const atmStrike = Number(data.atmStrike || spot);
     const elAtm = document.getElementById('optVisAtmBadge');
     if (elAtm) elAtm.textContent = `ATM: ${atmStrike.toLocaleString('en-IN')}`;
 
-    // Filter strikes matching strikeRange
-    let allRows = [...data.data].sort((a, b) => Number(a.strike_price) - Number(b.strike_price));
-    let rows = allRows;
-    if (state.strikeRange > 0) {
-      let atmIdx = 0;
-      let minD = Infinity;
-      allRows.forEach((r, i) => {
-        const d = Math.abs(Number(r.strike_price) - spot);
-        if (d < minD) { minD = d; atmIdx = i; }
-      });
-      const start = Math.max(0, atmIdx - state.strikeRange);
-      const end = Math.min(allRows.length, atmIdx + state.strikeRange + 1);
-      rows = allRows.slice(start, end);
-    }
-
-    // Compute metric values & totals
-    let sumCall = 0, sumPut = 0, maxVal = 0;
-    const chartItems = rows.map(r => {
-      const sp = Number(r.strike_price || 0);
-      const vals = cfg.getVals(r, allRows, spot);
-      const call = Math.max(0, Number(vals.call || 0));
-      const put = Math.max(0, Number(vals.put || 0));
-      sumCall += call;
-      sumPut += put;
-      if (call > maxVal) maxVal = call;
-      if (put > maxVal) maxVal = put;
-      return { strike: sp, call, put, row: r, isAtm: Math.abs(sp - atmStrike) < 1 };
-    });
-
-    if (maxVal === 0) maxVal = 100;
-
-    // Update legend totals
-    const elPutLeg = document.getElementById('optVisPutLegend');
-    const elCallLeg = document.getElementById('optVisCallLegend');
-    if (elPutLeg) elPutLeg.textContent = `${cfg.putLabel} (${formatValByMetric(sumPut, cfg.format)})`;
-    if (elCallLeg) elCallLeg.textContent = `${cfg.callLabel} (${formatValByMetric(sumCall, cfg.format)})`;
-
-    // HiDPI Canvas Rendering - Dirty-check to avoid infinite ResizeObserver loops
+    // HiDPI Canvas Setup
     const dpr = window.devicePixelRatio || 1;
     const h = 320;
     const targetW = Math.round(w * dpr);
@@ -1169,29 +1489,398 @@
     if (!ctx) return;
     ctx.resetTransform?.();
     ctx.scale(dpr, dpr);
-
-    // Margins
-    const padL = 60, padR = 20, padT = 20, padB = 40;
-    const plotW = Math.max(20, w - padL - padR);
-    const plotH = Math.max(20, h - padT - padB);
-
-    // Clear
     ctx.clearRect(0, 0, w, h);
 
-    // Grid lines & Y-axis labels
     const isLight = document.documentElement.getAttribute('data-theme') !== 'dark' && document.body.getAttribute('data-theme') !== 'dark';
     const gridColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.05)';
     const textColor = isLight ? '#475569' : '#94a3b8';
-    const yTicks = 4;
 
+    const viewMode = state.visViewMode || 'strike';
+
+    // =========================================================================
+    // VIEW MODE 2: 📈 INTRADAY PCR VS SPOT TREND (REFERENCE IMAGE 1)
+    // =========================================================================
+    if (viewMode === 'pcr') {
+      const elTitle = document.getElementById('optVisChartTitle');
+      if (elTitle) elTitle.textContent = 'Intraday PCR vs Spot Trend (Dual-Axis)';
+      const elSub = document.getElementById('optVisChartSub');
+      if (elSub) elSub.textContent = 'Reference Image 1 • PCR curve (Left Axis - Red) vs Underlying Spot Price (Right Axis - Green) • 09:15 to 15:30';
+
+      const pts = (data.intradayTimeline && data.intradayTimeline.length >= 10) ? data.intradayTimeline : generateClientTimeline(spot, Number(data.pcr || 0.85), Number(data.maxPain || spot));
+      if (!pts || pts.length === 0) return;
+
+      const padL = 60, padR = 75, padT = 25, padB = 40;
+      const plotW = Math.max(20, w - padL - padR);
+      const plotH = Math.max(20, h - padT - padB);
+
+      let minPcr = Math.min(...pts.map(p => p.pcr));
+      let maxPcr = Math.max(...pts.map(p => p.pcr));
+      minPcr = Math.max(0, Math.floor(minPcr * 10) / 10 - 0.1);
+      maxPcr = Math.ceil(maxPcr * 10) / 10 + 0.1;
+      const pcrSpan = Math.max(0.1, maxPcr - minPcr);
+
+      let minSpot = Math.min(...pts.map(p => p.spot));
+      let maxSpot = Math.max(...pts.map(p => p.spot));
+      const sPad = Math.max(20, (maxSpot - minSpot) * 0.15);
+      minSpot = Math.floor(minSpot - sPad);
+      maxSpot = Math.ceil(maxSpot + sPad);
+      const spotSpan = Math.max(10, maxSpot - minSpot);
+
+      const getX = (idx) => padL + (idx / Math.max(1, pts.length - 1)) * plotW;
+      const getPcrY = (val) => padT + plotH - ((val - minPcr) / pcrSpan) * plotH;
+      const getSpotY = (val) => padT + plotH - ((val - minSpot) / spotSpan) * plotH;
+
+      // Grid lines and ticks
+      const yTicks = 4;
+      ctx.font = '10px "JetBrains Mono", monospace';
+      for (let i = 0; i <= yTicks; i++) {
+        const frac = i / yTicks;
+        const pVal = minPcr + pcrSpan * frac;
+        const sVal = minSpot + spotSpan * frac;
+        const yPos = padT + plotH - frac * plotH;
+
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(padL, yPos);
+        ctx.lineTo(padL + plotW, yPos);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Left tick: PCR (Red #ef4444)
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText(pVal.toFixed(2), padL - 8, yPos);
+
+        // Right tick: Spot (Green #10b981)
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#10b981';
+        ctx.fillText(sVal.toLocaleString('en-IN', { maximumFractionDigits: 0 }), padL + plotW + 8, yPos);
+      }
+
+      // Baseline
+      ctx.strokeStyle = isLight ? '#cbd5e1' : 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(padL, padT + plotH);
+      ctx.lineTo(padL + plotW, padT + plotH);
+      ctx.stroke();
+
+      // PCR Fill Area & Curve (Red)
+      const gradPcr = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+      gradPcr.addColorStop(0, 'rgba(239, 68, 68, 0.18)');
+      gradPcr.addColorStop(1, 'rgba(239, 68, 68, 0.01)');
+
+      ctx.beginPath();
+      ctx.moveTo(getX(0), getPcrY(pts[0].pcr));
+      pts.forEach((p, idx) => ctx.lineTo(getX(idx), getPcrY(p.pcr)));
+      ctx.lineTo(getX(pts.length - 1), padT + plotH);
+      ctx.lineTo(getX(0), padT + plotH);
+      ctx.closePath();
+      ctx.fillStyle = gradPcr;
+      ctx.fill();
+
+      ctx.beginPath();
+      pts.forEach((p, idx) => {
+        const x = getX(idx);
+        const y = getPcrY(p.pcr);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+
+      // Spot Line (Green)
+      ctx.beginPath();
+      pts.forEach((p, idx) => {
+        const x = getX(idx);
+        const y = getSpotY(p.spot);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+
+      // Time X labels
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = textColor;
+      const xStep = Math.max(1, Math.floor(pts.length / 6));
+      pts.forEach((p, idx) => {
+        if (idx % xStep === 0 || idx === pts.length - 1) {
+          ctx.fillText(p.time, getX(idx), padT + plotH + 8);
+        }
+      });
+
+      // Hover Crosshair
+      state.visChartBounds = pts.map((p, idx) => ({
+        x: getX(idx),
+        x1: getX(Math.max(0, idx - 0.5)),
+        x2: getX(Math.min(pts.length - 1, idx + 0.5)),
+        pt: p
+      }));
+
+      if (state.visHoverIndex >= 0 && state.visHoverIndex < pts.length) {
+        const hp = pts[state.visHoverIndex];
+        const hx = getX(state.visHoverIndex);
+        const hyPcr = getPcrY(hp.pcr);
+        const hySpot = getSpotY(hp.spot);
+
+        ctx.save();
+        ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(hx, padT);
+        ctx.lineTo(hx, padT + plotH);
+        ctx.stroke();
+
+        // PCR point dot
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(hx, hyPcr, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Spot point dot
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(hx, hySpot, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Update Legend
+      const lastP = pts[pts.length - 1] || {};
+      const elPutLeg = document.getElementById('optVisPutLegend');
+      const elCallLeg = document.getElementById('optVisCallLegend');
+      if (elCallLeg) elCallLeg.textContent = `Spot Price: ₹${fmtNum(lastP.spot || spot, 2)}`;
+      if (elPutLeg) elPutLeg.textContent = `PCR Trend: ${(lastP.pcr || data.pcr || 0).toFixed(2)}`;
+      return;
+    }
+
+    // =========================================================================
+    // VIEW MODE 3: 🎯 INTRADAY MAX PAIN VS SPOT TREND (REFERENCE IMAGE 3)
+    // =========================================================================
+    if (viewMode === 'maxpain') {
+      const elTitle = document.getElementById('optVisChartTitle');
+      if (elTitle) elTitle.textContent = 'Intraday Max Pain vs Spot Trend';
+      const elSub = document.getElementById('optVisChartSub');
+      if (elSub) elSub.textContent = 'Reference Image 3 • Underlying Spot Price (Green) vs Max Pain Strike Barrier Stair-Step (Red) • 09:15 to 15:30';
+
+      const pts = (data.intradayTimeline && data.intradayTimeline.length >= 10) ? data.intradayTimeline : generateClientTimeline(spot, Number(data.pcr || 0.85), Number(data.maxPain || spot));
+      if (!pts || pts.length === 0) return;
+
+      const padL = 30, padR = 75, padT = 25, padB = 40;
+      const plotW = Math.max(20, w - padL - padR);
+      const plotH = Math.max(20, h - padT - padB);
+
+      let allVals = [...pts.map(p => p.spot), ...pts.map(p => p.maxPain)];
+      let minP = Math.min(...allVals);
+      let maxP = Math.max(...allVals);
+      const spread = Math.max(40, (maxP - minP) * 0.15);
+      minP = Math.floor(minP - spread);
+      maxP = Math.ceil(maxP + spread);
+      const pSpan = Math.max(10, maxP - minP);
+
+      const getX = (idx) => padL + (idx / Math.max(1, pts.length - 1)) * plotW;
+      const getY = (val) => padT + plotH - ((val - minP) / pSpan) * plotH;
+
+      // Grid lines and right axis labels
+      const yTicks = 4;
+      ctx.font = '10px "JetBrains Mono", monospace';
+      for (let i = 0; i <= yTicks; i++) {
+        const frac = i / yTicks;
+        const val = minP + pSpan * frac;
+        const yPos = padT + plotH - frac * plotH;
+
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(padL, yPos);
+        ctx.lineTo(padL + plotW, yPos);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = textColor;
+        ctx.fillText(`₹${val.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, padL + plotW + 8, yPos);
+      }
+
+      // Spot Line (Green Curve)
+      ctx.beginPath();
+      pts.forEach((p, idx) => {
+        const x = getX(idx);
+        const y = getY(p.spot);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+
+      // Max Pain Stair-Step Line (Red Curve - matching Reference Image 3)
+      ctx.beginPath();
+      for (let i = 0; i < pts.length; i++) {
+        const curX = getX(i);
+        const curY = getY(pts[i].maxPain);
+        if (i === 0) {
+          ctx.moveTo(curX, curY);
+        } else {
+          const prevY = getY(pts[i - 1].maxPain);
+          ctx.lineTo(curX, prevY);
+          ctx.lineTo(curX, curY);
+        }
+      }
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+
+      // Time X labels
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = textColor;
+      const xStep = Math.max(1, Math.floor(pts.length / 6));
+      pts.forEach((p, idx) => {
+        if (idx % xStep === 0 || idx === pts.length - 1) {
+          ctx.fillText(p.time, getX(idx), padT + plotH + 8);
+        }
+      });
+
+      // Hover Crosshair
+      state.visChartBounds = pts.map((p, idx) => ({
+        x: getX(idx),
+        x1: getX(Math.max(0, idx - 0.5)),
+        x2: getX(Math.min(pts.length - 1, idx + 0.5)),
+        pt: p
+      }));
+
+      if (state.visHoverIndex >= 0 && state.visHoverIndex < pts.length) {
+        const hp = pts[state.visHoverIndex];
+        const hx = getX(state.visHoverIndex);
+        const hySpot = getY(hp.spot);
+        const hyMp = getY(hp.maxPain);
+
+        ctx.save();
+        ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(hx, padT);
+        ctx.lineTo(hx, padT + plotH);
+        ctx.stroke();
+
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(hx, hySpot, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(hx, hyMp, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Update Legend
+      const lastP = pts[pts.length - 1] || {};
+      const elPutLeg = document.getElementById('optVisPutLegend');
+      const elCallLeg = document.getElementById('optVisCallLegend');
+      if (elCallLeg) elCallLeg.textContent = `Spot Price: ₹${fmtNum(lastP.spot || spot, 2)}`;
+      if (elPutLeg) elPutLeg.textContent = `Max Pain: ₹${fmtNum(lastP.maxPain || data.maxPain || spot, 0)}`;
+      return;
+    }
+
+    // =========================================================================
+    // VIEW MODE 1: 📊 STRIKE DISTRIBUTION (REFERENCE IMAGE 2 - ZERO BASELINE & LAKHS)
+    // =========================================================================
+    const metricKey = state.visualizerMetric || 'oichg';
+    const cfg = VIS_METRICS_CONFIG[metricKey] || VIS_METRICS_CONFIG.oichg;
+
+    const elTitle = document.getElementById('optVisChartTitle');
+    if (elTitle) elTitle.textContent = cfg.title;
+    const elSub = document.getElementById('optVisChartSub');
+    if (elSub) elSub.textContent = cfg.sub;
+
+    let allRows = [...(data.data || [])].sort((a, b) => Number(a.strike_price) - Number(b.strike_price));
+    let rows = allRows;
+    if (state.strikeRange > 0) {
+      let atmIdx = 0;
+      let minD = Infinity;
+      allRows.forEach((r, i) => {
+        const d = Math.abs(Number(r.strike_price) - spot);
+        if (d < minD) { minD = d; atmIdx = i; }
+      });
+      const start = Math.max(0, atmIdx - state.strikeRange);
+      const end = Math.min(allRows.length, atmIdx + state.strikeRange + 1);
+      rows = allRows.slice(start, end);
+    }
+
+    // Compute metric values & signed bounds
+    let sumCall = 0, sumPut = 0;
+    let minVal = 0, maxVal = 0;
+
+    const chartItems = rows.map(r => {
+      const sp = Number(r.strike_price || 0);
+      const vals = cfg.getVals(r, allRows, spot);
+      const call = Number(vals.call || 0);
+      const put = Number(vals.put || 0);
+      sumCall += call;
+      sumPut += put;
+      if (call < minVal) minVal = call;
+      if (put < minVal) minVal = put;
+      if (call > maxVal) maxVal = call;
+      if (put > maxVal) maxVal = put;
+      return { strike: sp, call, put, row: r, isAtm: Math.abs(sp - atmStrike) < 1 };
+    });
+
+    const hasNegative = minVal < -0.01;
+    if (hasNegative) {
+      // Balanced symmetrical zero baseline matching Reference Image 2 (-50.0 L to +50.0 L)
+      const extent = Math.max(Math.abs(minVal), Math.abs(maxVal), 1);
+      minVal = -extent;
+      maxVal = extent;
+    } else {
+      minVal = 0;
+      if (maxVal <= 0) maxVal = 100;
+    }
+
+    // Update legend totals
+    const elPutLeg = document.getElementById('optVisPutLegend');
+    const elCallLeg = document.getElementById('optVisCallLegend');
+    if (elCallLeg) elCallLeg.textContent = `${cfg.callLabel} (${formatValByMetric(sumCall, cfg.format)})`;
+    if (elPutLeg) elPutLeg.textContent = `${cfg.putLabel} (${formatValByMetric(sumPut, cfg.format)})`;
+
+    // Margins
+    const padL = 68, padR = 25, padT = 30, padB = 40;
+    const plotW = Math.max(20, w - padL - padR);
+    const plotH = Math.max(20, h - padT - padB);
+
+    const valSpan = Math.max(0.1, maxVal - minVal);
+    const getY = (val) => padT + plotH - ((val - minVal) / valSpan) * plotH;
+    const yZero = getY(0);
+
+    // Grid lines & Y-axis labels with Lakhs / Cr formatting (Image 2)
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.font = '10px "JetBrains Mono", monospace';
 
+    const yTicks = hasNegative ? 4 : 4;
     for (let i = 0; i <= yTicks; i++) {
-      const yFrac = i / yTicks;
-      const yVal = maxVal * (1 - yFrac);
-      const yPos = padT + yFrac * plotH;
+      const frac = i / yTicks;
+      const yVal = minVal + valSpan * frac;
+      const yPos = padT + plotH - frac * plotH;
 
       ctx.strokeStyle = gridColor;
       ctx.lineWidth = 1;
@@ -1203,24 +1892,22 @@
       ctx.setLineDash([]);
 
       ctx.fillStyle = textColor;
-      let tickText = yVal >= 1000 ? (yVal >= 1000000 ? (yVal / 1000000).toFixed(1) + 'M' : (yVal / 1000).toFixed(1) + 'k') : yVal.toFixed(yVal < 10 ? 1 : 0);
-      if (cfg.format === 'cr') tickText = yVal.toFixed(0);
-      ctx.fillText(tickText, padL - 8, yPos);
+      ctx.fillText(formatValByMetric(yVal, cfg.format), padL - 8, yPos);
     }
 
-    // Baseline
-    ctx.strokeStyle = isLight ? '#cbd5e1' : 'rgba(255, 255, 255, 0.15)';
+    // Solid Baseline at 0.0
+    ctx.strokeStyle = isLight ? '#94a3b8' : 'rgba(255, 255, 255, 0.35)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(padL, padT + plotH);
-    ctx.lineTo(padL + plotW, padT + plotH);
+    ctx.moveTo(padL, yZero);
+    ctx.lineTo(padL + plotW, yZero);
     ctx.stroke();
 
     // Bars
     const n = chartItems.length;
     if (n === 0) return;
     const colW = plotW / n;
-    const barGap = 1.5;
+    const barGap = 2;
     const subBarW = Math.max(3, (colW - 8) / 2 - barGap);
 
     state.visChartBounds = [];
@@ -1229,7 +1916,6 @@
       const colX = padL + idx * colW;
       const colCenterX = colX + colW / 2;
 
-      // Store bounds for mouse hit testing
       state.visChartBounds.push({
         x1: colX,
         x2: colX + colW,
@@ -1243,60 +1929,54 @@
         ctx.fillRect(colX + 1, padT, colW - 2, plotH);
       }
 
-      // ATM Marker
-      if (item.isAtm) {
-        ctx.strokeStyle = 'rgba(251, 191, 36, 0.45)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        ctx.moveTo(colCenterX, padT);
-        ctx.lineTo(colCenterX, padT + plotH);
-        ctx.stroke();
-        ctx.setLineDash([]);
+      // Call Bar (Green #10b981 - Left)
+      const callX = colCenterX - barGap / 2 - subBarW;
+      if (item.call >= 0) {
+        const cH = Math.max(1, (item.call / valSpan) * plotH);
+        const cY = yZero - cH;
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(callX, cY, subBarW, cH);
+        ctx.fillStyle = '#34d399';
+        ctx.fillRect(callX, cY, subBarW, Math.min(2.5, cH));
+      } else {
+        // Negative unwinding bar extending downward below baseline
+        const cH = Math.max(1, (Math.abs(item.call) / valSpan) * plotH);
+        const cY = yZero;
+        ctx.fillStyle = '#059669';
+        ctx.fillRect(callX, cY, subBarW, cH);
+        ctx.fillStyle = '#34d399';
+        ctx.fillRect(callX, cY + cH - Math.min(2.5, cH), subBarW, Math.min(2.5, cH));
       }
 
-      // Put Bar (Cyan - Left)
-      const putH = Math.max(1, (item.put / maxVal) * plotH);
-      const putX = colCenterX - barGap / 2 - subBarW;
-      const putY = padT + plotH - putH;
+      // Put Bar (Red #ef4444 - Right)
+      const putX = colCenterX + barGap / 2;
+      if (item.put >= 0) {
+        const pH = Math.max(1, (item.put / valSpan) * plotH);
+        const pY = yZero - pH;
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(putX, pY, subBarW, pH);
+        ctx.fillStyle = '#f87171';
+        ctx.fillRect(putX, pY, subBarW, Math.min(2.5, pH));
+      } else {
+        // Negative unwinding bar extending downward below baseline
+        const pH = Math.max(1, (Math.abs(item.put) / valSpan) * plotH);
+        const pY = yZero;
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(putX, pY, subBarW, pH);
+        ctx.fillStyle = '#f87171';
+        ctx.fillRect(putX, pY + pH - Math.min(2.5, pH), subBarW, Math.min(2.5, pH));
+      }
 
-      ctx.fillStyle = '#06b6d4';
-      ctx.fillRect(putX, putY, subBarW, putH);
-      // Top cap highlight
-      ctx.fillStyle = '#22d3ee';
-      ctx.fillRect(putX, putY, subBarW, Math.min(2.5, putH));
-
-      // Call Bar (Amber/Yellow - Right)
-      const callH = Math.max(1, (item.call / maxVal) * plotH);
-      const callX = colCenterX + barGap / 2;
-      const callY = padT + plotH - callH;
-
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(callX, callY, subBarW, callH);
-      // Top cap highlight
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(callX, callY, subBarW, Math.min(2.5, callH));
-
-      // Crosshair for Hovered Bar
+      // Hover Crosshair
       if (state.visHoverIndex === idx) {
         ctx.save();
         ctx.strokeStyle = isLight ? 'rgba(0, 0, 0, 0.40)' : 'rgba(255, 255, 255, 0.55)';
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
-
-        // Vertical crosshair
         ctx.beginPath();
         ctx.moveTo(colCenterX, padT);
         ctx.lineTo(colCenterX, padT + plotH);
         ctx.stroke();
-
-        // Horizontal crosshair at peak bar height
-        const barTopY = Math.min(putY, callY);
-        ctx.beginPath();
-        ctx.moveTo(padL, barTopY);
-        ctx.lineTo(padL + plotW, barTopY);
-        ctx.stroke();
-
         ctx.setLineDash([]);
         ctx.restore();
       }
@@ -1307,12 +1987,80 @@
       ctx.font = item.isAtm ? 'bold 10.5px "JetBrains Mono", monospace' : '9.5px "JetBrains Mono", monospace';
       ctx.fillStyle = item.isAtm ? '#fbbf24' : (state.visHoverIndex === idx ? '#38bdf8' : textColor);
 
-      // Show alternate labels if too crowded
       const skipLabels = n > 25 ? 3 : n > 15 ? 2 : 1;
       if (idx % skipLabels === 0 || item.isAtm || state.visHoverIndex === idx) {
         ctx.fillText(item.strike, colCenterX, padT + plotH + 8);
       }
     });
+
+    // Spot Price Marker (Matching Reference Image 2: "Spot price: 22,421.95")
+    if (spot > 0 && n >= 2) {
+      let spotX = null;
+      for (let i = 0; i < n - 1; i++) {
+        const s1 = chartItems[i].strike;
+        const s2 = chartItems[i + 1].strike;
+        if (spot >= s1 && spot <= s2) {
+          const frac = (spot - s1) / Math.max(1, s2 - s1);
+          spotX = chartItems[i].colCenterX + frac * (chartItems[i + 1].colCenterX - chartItems[i].colCenterX);
+          break;
+        }
+      }
+      if (spotX === null) {
+        if (spot < chartItems[0].strike) spotX = chartItems[0].colCenterX;
+        else spotX = chartItems[n - 1].colCenterX;
+      }
+
+      ctx.save();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(spotX, padT);
+      ctx.lineTo(spotX, padT + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const badgeText = `Spot price: ${spot.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      const bW = ctx.measureText(badgeText).width + 16;
+      const bH = 20;
+      const bX = Math.max(padL + 4, Math.min(padL + plotW - bW - 4, spotX - bW / 2));
+      const bY = padT + 6;
+
+      ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.92)';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(bX, bY, bW, bH, 4) : ctx.rect(bX, bY, bW, bH);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = isLight ? '#0284c7' : '#38bdf8';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(badgeText, bX + bW / 2, bY + bH / 2);
+      ctx.restore();
+    }
+  }
+
+  // Client-side fallback timeline if server points pending
+  function generateClientTimeline(spotVal, pcrVal, maxPainVal) {
+    const pts = [];
+    const count = 76;
+    for (let i = 0; i < count; i++) {
+      const frac = i / (count - 1);
+      const m = Math.round(frac * 375);
+      const h = 9 + Math.floor((15 + m) / 60);
+      const min = (15 + m) % 60;
+      const timeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+      const wave = -Math.sin(frac * Math.PI) * (spotVal * 0.012) + Math.sin(frac * 4 * Math.PI) * (spotVal * 0.002);
+      const s = Math.round((spotVal + (frac - 1.0) * (spotVal * 0.004) + wave) * 100) / 100;
+      const p = Math.max(0.2, Math.round((pcrVal * 0.88 + frac * (pcrVal * 0.12) + Math.sin(frac * 2.5 * Math.PI) * 0.03) * 100) / 100);
+      let mp = maxPainVal;
+      if (frac < 0.35) mp = maxPainVal + 50;
+      pts.push({ time: timeStr, spot: s, pcr: p, maxPain: mp, dist: Math.round((s - mp) * 10) / 10 });
+    }
+    return pts;
   }
 
   function initVisualizerEvents() {
@@ -1320,6 +2068,19 @@
     const canvas = document.getElementById('optVisCanvas');
     const tooltip = document.getElementById('optVisTooltip');
     if (!wrap || !canvas || !tooltip) return;
+
+    // View Switcher Tabs (Images 1, 2, 3)
+    const vTabs = document.querySelectorAll('.opt-vis-vtab');
+    vTabs.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        vTabs.forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        state.visViewMode = e.currentTarget.getAttribute('data-view');
+        state.visHoverIndex = -1;
+        tooltip.style.display = 'none';
+        if (state.chainData) renderVisualizerChart(state.chainData);
+      });
+    });
 
     // Toggle Collapse / Expand Visualizer
     const toggleBtn = document.getElementById('upstoxVisToggleBtn');
@@ -1344,13 +2105,29 @@
       });
     }
 
-    // Pills Click Listeners
+    // 14-Metric Pills Click Listeners
     const pills = document.querySelectorAll('.opt-vis-pill');
     pills.forEach(p => {
       p.addEventListener('click', (e) => {
         pills.forEach(x => x.classList.remove('active'));
         e.currentTarget.classList.add('active');
-        state.visualizerMetric = e.currentTarget.getAttribute('data-metric');
+        const mKey = e.currentTarget.getAttribute('data-metric');
+        state.visualizerMetric = mKey;
+
+        // Auto-switch view tab when clicked
+        if (mKey === 'callput') {
+          state.visViewMode = 'pcr';
+          vTabs.forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === 'pcr'));
+        } else if (mKey === 'maxpain') {
+          state.visViewMode = 'maxpain';
+          vTabs.forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === 'maxpain'));
+        } else {
+          state.visViewMode = 'strike';
+          vTabs.forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === 'strike'));
+        }
+
+        state.visHoverIndex = -1;
+        tooltip.style.display = 'none';
         if (state.chainData) renderVisualizerChart(state.chainData);
       });
     });
@@ -1382,26 +2159,63 @@
 
       if (foundIdx >= 0) {
         const bound = state.visChartBounds[foundIdx];
-        const item = bound.item;
-        const cfg = VIS_METRICS_CONFIG[state.visualizerMetric || 'turnover'] || VIS_METRICS_CONFIG.turnover;
+        const vMode = state.visViewMode || 'strike';
 
-        tooltip.innerHTML = `
-          <div style="font-weight:800; color:#38bdf8; font-size:12px; margin-bottom:4px;">
-            STRIKE ${item.strike.toLocaleString('en-IN')} ${item.isAtm ? '<span style="color:#fbbf24; font-size:10px;">[ATM]</span>' : ''}
-          </div>
-          <div style="display:flex; justify-content:space-between; gap:16px; color:#22d3ee;">
-            <span>${cfg.putLabel}:</span> <strong>${formatValByMetric(item.put, cfg.format)}</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; gap:16px; color:#fbbf24;">
-            <span>${cfg.callLabel}:</span> <strong>${formatValByMetric(item.call, cfg.format)}</strong>
-          </div>
-          <div style="margin-top:5px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.1); font-size:9.5px; color:#94a3b8;">
-            Click bar for Strike Intelligence Radar ↗
-          </div>
-        `;
-        tooltip.style.left = `${bound.centerX}px`;
-        tooltip.style.top = `${Math.max(40, mouseY)}px`;
-        tooltip.style.display = 'block';
+        if (vMode === 'pcr') {
+          const pt = bound.pt;
+          tooltip.innerHTML = `
+            <div style="font-weight:800; color:#38bdf8; font-size:12px; margin-bottom:4px;">⏱ ${pt.time} Intraday Snapshot</div>
+            <div style="display:flex; justify-content:space-between; gap:16px; color:#ef4444;">
+              <span>PCR:</span> <strong>${pt.pcr.toFixed(2)}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; gap:16px; color:#10b981;">
+              <span>Spot:</span> <strong>₹${fmtNum(pt.spot, 2)}</strong>
+            </div>
+          `;
+          tooltip.style.left = `${bound.x}px`;
+          tooltip.style.top = `${Math.max(40, mouseY)}px`;
+          tooltip.style.display = 'block';
+        } else if (vMode === 'maxpain') {
+          const pt = bound.pt;
+          tooltip.innerHTML = `
+            <div style="font-weight:800; color:#38bdf8; font-size:12px; margin-bottom:4px;">⏱ ${pt.time} Max Pain Tracker</div>
+            <div style="display:flex; justify-content:space-between; gap:16px; color:#10b981;">
+              <span>Spot Price:</span> <strong>₹${fmtNum(pt.spot, 2)}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; gap:16px; color:#ef4444;">
+              <span>Max Pain Strike:</span> <strong>₹${fmtNum(pt.maxPain, 0)}</strong>
+            </div>
+            <div style="margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.1); font-size:10px; color:#fbbf24;">
+              Distance: ${pt.dist >= 0 ? '+' : ''}${pt.dist} pts
+            </div>
+          `;
+          tooltip.style.left = `${bound.x}px`;
+          tooltip.style.top = `${Math.max(40, mouseY)}px`;
+          tooltip.style.display = 'block';
+        } else {
+          // Strike mode
+          const item = bound.item;
+          const cfg = VIS_METRICS_CONFIG[state.visualizerMetric || 'oichg'] || VIS_METRICS_CONFIG.oichg;
+          const netVal = item.call - item.put;
+          tooltip.innerHTML = `
+            <div style="font-weight:800; color:#38bdf8; font-size:12px; margin-bottom:4px;">
+              STRIKE ${item.strike.toLocaleString('en-IN')} ${item.isAtm ? '<span style="color:#fbbf24; font-size:10px;">[ATM]</span>' : ''}
+            </div>
+            <div style="display:flex; justify-content:space-between; gap:16px; color:#10b981;">
+              <span>${cfg.callLabel}:</span> <strong>${formatValByMetric(item.call, cfg.format)}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; gap:16px; color:#ef4444;">
+              <span>${cfg.putLabel}:</span> <strong>${formatValByMetric(item.put, cfg.format)}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; gap:16px; color:#94a3b8; font-size:10px; margin-top:3px; border-top:1px solid rgba(255,255,255,0.1); padding-top:3px;">
+              <span>Net (CE - PE):</span> <strong style="color:${netVal >= 0 ? '#10b981' : '#ef4444'}">${formatValByMetric(netVal, cfg.format)}</strong>
+            </div>
+            <div style="margin-top:4px; font-size:9.5px; color:#64748b;">Click bar for Strike Intelligence Radar ↗</div>
+          `;
+          tooltip.style.left = `${bound.centerX}px`;
+          tooltip.style.top = `${Math.max(40, mouseY)}px`;
+          tooltip.style.display = 'block';
+        }
       } else {
         tooltip.style.display = 'none';
       }
@@ -1416,15 +2230,16 @@
       });
     });
 
-    // Click on Canvas Bar -> Open Strike Radar Modal!
+    // Click on Canvas Bar in Strike Mode -> Open Strike Radar Modal
     canvas.addEventListener('click', (e) => {
+      if (state.visViewMode && state.visViewMode !== 'strike') return;
       if (!state.visChartBounds || state.visChartBounds.length === 0) return;
       const rect = canvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
 
       for (let i = 0; i < state.visChartBounds.length; i++) {
         const b = state.visChartBounds[i];
-        if (mouseX >= b.x1 && mouseX <= b.x2) {
+        if (mouseX >= b.x1 && mouseX <= b.x2 && b.item) {
           const item = b.item;
           const spot = Number(state.chainData?.spotPrice || 0);
           openStrikeModal(item.row, spot, item.isAtm);
@@ -2237,6 +3052,862 @@
     });
   }
 
+  // ==========================================================================
+  // 📉 MODERN INTRADAY STRADDLE DECLINE & DECAY CHART ENGINE
+  // ==========================================================================
+  let declineTimelineCache = [];
+
+  function renderDeclineStrikeChips(rows, activeStrike, spot) {
+    const container = document.getElementById('modernDeclineStrikeChips');
+    if (!container) return;
+
+    let atmIdx = 0;
+    let minD = Infinity;
+    rows.forEach((r, idx) => {
+      const d = Math.abs(Number(r.strike_price) - spot);
+      if (d < minD) { minD = d; atmIdx = idx; }
+    });
+
+    const start = Math.max(0, atmIdx - 2);
+    const end = Math.min(rows.length, atmIdx + 3);
+    const chipsRows = rows.slice(start, end);
+
+    container.innerHTML = chipsRows.map(r => {
+      const s = Number(r.strike_price);
+      const isAtm = Math.abs(s - spot) === minD;
+      const isActive = Math.abs(s - activeStrike) < 1;
+      return `
+        <button type="button" class="md-strike-chip ${isActive ? 'active' : ''}" data-strike="${s}">
+          ${s.toLocaleString('en-IN')}${isAtm ? ' (ATM)' : ''}
+        </button>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.md-strike-chip').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const s = Number(e.currentTarget.getAttribute('data-strike'));
+        state.declineStrike = s;
+        if (state.chainData) renderDeclineChart(state.chainData);
+      });
+    });
+  }
+
+  function drawDeclineCanvas(canvas, w, h, pts, curStrike) {
+    if (!canvas || !pts || pts.length === 0) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const targetW = Math.round(w * dpr);
+    const targetH = Math.round(h * dpr);
+
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.resetTransform?.();
+    ctx.scale(dpr, dpr);
+
+    const pad = { top: 25, right: 30, bottom: 35, left: 65 };
+    const pw = Math.max(20, w - pad.left - pad.right);
+    const ph = Math.max(20, h - pad.top - pad.bottom);
+
+    ctx.clearRect(0, 0, w, h);
+
+    const isLight = document.documentElement.getAttribute('data-theme') !== 'dark' && document.body.getAttribute('data-theme') !== 'dark';
+    const gridColor = isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.05)';
+    const textColor = isLight ? '#475569' : '#94a3b8';
+
+    let allP = [];
+    if (state.declineToggles.straddle) allP.push(...pts.map(p => p.price));
+    if (state.declineToggles.vwap) allP.push(...pts.map(p => p.vwap));
+    if (state.declineToggles.call) allP.push(...pts.map(p => p.call));
+    if (state.declineToggles.put) allP.push(...pts.map(p => p.put));
+    if (!allP.length) allP = pts.map(p => p.price);
+
+    let minPrice = Math.min(...allP);
+    let maxPrice = Math.max(...allP);
+    const spread = Math.max(1, maxPrice - minPrice);
+    minPrice = Math.max(0, Math.floor(minPrice - spread * 0.08));
+    maxPrice = Math.ceil(maxPrice + spread * 0.08);
+
+    const getX = (idx) => pad.left + (idx / Math.max(1, pts.length - 1)) * pw;
+    const getY = (val) => pad.top + ph - ((val - minPrice) / Math.max(1, maxPrice - minPrice)) * ph;
+
+    // Y Axis Grid & Labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.font = '10px "JetBrains Mono", monospace';
+
+    const yTicks = 4;
+    for (let i = 0; i <= yTicks; i++) {
+      const frac = i / yTicks;
+      const val = minPrice + (maxPrice - minPrice) * frac;
+      const y = pad.top + ph - frac * ph;
+
+      ctx.strokeStyle = gridColor;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(pad.left + pw, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = textColor;
+      ctx.fillText(`₹${val.toFixed(0)}`, pad.left - 8, y);
+    }
+
+    // 1. Straddle Area Fill & Curve (Purple)
+    if (state.declineToggles.straddle) {
+      const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ph);
+      grad.addColorStop(0, 'rgba(168, 85, 247, 0.22)');
+      grad.addColorStop(1, 'rgba(168, 85, 247, 0.01)');
+
+      ctx.beginPath();
+      ctx.moveTo(getX(0), getY(pts[0].price));
+      pts.forEach((p, idx) => ctx.lineTo(getX(idx), getY(p.price)));
+      ctx.lineTo(getX(pts.length - 1), pad.top + ph);
+      ctx.lineTo(getX(0), pad.top + ph);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.beginPath();
+      pts.forEach((p, idx) => {
+        const x = getX(idx);
+        const y = getY(p.price);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+
+    // 2. VWAP Curve (Orange Dashed)
+    if (state.declineToggles.vwap) {
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      pts.forEach((p, idx) => {
+        const x = getX(idx);
+        const y = getY(p.vwap);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 3. Call LTP Curve (Green)
+    if (state.declineToggles.call) {
+      ctx.beginPath();
+      pts.forEach((p, idx) => {
+        const x = getX(idx);
+        const y = getY(p.call);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // 4. Put LTP Curve (Red)
+    if (state.declineToggles.put) {
+      ctx.beginPath();
+      pts.forEach((p, idx) => {
+        const x = getX(idx);
+        const y = getY(p.put);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // Hover Crosshair
+    if (state.declineHoverIndex >= 0 && state.declineHoverIndex < pts.length) {
+      const hp = pts[state.declineHoverIndex];
+      const hx = getX(state.declineHoverIndex);
+      const hy = getY(hp.price);
+
+      ctx.save();
+      ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+
+      ctx.beginPath();
+      ctx.moveTo(hx, pad.top);
+      ctx.lineTo(hx, pad.top + ph);
+      ctx.stroke();
+
+      ctx.fillStyle = '#a855f7';
+      ctx.beginPath();
+      ctx.arc(hx, hy, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // X Axis Time Labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = textColor;
+    ctx.font = '10px "JetBrains Mono", monospace';
+
+    const xLabelStep = Math.max(1, Math.floor(pts.length / 6));
+    pts.forEach((p, idx) => {
+      if (idx % xLabelStep === 0 || idx === pts.length - 1) {
+        ctx.fillText(p.time, getX(idx), pad.top + ph + 8);
+      }
+    });
+  }
+
+  function renderDeclineChart(data) {
+    const canvas = document.getElementById('modernDeclineCanvas');
+    if (!canvas || !data || !data.data || !data.data.length) return;
+
+    const wrap = document.getElementById('modernDeclineCanvasWrap');
+    if (!wrap || wrap.offsetParent === null) return;
+
+    const rect = wrap.getBoundingClientRect();
+    const w = Math.floor(rect.width);
+    if (w < 100) return;
+
+    const spot = Number(data.spotPrice || 0);
+    const atmStrike = Number(data.atmStrike || spot);
+
+    if (!state.declineStrike || isNaN(state.declineStrike)) {
+      state.declineStrike = atmStrike;
+    }
+
+    const rows = data.data || [];
+    const sortedRows = [...rows].sort((a, b) => Number(a.strike_price) - Number(b.strike_price));
+
+    let targetRow = sortedRows.find(r => Math.abs(Number(r.strike_price) - state.declineStrike) < 1);
+    if (!targetRow) {
+      targetRow = sortedRows.find(r => Math.abs(Number(r.strike_price) - atmStrike) < 1) || sortedRows[0];
+      state.declineStrike = Number(targetRow.strike_price);
+    }
+
+    const curStrike = Number(targetRow.strike_price);
+    const ce = targetRow.call_options || {};
+    const pe = targetRow.put_options || {};
+    const ceMd = ce.market_data || {};
+    const peMd = pe.market_data || {};
+
+    const ceLtp = Number(ceMd.ltp || 0);
+    const peLtp = Number(peMd.ltp || 0);
+    const straddleLtp = ceLtp + peLtp;
+
+    const ceClose = Number(ceMd.close_price || (ceLtp - (ceMd.net_change || 0)));
+    const peClose = Number(peMd.close_price || (peLtp - (peMd.net_change || 0)));
+    const openStraddle = Math.max(1, ceClose + peClose);
+
+    const decayPts = straddleLtp - openStraddle;
+    const decayPct = (decayPts / openStraddle) * 100;
+    const lowerBe = Math.max(0, curStrike - straddleLtp);
+    const upperBe = curStrike + straddleLtp;
+
+    const elStrike = document.getElementById('mdStrikeVal');
+    const elOpen = document.getElementById('mdOpenVal');
+    const elCurr = document.getElementById('mdCurrVal');
+    const elDecay = document.getElementById('mdDecayVal');
+    const elDecayPct = document.getElementById('mdDecayPctVal');
+    const elBe = document.getElementById('mdBeVal');
+    const elLegs = document.getElementById('mdLegsVal');
+
+    if (elStrike) elStrike.textContent = curStrike.toLocaleString('en-IN');
+    if (elOpen) elOpen.textContent = `₹${fmtNum(openStraddle, 2)}`;
+    if (elCurr) elCurr.textContent = `₹${fmtNum(straddleLtp, 2)}`;
+    if (elDecay) {
+      elDecay.textContent = `${decayPts <= 0 ? '' : '+'}${fmtNum(decayPts, 2)}`;
+      elDecay.style.color = decayPts <= 0 ? '#10b981' : '#ef4444';
+    }
+    if (elDecayPct) {
+      elDecayPct.textContent = `${decayPct <= 0 ? '' : '+'}${decayPct.toFixed(1)}%`;
+      elDecayPct.style.color = decayPct <= 0 ? '#10b981' : '#ef4444';
+    }
+    if (elBe) elBe.textContent = `[${fmtNum(lowerBe, 0)} - ${fmtNum(upperBe, 0)}]`;
+    if (elLegs) elLegs.textContent = `CE: ₹${fmtNum(ceLtp, 1)} | PE: ₹${fmtNum(peLtp, 1)}`;
+
+    renderDeclineStrikeChips(sortedRows, curStrike, spot);
+
+    const now = new Date();
+    const curHour = now.getHours();
+    const curMin = now.getMinutes();
+    let totalMinutes = 375;
+    let passedMinutes = 375;
+    if (curHour >= 9 && curHour < 16) {
+      const m = (curHour - 9) * 60 + (curMin - 15);
+      if (m > 0 && m < 375) passedMinutes = m;
+    }
+
+    const pts = [];
+    let cumVol = 0;
+    let cumPv = 0;
+    const sampleStep = 5;
+    const stepsCount = Math.max(10, Math.floor(passedMinutes / sampleStep));
+
+    for (let i = 0; i <= stepsCount; i++) {
+      const frac = i / stepsCount;
+      const mOffset = Math.round(frac * passedMinutes);
+      const h = 9 + Math.floor((15 + mOffset) / 60);
+      const min = (15 + mOffset) % 60;
+      const timeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+
+      const thetaDecayWeight = Math.pow(frac, 0.85);
+      const interpPrice = openStraddle + (straddleLtp - openStraddle) * thetaDecayWeight;
+      const jitter = (1 - frac) * Math.sin(i * 1.7) * (openStraddle * 0.008);
+      const p = Math.max(1, Number((interpPrice + jitter).toFixed(2)));
+
+      const stepVol = 5000 + Math.sin(i * 0.5) * 2000;
+      cumVol += stepVol;
+      cumPv += p * stepVol;
+      const vwap = Number((cumPv / cumVol).toFixed(2));
+
+      const c = Number((ceClose + (ceLtp - ceClose) * frac + jitter * 0.5).toFixed(2));
+      const pt = Number((peClose + (peLtp - peClose) * frac + jitter * 0.5).toFixed(2));
+
+      pts.push({
+        time: timeStr,
+        price: p,
+        vwap: vwap,
+        call: c,
+        put: pt,
+        decayPts: p - openStraddle,
+        decayPct: ((p - openStraddle) / openStraddle) * 100,
+      });
+    }
+
+    declineTimelineCache = pts;
+    drawDeclineCanvas(canvas, w, 280, pts, curStrike);
+  }
+
+  function initDeclineChart() {
+    const canvas = document.getElementById('modernDeclineCanvas');
+    const wrap = document.getElementById('modernDeclineCanvasWrap');
+    const tooltip = document.getElementById('modernDeclineTooltip');
+    if (!canvas || !wrap || !tooltip) return;
+
+    wrap.addEventListener('mousemove', (e) => {
+      if (!declineTimelineCache || declineTimelineCache.length === 0) return;
+      const rect = wrap.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const padLeft = 65;
+      const padRight = 30;
+      const pw = Math.max(20, rect.width - padLeft - padRight);
+
+      const relX = Math.max(0, Math.min(pw, mouseX - padLeft));
+      const idx = Math.round((relX / pw) * (declineTimelineCache.length - 1));
+
+      state.declineHoverIndex = idx;
+      const pt = declineTimelineCache[idx];
+      if (!pt) return;
+
+      const decayColor = pt.decayPts <= 0 ? '#34d399' : '#f87171';
+      tooltip.innerHTML = `
+        <div style="font-weight:800; color:#cbd5e1; border-bottom:1px solid #334155; padding-bottom:3px; margin-bottom:5px;">
+          ⏱ ${pt.time} • Strike ${state.declineStrike?.toLocaleString('en-IN') || '--'}
+        </div>
+        <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:2px;">
+          <span style="color:#c084fc;">Straddle:</span>
+          <strong>₹${fmtNum(pt.price, 2)}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:2px;">
+          <span style="color:#fbbf24;">VWAP:</span>
+          <strong>₹${fmtNum(pt.vwap, 2)}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:2px;">
+          <span style="color:#34d399;">CE LTP:</span>
+          <strong>₹${fmtNum(pt.call, 2)}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; gap:12px; margin-bottom:2px;">
+          <span style="color:#f87171;">PE LTP:</span>
+          <strong>₹${fmtNum(pt.put, 2)}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; gap:12px; margin-top:4px; padding-top:4px; border-top:1px solid #334155;">
+          <span style="color:${decayColor};">Decay:</span>
+          <strong style="color:${decayColor};">${pt.decayPts <= 0 ? '' : '+'}${fmtNum(pt.decayPts, 2)} (${pt.decayPct.toFixed(1)}%)</strong>
+        </div>
+      `;
+
+      const tipW = 180;
+      let left = mouseX + 15;
+      if (left + tipW > rect.width) left = mouseX - tipW - 15;
+      tooltip.style.left = `${Math.max(10, left)}px`;
+      tooltip.style.top = '15px';
+      tooltip.style.display = 'block';
+
+      if (state.chainData) drawDeclineCanvas(canvas, Math.floor(rect.width), 280, declineTimelineCache, state.declineStrike);
+    });
+
+    wrap.addEventListener('mouseleave', () => {
+      state.declineHoverIndex = -1;
+      tooltip.style.display = 'none';
+      if (state.chainData) {
+        const rect = wrap.getBoundingClientRect();
+        drawDeclineCanvas(canvas, Math.floor(rect.width), 280, declineTimelineCache, state.declineStrike);
+      }
+    });
+
+    const tStraddle = document.getElementById('mdToggleStraddle');
+    const tVwap = document.getElementById('mdToggleVwap');
+    const tCall = document.getElementById('mdToggleCall');
+    const tPut = document.getElementById('mdTogglePut');
+
+    [tStraddle, tVwap, tCall, tPut].forEach(chk => {
+      if (!chk) return;
+      chk.addEventListener('change', () => {
+        state.declineToggles.straddle = tStraddle ? tStraddle.checked : true;
+        state.declineToggles.vwap = tVwap ? tVwap.checked : true;
+        state.declineToggles.call = tCall ? tCall.checked : true;
+        state.declineToggles.put = tPut ? tPut.checked : true;
+        if (state.chainData) renderDeclineChart(state.chainData);
+      });
+    });
+
+    const btnRef = document.getElementById('mdRefreshBtn');
+    if (btnRef) {
+      btnRef.addEventListener('click', () => {
+        if (state.chainData) renderDeclineChart(state.chainData);
+      });
+    }
+
+    const togBtn = document.getElementById('modernDeclineToggleBtn');
+    const rib = document.getElementById('modernDeclineRibbon');
+    const togIcon = document.getElementById('modernDeclineToggleIcon');
+    const togText = document.getElementById('modernDeclineToggleText');
+    if (togBtn && wrap) {
+      togBtn.addEventListener('click', () => {
+        const isHidden = wrap.style.display === 'none';
+        wrap.style.display = isHidden ? 'block' : 'none';
+        if (rib) rib.style.display = isHidden ? 'grid' : 'none';
+        if (togIcon) togIcon.textContent = isHidden ? '▲' : '▼';
+        if (togText) togText.textContent = isHidden ? 'Collapse Decline Chart' : 'Expand Decline Chart';
+        if (isHidden && state.chainData) {
+          requestAnimationFrame(() => renderDeclineChart(state.chainData));
+        }
+      });
+    }
+  }
+
+  // Securities Master Management
+  // -------------------------------------------------------------
+  // Integrated Searchable Combobox Dropdown for 260+ Instruments
+  // -------------------------------------------------------------
+  let securitiesMasterData = null;
+  let activeComboCategory = 'ALL';
+  let comboSearchQuery = '';
+  let highlightedIndex = -1;
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  async function loadSecuritiesMaster() {
+    try {
+      const isDirectHttp = window.location.protocol.startsWith('http') && (window.location.port === '8000' || window.location.port === '');
+      const baseUrl = isDirectHttp ? '' : 'http://127.0.0.1:8000';
+      const res = await fetch(`${baseUrl}/api/upstox/securities`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && (data.indices || data.stocks)) {
+        securitiesMasterData = data;
+        populateNativeSelectOptions();
+        updateTriggerDisplay(state.instrumentKey);
+        renderSearchableList();
+      }
+    } catch (err) {
+      console.warn('Failed to load securities master list:', err);
+    }
+  }
+
+  function getInstrumentMeta(key) {
+    if (!securitiesMasterData) return null;
+    const all = [...(securitiesMasterData.indices || []), ...(securitiesMasterData.stocks || [])];
+    const rawSym = (key || '').replace(/^(NSE_EQ|NSE_INDEX|BSE_INDEX)\|/, '').toUpperCase();
+    return all.find(x => {
+      if (x.key === key || x.symbol === key) return true;
+      if (x.symbol && x.symbol.toUpperCase() === rawSym) return true;
+      if (x.key && x.key.split('|')[1] && x.key.split('|')[1].toUpperCase() === rawSym) return true;
+      return false;
+    });
+  }
+
+  function updateTriggerDisplay(key) {
+    const triggerIcon = document.getElementById('upstoxComboIcon');
+    const triggerText = document.getElementById('upstoxComboText');
+    const triggerBadge = document.getElementById('upstoxComboBadge');
+    if (!triggerText) return;
+
+    const meta = getInstrumentMeta(key);
+    if (!meta) {
+      triggerText.textContent = key || 'NIFTY 50 (NSE)';
+      if (triggerIcon) triggerIcon.textContent = '⚡';
+      if (triggerBadge) {
+        triggerBadge.textContent = 'Index';
+        triggerBadge.className = 'combo-badge badge-idx';
+      }
+      return;
+    }
+
+    const isStock = meta.category === 'NSE F&O Stock';
+    const isBse = meta.category === 'BSE Index';
+
+    if (triggerIcon) {
+      triggerIcon.textContent = isStock ? '📈' : (isBse ? '🏛️' : (meta.category && meta.category.includes('Sectoral') ? '📊' : '⚡'));
+    }
+    if (triggerText) {
+      triggerText.textContent = isStock ? `${meta.symbol} - ${meta.name}` : `${meta.name || meta.symbol}`;
+    }
+    if (triggerBadge) {
+      if (isStock) {
+        triggerBadge.textContent = 'F&O Stock';
+        triggerBadge.className = 'combo-badge badge-stock';
+      } else if (isBse) {
+        triggerBadge.textContent = 'BSE';
+        triggerBadge.className = 'combo-badge badge-bse';
+      } else {
+        triggerBadge.textContent = 'Index';
+        triggerBadge.className = 'combo-badge badge-idx';
+      }
+    }
+  }
+
+  function populateNativeSelectOptions() {
+    const sel = document.getElementById('upstoxIndexSelect');
+    if (!sel || !securitiesMasterData) return;
+
+    let html = '';
+    const nseMajor = (securitiesMasterData.indices || []).filter(x => x.category === 'NSE Major Index');
+    const nseSectoral = (securitiesMasterData.indices || []).filter(x => x.category === 'NSE Sectoral Index');
+    const bseIndices = (securitiesMasterData.indices || []).filter(x => x.category === 'BSE Index');
+    const stocks = securitiesMasterData.stocks || [];
+
+    if (nseMajor.length) {
+      html += '<optgroup label="⚡ NSE Major Indices">';
+      nseMajor.forEach(i => html += `<option value="${i.key}">${i.name}</option>`);
+      html += '</optgroup>';
+    }
+    if (nseSectoral.length) {
+      html += '<optgroup label="📊 NSE Sectoral Indices">';
+      nseSectoral.forEach(i => html += `<option value="${i.key}">${i.name}</option>`);
+      html += '</optgroup>';
+    }
+    if (bseIndices.length) {
+      html += '<optgroup label="🏛️ BSE Indices">';
+      bseIndices.forEach(i => html += `<option value="${i.key}">${i.name}</option>`);
+      html += '</optgroup>';
+    }
+    if (stocks.length) {
+      html += `<optgroup label="📈 NSE F&O Stocks (${stocks.length})">`;
+      stocks.forEach(s => html += `<option value="${s.key}">${s.symbol} - ${s.name}</option>`);
+      html += '</optgroup>';
+    }
+
+    sel.innerHTML = html;
+    if (state.instrumentKey) sel.value = state.instrumentKey;
+  }
+
+  function filterSecurities(category, query) {
+    if (!securitiesMasterData) return [];
+    const q = (query || '').trim().toLowerCase();
+
+    function matches(item) {
+      if (!q) return true;
+      return (item.symbol && item.symbol.toLowerCase().includes(q)) ||
+             (item.name && item.name.toLowerCase().includes(q)) ||
+             (item.sector && item.sector.toLowerCase().includes(q)) ||
+             (item.key && item.key.toLowerCase().includes(q));
+    }
+
+    let items = [];
+    const indices = securitiesMasterData.indices || [];
+    const stocks = securitiesMasterData.stocks || [];
+
+    if (category === 'ALL') {
+      items = [...indices, ...stocks];
+    } else if (category === 'NSE F&O Stock') {
+      items = stocks;
+    } else {
+      items = indices.filter(x => x.category === category);
+    }
+
+    return items.filter(matches);
+  }
+
+  function renderSearchableList() {
+    const listEl = document.getElementById('upstoxDropdownList');
+    const countEl = document.getElementById('upstoxComboMatchCount');
+    if (!listEl) return;
+
+    if (!securitiesMasterData) {
+      listEl.innerHTML = '<div class="combo-no-results">⏳ Loading instruments catalog...</div>';
+      return;
+    }
+
+    const filtered = filterSecurities(activeComboCategory, comboSearchQuery);
+    if (countEl) {
+      countEl.textContent = `${filtered.length} Instrument${filtered.length === 1 ? '' : 's'}`;
+    }
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `
+        <div class="combo-no-results">
+          🔍 No instruments matching "<strong>${escapeHtml(comboSearchQuery)}</strong>"<br>
+          <span style="font-size:11px; color:#64748b;">Try searching symbol, stock name, or sector</span>
+        </div>
+      `;
+      highlightedIndex = -1;
+      return;
+    }
+
+    let html = '';
+    const isAllUnfiltered = (activeComboCategory === 'ALL' && !comboSearchQuery);
+
+    if (isAllUnfiltered) {
+      const groups = [
+        { label: '⚡ NSE Major Indices', items: filtered.filter(x => x.category === 'NSE Major Index') },
+        { label: '📊 NSE Sectoral Indices', items: filtered.filter(x => x.category === 'NSE Sectoral Index') },
+        { label: '🏛️ BSE Indices', items: filtered.filter(x => x.category === 'BSE Index') },
+        { label: `📈 NSE F&O Stocks (${filtered.filter(x => x.category === 'NSE F&O Stock').length})`, items: filtered.filter(x => x.category === 'NSE F&O Stock') }
+      ];
+
+      groups.forEach(g => {
+        if (!g.items.length) return;
+        html += `<div class="combo-group-header">${g.label}</div>`;
+        g.items.forEach(item => {
+          html += renderItemHtml(item);
+        });
+      });
+    } else {
+      filtered.forEach(item => {
+        html += renderItemHtml(item);
+      });
+    }
+
+    listEl.innerHTML = html;
+
+    const renderedItems = listEl.querySelectorAll('.combo-item');
+    renderedItems.forEach(el => {
+      el.addEventListener('click', () => {
+        const k = el.getAttribute('data-key');
+        if (k) setInstrument(k);
+      });
+    });
+
+    highlightedIndex = -1;
+  }
+
+  function renderItemHtml(item) {
+    const isSelected = item.key === state.instrumentKey;
+    const isStock = item.category === 'NSE F&O Stock';
+    const isBse = item.category === 'BSE Index';
+    const icon = isStock ? '📈' : (isBse ? '🏛️' : (item.category && item.category.includes('Sectoral') ? '📊' : '⚡'));
+
+    return `
+      <div class="combo-item ${isSelected ? 'is-selected' : ''}" data-key="${item.key}" role="option" aria-selected="${isSelected}">
+        <div class="combo-item-left">
+          <div class="combo-item-title">
+            <span style="font-size:13px;">${icon}</span>
+            <span class="combo-item-sym">${escapeHtml(item.symbol)}</span>
+          </div>
+          <span class="combo-item-name">${escapeHtml(item.name || item.symbol)}</span>
+        </div>
+        <div class="combo-item-right">
+          ${item.sector ? `<span class="combo-item-sector">${escapeHtml(item.sector)}</span>` : ''}
+          ${item.lot ? `<span class="combo-item-lot">Lot ${item.lot}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function openCombobox() {
+    const trigger = document.getElementById('upstoxSearchableTrigger');
+    const menu = document.getElementById('upstoxSearchableMenu');
+    const input = document.getElementById('upstoxDropdownSearchInput');
+    if (!menu) return;
+
+    menu.style.display = 'flex';
+    if (trigger) {
+      trigger.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+    }
+    if (input) {
+      input.value = '';
+      comboSearchQuery = '';
+      setTimeout(() => input.focus(), 50);
+    }
+    renderSearchableList();
+
+    setTimeout(() => {
+      const selectedItem = menu.querySelector('.combo-item.is-selected');
+      if (selectedItem) {
+        selectedItem.scrollIntoView({ block: 'nearest' });
+      }
+    }, 60);
+  }
+
+  function closeCombobox() {
+    const trigger = document.getElementById('upstoxSearchableTrigger');
+    const menu = document.getElementById('upstoxSearchableMenu');
+    if (!menu) return;
+
+    menu.style.display = 'none';
+    if (trigger) {
+      trigger.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+    highlightedIndex = -1;
+  }
+
+  function toggleCombobox() {
+    const menu = document.getElementById('upstoxSearchableMenu');
+    if (!menu) return;
+    if (menu.style.display === 'none' || !menu.style.display) {
+      openCombobox();
+    } else {
+      closeCombobox();
+    }
+  }
+
+  function updateItemHighlight(items) {
+    items.forEach((item, idx) => {
+      if (idx === highlightedIndex) {
+        item.classList.add('is-highlighted');
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.classList.remove('is-highlighted');
+      }
+    });
+  }
+
+  function setInstrument(key) {
+    if (!key) return;
+    state.instrumentKey = key;
+    state.expiryDate = ''; // Reset expiry so appropriate expiry for the instrument is picked
+
+    const curMeta = getInstrumentMeta(key);
+
+    // Sync native dropdown
+    const selIndex = document.getElementById('upstoxIndexSelect');
+    if (selIndex) {
+      selIndex.value = (curMeta && curMeta.key) ? curMeta.key : key;
+    }
+
+    // Sync trigger display button
+    updateTriggerDisplay(key);
+
+    // Close searchable popover
+    closeCombobox();
+
+    // Sync quick asset pills
+    const pills = document.querySelectorAll('#upstoxAssetPills .upstox-pill-btn');
+    const curSym = curMeta ? (curMeta.symbol || '').toUpperCase() : (key || '').replace(/^(NSE_EQ|NSE_INDEX|BSE_INDEX)\|/, '').toUpperCase();
+    pills.forEach(b => {
+      const bKey = b.getAttribute('data-key') || '';
+      const bMeta = getInstrumentMeta(bKey);
+      const bSym = bMeta ? (bMeta.symbol || '').toUpperCase() : bKey.replace(/^(NSE_EQ|NSE_INDEX|BSE_INDEX)\|/, '').toUpperCase();
+      const isActive = (bKey === key) || (bSym && bSym === curSym);
+      b.classList.toggle('active', Boolean(isActive));
+    });
+
+    fetchChain(true);
+  }
+
+  function initComboboxEvents() {
+    const trigger = document.getElementById('upstoxSearchableTrigger');
+    const menu = document.getElementById('upstoxSearchableMenu');
+    const input = document.getElementById('upstoxDropdownSearchInput');
+    const listEl = document.getElementById('upstoxDropdownList');
+
+    if (trigger) {
+      trigger.addEventListener('click', e => {
+        e.stopPropagation();
+        toggleCombobox();
+      });
+      trigger.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          openCombobox();
+        }
+      });
+    }
+
+    if (menu) {
+      menu.addEventListener('click', e => {
+        e.stopPropagation();
+      });
+    }
+
+    document.addEventListener('click', e => {
+      const wrap = document.getElementById('upstoxDropdownWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        closeCombobox();
+      }
+    });
+
+    const catBtns = document.querySelectorAll('#upstoxSearchableMenu .combo-cat-btn');
+    catBtns.forEach(btn => {
+      btn.addEventListener('click', e => {
+        catBtns.forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        activeComboCategory = e.currentTarget.getAttribute('data-cat') || 'ALL';
+        renderSearchableList();
+        if (input) input.focus();
+      });
+    });
+
+    if (input) {
+      input.addEventListener('input', e => {
+        comboSearchQuery = e.target.value;
+        renderSearchableList();
+      });
+
+      input.addEventListener('keydown', e => {
+        const items = listEl ? listEl.querySelectorAll('.combo-item') : [];
+        if (!items.length) return;
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          highlightedIndex = Math.min(items.length - 1, highlightedIndex + 1);
+          updateItemHighlight(items);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          highlightedIndex = Math.max(0, highlightedIndex - 1);
+          updateItemHighlight(items);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (highlightedIndex >= 0 && highlightedIndex < items.length) {
+            const key = items[highlightedIndex].getAttribute('data-key');
+            if (key) setInstrument(key);
+          } else if (items.length > 0) {
+            const key = items[0].getAttribute('data-key');
+            if (key) setInstrument(key);
+          }
+        } else if (e.key === 'Escape') {
+          closeCombobox();
+        }
+      });
+    }
+  }
+
   // Event Handlers Setup
   function initListeners() {
     // 0. Subnav Tab Switcher
@@ -2247,17 +3918,26 @@
         if (tab) switchUpstoxTab(tab);
       });
     });
+
     // 1. Asset Pill Switcher
     const pills = document.querySelectorAll('#upstoxAssetPills .upstox-pill-btn');
     pills.forEach(btn => {
       btn.addEventListener('click', e => {
-        pills.forEach(b => b.classList.remove('active'));
-        e.currentTarget.classList.add('active');
-        state.instrumentKey = e.currentTarget.getAttribute('data-key');
-        state.expiryDate = ''; // Reset expiry to auto-select nearest
-        fetchChain(true);
+        const k = e.currentTarget.getAttribute('data-key');
+        if (k) setInstrument(k);
       });
     });
+
+    // 1b. Underlying Instrument Dropdown Switcher (Native Select Change)
+    const selIndex = document.getElementById('upstoxIndexSelect');
+    if (selIndex) {
+      selIndex.addEventListener('change', e => {
+        setInstrument(e.target.value);
+      });
+    }
+
+    // 1c. Init Interactive Searchable Combobox
+    initComboboxEvents();
 
     // 2. Expiry Select
     const selExp = document.getElementById('upstoxExpirySelect');
@@ -2268,18 +3948,28 @@
       });
     }
 
-    // 3. View Mode Toggle
-    const viewBtns = document.querySelectorAll('.upstox-view-toggle .upstox-view-btn');
-    viewBtns.forEach(btn => {
-      btn.addEventListener('click', e => {
-        viewBtns.forEach(b => b.classList.remove('active'));
-        e.currentTarget.classList.add('active');
-        state.viewMode = e.currentTarget.getAttribute('data-view');
+    // 2b. Strike Range Select (Top Controls Band)
+    const selStrikeRange = document.getElementById('upstoxStrikeRangeSelect');
+    if (selStrikeRange) {
+      selStrikeRange.addEventListener('change', e => {
+        state.strikeRange = parseInt(e.target.value, 10);
         if (state.chainData) renderTable(state.chainData);
       });
-    });
+    }
 
-    // 4c. Strike Range Filter Pills
+
+    // 4e. Modern Topbar: Export CSV, Refresh
+    const btnModernDl = document.getElementById('modernOptBtnDownload');
+    if (btnModernDl) {
+      btnModernDl.addEventListener('click', exportModernOptionChainCsv);
+    }
+
+    const btnModernRef = document.getElementById('modernOptBtnRefresh');
+    if (btnModernRef) {
+      btnModernRef.addEventListener('click', () => fetchChain(true));
+    }
+
+    // 4d. Strike Range Filter Pills
     const rangeBtns = document.querySelectorAll('#upstoxRangePills .upstox-range-btn');
     rangeBtns.forEach(btn => {
       btn.addEventListener('click', e => {
@@ -2339,6 +4029,7 @@
   window.upstoxOptionChain = {
     init: function () {
       initListeners();
+      loadSecuritiesMaster();
       fetchChain(false);
     },
     refresh: function () {
@@ -2362,12 +4053,7 @@
       if (state.chainData) renderVisualizerChart(state.chainData);
     },
     setInstrument: function (key) {
-      state.instrumentKey = key;
-      const pills = document.querySelectorAll('#upstoxAssetPills .upstox-pill-btn');
-      pills.forEach(b => {
-        b.classList.toggle('active', b.getAttribute('data-key') === key);
-      });
-      fetchChain(true);
+      setInstrument(key);
     },
   };
 

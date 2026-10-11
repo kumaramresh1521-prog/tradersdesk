@@ -1,5 +1,5 @@
 /**
- * PAGE 2 CONTROLLER: DEFINEDGE PRO SUITE + NIFTYTRADER PRO SUITE
+ * PAGE 2 CONTROLLER: GLOBAL MARKETS & STRADDLE + FII/DII + BREADTH & CONTRIBUTION
  * Fully Supports Night Mode (Dark Obsidian) & White Mode (Crisp Institutional)
  */
 
@@ -7,18 +7,9 @@
   "use strict";
 
   // State
-  let currentSuite = "definedge"; // 'definedge' or 'niftytrader'
-  let currentDefinedgeTool = "viewOpenInterest";
-  let currentNtTool = "ntViewPcr";
+  let currentSuite = "straddle"; // 'straddle', 'fiidii', 'contribution'
   let currentSymbol = "nifty50";
-  let currentExchange = "NSE";
-  let ntPcrMode = "pcr"; // 'pcr' or 'chg'
   let isLightMode = false;
-  let cachedNtSummary = null;
-  let ntIvTimeframe = "intraday"; // 'intraday' or 'eod'
-  let ntIvLookback = "1M";        // '1M', '3M', '6M', '1Y'
-  let ntIvView = "timeline";      // 'timeline' or 'smile'
-  let cachedNtIvData = null;
   let currentToolsSubView = "global"; // 'global' or 'straddle'
   let currentGmCategory = "all";
   let currentGmView = "cards"; // 'cards' or 'table'
@@ -77,12 +68,16 @@
     isLightMode = light;
     if (light) {
       document.body.classList.add("theme-light");
-      document.getElementById("p2ThemeIcon").textContent = "☀️";
-      document.getElementById("p2ThemeLabel").textContent = "White Mode";
+      const icon = document.getElementById("p2ThemeIcon");
+      const lbl = document.getElementById("p2ThemeLabel");
+      if (icon) icon.textContent = "☀️";
+      if (lbl) lbl.textContent = "White Mode";
     } else {
       document.body.classList.remove("theme-light");
-      document.getElementById("p2ThemeIcon").textContent = "🌙";
-      document.getElementById("p2ThemeLabel").textContent = "Night Mode";
+      const icon = document.getElementById("p2ThemeIcon");
+      const lbl = document.getElementById("p2ThemeLabel");
+      if (icon) icon.textContent = "🌙";
+      if (lbl) lbl.textContent = "Night Mode";
     }
     if (window.AuthService && window.AuthService.syncState) {
       window.AuthService.syncState({ theme: light ? "light" : "dark" });
@@ -95,154 +90,154 @@
   document.addEventListener("DOMContentLoaded", () => {
     initTheme();
     setupSuiteSwitching();
-    setupDefinedgeDropdown();
-    setupNiftyTraderNav();
     setupGlobalControls();
     setupStraddleControls();
-    setupGlobalMarketsControls();
     setupPage2OpstraPcrControls();
     setupFiiDiiControls();
     initBreadthContribution();
 
-    // Default Load
-    loadCurrentSuite();
+    // ── Clean URL Router & Deep Linking Initialization ──────────────────────
+    const currentPath = (window.location.pathname || "").toLowerCase().replace(/\/$/, "") || "/";
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get("tab") || urlParams.get("suite");
+    const hash = (window.location.hash || "").replace("#", "").toLowerCase();
+
+    if (currentPath === "/breadth-contribution" || currentPath === "/contribution" || tabParam === "contribution" || hash === "contribution") {
+      activateSuite("contribution", false);
+    } else if (currentPath === "/fii-dii-cash" || tabParam === "fiidii" || hash === "fiidii") {
+      activateSuite("fiidii", false);
+    } else {
+      // Default to ATM Straddle Desk
+      activateSuite("straddle", false);
+    }
   });
 
-  function setupSuiteSwitching() {
-    const defBtn = document.getElementById("p2SuiteDefinedgeBtn");
-    const ntBtn = document.getElementById("p2SuiteNiftyTraderBtn");
-    const toolsBtn = document.getElementById("p2SuiteToolsBtn");
+  const P2_ROUTES = {
+    "/straddle": {
+      suite: "straddle",
+      title: "Straddle Desk - Live Options Premium Decay & Greeks | TradersDesk",
+      desc: "Real-time Options Straddle chart tracking combined CE+PE premium decay, live intraday delta-neutral curves, IV crush, and exact contract expiries."
+    },
+    "/atm-straddle": {
+      suite: "straddle",
+      title: "Straddle Desk - Live Options Premium Decay & Greeks | TradersDesk",
+      desc: "Real-time Options Straddle chart tracking combined CE+PE premium decay, live intraday delta-neutral curves, IV crush, and exact contract expiries."
+    },
+    "/fii-dii-cash": {
+      suite: "fiidii",
+      title: "FII / DII Cash Market Flow - Historical Institutional Inflow & Outflow | TradersDesk",
+      desc: "Historical and intraday FII / DII cash market flow with monthly/annual totals, cumulative institutional liquidity charts, and market impact analysis."
+    },
+    "/breadth-contribution": {
+      suite: "contribution",
+      title: "Breadth Contribution Desk - Point Contribution to Nifty & Sector Breakdown | TradersDesk",
+      desc: "Detailed stock-by-stock point contribution engine showing heavyweights driving Nifty 50, Bank Nifty, and sector rally or decline."
+    },
+    "/contribution": {
+      suite: "contribution",
+      title: "Breadth Contribution Desk - Point Contribution to Nifty & Sector Breakdown | TradersDesk",
+      desc: "Detailed stock-by-stock point contribution engine showing heavyweights driving Nifty 50, Bank Nifty, and sector rally or decline."
+    }
+  };
+
+  function syncP2Url(suiteKey, pushHistory = true) {
+    let targetUrl = "/straddle";
+    if (suiteKey === "fiidii") {
+      targetUrl = "/fii-dii-cash";
+    } else if (suiteKey === "contribution") {
+      targetUrl = "/breadth-contribution";
+    }
+
+    const route = P2_ROUTES[targetUrl] || {
+      title: "Straddle Desk | TradersDesk",
+      desc: "Professional institutional market intelligence terminal."
+    };
+
+    if (pushHistory && typeof history !== "undefined" && history.pushState) {
+      if (window.location.pathname !== targetUrl) {
+        history.pushState({ suite: suiteKey }, route.title, targetUrl);
+      }
+    }
+
+    try {
+      if (route.title) document.title = route.title;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc && route.desc) metaDesc.setAttribute("content", route.desc);
+      const canonical = document.querySelector('link[rel="canonical"]');
+      if (canonical) canonical.setAttribute("href", "https://tradersdesk.in" + targetUrl);
+    } catch (_) {}
+  }
+
+  // PopState navigation for Page 2
+  window.addEventListener("popstate", () => {
+    const path = (window.location.pathname || "").toLowerCase().replace(/\/$/, "");
+    const r = P2_ROUTES[path];
+    if (r) {
+      activateSuite(r.suite, false);
+    } else {
+      activateSuite("straddle", false);
+    }
+  });
+
+  function activateSuite(suiteKey, pushHistory = true) {
+    if (suiteKey === "tools") suiteKey = "straddle";
+    currentSuite = suiteKey;
+    const straddleBtn = document.getElementById("p2SuiteStraddleBtn") || document.getElementById("p2SuiteToolsBtn");
     const fiiBtn = document.getElementById("p2SuiteFiiDiiBtn");
     const contribBtn = document.getElementById("p2SuiteContributionBtn");
-    const defSection = document.getElementById("p2SectionDefinedge");
-    const ntSection = document.getElementById("p2SectionNiftyTrader");
-    const toolsSection = document.getElementById("p2SectionTools");
+    const straddleSection = document.getElementById("p2SectionStraddle") || document.getElementById("p2SectionTools");
     const fiiSection = document.getElementById("p2SectionFiiDii");
     const contribSection = document.getElementById("p2SectionBreadthContribution");
-    const defDropdown = document.getElementById("p2DefinedgeDropdownContainer");
 
-    function activateSuite(suiteKey) {
-      currentSuite = suiteKey;
-      if (defBtn) defBtn.classList.toggle("active", suiteKey === "definedge");
-      if (ntBtn) ntBtn.classList.toggle("active", suiteKey === "niftytrader");
-      if (toolsBtn) toolsBtn.classList.toggle("active", suiteKey === "tools");
-      if (fiiBtn) fiiBtn.classList.toggle("active", suiteKey === "fiidii");
-      if (contribBtn) contribBtn.classList.toggle("active", suiteKey === "contribution");
+    if (straddleBtn) straddleBtn.classList.toggle("active", suiteKey === "straddle");
+    if (fiiBtn) fiiBtn.classList.toggle("active", suiteKey === "fiidii");
+    if (contribBtn) contribBtn.classList.toggle("active", suiteKey === "contribution");
 
-      if (defSection) defSection.style.display = suiteKey === "definedge" ? "block" : "none";
-      if (ntSection) ntSection.style.display = suiteKey === "niftytrader" ? "block" : "none";
-      if (toolsSection) toolsSection.style.display = suiteKey === "tools" ? "block" : "none";
-      if (fiiSection) fiiSection.style.display = suiteKey === "fiidii" ? "block" : "none";
-      if (contribSection) contribSection.style.display = suiteKey === "contribution" ? "block" : "none";
-      if (defDropdown) defDropdown.style.display = suiteKey === "definedge" ? "inline-block" : "none";
-
-      if (window.AuthService && window.AuthService.syncState) {
-        window.AuthService.syncState({ page2Suite: suiteKey });
+    const activeLabel = document.getElementById("p2DeskActiveLabel");
+    const activeIcon = document.getElementById("p2DeskActiveIcon");
+    if (activeLabel && activeIcon) {
+      if (suiteKey === "contribution") {
+        activeLabel.textContent = "BREADTH & CONTRIBUTION DESK";
+        activeIcon.textContent = "📈";
+      } else if (suiteKey === "fiidii") {
+        activeLabel.textContent = "FII / DII CASH FLOW";
+        activeIcon.textContent = "🏛️";
+      } else {
+        activeLabel.textContent = "ATM STRADDLE DESK";
+        activeIcon.textContent = "📉";
       }
-      loadCurrentSuite();
     }
 
-    if (defBtn) defBtn.addEventListener("click", () => activateSuite("definedge"));
-    if (ntBtn) ntBtn.addEventListener("click", () => activateSuite("niftytrader"));
-    if (toolsBtn) toolsBtn.addEventListener("click", () => activateSuite("tools"));
-    if (fiiBtn) fiiBtn.addEventListener("click", () => activateSuite("fiidii"));
-    if (contribBtn) contribBtn.addEventListener("click", () => activateSuite("contribution"));
+    if (straddleSection) straddleSection.style.display = suiteKey === "straddle" ? "block" : "none";
+    if (fiiSection) fiiSection.style.display = suiteKey === "fiidii" ? "block" : "none";
+    if (contribSection) contribSection.style.display = suiteKey === "contribution" ? "block" : "none";
+
+    if (window.AuthService && window.AuthService.syncState) {
+      window.AuthService.syncState({ page2Suite: suiteKey });
+    }
+    loadCurrentSuite();
+    if (suiteKey === "contribution") {
+      setupContribCanvasEvents();
+      requestAnimationFrame(() => {
+        if (contribTimeline && contribTimeline.length > 0) {
+          renderIntradayBreadthChart(contribTimeline);
+          renderIntradayIndexChart(contribTimeline, contribDataCache ? contribDataCache.indexInfo : null);
+        }
+      });
+    }
+
+    syncP2Url(suiteKey, pushHistory);
   }
+  window.activateSuite = activateSuite;
 
-  function setupDefinedgeDropdown() {
-    const btn = document.getElementById("p2OiMenuBtn");
-    const drop = document.getElementById("p2OiDropdown");
-    const items = document.querySelectorAll(".page2-dropdown-item");
+  function setupSuiteSwitching() {
+    const straddleBtn = document.getElementById("p2SuiteStraddleBtn") || document.getElementById("p2SuiteToolsBtn");
+    const fiiBtn = document.getElementById("p2SuiteFiiDiiBtn");
+    const contribBtn = document.getElementById("p2SuiteContributionBtn");
 
-    if (btn && drop) {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        drop.classList.toggle("show");
-        btn.classList.toggle("active");
-      });
-
-      document.addEventListener("click", () => {
-        drop.classList.remove("show");
-        btn.classList.remove("active");
-      });
-    }
-
-    items.forEach((item) => {
-      item.addEventListener("click", () => {
-        items.forEach((i) => i.classList.remove("active"));
-        item.classList.add("active");
-        const tool = item.getAttribute("data-tool");
-        currentDefinedgeTool = tool;
-        if (window.AuthService && window.AuthService.syncState) {
-          window.AuthService.syncState({ page2DefinedgeTool: tool });
-        }
-
-        document.querySelectorAll("#p2SectionDefinedge .page2-view-panel").forEach((p) => {
-          p.classList.remove("active");
-        });
-        const target = document.getElementById(tool);
-        if (target) target.classList.add("active");
-
-        if (drop && btn) {
-          drop.classList.remove("show");
-          btn.classList.remove("active");
-        }
-
-        loadDefinedgeTool(tool);
-      });
-    });
-  }
-
-  function setupNiftyTraderNav() {
-    const btns = document.querySelectorAll(".nt-nav-btn");
-    btns.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        btns.forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        const tool = btn.getAttribute("data-nt-tool");
-        currentNtTool = tool;
-        if (window.AuthService && window.AuthService.syncState) {
-          window.AuthService.syncState({ page2NtTool: tool });
-        }
-
-        document.querySelectorAll("#p2SectionNiftyTrader .nt-view-panel").forEach((p) => {
-          p.classList.remove("active");
-        });
-        const target = document.getElementById(tool);
-        if (target) target.classList.add("active");
-
-        loadNiftyTraderTool(tool);
-      });
-    });
-
-    // Radio toggle for PCR vs Change in OI PCR
-    const radios = document.querySelectorAll('input[name="ntPcrMode"]');
-    radios.forEach((r) => {
-      r.addEventListener("change", (e) => {
-        ntPcrMode = e.target.value;
-        loadNiftyTraderTool("ntViewPcr");
-      });
-    });
-
-    // Exchange selector
-    const exchBtns = document.querySelectorAll(".nt-exch-btn");
-    exchBtns.forEach((b) => {
-      b.addEventListener("click", () => {
-        exchBtns.forEach((x) => x.classList.remove("active"));
-        b.classList.add("active");
-        currentExchange = b.getAttribute("data-exch");
-        loadNiftyTraderTool("ntViewOptionChain");
-      });
-    });
-
-    // CSV Download
-    const dlBtn = document.getElementById("ntDownloadPcrCsv");
-    if (dlBtn) {
-      dlBtn.addEventListener("click", downloadPcrCsv);
-    }
-
-    // Initialize Implied Volatility (IV) Suite Controls
-    setupNiftyTraderIvEvents();
+    if (straddleBtn) straddleBtn.addEventListener("click", () => activateSuite("straddle", true));
+    if (fiiBtn) fiiBtn.addEventListener("click", () => activateSuite("fiidii", true));
+    if (contribBtn) contribBtn.addEventListener("click", () => activateSuite("contribution", true));
   }
 
   function setupGlobalControls() {
@@ -267,2154 +262,24 @@
   }
 
   function refreshActiveView() {
-    if (currentSuite === "definedge") {
-      loadDefinedgeTool(currentDefinedgeTool);
-    } else if (currentSuite === "niftytrader") {
-      loadNiftyTraderSummary();
-      loadNiftyTraderTool(currentNtTool);
-    } else if (currentSuite === "tools") {
-      if (currentToolsSubView === "straddle") {
-        loadStraddleTool();
-      } else {
-        loadGlobalMarketsSuite();
-      }
+    if (currentSuite === "straddle" || currentSuite === "tools") {
+      loadStraddleTool();
     } else if (currentSuite === "fiidii") {
       loadFiiDiiSuite();
     } else if (currentSuite === "contribution") {
-      loadBreadthContributionSuite(currentContribIndex, null, true);
+      loadBreadthContributionSuite(currentContribIndex, currentContribDate, true);
     }
   }
 
   function loadCurrentSuite() {
-    if (currentSuite === "definedge") {
-      loadDefinedgeTool(currentDefinedgeTool);
-    } else if (currentSuite === "niftytrader") {
-      loadNiftyTraderSummary();
-      loadNiftyTraderTool(currentNtTool);
-    } else if (currentSuite === "tools") {
-      if (currentToolsSubView === "straddle") {
-        loadStraddleTool();
-      } else {
-        loadGlobalMarketsSuite();
-      }
+    if (currentSuite === "straddle" || currentSuite === "tools") {
+      loadStraddleTool();
     } else if (currentSuite === "fiidii") {
       loadFiiDiiSuite();
     } else if (currentSuite === "contribution") {
-      loadBreadthContributionSuite(currentContribIndex, null, true);
+      loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
     }
   }
-
-  // ========================================================================
-  // DEFINEDGE SUITE DATA FETCHER & RENDERERS
-  // ========================================================================
-  const DEFINEDGE_TOOL_MAP = {
-    viewOpenInterest: "open-interest",
-    viewTotalOi: "total-oi",
-    viewHistoricalToi: "historical-toi",
-    viewMultiToi: "multi-toi",
-    viewOiDynamics: "oi-dynamics",
-    viewOiCharts: "oi-charts",
-    viewOptionsBuildup: "options-buildup",
-    viewPcr: "pcr",
-    viewStraddles: "straddles",
-    viewOptionChain: "option-chain",
-    viewUnusualActivity: "unusual-activity",
-    viewTrividh: "trividh",
-    viewOiCrossover: "oi-crossover",
-    viewOptionsActivity: "options-activity"
-  };
-
-  async function fetchOiApi(ep) {
-    try {
-      const res = await fetch(`/api/oi-suite/${ep}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ index: currentSymbol, symbol: currentSymbol })
-      });
-      return await res.json();
-    } catch (err) {
-      console.error(`Error fetching /api/oi-suite/${ep}:`, err);
-      return { ok: false };
-    }
-  }
-
-  async function loadDefinedgeTool(toolId) {
-    const ep = DEFINEDGE_TOOL_MAP[toolId];
-    if (!ep) return;
-    const data = await fetchOiApi(ep);
-    if (!data || !data.ok) return;
-
-    if (data.spot) {
-      document.getElementById("p2SpotBadge").textContent = `SPOT: ₹${Number(data.spot).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-    }
-
-    if (toolId === "viewOpenInterest") renderDefinedgeOpenInterest(data);
-    else if (toolId === "viewTotalOi") renderDefinedgeTotalOi(data);
-    else if (toolId === "viewHistoricalToi") renderDefinedgeHistoricalToi(data);
-    else if (toolId === "viewMultiToi") renderDefinedgeMultiToi(data);
-    else if (toolId === "viewOiDynamics") renderDefinedgeOiDynamics(data);
-    else if (toolId === "viewOiCharts") renderDefinedgeOiCharts(data);
-    else if (toolId === "viewOptionsBuildup") renderDefinedgeBuildup(data);
-    else if (toolId === "viewPcr") renderDefinedgePcr(data);
-    else if (toolId === "viewStraddles") renderDefinedgeStraddles(data);
-    else if (toolId === "viewOptionChain") renderDefinedgeOptionChain(data);
-    else if (toolId === "viewUnusualActivity") renderDefinedgeUoa(data);
-    else if (toolId === "viewTrividh") renderDefinedgeTrividh(data);
-    else if (toolId === "viewOiCrossover") renderDefinedgeCrossover(data);
-    else if (toolId === "viewOptionsActivity") renderDefinedgeActivity(data);
-  }
-
-  function renderDefinedgeOpenInterest(data) {
-    const cards = document.getElementById("oiMetricCards");
-    cards.innerHTML = `
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Atm Strike</div>
-        <div class="p2-metric-val" style="color:var(--p2-teal-light)">${data.atmStrike}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Spot: ₹${data.spot}</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Max Call Wall</div>
-        <div class="p2-metric-val text-call">${data.maxCallStrike || "--"}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Major Resistance</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Max Put Wall</div>
-        <div class="p2-metric-val text-put">${data.maxPutStrike || "--"}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Major Support</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Net Delta OI</div>
-        <div class="p2-metric-val ${data.netDeltaOi >= 0 ? 'text-put' : 'text-call'}">${Number(data.netDeltaOi || 0).toLocaleString()}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Institutional Bias</div>
-      </div>
-    `;
-
-    const strikes = data.strikes || [];
-    renderDualBarChart("chartOiBars", strikes.map(s => s.strike), strikes.map(s => s.ceOi), strikes.map(s => s.peOi), "Call OI (Lots)", "Put OI (Lots)");
-
-    const tbody = document.querySelector("#tableOiData tbody");
-    tbody.innerHTML = strikes.map(s => `
-      <tr class="${s.isAtm ? 'atm-row' : ''}">
-        <td class="text-call">${Number(s.ceOi).toLocaleString()}</td>
-        <td class="${s.ceChgOi >= 0 ? 'text-call' : 'text-put'}">${s.ceChgOi >= 0 ? '+' : ''}${Number(s.ceChgOi).toLocaleString()}</td>
-        <td>₹${s.ceLtp}</td>
-        <td class="text-center font-bold" style="color:var(--p2-teal-light);">${s.strike}${s.isAtm ? ' (ATM)' : ''}</td>
-        <td>₹${s.peLtp}</td>
-        <td class="${s.peChgOi >= 0 ? 'text-put' : 'text-call'}">${s.peChgOi >= 0 ? '+' : ''}${Number(s.peChgOi).toLocaleString()}</td>
-        <td class="text-put">${Number(s.peOi).toLocaleString()}</td>
-        <td><span class="p2-badge ${s.peOi > s.ceOi ? 'p2-badge-green' : 'p2-badge-red'}">${s.peOi > s.ceOi ? 'Put Dominant' : 'Call Dominant'}</span></td>
-      </tr>
-    `).join("");
-  }
-
-  function renderDefinedgeTotalOi(data) {
-    const cards = document.getElementById("toiMetricCards");
-    cards.innerHTML = `
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Total Call OI</div>
-        <div class="p2-metric-val text-call">${Number(data.totalCallOi || 0).toLocaleString()}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Call Cushion: ${data.callCushionPct || 0}%</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Total Put OI</div>
-        <div class="p2-metric-val text-put">${Number(data.totalPutOi || 0).toLocaleString()}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Put Cushion: ${data.putCushionPct || 0}%</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Total OI PCR</div>
-        <div class="p2-metric-val ${data.pcr >= 1.0 ? 'text-put' : 'text-call'}">${data.pcr || 1.0}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Put / Call Ratio</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Dominant Position</div>
-        <div class="p2-metric-val" style="color:var(--p2-teal-light)">${data.bias || "Neutral"}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Confidence: ${data.confidenceScore || 75}%</div>
-      </div>
-    `;
-
-    renderHorizontalCushionChart("chartToiGauge", Number(data.callCushionPct || 50), Number(data.putCushionPct || 50));
-  }
-
-  function renderDefinedgeHistoricalToi(data) {
-    const points = data.timeline || [];
-    renderMultiLineChart("chartHistoricalToi", points.map(p => p.time), [
-      { label: "Total Call OI", data: points.map(p => p.callOi), color: getThemeColors().red },
-      { label: "Total Put OI", data: points.map(p => p.putOi), color: getThemeColors().green }
-    ]);
-  }
-
-  function renderDefinedgeMultiToi(data) {
-    const strikes = data.selectedStrikes || [];
-    const points = data.timeline || [];
-    const colors = [getThemeColors().teal, getThemeColors().amber, getThemeColors().green, getThemeColors().red, getThemeColors().purple];
-    const series = strikes.map((s, idx) => ({
-      label: `Strike ${s}`,
-      data: points.map(p => p.strikeOis ? p.strikeOis[s] || 0 : 0),
-      color: colors[idx % colors.length]
-    }));
-    renderMultiLineChart("chartMultiToi", points.map(p => p.time), series);
-  }
-
-  function renderDefinedgeOiDynamics(data) {
-    const points = data.velocityPoints || [];
-    renderDualBarChart("chartOiDynamics", points.map(p => p.time), points.map(p => p.callVelocity), points.map(p => p.putVelocity), "Call Writing Velocity", "Put Writing Velocity");
-  }
-
-  function renderDefinedgeOiCharts(data) {
-    const points = data.priceCandles || [];
-    const callWall = data.majorCallWall;
-    const putWall = data.majorPutWall;
-    renderPriceWithWallsChart("chartOiWalls", points.map(p => p.time), points.map(p => p.close), callWall, putWall);
-  }
-
-  function renderDefinedgeBuildup(data) {
-    const summary = data.summary || {};
-    const cards = document.getElementById("buildupSummaryCards");
-    cards.innerHTML = `
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Long Buildup</div>
-        <div class="p2-metric-val text-put">${summary.longBuildup || 0}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Bullish Expansion</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Short Buildup</div>
-        <div class="p2-metric-val text-call">${summary.shortBuildup || 0}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Bearish Writing</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Short Covering</div>
-        <div class="p2-metric-val" style="color:var(--p2-blue)">${summary.shortCovering || 0}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Shorts Exiting</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Long Unwinding</div>
-        <div class="p2-metric-val text-amber">${summary.longUnwinding || 0}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Profit Taking</div>
-      </div>
-    `;
-
-    const strikes = data.strikes || [];
-    const tbody = document.querySelector("#tableBuildupData tbody");
-    tbody.innerHTML = strikes.map(s => `
-      <tr class="${s.isAtm ? 'atm-row' : ''}">
-        <td><span class="p2-badge ${getBuildupBadgeClass(s.ceBuildup)}">${s.ceBuildup}</span></td>
-        <td class="${s.ceChgOi >= 0 ? 'text-call' : 'text-put'}">${s.ceChgOi >= 0 ? '+' : ''}${Number(s.ceChgOi).toLocaleString()}</td>
-        <td>₹${s.ceLtp}</td>
-        <td class="text-center font-bold" style="color:var(--p2-teal-light);">${s.strike}</td>
-        <td>₹${s.peLtp}</td>
-        <td class="${s.peChgOi >= 0 ? 'text-put' : 'text-call'}">${s.peChgOi >= 0 ? '+' : ''}${Number(s.peChgOi).toLocaleString()}</td>
-        <td><span class="p2-badge ${getBuildupBadgeClass(s.peBuildup)}">${s.peBuildup}</span></td>
-      </tr>
-    `).join("");
-  }
-
-  function getBuildupBadgeClass(b) {
-    if (b === "Long Buildup") return "p2-badge-green";
-    if (b === "Short Buildup") return "p2-badge-red";
-    if (b === "Short Covering") return "p2-badge-teal";
-    return "p2-badge-red";
-  }
-
-  let p2PcrSeries = [];
-  let p2PcrGeometry = null;
-  let p2PcrHoverIndex = null;
-  let p2PcrDays = 250;
-
-  function renderDefinedgePcr(data) {
-    const cards = document.getElementById("pcrMetricCards");
-    if (cards) {
-      cards.innerHTML = `
-        <div class="p2-metric-box">
-          <div class="p2-metric-label">Total OI PCR</div>
-          <div class="p2-metric-val ${data.oiPcr >= 1.0 ? 'text-put' : 'text-call'}">${data.oiPcr}</div>
-          <div class="p2-metric-sub" style="color:var(--p2-text-muted)">${data.sentiment || "Neutral"}</div>
-        </div>
-        <div class="p2-metric-box">
-          <div class="p2-metric-label">Volume PCR</div>
-          <div class="p2-metric-val">${data.volumePcr || 1.0}</div>
-          <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Traded Volume Bias</div>
-        </div>
-        <div class="p2-metric-box">
-          <div class="p2-metric-label">Overbought Zone</div>
-          <div class="p2-metric-val text-call">&gt; 1.40</div>
-          <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Mean Reversion Alert</div>
-        </div>
-        <div class="p2-metric-box">
-          <div class="p2-metric-label">Oversold Zone</div>
-          <div class="p2-metric-val text-put">&lt; 0.70</div>
-          <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Support Bounce Alert</div>
-        </div>
-      `;
-    }
-
-    // Set Symbol in Opstra Chart Header
-    const symTitle = document.getElementById("p2PcrSymbolTitle");
-    if (symTitle) {
-      symTitle.textContent = (currentSymbol || "NIFTY").toUpperCase().replace("50", "");
-    }
-
-    // Draw Opstra Synchronized Dual Subplot Chart
-    if (data.opstraSeries && data.opstraSeries.length) {
-      p2PcrSeries = data.opstraSeries;
-      drawPage2OpstraPcr(p2PcrSeries);
-    }
-
-    const timeline = data.timeline || [];
-    renderSingleLineChart("chartPcrCurve", timeline.map(t => t.time), timeline.map(t => t.pcr), "Intraday PCR Curve", getThemeColors().teal);
-  }
-
-  function drawPage2OpstraPcr(series) {
-    const cPrice = document.getElementById("p2PcrPriceCanvas");
-    const cPcr = document.getElementById("p2PcrPcrCanvas");
-    if (!cPrice || !cPcr || !series || !series.length) return;
-
-    const isDark = !isLight();
-    const scale = window.devicePixelRatio || 1;
-
-    // 1. Setup Price Canvas
-    const rectP = cPrice.getBoundingClientRect();
-    const w = rectP.width > 50 ? rectP.width : (cPrice.parentElement?.clientWidth || 900);
-    const hP = 250;
-    if (cPrice.width !== Math.round(w * scale) || cPrice.height !== Math.round(hP * scale)) {
-      cPrice.width = Math.round(w * scale);
-      cPrice.height = Math.round(hP * scale);
-    }
-    const ctxP = cPrice.getContext("2d");
-    ctxP.setTransform(scale, 0, 0, scale, 0, 0);
-
-    // 2. Setup PCR Canvas
-    const hR = 210;
-    if (cPcr.width !== Math.round(w * scale) || cPcr.height !== Math.round(hR * scale)) {
-      cPcr.width = Math.round(w * scale);
-      cPcr.height = Math.round(hR * scale);
-    }
-    const ctxR = cPcr.getContext("2d");
-    ctxR.setTransform(scale, 0, 0, scale, 0, 0);
-
-    const pad = { top: 26, right: 35, bottom: 20, left: 62 };
-    const plotW = w - pad.left - pad.right;
-    const plotHP = hP - pad.top - pad.bottom;
-    const plotHR = hR - pad.top - 28;
-    if (plotW <= 10 || plotHP <= 10 || plotHR <= 10) return;
-
-    const xFor = idx => pad.left + (idx / Math.max(1, series.length - 1)) * plotW;
-
-    // -------------------------------------------------------------
-    // TOP SUBPLOT: STOCK PRICE (Olive Green Area Chart)
-    // -------------------------------------------------------------
-    ctxP.clearRect(0, 0, w, hP);
-    ctxP.fillStyle = isDark ? "#090d16" : "#fbfbfa";
-    ctxP.fillRect(0, 0, w, hP);
-
-    const spotVals = series.map(s => Number(s.spot));
-    const minSpot = Math.min(...spotVals);
-    const maxSpot = Math.max(...spotVals);
-    const spotBuffer = Math.max(25, (maxSpot - minSpot) * 0.08);
-    const spotMin = minSpot - spotBuffer;
-    const spotMax = maxSpot + spotBuffer;
-    const yForSpot = val => pad.top + plotHP - ((val - spotMin) / (spotMax - spotMin)) * plotHP;
-
-    // Axis Title "Price"
-    ctxP.fillStyle = isDark ? "#94a3b8" : "#475569";
-    ctxP.font = "bold 10px 'JetBrains Mono', monospace";
-    ctxP.textAlign = "left";
-    ctxP.fillText("Price", pad.left - 50, pad.top - 10);
-
-    // Horizontal Grid Lines & Price Labels
-    ctxP.strokeStyle = isDark ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.06)";
-    ctxP.lineWidth = 0.8;
-    ctxP.setLineDash([3, 3]);
-
-    const numGridP = 5;
-    for (let i = 0; i <= numGridP; i++) {
-      const y = pad.top + (i / numGridP) * plotHP;
-      ctxP.beginPath();
-      ctxP.moveTo(pad.left, y);
-      ctxP.lineTo(w - pad.right, y);
-      ctxP.stroke();
-
-      const spVal = spotMax - (i / numGridP) * (spotMax - spotMin);
-      ctxP.fillStyle = isDark ? "#94a3b8" : "#475569";
-      ctxP.font = "10px 'JetBrains Mono', monospace";
-      ctxP.textAlign = "right";
-      ctxP.textBaseline = "middle";
-      ctxP.fillText(`${Math.round(spVal)}`, pad.left - 8, y);
-    }
-    ctxP.setLineDash([]);
-
-    // Draw Olive Green Area Gradient
-    const areaGrad = ctxP.createLinearGradient(0, pad.top, 0, pad.top + plotHP);
-    areaGrad.addColorStop(0, "rgba(91, 126, 69, 0.42)");
-    areaGrad.addColorStop(1, isDark ? "rgba(91, 126, 69, 0.05)" : "rgba(91, 126, 69, 0.12)");
-
-    ctxP.beginPath();
-    series.forEach((pt, idx) => {
-      const x = xFor(idx);
-      const y = yForSpot(pt.spot);
-      if (idx === 0) ctxP.moveTo(x, y);
-      else ctxP.lineTo(x, y);
-    });
-    ctxP.lineTo(xFor(series.length - 1), pad.top + plotHP);
-    ctxP.lineTo(xFor(0), pad.top + plotHP);
-    ctxP.closePath();
-    ctxP.fillStyle = areaGrad;
-    ctxP.fill();
-
-    // Draw Olive Green Main Line
-    ctxP.beginPath();
-    ctxP.strokeStyle = "#5b7e45";
-    ctxP.lineWidth = 2.0;
-    series.forEach((pt, idx) => {
-      const x = xFor(idx);
-      const y = yForSpot(pt.spot);
-      if (idx === 0) ctxP.moveTo(x, y);
-      else ctxP.lineTo(x, y);
-    });
-    ctxP.stroke();
-
-    // -------------------------------------------------------------
-    // BOTTOM SUBPLOT: PCR & WPCR (Red PCR + Blue WPCR Chart)
-    // -------------------------------------------------------------
-    ctxR.clearRect(0, 0, w, hR);
-    ctxR.fillStyle = isDark ? "#090d16" : "#fbfbfa";
-    ctxR.fillRect(0, 0, w, hR);
-
-    // Compute PCR & WPCR Scales
-    const pcrVals = series.map(s => Number(s.pcr || 1.016));
-    const wpcrVals = series.map(s => Number(s.wpcr || 0.603));
-    const maxWpcr = Math.max(...wpcrVals, ...pcrVals);
-    const pcrMax = maxWpcr > 15 ? 48 : (maxWpcr > 6 ? 12 : (maxWpcr > 3 ? 5 : 2.5));
-    const yForPcr = val => pad.top + plotHR - (Math.min(pcrMax, Math.max(0, val)) / pcrMax) * plotHR;
-
-    // Axis Title "PCR"
-    ctxR.fillStyle = isDark ? "#94a3b8" : "#475569";
-    ctxR.font = "bold 10px 'JetBrains Mono', monospace";
-    ctxR.textAlign = "left";
-    ctxR.fillText("PCR", pad.left - 50, pad.top - 10);
-
-    // Horizontal Grid Lines & PCR Labels
-    ctxR.strokeStyle = isDark ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.06)";
-    ctxR.lineWidth = 0.8;
-    ctxR.setLineDash([3, 3]);
-
-    const numGridR = 4;
-    for (let i = 0; i <= numGridR; i++) {
-      const y = pad.top + (i / numGridR) * plotHR;
-      ctxR.beginPath();
-      ctxR.moveTo(pad.left, y);
-      ctxR.lineTo(w - pad.right, y);
-      ctxR.stroke();
-
-      const val = pcrMax - (i / numGridR) * pcrMax;
-      ctxR.fillStyle = isDark ? "#94a3b8" : "#475569";
-      ctxR.font = "10px 'JetBrains Mono', monospace";
-      ctxR.textAlign = "right";
-      ctxR.textBaseline = "middle";
-      ctxR.fillText(val >= 10 ? `${Math.round(val)}` : `${val.toFixed(1)}`, pad.left - 8, y);
-    }
-    ctxR.setLineDash([]);
-
-    // 1. Draw Red Line: Standard PCR (Smooth)
-    ctxR.beginPath();
-    ctxR.strokeStyle = "#dc2626";
-    ctxR.lineWidth = 1.8;
-    series.forEach((pt, idx) => {
-      const x = xFor(idx);
-      const y = yForPcr(pt.pcr || 1.016);
-      if (idx === 0) ctxR.moveTo(x, y);
-      else ctxR.lineTo(x, y);
-    });
-    ctxR.stroke();
-
-    // 2. Draw Blue Line: WPCR (Weighted with spikes)
-    ctxR.beginPath();
-    ctxR.strokeStyle = "#1d4ed8";
-    ctxR.lineWidth = 2.0;
-    series.forEach((pt, idx) => {
-      const x = xFor(idx);
-      const y = yForPcr(pt.wpcr || 0.603);
-      if (idx === 0) ctxR.moveTo(x, y);
-      else ctxR.lineTo(x, y);
-    });
-    ctxR.stroke();
-
-    // Bottom Time / Date Labels
-    ctxR.fillStyle = isDark ? "#94a3b8" : "#64748b";
-    ctxR.font = "9.5px 'JetBrains Mono', monospace";
-    ctxR.textAlign = "center";
-    ctxR.textBaseline = "top";
-    const numLabels = Math.min(8, series.length);
-    for (let i = 0; i < numLabels; i++) {
-      const idx = Math.floor((i / (numLabels - 1)) * (series.length - 1));
-      const pt = series[idx];
-      if (pt) {
-        ctxR.fillText(pt.time, xFor(idx), pad.top + plotHR + 6);
-      }
-    }
-
-    // Store Geometry for Linked Crosshairs
-    p2PcrGeometry = {
-      pad, w, hP, hR, plotW, plotHP, plotHR, series, xFor, yForSpot, yForPcr
-    };
-
-    // Draw Synchronized Crosshair if Hovering
-    if (p2PcrHoverIndex !== null && series[p2PcrHoverIndex]) {
-      drawPage2SynchronizedCrosshairs(p2PcrHoverIndex);
-    }
-  }
-
-  function drawPage2SynchronizedCrosshairs(idx) {
-    const cPrice = document.getElementById("p2PcrPriceCanvas");
-    const cPcr = document.getElementById("p2PcrPcrCanvas");
-    if (!p2PcrGeometry || !cPrice || !cPcr) return;
-    const { pad, series, xFor, yForSpot, yForPcr, plotHP, plotHR, w } = p2PcrGeometry;
-    const pt = series[idx];
-    if (!pt) return;
-
-    const hx = xFor(idx);
-    const ctxP = cPrice.getContext("2d");
-    const ctxR = cPcr.getContext("2d");
-
-    // Vertical Hairline on Top Canvas (Price)
-    ctxP.save();
-    ctxP.strokeStyle = "rgba(100, 116, 139, 0.75)";
-    ctxP.lineWidth = 1;
-    ctxP.setLineDash([3, 3]);
-    ctxP.beginPath();
-    ctxP.moveTo(hx, pad.top);
-    ctxP.lineTo(hx, pad.top + plotHP);
-    ctxP.stroke();
-
-    // Marker on Price Curve
-    ctxP.fillStyle = "#5b7e45";
-    ctxP.strokeStyle = "#ffffff";
-    ctxP.lineWidth = 1.5;
-    ctxP.beginPath();
-    ctxP.arc(hx, yForSpot(pt.spot), 4.5, 0, Math.PI * 2);
-    ctxP.fill();
-    ctxP.stroke();
-    ctxP.restore();
-
-    // Vertical Hairline on Bottom Canvas (PCR / WPCR)
-    ctxR.save();
-    ctxR.strokeStyle = "rgba(100, 116, 139, 0.75)";
-    ctxR.lineWidth = 1;
-    ctxR.setLineDash([3, 3]);
-    ctxR.beginPath();
-    ctxR.moveTo(hx, pad.top);
-    ctxR.lineTo(hx, pad.top + plotHR);
-    ctxR.stroke();
-
-    // Marker on Red PCR Line
-    ctxR.fillStyle = "#dc2626";
-    ctxR.strokeStyle = "#ffffff";
-    ctxR.lineWidth = 1.5;
-    ctxR.beginPath();
-    ctxR.arc(hx, yForPcr(pt.pcr || 1.016), 4, 0, Math.PI * 2);
-    ctxR.fill();
-    ctxR.stroke();
-
-    // Marker on Blue WPCR Line
-    ctxR.fillStyle = "#1d4ed8";
-    ctxR.strokeStyle = "#ffffff";
-    ctxR.lineWidth = 1.5;
-    ctxR.beginPath();
-    ctxR.arc(hx, yForPcr(pt.wpcr || 0.603), 4.5, 0, Math.PI * 2);
-    ctxR.fill();
-    ctxR.stroke();
-    ctxR.restore();
-
-    // Update Top Tooltip
-    const ttP = document.getElementById("p2PcrPriceTooltip");
-    if (ttP) {
-      ttP.style.display = "block";
-      const tipLeft = Math.max(10, Math.min(w - 180, hx - 40));
-      const tipTop = Math.max(10, yForSpot(pt.spot) - 34);
-      ttP.style.left = `${tipLeft}px`;
-      ttP.style.top = `${tipTop}px`;
-      ttP.innerHTML = `
-        <span style="color:#5b7e45; font-size:13px;">●</span> Stock Price: <strong>${Number(pt.spot).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}</strong>
-      `;
-    }
-
-    // Update Bottom Tooltip
-    const ttR = document.getElementById("p2PcrPcrTooltip");
-    if (ttR) {
-      ttR.style.display = "block";
-      const tipLeft = Math.max(10, Math.min(w - 160, hx - 40));
-      const tipTop = Math.max(8, yForPcr(pt.wpcr || 0.603) - 46);
-      ttR.style.left = `${tipLeft}px`;
-      ttR.style.top = `${tipTop}px`;
-      ttR.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:2px;">
-          <div><span style="color:#dc2626; font-size:13px;">●</span> PCR: <strong>${Number(pt.pcr || 1.016).toFixed(3)}</strong></div>
-          <div><span style="color:#1d4ed8; font-size:13px;">●</span> WPCR: <strong>${Number(pt.wpcr || 0.603).toFixed(3)}</strong></div>
-        </div>
-      `;
-    }
-  }
-
-  function updatePage2PcrHover(clientX) {
-    if (!p2PcrGeometry) return;
-    const canvas = document.getElementById("p2PcrPriceCanvas") || document.getElementById("p2PcrPcrCanvas");
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const { pad, plotW, series } = p2PcrGeometry;
-
-    if (x < pad.left || x > pad.left + plotW) {
-      hidePage2PcrTooltip();
-      return;
-    }
-
-    const relX = (x - pad.left) / plotW;
-    const idx = Math.max(0, Math.min(series.length - 1, Math.round(relX * (series.length - 1))));
-    p2PcrHoverIndex = idx;
-    drawPage2OpstraPcr(series);
-  }
-
-  function hidePage2PcrTooltip() {
-    p2PcrHoverIndex = null;
-    const ttP = document.getElementById("p2PcrPriceTooltip");
-    const ttR = document.getElementById("p2PcrPcrTooltip");
-    if (ttP) ttP.style.display = "none";
-    if (ttR) ttR.style.display = "none";
-    if (p2PcrSeries && p2PcrSeries.length) {
-      drawPage2OpstraPcr(p2PcrSeries);
-    }
-  }
-
-  function setupPage2OpstraPcrControls() {
-    const cPrice = document.getElementById("p2PcrPriceCanvas");
-    const cPcr = document.getElementById("p2PcrPcrCanvas");
-    if (cPrice) {
-      cPrice.addEventListener("mousemove", (e) => updatePage2PcrHover(e.clientX));
-      cPrice.addEventListener("mouseleave", () => hidePage2PcrTooltip());
-    }
-    if (cPcr) {
-      cPcr.addEventListener("mousemove", (e) => updatePage2PcrHover(e.clientX));
-      cPcr.addEventListener("mouseleave", () => hidePage2PcrTooltip());
-    }
-
-    const zoomGroup = document.getElementById("p2PcrZoomGroup");
-    if (zoomGroup) {
-      zoomGroup.querySelectorAll(".opstra-zoom-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          zoomGroup.querySelectorAll(".opstra-zoom-btn").forEach((b) => b.classList.remove("active"));
-          btn.classList.add("active");
-          const zoom = btn.dataset.zoom || "1Y";
-          const zoomMap = { "1D": 1, "5D": 5, "10D": 10, "15D": 15, "3M": 65, "1Y": 250, "All": 500 };
-          p2PcrDays = zoomMap[zoom] || 250;
-
-          // Update Date inputs
-          const today = new Date();
-          const past = new Date();
-          const dayOffset = zoom === "1D" ? 1 : (zoom === "5D" ? 7 : (zoom === "10D" ? 14 : (zoom === "15D" ? 21 : (zoom === "3M" ? 90 : 365))));
-          past.setDate(today.getDate() - dayOffset);
-          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-          const fromEl = document.getElementById("p2PcrDateFrom");
-          const toEl = document.getElementById("p2PcrDateTo");
-          if (fromEl) fromEl.value = `${months[past.getMonth()]} ${past.getDate()}, ${past.getFullYear()}`;
-          if (toEl) toEl.value = `${months[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
-
-          // Slice series according to zoom
-          if (p2PcrSeries && p2PcrSeries.length) {
-            const count = Math.min(p2PcrSeries.length, p2PcrDays);
-            drawPage2OpstraPcr(p2PcrSeries.slice(-count));
-          }
-        });
-      });
-    }
-  }
-
-  function renderDefinedgeStraddles(data) {
-    const cards = document.getElementById("straddleMetricCards");
-    cards.innerHTML = `
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Atm Strike</div>
-        <div class="p2-metric-val" style="color:var(--p2-teal-light)">${data.atmStrike}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Spot: ₹${data.spot}</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Combined Premium (CE+PE)</div>
-        <div class="p2-metric-val">₹${data.combinedLtp}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Decay: ₹${data.thetaDecay || 0}</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Upper Breakeven</div>
-        <div class="p2-metric-val text-call">₹${data.upperBreakeven}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Ceiling Resistance</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Lower Breakeven</div>
-        <div class="p2-metric-val text-put">₹${data.lowerBreakeven}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Floor Support</div>
-      </div>
-    `;
-
-    const decay = data.decayPoints || [];
-    renderSingleLineChart("chartStraddleDecay", decay.map(d => d.time), decay.map(d => d.combinedPrice), "Combined Straddle Price (₹)", getThemeColors().amber);
-  }
-
-  function renderDefinedgeOptionChain(data) {
-    const strikes = data.strikes || [];
-    const tbody = document.querySelector("#tableOptionChainGrid tbody");
-    tbody.innerHTML = strikes.map(s => `
-      <tr class="${s.isAtm ? 'atm-row' : ''}">
-        <td>${s.ceDelta}</td>
-        <td>${s.ceIv}%</td>
-        <td>${Number(s.ceVol).toLocaleString()}</td>
-        <td class="text-call">${Number(s.ceOi).toLocaleString()}</td>
-        <td class="font-bold">₹${s.ceLtp}</td>
-        <td class="text-center font-bold" style="color:var(--p2-teal-light);">${s.strike}${s.isAtm ? ' (ATM)' : ''}</td>
-        <td class="font-bold">₹${s.peLtp}</td>
-        <td class="text-put">${Number(s.peOi).toLocaleString()}</td>
-        <td>${Number(s.peVol).toLocaleString()}</td>
-        <td>${s.peIv}%</td>
-        <td>${s.peDelta}</td>
-      </tr>
-    `).join("");
-  }
-
-  function renderDefinedgeUoa(data) {
-    const list = data.anomalies || [];
-    const tbody = document.querySelector("#tableUoaData tbody");
-    tbody.innerHTML = list.map(a => `
-      <tr>
-        <td class="${a.type === 'CALL' ? 'text-call' : 'text-put'} font-bold">${a.type}</td>
-        <td class="font-bold" style="color:var(--p2-teal-light)">${a.strike}</td>
-        <td>${Number(a.volume).toLocaleString()}</td>
-        <td>${Number(a.oi).toLocaleString()}</td>
-        <td class="font-bold">${a.volOiRatio}x</td>
-        <td><span class="p2-badge ${a.severity === 'CRITICAL' ? 'p2-badge-red' : 'p2-badge-teal'}">${a.severity}</span></td>
-        <td>${a.interpretation}</td>
-      </tr>
-    `).join("");
-  }
-
-  function renderDefinedgeTrividh(data) {
-    const cards = document.getElementById("trividhMetricCards");
-    cards.innerHTML = `
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Composite Confluence</div>
-        <div class="p2-metric-val" style="color:var(--p2-teal-light)">${data.confluenceScore} / 100</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Verdict: ${data.verdict}</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Dim 1: Price Momentum</div>
-        <div class="p2-metric-val ${data.priceScore >= 0 ? 'text-put' : 'text-call'}">${data.priceScore}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">VWAP & Trend Velocity</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Dim 2: OI Expansion</div>
-        <div class="p2-metric-val ${data.oiScore >= 0 ? 'text-put' : 'text-call'}">${data.oiScore}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Strike Wall Shift</div>
-      </div>
-      <div class="p2-metric-box">
-        <div class="p2-metric-label">Dim 3: Volume & PCR</div>
-        <div class="p2-metric-val ${data.volScore >= 0 ? 'text-put' : 'text-call'}">${data.volScore}</div>
-        <div class="p2-metric-sub" style="color:var(--p2-text-muted)">Execution Urgency</div>
-      </div>
-    `;
-
-    renderTrividhBarChart("chartTrividhRadar", [
-      { name: "Price Momentum", val: data.priceScore || 65 },
-      { name: "OI Expansion", val: data.oiScore || 70 },
-      { name: "Volume & PCR", val: data.volScore || 60 },
-      { name: "Composite Verdict", val: data.confluenceScore || 68 }
-    ]);
-  }
-
-  function renderDefinedgeCrossover(data) {
-    const rows = data.crossovers || [];
-    const tbody = document.querySelector("#tableCrossoverData tbody");
-    tbody.innerHTML = rows.map(r => `
-      <tr>
-        <td class="font-bold" style="color:var(--p2-teal-light)">${r.strike}</td>
-        <td class="text-call">${Number(r.ceOi).toLocaleString()}</td>
-        <td class="text-put">${Number(r.peOi).toLocaleString()}</td>
-        <td class="${r.spread >= 0 ? 'text-put' : 'text-call'}">${r.spread >= 0 ? '+' : ''}${Number(r.spread).toLocaleString()}</td>
-        <td><span class="p2-badge ${r.status === 'BULLISH FLIP' ? 'p2-badge-green' : 'p2-badge-red'}">${r.status}</span></td>
-        <td>${r.pivotType}</td>
-      </tr>
-    `).join("");
-  }
-
-  function renderDefinedgeActivity(data) {
-    const list = data.activityList || [];
-    const tbody = document.querySelector("#tableActivityData tbody");
-    tbody.innerHTML = list.map(a => `
-      <tr>
-        <td class="font-bold" style="color:var(--p2-teal-light)">${a.strike}</td>
-        <td class="${a.type === 'CE' ? 'text-call' : 'text-put'} font-bold">${a.type}</td>
-        <td>₹${a.ltp}</td>
-        <td><span class="p2-badge p2-badge-teal">${a.intensityScore} / 100</span></td>
-        <td>${Number(a.volume).toLocaleString()}</td>
-        <td class="${a.chgOi >= 0 ? 'text-put' : 'text-call'}">${a.chgOi >= 0 ? '+' : ''}${Number(a.chgOi).toLocaleString()}</td>
-        <td>${a.action}</td>
-      </tr>
-    `).join("");
-  }
-
-  // ========================================================================
-  // NIFTYTRADER PRO SUITE DATA FETCHER & RENDERERS
-  // ========================================================================
-  async function fetchNtApi(endpoint, params = {}) {
-    try {
-      const q = new URLSearchParams({ symbol: currentSymbol, ...params }).toString();
-      const res = await fetch(`/api/niftytrader/${endpoint}?${q}`);
-      return await res.json();
-    } catch (err) {
-      console.error(`Error fetching /api/niftytrader/${endpoint}:`, err);
-      return { ok: false };
-    }
-  }
-
-  async function loadNiftyTraderSummary() {
-    const data = await fetchNtApi("summary");
-    if (!data || !data.ok) return;
-    cachedNtSummary = data;
-
-    document.getElementById("p2SpotBadge").textContent = `SPOT: ₹${Number(data.spot).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-    document.getElementById("ntVixVal").textContent = `${data.indiaVix} (${data.vixChange >= 0 ? '+' : ''}${data.vixChange})`;
-    document.getElementById("ntMaxPainVal").textContent = Number(data.maxPainStrike).toLocaleString();
-    document.getElementById("ntLotSizeVal").textContent = data.lotSize;
-    document.getElementById("ntPcrVal").textContent = data.oiPcr;
-    document.getElementById("ntChgPcrVal").textContent = data.chgOiPcr;
-    document.getElementById("ntVolPcrVal").textContent = data.volumePcr;
-    document.getElementById("ntExpiryDateVal").textContent = data.expiryDate;
-
-    const badge = document.getElementById("ntSentimentBadge");
-    badge.textContent = data.sentiment;
-    if (data.sentimentType === "bullish") {
-      badge.className = "p2-badge p2-badge-green";
-    } else if (data.sentimentType === "bearish") {
-      badge.className = "p2-badge p2-badge-red";
-    } else {
-      badge.className = "p2-badge p2-badge-teal";
-    }
-  }
-
-  async function loadNiftyTraderTool(toolId) {
-    if (toolId === "ntViewPcr") {
-      const data = await fetchNtApi("pcr");
-      if (data && data.ok) renderNtPcr(data);
-    } else if (toolId === "ntViewMaxPain") {
-      const data = await fetchNtApi("max-pain");
-      if (data && data.ok) renderNtMaxPain(data);
-    } else if (toolId === "ntViewOiChart") {
-      const data = await fetchNtApi("oi-chart");
-      if (data && data.ok) renderNtOiChart(data);
-    } else if (toolId === "ntViewChangeOi") {
-      const data = await fetchNtApi("change-oi");
-      if (data && data.ok) renderNtChangeOi(data);
-    } else if (toolId === "ntViewVolumePcr") {
-      const data = await fetchNtApi("volume-pcr");
-      if (data && data.ok) renderNtVolumePcr(data);
-    } else if (toolId === "ntViewOptionChain") {
-      const data = await fetchNtApi("option-chain", { exchange: currentExchange });
-      if (data && data.ok) renderNtOptionChain(data);
-    } else if (toolId === "ntViewIvSmile") {
-      await loadNtIvData();
-    }
-  }
-
-  function renderNtPcr(data) {
-    const history = data.history || [];
-    const isChg = (ntPcrMode === "chg");
-
-    // Render Intraday Timeseries Line Chart (PCR vs Spot)
-    renderPcrSpotChart(
-      "ntChartPcrTimeseries",
-      history.map(h => h.time),
-      isChg ? history.map(h => h.chgOiPcr) : history.map(h => h.oiPcr),
-      history.map(h => h.spot),
-      isChg ? "Change in OI PCR" : "Total OI PCR"
-    );
-
-    // Populate 30-minute table
-    const tbody = document.querySelector("#ntTablePcrHistory tbody");
-    tbody.innerHTML = history.map(h => `
-      <tr>
-        <td class="font-bold">${h.time}</td>
-        <td class="text-right font-bold ${h.oiPcr >= 1.0 ? 'text-put' : 'text-call'}">${h.oiPcr}</td>
-        <td class="text-right font-bold ${h.chgOiPcr >= 1.0 ? 'text-put' : 'text-call'}">${h.chgOiPcr}</td>
-        <td class="text-right font-bold">₹${Number(h.spot).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-        <td class="text-center"><span class="p2-badge ${h.oiPcr >= 1.1 ? 'p2-badge-green' : h.oiPcr <= 0.9 ? 'p2-badge-red' : 'p2-badge-teal'}">${h.oiPcr >= 1.1 ? 'Put OI Dominant' : h.oiPcr <= 0.9 ? 'Call OI Dominant' : 'Neutral Range'}</span></td>
-      </tr>
-    `).join("");
-  }
-
-  function downloadPcrCsv() {
-    fetchNtApi("pcr").then(data => {
-      if (!data || !data.history) return;
-      let csv = "Time (IST),OI PCR,Change-in-OI PCR,Spot Price\n";
-      data.history.forEach(h => {
-        csv += `"${h.time}",${h.oiPcr},${h.chgOiPcr},${h.spot}\n`;
-      });
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.setAttribute("download", `NiftyTrader_PCR_${currentSymbol}_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    });
-  }
-
-  function renderNtMaxPain(data) {
-    document.getElementById("ntMaxPainStrikeBadge").textContent = `Max Pain Strike: ${data.maxPainStrike}`;
-    const lossTable = data.lossTable || [];
-
-    renderMaxPainChart(
-      "ntChartMaxPainLoss",
-      lossTable.map(l => l.strike),
-      lossTable.map(l => l.callLoss),
-      lossTable.map(l => l.putLoss),
-      lossTable.map(l => l.totalLoss),
-      data.maxPainStrike
-    );
-
-    const tbody = document.querySelector("#ntTableMaxPain tbody");
-    tbody.innerHTML = lossTable.map(l => `
-      <tr class="${l.isMaxPain ? 'atm-row' : ''}">
-        <td class="text-center font-bold" style="color:var(--p2-teal-light)">${l.strike}${l.isMaxPain ? ' 🎯 [MAX PAIN]' : ''}</td>
-        <td class="text-right text-call">₹${l.callLoss} Cr</td>
-        <td class="text-right text-put">₹${l.putLoss} Cr</td>
-        <td class="text-right font-bold ${l.isMaxPain ? 'text-amber' : ''}">₹${l.totalLoss} Cr</td>
-        <td class="text-center"><span class="p2-badge ${l.isMaxPain ? 'p2-badge-teal' : l.isAtm ? 'p2-badge-green' : ''}">${l.isMaxPain ? 'Minimum Writer Loss' : l.isAtm ? 'ATM Pivot' : 'Active Strike'}</span></td>
-      </tr>
-    `).join("");
-  }
-
-  function renderNtOiChart(data) {
-    const strikes = data.strikes || [];
-    renderDualBarChart(
-      "ntChartOiBarsLine",
-      strikes.map(s => s.strike),
-      strikes.map(s => s.ceOi),
-      strikes.map(s => s.peOi),
-      "Call Open Interest",
-      "Put Open Interest"
-    );
-  }
-
-  function renderNtChangeOi(data) {
-    const strikes = data.strikes || [];
-    renderDualBarChart(
-      "ntChartChangeOiBars",
-      strikes.map(s => s.strike),
-      strikes.map(s => s.ceChgOi),
-      strikes.map(s => s.peChgOi),
-      "Call ΔOI (Lots Added)",
-      "Put ΔOI (Lots Added)"
-    );
-  }
-
-  function renderNtVolumePcr(data) {
-    const series = data.timeSeries || [];
-    renderSingleLineChart(
-      "ntChartVolumePcrSeries",
-      series.map(s => s.time),
-      series.map(s => s.volPcr),
-      "Volume Put Call Ratio (Intraday)",
-      getThemeColors().amber
-    );
-  }
-
-  function renderNtOptionChain(data) {
-    const strikes = data.strikes || [];
-    const tbody = document.querySelector("#ntTableOptionChainGrid tbody");
-    tbody.innerHTML = strikes.map(s => `
-      <tr class="${s.isAtm ? 'atm-row' : ''}">
-        <td>${s.ceDelta}</td>
-        <td>${s.ceIv}%</td>
-        <td>${Number(s.ceVol).toLocaleString()}</td>
-        <td class="text-call">${Number(s.ceOi).toLocaleString()}</td>
-        <td class="font-bold">₹${s.ceLtp}</td>
-        <td class="text-center font-bold" style="color:var(--p2-teal-light);">${s.strike}${s.isAtm ? ' (ATM)' : ''}</td>
-        <td class="font-bold">₹${s.peLtp}</td>
-        <td class="text-put">${Number(s.peOi).toLocaleString()}</td>
-        <td>${Number(s.peVol).toLocaleString()}</td>
-        <td>${s.peIv}%</td>
-        <td>${s.peDelta}</td>
-      </tr>
-    `).join("");
-  }
-
-  // ========================================================================
-  // NIFTYTRADER IMPLIED VOLATILITY (IV) SUITE CONTROLLER & RENDERERS
-  // Matching https://www.niftytrader.in/implied-volatility-chart
-  // ========================================================================
-  let ntIvEventsInitialized = false;
-
-  function setupNiftyTraderIvEvents() {
-    if (ntIvEventsInitialized) return;
-    ntIvEventsInitialized = true;
-
-    // Mode Toggle: Intraday vs EOD
-    const tfBtns = document.querySelectorAll("#ntIvTimeframeGroup .nt-pill-btn");
-    tfBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        tfBtns.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        ntIvTimeframe = btn.getAttribute("data-tf") || "intraday";
-        const lbGroup = document.getElementById("ntIvLookbackGroup");
-        if (lbGroup) {
-          lbGroup.style.display = (ntIvTimeframe === "eod") ? "inline-flex" : "none";
-        }
-        loadNtIvData();
-      });
-    });
-
-    // Lookback selector (1M, 3M, 6M, 1Y)
-    const lbBtns = document.querySelectorAll("#ntIvLookbackGroup .nt-pill-btn");
-    lbBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        lbBtns.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        ntIvLookback = btn.getAttribute("data-lookback") || "1M";
-        loadNtIvData();
-      });
-    });
-
-    // View Switch: Timeline vs Smile
-    const viewBtns = document.querySelectorAll("#ntIvViewGroup .nt-pill-btn");
-    viewBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        viewBtns.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        ntIvView = btn.getAttribute("data-view") || "timeline";
-        if (cachedNtIvData) renderNtIv(cachedNtIvData);
-        else loadNtIvData();
-      });
-    });
-
-    // Refresh Button
-    const refreshBtn = document.getElementById("ntRefreshIvBtn");
-    if (refreshBtn) {
-      refreshBtn.addEventListener("click", () => {
-        loadNtIvData();
-      });
-    }
-
-    // CSV Download Button
-    const csvBtn = document.getElementById("ntDownloadIvCsv");
-    if (csvBtn) {
-      csvBtn.addEventListener("click", downloadIvCsv);
-    }
-  }
-
-  async function loadNtIvData() {
-    const data = await fetchNtApi("iv", {
-      timeframe: ntIvTimeframe,
-      lookback: ntIvLookback
-    });
-    if (data && data.ok) {
-      cachedNtIvData = data;
-      renderNtIv(data);
-    }
-  }
-
-  function renderNtIv(data) {
-    if (!data) return;
-
-    // 1. KPI Cards
-    const curAtmEl = document.getElementById("ntIvCurrentAtmVal");
-    if (curAtmEl) curAtmEl.textContent = `${Number(data.currentAtmIv).toFixed(2)}%`;
-
-    const strikeBadge = document.getElementById("ntIvAtmStrikeBadge");
-    if (strikeBadge) strikeBadge.textContent = `ATM: ${Number(data.atmStrike).toLocaleString()}`;
-
-    const chgEl = document.getElementById("ntIvAtmChangeVal");
-    if (chgEl) {
-      const isPos = (data.ivChange || 0) >= 0;
-      chgEl.innerHTML = `<span class="${isPos ? 'text-green' : 'text-red'}">${isPos ? '+' : ''}${Number(data.ivChange || 0).toFixed(2)}% ${isPos ? '▲' : '▼'}</span> vs Prev Close`;
-    }
-
-    // IV Rank (IVR)
-    const ivrEl = document.getElementById("ntIvRankVal");
-    if (ivrEl) ivrEl.textContent = `${Number(data.ivRank).toFixed(1)}%`;
-
-    const ivrFill = document.getElementById("ntIvRankFill");
-    if (ivrFill) ivrFill.style.width = `${Math.min(100, Math.max(0, data.ivRank))}%`;
-
-    const ivrBadge = document.getElementById("ntIvRankBadge");
-    if (ivrBadge) {
-      if (data.ivRank < 25) {
-        ivrBadge.className = "p2-badge p2-badge-green";
-        ivrBadge.textContent = `Low (${data.ivRank}%)`;
-      } else if (data.ivRank > 70) {
-        ivrBadge.className = "p2-badge p2-badge-red";
-        ivrBadge.textContent = `High (${data.ivRank}%)`;
-      } else {
-        ivrBadge.className = "p2-badge p2-badge-teal";
-        ivrBadge.textContent = `Normal (${data.ivRank}%)`;
-      }
-    }
-
-    const ivrContext = document.getElementById("ntIvRankContext");
-    if (ivrContext) ivrContext.textContent = `52W High: ${data.high52wIv}% | Low: ${data.low52wIv}%`;
-
-    // IV Percentile (IVP)
-    const ivpEl = document.getElementById("ntIvPercentileVal");
-    if (ivpEl) ivpEl.textContent = `${Number(data.ivPercentile).toFixed(1)}%`;
-
-    const ivpBadge = document.getElementById("ntIvPercentileBadge");
-    if (ivpBadge) ivpBadge.textContent = `${data.ivPercentile}%`;
-
-    const ivpContext = document.getElementById("ntIvPercentileContext");
-    if (ivpContext) ivpContext.textContent = `Days below IV: ~${Math.round(data.ivPercentile * 2.5)} / 250 (${data.ivPercentile}%)`;
-
-    // India VIX
-    const vixEl = document.getElementById("ntIvVixVal");
-    if (vixEl) vixEl.textContent = Number(data.indiaVix).toFixed(2);
-
-    const vixDeltaEl = document.getElementById("ntIvVixDeltaVal");
-    if (vixDeltaEl) {
-      const isUp = (data.vixChange || 0) >= 0;
-      vixDeltaEl.innerHTML = `<span class="${isUp ? 'text-red' : 'text-green'}">${isUp ? '+' : ''}${data.vixChange} ${isUp ? '▲' : '▼'}</span> ${isUp ? 'Volatility Elevated' : 'Volatility Cooling'}`;
-    }
-
-    // IV Skew (PE IV - CE IV)
-    const skewEl = document.getElementById("ntIvSkewVal");
-    if (skewEl) skewEl.textContent = `${data.ivSkew >= 0 ? '+' : ''}${Number(data.ivSkew).toFixed(2)}%`;
-
-    const skewBadge = document.getElementById("ntIvSkewBadge");
-    if (skewBadge) {
-      skewBadge.textContent = data.ivSkew >= 0 ? "Put Skew" : "Call Skew";
-      skewBadge.className = data.ivSkew >= 0 ? "p2-badge p2-badge-amber" : "p2-badge p2-badge-teal";
-    }
-
-    const skewContext = document.getElementById("ntIvSkewContext");
-    if (skewContext) skewContext.textContent = `PE IV ${Number(data.putIv).toFixed(2)}% vs CE IV ${Number(data.callIv).toFixed(2)}%`;
-
-    // Regime Card
-    const regVal = document.getElementById("ntIvRegimeVal");
-    if (regVal) {
-      regVal.textContent = data.regime ? data.regime.split(" ")[0] : "Normal";
-      regVal.className = `nt-kpi-val ${data.regimeType === 'low' ? 'text-green' : (data.regimeType === 'high' ? 'text-red' : 'text-teal')}`;
-    }
-
-    const regBadgePill = document.getElementById("ntIvRegimeBadgePill");
-    if (regBadgePill) {
-      regBadgePill.textContent = data.regimeType === 'low' ? 'Low Vol' : (data.regimeType === 'high' ? 'High Vol' : 'Normal');
-      regBadgePill.className = `p2-badge ${data.regimeType === 'low' ? 'p2-badge-green' : (data.regimeType === 'high' ? 'p2-badge-red' : 'p2-badge-teal')}`;
-    }
-
-    const regSub = document.getElementById("ntIvRegimeSub");
-    if (regSub) {
-      regSub.textContent = data.regimeType === 'low' ? '< 12.0% Historical Band' : (data.regimeType === 'high' ? '> 18.0% Elevated Band' : '12.0% - 18.0% Equilibrium');
-    }
-
-    // 2. Strategy Banner
-    const bannerRegTag = document.getElementById("ntIvStrategyRegimeTag");
-    if (bannerRegTag) {
-      bannerRegTag.textContent = data.regime;
-      bannerRegTag.className = `p2-badge ${data.regimeType === 'low' ? 'p2-badge-green' : (data.regimeType === 'high' ? 'p2-badge-red' : 'p2-badge-teal')}`;
-    }
-
-    const bannerBiasTag = document.getElementById("ntIvStrategyBiasTag");
-    if (bannerBiasTag) {
-      bannerBiasTag.textContent = data.regimeType === 'low' ? 'Long Option Edge' : (data.regimeType === 'high' ? 'Short Option Edge' : 'Balanced Spreads');
-      bannerBiasTag.className = `p2-badge ${data.regimeType === 'low' ? 'p2-badge-green' : (data.regimeType === 'high' ? 'p2-badge-red' : 'p2-badge-teal')}`;
-    }
-
-    const stratText = document.getElementById("ntIvStrategyText");
-    if (stratText) stratText.textContent = data.strategyRecommendation;
-
-    // 3. Views switching
-    const timelineCard = document.getElementById("ntIvTimelineCard");
-    const smileCard = document.getElementById("ntIvSmileCard");
-    const historyContainer = document.getElementById("ntTableIvHistoryContainer");
-    const strikesContainer = document.getElementById("ntTableIvStrikesContainer");
-
-    if (ntIvView === "timeline") {
-      if (timelineCard) timelineCard.style.display = "block";
-      if (smileCard) smileCard.style.display = "none";
-      if (historyContainer) historyContainer.style.display = "block";
-      if (strikesContainer) strikesContainer.style.display = "none";
-
-      const series = (ntIvTimeframe === "eod") ? (data.eodSeries || []) : (data.intradaySeries || []);
-      const titleEl = document.getElementById("ntIvChartTitle");
-      const subEl = document.getElementById("ntIvChartSubtitle");
-      const tblTitle = document.getElementById("ntIvTableTitle");
-      const tblSub = document.getElementById("ntIvTableSubtitle");
-      const cntBadge = document.getElementById("ntIvTableCountBadge");
-
-      if (ntIvTimeframe === "eod") {
-        if (titleEl) titleEl.textContent = `${data.name} – Historical Implied Volatility vs Spot Price (${data.lookback} Lookback)`;
-        if (subEl) subEl.textContent = `Daily closing ATM Implied Volatility (Right Axis) vs Spot Price (Left Axis) with colored volatility regimes`;
-        if (tblTitle) tblTitle.textContent = `Historical Daily EOD Snapshot History (${data.lookback})`;
-        if (tblSub) tblSub.textContent = `Daily settlement implied volatility, underlying spot, IVR and IVP metrics`;
-        if (cntBadge) cntBadge.textContent = `${series.length} Daily Sessions`;
-      } else {
-        if (titleEl) titleEl.textContent = `${data.name} – Intraday Implied Volatility vs Spot Price (30-Min Snapshots)`;
-        if (subEl) subEl.textContent = `High-frequency 30-minute interval ATM Implied Volatility vs Spot overlay from 09:15 AM to 03:30 PM`;
-        if (tblTitle) tblTitle.textContent = `Intraday 30-Minute Snapshot History`;
-        if (tblSub) tblSub.textContent = `Real-time snapshots of implied volatility, underlying spot, and skew changes`;
-        if (cntBadge) cntBadge.textContent = `${series.length} Snapshots Recorded`;
-      }
-
-      // Render Dual-axis Timeseries Chart
-      renderNtIvChart("ntChartIvTimeseries", series, ntIvTimeframe);
-
-      // Render Timeseries Table
-      renderNtIvHistoryTable(series, ntIvTimeframe);
-
-    } else {
-      // Strike Smile View
-      if (timelineCard) timelineCard.style.display = "none";
-      if (smileCard) smileCard.style.display = "block";
-      if (historyContainer) historyContainer.style.display = "none";
-      if (strikesContainer) strikesContainer.style.display = "block";
-
-      const tblTitle = document.getElementById("ntIvTableTitle");
-      const tblSub = document.getElementById("ntIvTableSubtitle");
-      const cntBadge = document.getElementById("ntIvTableCountBadge");
-
-      if (tblTitle) tblTitle.textContent = `Strike-Wise Implied Volatility Breakdown (Around ATM)`;
-      if (tblSub) tblSub.textContent = `Strike pricing, skew distribution, and call vs put implied volatility curve`;
-      if (cntBadge) cntBadge.textContent = `${(data.strikes || []).length} Strikes Filtered`;
-
-      // Render Smile Chart
-      renderNtIvSmileChart("ntChartIvSmile", data.strikes || [], data.atmStrike, data.spot);
-
-      // Render Strikes Table
-      renderNtIvStrikesTable(data.strikes || [], data.atmStrike);
-    }
-  }
-
-  function renderNtIvChart(canvasId, series, mode) {
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const theme = getThemeColors();
-
-    const padding = { top: 40, right: 65, bottom: 50, left: 75 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
-
-    if (!series || !series.length) {
-      ctx.fillStyle = theme.bg;
-      ctx.fillRect(0, 0, width, height);
-      ctx.fillStyle = theme.text;
-      ctx.font = "12px Inter";
-      ctx.textAlign = "center";
-      ctx.fillText("No snapshot records available for selected timeframe.", width / 2, height / 2);
-      return;
-    }
-
-    const spots = series.map(d => Number(d.spot));
-    const atmIvs = series.map(d => Number(d.atmIv));
-    const ceIvs = series.map(d => Number(d.callIv));
-    const peIvs = series.map(d => Number(d.putIv));
-
-    const minSpot = Math.min(...spots) * 0.998;
-    const maxSpot = Math.max(...spots) * 1.002;
-
-    const minIv = Math.max(5.0, Math.min(8.0, Math.min(...atmIvs) * 0.9));
-    const maxIv = Math.max(22.0, Math.max(...atmIvs, ...peIvs) * 1.08);
-
-    // Background fill
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    // Coordinate helpers
-    const getYSpot = (val) => padding.top + chartH - ((val - minSpot) / (maxSpot - minSpot || 1)) * chartH;
-    const getYIv = (val) => padding.top + chartH - ((val - minIv) / (maxIv - minIv || 1)) * chartH;
-
-    // --- Shaded Volatility Regime Bands (Right Axis basis) ---
-    const yHighZone = Math.max(padding.top, getYIv(18.0));
-    const yLowZone = Math.min(padding.top + chartH, getYIv(12.0));
-
-    // High IV Zone (> 18%)
-    if (yHighZone > padding.top) {
-      ctx.fillStyle = isLight() ? "rgba(239, 68, 68, 0.08)" : "rgba(239, 68, 68, 0.12)";
-      ctx.fillRect(padding.left, padding.top, chartW, yHighZone - padding.top);
-    }
-    // Normal IV Zone (12% - 18%)
-    if (yLowZone > yHighZone) {
-      ctx.fillStyle = isLight() ? "rgba(245, 158, 11, 0.05)" : "rgba(245, 158, 11, 0.08)";
-      ctx.fillRect(padding.left, yHighZone, chartW, yLowZone - yHighZone);
-    }
-    // Low IV Zone (< 12%)
-    if (padding.top + chartH > yLowZone) {
-      ctx.fillStyle = isLight() ? "rgba(16, 185, 129, 0.06)" : "rgba(16, 185, 129, 0.10)";
-      ctx.fillRect(padding.left, yLowZone, chartW, (padding.top + chartH) - yLowZone);
-    }
-
-    // Gridlines & Dual Y-Axis Labels
-    ctx.strokeStyle = theme.grid;
-    ctx.lineWidth = 1;
-
-    for (let i = 0; i <= 5; i++) {
-      const y = padding.top + (chartH / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(width - padding.right, y);
-      ctx.stroke();
-
-      // Left Axis: Spot Price (₹)
-      ctx.fillStyle = theme.blue;
-      ctx.font = "10px JetBrains Mono";
-      ctx.textAlign = "right";
-      const spotVal = Math.round(maxSpot - ((maxSpot - minSpot) / 5) * i);
-      ctx.fillText(`₹${spotVal.toLocaleString("en-IN")}`, padding.left - 10, y + 4);
-
-      // Right Axis: Implied Volatility (%)
-      ctx.fillStyle = theme.purple;
-      ctx.textAlign = "left";
-      const ivVal = (maxIv - ((maxIv - minIv) / 5) * i).toFixed(1);
-      ctx.fillText(`${ivVal}%`, width - padding.right + 10, y + 4);
-    }
-
-    const n = series.length;
-
-    // --- Line 1: Underlying Spot Price (Left Axis) ---
-    ctx.strokeStyle = theme.blue;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = getYSpot(spots[i]);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // Subtle area glow under spot line
-    const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
-    grad.addColorStop(0, isLight() ? "rgba(2, 132, 199, 0.12)" : "rgba(56, 189, 248, 0.15)");
-    grad.addColorStop(1, "rgba(56, 189, 248, 0.0)");
-    ctx.fillStyle = grad;
-    ctx.lineTo(padding.left + chartW, padding.top + chartH);
-    ctx.lineTo(padding.left, padding.top + chartH);
-    ctx.closePath();
-    ctx.fill();
-
-    // --- Line 2: Call IV (Right Axis, Dashed Pink/Red) ---
-    ctx.strokeStyle = theme.red;
-    ctx.lineWidth = 1.4;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = getYIv(ceIvs[i]);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // --- Line 3: Put IV (Right Axis, Dashed Green) ---
-    ctx.strokeStyle = theme.green;
-    ctx.lineWidth = 1.4;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = getYIv(peIvs[i]);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-    ctx.setLineDash([]); // Reset dash
-
-    // --- Line 4: ATM IV Curve (Right Axis, Solid Purple, Highlighted) ---
-    ctx.strokeStyle = theme.purple;
-    ctx.lineWidth = 2.8;
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = getYIv(atmIvs[i]);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // Point circles on ATM IV
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = getYIv(atmIvs[i]);
-      ctx.fillStyle = theme.purple;
-      ctx.beginPath();
-      ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = theme.bg;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-
-    // X-Axis Labels (Time or Date)
-    const stepLabel = Math.max(1, Math.ceil(n / 7));
-    for (let i = 0; i < n; i++) {
-      if (i % stepLabel === 0 || i === n - 1) {
-        const x = padding.left + (chartW / (n - 1 || 1)) * i;
-        ctx.fillStyle = theme.textBright;
-        ctx.font = "10px JetBrains Mono";
-        ctx.textAlign = "center";
-        const label = series[i].time || series[i].date;
-        ctx.fillText(label, x, height - padding.bottom + 20);
-      }
-    }
-  }
-
-  function renderNtIvSmileChart(canvasId, strikes, atmStrike, spot) {
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const theme = getThemeColors();
-
-    const padding = { top: 40, right: 40, bottom: 50, left: 60 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
-
-    if (!strikes || !strikes.length) {
-      ctx.fillStyle = theme.bg;
-      ctx.fillRect(0, 0, width, height);
-      return;
-    }
-
-    const ceIvs = strikes.map(s => Number(s.ceIv));
-    const peIvs = strikes.map(s => Number(s.peIv));
-    const avgIvs = strikes.map(s => Number(s.avgIv));
-
-    const minIv = Math.min(...ceIvs, ...peIvs) * 0.95;
-    const maxIv = Math.max(...ceIvs, ...peIvs) * 1.05;
-
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    // Gridlines & Y-Axis Labels
-    ctx.strokeStyle = theme.grid;
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 5; i++) {
-      const y = padding.top + (chartH / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(width - padding.right, y);
-      ctx.stroke();
-
-      ctx.fillStyle = theme.text;
-      ctx.font = "10px JetBrains Mono";
-      ctx.textAlign = "right";
-      const val = (maxIv - ((maxIv - minIv) / 5) * i).toFixed(1);
-      ctx.fillText(`${val}%`, padding.left - 10, y + 4);
-    }
-
-    const n = strikes.length;
-    const getY = (val) => padding.top + chartH - ((val - minIv) / (maxIv - minIv || 1)) * chartH;
-
-    // ATM Vertical Marker Line
-    const atmIndex = strikes.findIndex(s => s.strike === atmStrike || s.isAtm);
-    if (atmIndex >= 0) {
-      const xAtm = padding.left + (chartW / (n - 1 || 1)) * atmIndex;
-      ctx.strokeStyle = theme.textBright;
-      ctx.setLineDash([5, 5]);
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(xAtm, padding.top);
-      ctx.lineTo(xAtm, padding.top + chartH);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // ATM Badge text
-      ctx.fillStyle = theme.teal;
-      ctx.font = "10px JetBrains Mono";
-      ctx.textAlign = "center";
-      ctx.fillText(`ATM (${Number(atmStrike).toLocaleString()})`, xAtm, padding.top - 8);
-    }
-
-    // Line 1: Call IV
-    ctx.strokeStyle = theme.red;
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = getY(ceIvs[i]);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // Call dots
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = getY(ceIvs[i]);
-      ctx.fillStyle = theme.red;
-      ctx.beginPath();
-      ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Line 2: Put IV
-    ctx.strokeStyle = theme.green;
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = getY(peIvs[i]);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // Put dots
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = getY(peIvs[i]);
-      ctx.fillStyle = theme.green;
-      ctx.beginPath();
-      ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Line 3: Average IV (Cyan Dashed)
-    ctx.strokeStyle = theme.teal;
-    ctx.lineWidth = 1.8;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = getY(avgIvs[i]);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // X-Axis Labels (Strike Prices)
-    const stepLabel = Math.max(1, Math.ceil(n / 9));
-    for (let i = 0; i < n; i++) {
-      if (i % stepLabel === 0 || i === n - 1 || i === atmIndex) {
-        const x = padding.left + (chartW / (n - 1 || 1)) * i;
-        ctx.fillStyle = (i === atmIndex) ? theme.teal : theme.textBright;
-        ctx.font = (i === atmIndex) ? "bold 10px JetBrains Mono" : "10px JetBrains Mono";
-        ctx.textAlign = "center";
-        ctx.fillText(Number(strikes[i].strike).toLocaleString(), x, height - padding.bottom + 20);
-      }
-    }
-  }
-
-  function renderNtIvHistoryTable(series, timeframe) {
-    const tbody = document.querySelector("#ntTableIvHistory tbody");
-    if (!tbody) return;
-
-    if (!series || !series.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted" style="padding: 20px;">No snapshot records available.</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = series.slice().reverse().map(row => {
-      const isPos = (row.spotChg || 0) >= 0;
-      const chgStr = row.spotChg != null ? `${isPos ? '+' : ''}${Number(row.spotChg).toFixed(2)} (${isPos ? '+' : ''}${row.spotChgPct || 0}%)` : '--';
-      const regClass = row.regime === 'Low' ? 'p2-badge-green' : (row.regime === 'High' ? 'p2-badge-red' : 'p2-badge-teal');
-
-      return `
-        <tr>
-          <td class="font-bold">${row.time || row.date}</td>
-          <td class="text-right font-mono text-blue font-bold">₹${Number(row.spot).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-          <td class="text-right font-mono ${isPos ? 'text-green' : 'text-red'}">${chgStr}</td>
-          <td class="text-right font-mono font-bold text-purple">${Number(row.atmIv).toFixed(2)}%</td>
-          <td class="text-right font-mono text-red">${Number(row.callIv).toFixed(2)}%</td>
-          <td class="text-right font-mono text-green">${Number(row.putIv).toFixed(2)}%</td>
-          <td class="text-right font-mono ${row.ivSkew >= 0 ? 'text-amber' : 'text-teal'}">${row.ivSkew >= 0 ? '+' : ''}${Number(row.ivSkew).toFixed(2)}%</td>
-          <td class="text-right font-mono">${row.vix != null ? Number(row.vix).toFixed(2) : '--'}</td>
-          <td class="text-center"><span class="p2-badge ${regClass}">${row.regime || 'Normal'}</span></td>
-        </tr>
-      `;
-    }).join("");
-  }
-
-  function renderNtIvStrikesTable(strikes, atmStrike) {
-    const tbody = document.querySelector("#ntTableIvStrikes tbody");
-    if (!tbody) return;
-
-    if (!strikes || !strikes.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted" style="padding: 20px;">No strike records available.</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = strikes.map(s => {
-      const isAtm = (s.strike === atmStrike || s.isAtm);
-      const rowStyle = isAtm ? 'style="background: rgba(0, 229, 255, 0.08); font-weight: 700;"' : '';
-      const statusBadge = isAtm ? '<span class="p2-badge p2-badge-teal">ATM</span>' : (s.strike < atmStrike ? '<span class="p2-badge p2-badge-green">ITM Call / OTM Put</span>' : '<span class="p2-badge p2-badge-red">OTM Call / ITM Put</span>');
-
-      return `
-        <tr ${rowStyle}>
-          <td class="text-center font-mono font-bold ${isAtm ? 'text-teal' : ''}">${Number(s.strike).toLocaleString()}</td>
-          <td class="text-right font-mono">${s.distPct >= 0 ? '+' : ''}${s.distPct}%</td>
-          <td class="text-right font-mono text-red">${Number(s.ceIv).toFixed(2)}%</td>
-          <td class="text-right font-mono text-green">${Number(s.peIv).toFixed(2)}%</td>
-          <td class="text-right font-mono font-bold text-teal">${Number(s.avgIv).toFixed(2)}%</td>
-          <td class="text-right font-mono ${s.ivSkew >= 0 ? 'text-amber' : 'text-blue'}">${s.ivSkew >= 0 ? '+' : ''}${Number(s.ivSkew).toFixed(2)}%</td>
-          <td class="text-right font-mono">₹${Number(s.ceLtp || 0).toFixed(2)}</td>
-          <td class="text-right font-mono">₹${Number(s.peLtp || 0).toFixed(2)}</td>
-          <td class="text-center">${statusBadge}</td>
-        </tr>
-      `;
-    }).join("");
-  }
-
-  function downloadIvCsv() {
-    if (!cachedNtIvData) return;
-    const mode = ntIvView === "smile" ? "strikes_smile" : ntIvTimeframe;
-    let csv = "";
-    if (ntIvView === "smile") {
-      csv = "Strike,DistancePct,CallIV,PutIV,AvgIV,IVSkew,CallLTP,PutLTP\n";
-      (cachedNtIvData.strikes || []).forEach(s => {
-        csv += `${s.strike},${s.distPct},${s.ceIv},${s.peIv},${s.avgIv},${s.ivSkew},${s.ceLtp || 0},${s.peLtp || 0}\n`;
-      });
-    } else {
-      const series = (ntIvTimeframe === "eod") ? (cachedNtIvData.eodSeries || []) : (cachedNtIvData.intradaySeries || []);
-      csv = "TimeOrDate,SpotPrice,SpotChange,ATM_IV,Call_IV,Put_IV,IV_Skew,IndiaVIX,Regime\n";
-      series.forEach(r => {
-        csv += `"${r.time || r.date}",${r.spot},${r.spotChg || 0},${r.atmIv},${r.callIv},${r.putIv},${r.ivSkew},${r.vix || ''},"${r.regime || ''}"\n`;
-      });
-    }
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `NiftyTrader_IV_${currentSymbol}_${mode}_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  // ========================================================================
-  // ULTRA-PREMIUM CANVAS CHART DRAWING ENGINE
-  // Automatically adheres to Dark & Light Theme Tokens
-  // ========================================================================
-  function setupCanvas(canvasId) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return null;
-    const parent = canvas.parentElement;
-    const dpr = window.devicePixelRatio || 1;
-    const width = parent.clientWidth;
-    const height = parent.clientHeight;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    const ctx = canvas.getContext("2d");
-    ctx.scale(dpr, dpr);
-    return { ctx, width, height };
-  }
-
-  function renderDualBarChart(canvasId, labels, dataA, dataB, labelA, labelB) {
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const theme = getThemeColors();
-
-    const padding = { top: 40, right: 30, bottom: 50, left: 70 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
-
-    const maxVal = Math.max(...dataA, ...dataB, 100) * 1.15;
-
-    // Background & Gridlines
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.strokeStyle = theme.grid;
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 5; i++) {
-      const y = padding.top + (chartH / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(width - padding.right, y);
-      ctx.stroke();
-
-      ctx.fillStyle = theme.text;
-      ctx.font = "10px JetBrains Mono";
-      ctx.textAlign = "right";
-      const val = Math.round(maxVal - (maxVal / 5) * i);
-      ctx.fillText(val.toLocaleString(), padding.left - 10, y + 4);
-    }
-
-    // Bars
-    const n = labels.length;
-    const groupW = chartW / n;
-    const barW = Math.max(4, (groupW - 12) / 2);
-
-    for (let i = 0; i < n; i++) {
-      const xCenter = padding.left + i * groupW + groupW / 2;
-
-      // Bar A (Red / Call)
-      const hA = (dataA[i] / maxVal) * chartH;
-      const yA = padding.top + chartH - hA;
-      ctx.fillStyle = theme.red;
-      ctx.fillRect(xCenter - barW - 2, yA, barW, hA);
-
-      // Bar B (Green / Put)
-      const hB = (dataB[i] / maxVal) * chartH;
-      const yB = padding.top + chartH - hB;
-      ctx.fillStyle = theme.green;
-      ctx.fillRect(xCenter + 2, yB, barW, hB);
-
-      // Label
-      ctx.fillStyle = theme.textBright;
-      ctx.font = "10px JetBrains Mono";
-      ctx.textAlign = "center";
-      ctx.fillText(labels[i], xCenter, height - padding.bottom + 20);
-    }
-
-    // Legend
-    ctx.fillStyle = theme.red;
-    ctx.fillRect(width - 240, 15, 12, 12);
-    ctx.fillStyle = theme.textBright;
-    ctx.font = "11px Inter";
-    ctx.textAlign = "left";
-    ctx.fillText(labelA, width - 222, 25);
-
-    ctx.fillStyle = theme.green;
-    ctx.fillRect(width - 120, 15, 12, 12);
-    ctx.fillStyle = theme.textBright;
-    ctx.fillText(labelB, width - 102, 25);
-  }
-
-  function renderSingleLineChart(canvasId, labels, data, legendTitle, strokeColor) {
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const theme = getThemeColors();
-
-    const padding = { top: 40, right: 30, bottom: 50, left: 60 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
-
-    const minVal = Math.min(...data) * 0.95;
-    const maxVal = Math.max(...data) * 1.05;
-
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.strokeStyle = theme.grid;
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 5; i++) {
-      const y = padding.top + (chartH / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(width - padding.right, y);
-      ctx.stroke();
-
-      ctx.fillStyle = theme.text;
-      ctx.font = "10px JetBrains Mono";
-      ctx.textAlign = "right";
-      const val = (maxVal - ((maxVal - minVal) / 5) * i).toFixed(2);
-      ctx.fillText(val, padding.left - 10, y + 4);
-    }
-
-    const n = labels.length;
-    ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = padding.top + chartH - ((data[i] - minVal) / (maxVal - minVal || 1)) * chartH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-
-      // Point circle
-      ctx.fillStyle = strokeColor;
-      ctx.beginPath();
-      ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Label
-      if (i % Math.ceil(n / 8) === 0 || i === n - 1) {
-        ctx.fillStyle = theme.textBright;
-        ctx.font = "10px JetBrains Mono";
-        ctx.textAlign = "center";
-        ctx.fillText(labels[i], x, height - padding.bottom + 20);
-      }
-    }
-    ctx.stroke();
-
-    // Legend
-    ctx.fillStyle = strokeColor;
-    ctx.fillRect(width - 200, 15, 12, 12);
-    ctx.fillStyle = theme.textBright;
-    ctx.font = "11px Inter";
-    ctx.textAlign = "left";
-    ctx.fillText(legendTitle, width - 182, 25);
-  }
-
-  function renderMultiLineChart(canvasId, labels, series) {
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const theme = getThemeColors();
-
-    const padding = { top: 40, right: 30, bottom: 50, left: 65 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
-
-    let allVals = [];
-    series.forEach(s => allVals.push(...s.data));
-    const minVal = Math.min(...allVals, 0);
-    const maxVal = Math.max(...allVals, 100) * 1.1;
-
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.strokeStyle = theme.grid;
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 5; i++) {
-      const y = padding.top + (chartH / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(width - padding.right, y);
-      ctx.stroke();
-
-      ctx.fillStyle = theme.text;
-      ctx.font = "10px JetBrains Mono";
-      ctx.textAlign = "right";
-      const val = Math.round(maxVal - ((maxVal - minVal) / 5) * i);
-      ctx.fillText(val.toLocaleString(), padding.left - 10, y + 4);
-    }
-
-    const n = labels.length;
-    series.forEach((s, idx) => {
-      ctx.strokeStyle = s.color;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        const x = padding.left + (chartW / (n - 1 || 1)) * i;
-        const y = padding.top + chartH - ((s.data[i] - minVal) / (maxVal - minVal || 1)) * chartH;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      // Legend Item
-      ctx.fillStyle = s.color;
-      ctx.fillRect(width - 150 * (series.length - idx), 15, 10, 10);
-      ctx.fillStyle = theme.textBright;
-      ctx.font = "11px Inter";
-      ctx.textAlign = "left";
-      ctx.fillText(s.label, width - 150 * (series.length - idx) + 16, 24);
-    });
-
-    // X Labels
-    for (let i = 0; i < n; i++) {
-      if (i % Math.ceil(n / 7) === 0 || i === n - 1) {
-        const x = padding.left + (chartW / (n - 1 || 1)) * i;
-        ctx.fillStyle = theme.textBright;
-        ctx.font = "10px JetBrains Mono";
-        ctx.textAlign = "center";
-        ctx.fillText(labels[i], x, height - padding.bottom + 20);
-      }
-    }
-  }
-
-  function renderHorizontalCushionChart(canvasId, callPct, putPct) {
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const theme = getThemeColors();
-
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    const barW = width - 160;
-    const barH = 36;
-    const x = 80;
-    const y = height / 2 - 18;
-
-    const callWidth = (callPct / 100) * barW;
-    const putWidth = (putPct / 100) * barW;
-
-    ctx.fillStyle = theme.red;
-    ctx.fillRect(x, y, callWidth, barH);
-
-    ctx.fillStyle = theme.green;
-    ctx.fillRect(x + callWidth, y, putWidth, barH);
-
-    // Text labels
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "12px JetBrains Mono";
-    ctx.textAlign = "left";
-    if (callWidth > 60) ctx.fillText(`Call: ${callPct}%`, x + 10, y + 23);
-
-    ctx.textAlign = "right";
-    if (putWidth > 60) ctx.fillText(`Put: ${putPct}%`, x + barW - 10, y + 23);
-
-    ctx.fillStyle = theme.textBright;
-    ctx.font = "14px Inter";
-    ctx.textAlign = "center";
-    ctx.fillText("Total Open Interest Balance Cushion (Market Exposure)", width / 2, y - 25);
-  }
-
-  function renderPriceWithWallsChart(canvasId, times, prices, callWall, putWall) {
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const theme = getThemeColors();
-
-    const padding = { top: 40, right: 30, bottom: 50, left: 70 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
-
-    const all = [...prices, callWall, putWall].filter(Boolean);
-    const minP = Math.min(...all) * 0.995;
-    const maxP = Math.max(...all) * 1.005;
-
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    // Call Wall Line (Resistance)
-    if (callWall) {
-      const yCw = padding.top + chartH - ((callWall - minP) / (maxP - minP)) * chartH;
-      ctx.strokeStyle = theme.red;
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath();
-      ctx.moveTo(padding.left, yCw);
-      ctx.lineTo(width - padding.right, yCw);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = theme.red;
-      ctx.font = "11px Inter";
-      ctx.fillText(`Major Resistance Wall: ₹${callWall}`, width - padding.right - 180, yCw - 8);
-    }
-
-    // Put Wall Line (Support)
-    if (putWall) {
-      const yPw = padding.top + chartH - ((putWall - minP) / (maxP - minP)) * chartH;
-      ctx.strokeStyle = theme.green;
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath();
-      ctx.moveTo(padding.left, yPw);
-      ctx.lineTo(width - padding.right, yPw);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = theme.green;
-      ctx.font = "11px Inter";
-      ctx.fillText(`Major Support Wall: ₹${putWall}`, width - padding.right - 170, yPw + 18);
-    }
-
-    // Spot Price Line
-    const n = times.length;
-    ctx.strokeStyle = theme.teal;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = padding.top + chartH - ((prices[i] - minP) / (maxP - minP)) * chartH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-  }
-
-  function renderTrividhBarChart(canvasId, items) {
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const theme = getThemeColors();
-
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    const n = items.length;
-    const barH = 34;
-    const startY = 40;
-    const barMaxW = width - 260;
-
-    items.forEach((item, idx) => {
-      const y = startY + idx * (barH + 24);
-
-      ctx.fillStyle = theme.textBright;
-      ctx.font = "12px Inter";
-      ctx.textAlign = "left";
-      ctx.fillText(item.name, 40, y + 22);
-
-      // Track
-      ctx.fillStyle = theme.grid;
-      ctx.fillRect(200, y, barMaxW, barH);
-
-      // Fill
-      const w = Math.max(10, (item.val / 100) * barMaxW);
-      ctx.fillStyle = item.val >= 70 ? theme.green : item.val >= 40 ? theme.teal : theme.red;
-      ctx.fillRect(200, y, w, barH);
-
-      // Score
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "12px JetBrains Mono";
-      ctx.textAlign = "left";
-      ctx.fillText(`${item.val} / 100`, 210, y + 22);
-    });
-  }
-
-  function renderPcrSpotChart(canvasId, times, pcrVals, spots, pcrLabel) {
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const theme = getThemeColors();
-
-    const padding = { top: 40, right: 70, bottom: 50, left: 60 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
-
-    const minPcr = Math.min(...pcrVals) * 0.9;
-    const maxPcr = Math.max(...pcrVals) * 1.1;
-    const minSpot = Math.min(...spots) * 0.998;
-    const maxSpot = Math.max(...spots) * 1.002;
-
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    // Left Y Axis (PCR)
-    ctx.strokeStyle = theme.grid;
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 5; i++) {
-      const y = padding.top + (chartH / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(width - padding.right, y);
-      ctx.stroke();
-
-      ctx.fillStyle = theme.teal;
-      ctx.font = "10px JetBrains Mono";
-      ctx.textAlign = "right";
-      const val = (maxPcr - ((maxPcr - minPcr) / 5) * i).toFixed(2);
-      ctx.fillText(val, padding.left - 8, y + 4);
-
-      // Right Y Axis (Spot)
-      ctx.fillStyle = theme.amber;
-      ctx.textAlign = "left";
-      const spotVal = Math.round(maxSpot - ((maxSpot - minSpot) / 5) * i);
-      ctx.fillText(spotVal.toLocaleString(), width - padding.right + 8, y + 4);
-    }
-
-    const n = times.length;
-
-    // Line 1: PCR Curve
-    ctx.strokeStyle = theme.teal;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = padding.top + chartH - ((pcrVals[i] - minPcr) / (maxPcr - minPcr || 1)) * chartH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-
-      ctx.fillStyle = theme.teal;
-      ctx.beginPath();
-      ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.stroke();
-
-    // Line 2: Spot Line
-    ctx.strokeStyle = theme.amber;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + (chartW / (n - 1 || 1)) * i;
-      const y = padding.top + chartH - ((spots[i] - minSpot) / (maxSpot - minSpot || 1)) * chartH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // X Axis Labels
-    for (let i = 0; i < n; i++) {
-      if (i % Math.ceil(n / 7) === 0 || i === n - 1) {
-        const x = padding.left + (chartW / (n - 1 || 1)) * i;
-        ctx.fillStyle = theme.textBright;
-        ctx.font = "10px JetBrains Mono";
-        ctx.textAlign = "center";
-        ctx.fillText(times[i], x, height - padding.bottom + 20);
-      }
-    }
-
-    // Legends
-    ctx.fillStyle = theme.teal;
-    ctx.fillRect(width - 280, 15, 12, 12);
-    ctx.fillStyle = theme.textBright;
-    ctx.font = "11px Inter";
-    ctx.textAlign = "left";
-    ctx.fillText(pcrLabel, width - 262, 25);
-
-    ctx.fillStyle = theme.amber;
-    ctx.fillRect(width - 130, 15, 12, 12);
-    ctx.fillStyle = theme.textBright;
-    ctx.fillText("Spot Price (₹)", width - 112, 25);
-  }
-
-  function renderMaxPainChart(canvasId, strikes, callLoss, putLoss, totalLoss, maxPainStrike) {
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const theme = getThemeColors();
-
-    const padding = { top: 40, right: 30, bottom: 50, left: 70 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
-
-    const maxLoss = Math.max(...totalLoss, 10) * 1.15;
-
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.strokeStyle = theme.grid;
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 5; i++) {
-      const y = padding.top + (chartH / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(width - padding.right, y);
-      ctx.stroke();
-
-      ctx.fillStyle = theme.text;
-      ctx.font = "10px JetBrains Mono";
-      ctx.textAlign = "right";
-      const val = Math.round(maxLoss - (maxLoss / 5) * i);
-      ctx.fillText(`₹${val} Cr`, padding.left - 10, y + 4);
-    }
-
-    const n = strikes.length;
-    const barW = Math.max(6, (chartW / n) - 8);
-
-    for (let i = 0; i < n; i++) {
-      const x = padding.left + i * (chartW / n) + (chartW / n) / 2 - barW / 2;
-      const isMp = (strikes[i] === maxPainStrike);
-
-      // Stacked Bar or Total Loss Bar
-      const hTotal = (totalLoss[i] / maxLoss) * chartH;
-      const yTotal = padding.top + chartH - hTotal;
-
-      ctx.fillStyle = isMp ? theme.amber : theme.purple;
-      ctx.fillRect(x, yTotal, barW, hTotal);
-
-      if (isMp) {
-        ctx.strokeStyle = theme.teal;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x - 2, yTotal - 2, barW + 4, hTotal + 4);
-
-        ctx.fillStyle = theme.amber;
-        ctx.font = "11px Inter";
-        ctx.textAlign = "center";
-        ctx.fillText("🎯 MAX PAIN", x + barW / 2, yTotal - 10);
-      }
-
-      // X Strike label
-      ctx.fillStyle = isMp ? theme.teal : theme.textBright;
-      ctx.font = isMp ? "bold 11px JetBrains Mono" : "10px JetBrains Mono";
-      ctx.textAlign = "center";
-      ctx.fillText(strikes[i], x + barW / 2, height - padding.bottom + 20);
-    }
-
-    // Legend
-    ctx.fillStyle = theme.amber;
-    ctx.fillRect(width - 240, 15, 12, 12);
-    ctx.fillStyle = theme.textBright;
-    ctx.font = "11px Inter";
-    ctx.textAlign = "left";
-    ctx.fillText("Max Pain Strike (Min Loss)", width - 222, 25);
-  }
-
 
   // Expose controller for workspace restoration ("Jaha Chora Wahi Se Chalu")
   window.Page2Controller = {
@@ -2429,51 +294,7 @@
         if (sel) sel.value = currentSymbol;
       }
       if (state.page2Suite) {
-        currentSuite = state.page2Suite;
-        const defBtn = document.getElementById("p2SuiteDefinedgeBtn");
-        const ntBtn = document.getElementById("p2SuiteNiftyTraderBtn");
-        const defSection = document.getElementById("p2SectionDefinedge");
-        const ntSection = document.getElementById("p2SectionNiftyTrader");
-        const defDropdown = document.getElementById("p2DefinedgeDropdownContainer");
-        if (currentSuite === "niftytrader") {
-          if (ntBtn) ntBtn.classList.add("active");
-          if (defBtn) defBtn.classList.remove("active");
-          if (defSection) defSection.style.display = "none";
-          if (ntSection) ntSection.style.display = "block";
-          if (defDropdown) defDropdown.style.display = "none";
-        } else {
-          if (defBtn) defBtn.classList.add("active");
-          if (ntBtn) ntBtn.classList.remove("active");
-          if (defSection) defSection.style.display = "block";
-          if (ntSection) ntSection.style.display = "none";
-          if (defDropdown) defDropdown.style.display = "inline-block";
-        }
-      }
-      if (state.page2NtTool && currentSuite === "niftytrader") {
-        currentNtTool = state.page2NtTool;
-        const btns = document.querySelectorAll(".nt-nav-btn");
-        btns.forEach(b => {
-          if (b.getAttribute("data-nt-tool") === currentNtTool) b.classList.add("active");
-          else b.classList.remove("active");
-        });
-        document.querySelectorAll("#p2SectionNiftyTrader .nt-view-panel").forEach(p => {
-          p.classList.remove("active");
-        });
-        const target = document.getElementById(currentNtTool);
-        if (target) target.classList.add("active");
-      }
-      if (state.page2DefinedgeTool && currentSuite === "definedge") {
-        currentDefinedgeTool = state.page2DefinedgeTool;
-        const items = document.querySelectorAll(".page2-dropdown-item");
-        items.forEach(i => {
-          if (i.getAttribute("data-tool") === currentDefinedgeTool) i.classList.add("active");
-          else i.classList.remove("active");
-        });
-        document.querySelectorAll("#p2SectionDefinedge .page2-view-panel").forEach(p => {
-          p.classList.remove("active");
-        });
-        const target = document.getElementById(currentDefinedgeTool);
-        if (target) target.classList.add("active");
+        activateSuite(state.page2Suite);
       }
       refreshActiveView();
     }
@@ -2488,6 +309,7 @@
     category: "Equity",
     index: "NIFTY",
     expiry: "",
+    strike: "atm",
     autoRefresh: true,
     data: null,
     timer: null,
@@ -2513,6 +335,7 @@
     const catSel = document.getElementById("straddleCategorySelect");
     const idxSel = document.getElementById("straddleIndexSelect");
     const expSel = document.getElementById("straddleExpirySelect");
+    const stkSel = document.getElementById("straddleStrikeSelect");
     const autoRef = document.getElementById("straddleAutoRefresh");
     const refBtn = document.getElementById("straddleRefreshBtn");
     const csvBtn = document.getElementById("stExportCsvBtn");
@@ -2570,6 +393,7 @@
     if (catSel) {
       catSel.addEventListener("change", (e) => {
         straddleState.category = e.target.value;
+        straddleState.strike = "atm";
         populateIndexOptions();
         straddleState.index = idxSel ? idxSel.value : "NIFTY";
         if (straddleState.mode === "historical") {
@@ -2584,6 +408,7 @@
     if (idxSel) {
       idxSel.addEventListener("change", (e) => {
         straddleState.index = e.target.value;
+        straddleState.strike = "atm";
         if (straddleState.mode === "historical") {
           populateHistoricalDates();
         } else {
@@ -2600,10 +425,17 @@
       });
     }
 
+    if (stkSel) {
+      stkSel.addEventListener("change", (e) => {
+        straddleState.strike = e.target.value;
+        loadStraddleTool();
+      });
+    }
+
     if (autoRef) {
       autoRef.addEventListener("change", (e) => {
         straddleState.autoRefresh = e.target.checked;
-        if (straddleState.autoRefresh && currentSuite === "tools" && straddleState.mode === "live") {
+        if (straddleState.autoRefresh && (currentSuite === "tools" || currentSuite === "straddle") && straddleState.mode === "live") {
           startStraddleTimer();
         } else {
           stopStraddleTimer();
@@ -2643,7 +475,7 @@
 
     // Window resize handler for canvas
     window.addEventListener("resize", () => {
-      if (currentSuite === "tools" && straddleState.data) {
+      if ((currentSuite === "tools" || currentSuite === "straddle") && straddleState.data) {
         renderStraddleChart(straddleState.data);
       }
     });
@@ -2722,6 +554,22 @@
     straddleState.index = idxSel.value || "NIFTY";
   }
 
+  function populateStrikeOptions(strikes, selectedStrike, atmStrike) {
+    const stkSel = document.getElementById("straddleStrikeSelect");
+    if (!stkSel) return;
+    const curVal = straddleState.strike || stkSel.value || "atm";
+    let html = `<option value="atm" ${curVal === "atm" ? "selected" : ""}>ATM (${Number(atmStrike || 0).toLocaleString("en-IN")})</option>`;
+    if (Array.isArray(strikes)) {
+      strikes.forEach(stk => {
+        const isSel = (curVal !== "atm" && (curVal === String(stk) || selectedStrike === stk));
+        const diff = stk - (atmStrike || stk);
+        const tag = diff === 0 ? "ATM" : (diff > 0 ? `+${diff}` : `${diff}`);
+        html += `<option value="${stk}" ${isSel ? "selected" : ""}>Strike ${Number(stk).toLocaleString("en-IN")} (${tag})</option>`;
+      });
+    }
+    stkSel.innerHTML = html;
+  }
+
   function populateExpiryOptions() {
     const expSel = document.getElementById("straddleExpirySelect");
     if (!expSel) return;
@@ -2748,26 +596,40 @@
     const catObj = straddleState.categoriesData.find(c => c.name === straddleState.category) || straddleState.categoriesData[0];
     const idxObj = catObj ? catObj.indices.find(i => i.key === straddleState.index) : null;
 
-    if (!idxObj || !idxObj.expiries || idxObj.expiries.length <= 1) {
+    if (!idxObj) {
       expSel.innerHTML = `<option value="">Immediate Expiry</option>`;
       straddleState.expiry = "";
       return;
     }
 
-    expSel.innerHTML = idxObj.expiries.map((exp, idx) => `
-      <option value="${exp}">${idx === 0 ? 'Current (' + exp + ')' : 'Next (' + exp + ')'}</option>
-    `).join("");
-    straddleState.expiry = expSel.value;
+    if (idxObj.expiry_details && idxObj.expiry_details.length > 0) {
+      expSel.innerHTML = idxObj.expiry_details.map((exp, idx) => `
+        <option value="${exp.value}" ${idx === 0 ? "selected" : ""}>${exp.label}</option>
+      `).join("");
+      straddleState.expiry = expSel.value;
+      return;
+    }
+
+    if (idxObj.expiries && idxObj.expiries.length > 0) {
+      expSel.innerHTML = idxObj.expiries.map((exp, idx) => `
+        <option value="${exp}" ${idx === 0 ? "selected" : ""}>${exp}</option>
+      `).join("");
+      straddleState.expiry = expSel.value;
+      return;
+    }
+
+    expSel.innerHTML = `<option value="">Immediate Expiry</option>`;
+    straddleState.expiry = "";
   }
 
   function startStraddleTimer() {
     stopStraddleTimer();
     if (straddleState.mode !== "live") return;
     straddleState.timer = setInterval(() => {
-      if (currentSuite === "tools" && straddleState.autoRefresh && straddleState.mode === "live") {
+      if ((currentSuite === "tools" || currentSuite === "straddle") && straddleState.autoRefresh && straddleState.mode === "live") {
         loadStraddleTool(true); // silent refresh
       }
-    }, 30000);
+    }, 5000);
   }
 
   function stopStraddleTimer() {
@@ -2789,6 +651,7 @@
         index: straddleState.index || "NIFTY",
         category: straddleState.category || "Equity",
         expiry: straddleState.expiry || "",
+        strike: straddleState.strike || "atm",
         date: straddleState.mode === "historical" ? (straddleState.date || "") : ""
       });
 
@@ -2801,6 +664,22 @@
       }
 
       straddleState.data = data;
+
+      // Synchronize active expiry dropdown if available
+      if (data.available_expiries && data.available_expiries.length > 0 && straddleState.mode === "live") {
+        const expSel = document.getElementById("straddleExpirySelect");
+        if (expSel && (expSel.options.length <= 1 || !straddleState.expiry)) {
+          expSel.innerHTML = data.available_expiries.map(exp => `
+            <option value="${exp.value}" ${exp.value === data.expiry ? "selected" : ""}>${exp.label}</option>
+          `).join("");
+          straddleState.expiry = expSel.value;
+        }
+      }
+
+      // Populate dynamic strike selector around ATM
+      if (data.available_strikes && data.available_strikes.length > 0) {
+        populateStrikeOptions(data.available_strikes, data.selected_strike, data.atm_strike);
+      }
 
       // 1. Update Metrics Strip
       const lat = data.latest || {};
@@ -2824,26 +703,43 @@
 
       if (elPrice) elPrice.textContent = "₹" + Number(lat.straddle_price || 0).toFixed(2);
       if (elDecay) {
-        const dPts = lat.decay_pts || 0;
-        const dPct = lat.decay_pct || 0;
-        const sign = dPts >= 0 ? "-" : "+";
-        elDecay.textContent = `Decay: ₹${Math.abs(dPts).toFixed(2)} (${sign}${Math.abs(dPct).toFixed(2)}%)`;
-        elDecay.style.color = dPts >= 0 ? "#10b981" : "#f43f5e";
+        const dPts = Number(lat.decay_pts || 0);
+        const dPct = Number(lat.decay_pct || 0);
+        if (dPts >= 0) {
+          elDecay.textContent = `Decay: -₹${dPts.toFixed(2)} (-${Math.abs(dPct).toFixed(2)}%)`;
+          elDecay.style.color = "#10b981"; // Theta decay (Seller advantage)
+        } else {
+          elDecay.textContent = `Expansion: +₹${Math.abs(dPts).toFixed(2)} (+${Math.abs(dPct).toFixed(2)}%)`;
+          elDecay.style.color = "#f43f5e"; // IV spike
+        }
       }
       if (elSpotLbl) elSpotLbl.textContent = `${data.symbol} Spot`;
       if (elSpot) elSpot.textContent = "₹" + Number(lat.spot || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
       if (elSynth) elSynth.textContent = "₹" + Number(lat.synthetic_future || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
-      if (elStrike) elStrike.textContent = Number(lat.straddle_strike || 0).toLocaleString("en-IN");
+      
+      const activeStrikeVal = lat.straddle_strike || data.selected_strike || data.atm_strike || 0;
+      if (elStrike) elStrike.textContent = Number(activeStrikeVal).toLocaleString("en-IN");
       if (elCe) elCe.textContent = "₹" + Number(lat.ce_price || 0).toFixed(2);
       if (elPe) elPe.textContent = "₹" + Number(lat.pe_price || 0).toFixed(2);
       if (elVwap) elVwap.textContent = "₹" + Number(lat.vwap || 0).toFixed(2);
-      if (elDte) elDte.textContent = `${data.dte} Days`;
+      if (elDte) {
+        elDte.textContent = data.dte === 0 ? "Expires Today (0 DTE)" : (data.dte === 1 ? "Tomorrow (1 DTE)" : `${data.dte} Days`);
+      }
+      if (elTime) elTime.textContent = formatIstTime(lat.time);
+
       if (elHeading) {
+        const stkStr = activeStrikeVal ? `Strike ${Number(activeStrikeVal).toLocaleString("en-IN")}` : "ATM";
         if (data.is_historical) {
-          elHeading.textContent = `📅 [HISTORICAL: ${data.date}] ${data.symbol} ATM ${lat.straddle_strike} Straddle Trajectory`;
+          elHeading.textContent = `📅 [HISTORICAL: ${data.date}] ${data.symbol} ${stkStr} Straddle Trajectory`;
         } else {
-          elHeading.textContent = `${data.symbol} ATM ${lat.straddle_strike} Straddle Live Trajectory`;
+          elHeading.textContent = `${data.symbol} ${stkStr} Straddle Live Trajectory`;
         }
+      }
+
+      // Sync navbar real-time straddle badge
+      const navBadge = document.getElementById("navStraddleValueBadge");
+      if (navBadge && lat.straddle_price) {
+        navBadge.textContent = "₹" + Number(lat.straddle_price).toFixed(2);
       }
 
       const elSub = document.querySelector(".straddle-chart-title-left .p2-card-subtitle");
@@ -2980,13 +876,17 @@
     // 2. Compute Right Y-Axis Range (Index Spot & Synthetic Future)
     let rightVals = [];
     points.forEach(p => {
-      if (straddleState.visible.spot) rightVals.push(p.spot);
-      if (straddleState.visible.synth) rightVals.push(p.synthetic_future);
+      if (straddleState.visible.spot && p.spot != null && !isNaN(p.spot) && p.spot > 0) rightVals.push(p.spot);
+      if (straddleState.visible.synth && p.synthetic_future != null && !isNaN(p.synthetic_future) && p.synthetic_future > 0) rightVals.push(p.synthetic_future);
     });
     if (rightVals.length === 0) rightVals = [23000, 23500];
     let minRight = Math.min(...rightVals);
     let maxRight = Math.max(...rightVals);
-    const rightPad = (maxRight - minRight) * 0.08 || 20;
+    if (maxRight <= minRight) {
+      minRight -= 50;
+      maxRight += 50;
+    }
+    const rightPad = Math.max(20, (maxRight - minRight) * 0.08);
     minRight = Math.floor(minRight - rightPad);
     maxRight = Math.ceil(maxRight + rightPad);
 
@@ -3954,20 +1854,100 @@
   })();
   let currentContribIndex = "nifty50";
   let currentContribDate = _todayStr;
+  let isExplicitContribDate = false;
   let currentContribSector = "ALL";
   let currentContribSearch = "";
   let contribDataCache = null;
   let contribTimeline = [];
   let activeContribHoverIndex = -1;
+  let contribSortDownCol = "contribution";
+  let contribSortDownDir = "asc";
+  let contribSortUpCol = "contribution";
+  let contribSortUpDir = "desc";
+
+  function initContribSortHeaders() {
+    const tblDown = document.getElementById("tablePullingDown");
+    if (tblDown) {
+      tblDown.querySelectorAll("thead th.contrib-sortable").forEach(th => {
+        th.addEventListener("click", () => {
+          const col = th.dataset.sort;
+          if (!col) return;
+          if (contribSortDownCol === col) {
+            contribSortDownDir = contribSortDownDir === "desc" ? "asc" : "desc";
+          } else {
+            contribSortDownCol = col;
+            contribSortDownDir = (col === "symbol") ? "asc" : (col === "contribution" ? "asc" : "desc");
+          }
+          updateContribSortIcons();
+          renderContributionTables();
+        });
+      });
+    }
+
+    const tblUp = document.getElementById("tableSupporting");
+    if (tblUp) {
+      tblUp.querySelectorAll("thead th.contrib-sortable").forEach(th => {
+        th.addEventListener("click", () => {
+          const col = th.dataset.sort;
+          if (!col) return;
+          if (contribSortUpCol === col) {
+            contribSortUpDir = contribSortUpDir === "desc" ? "asc" : "desc";
+          } else {
+            contribSortUpCol = col;
+            contribSortUpDir = (col === "symbol") ? "asc" : "desc";
+          }
+          updateContribSortIcons();
+          renderContributionTables();
+        });
+      });
+    }
+  }
+
+  function updateContribSortIcons() {
+    const tblDown = document.getElementById("tablePullingDown");
+    if (tblDown) {
+      tblDown.querySelectorAll("thead th.contrib-sortable").forEach(th => {
+        const col = th.dataset.sort;
+        const iconSpan = th.querySelector(".sort-icon");
+        if (col === contribSortDownCol) {
+          th.classList.add("active-sort");
+          if (iconSpan) iconSpan.textContent = contribSortDownDir === "asc" ? "▲" : "▼";
+        } else {
+          th.classList.remove("active-sort");
+          if (iconSpan) iconSpan.textContent = "↕";
+        }
+      });
+    }
+
+    const tblUp = document.getElementById("tableSupporting");
+    if (tblUp) {
+      tblUp.querySelectorAll("thead th.contrib-sortable").forEach(th => {
+        const col = th.dataset.sort;
+        const iconSpan = th.querySelector(".sort-icon");
+        if (col === contribSortUpCol) {
+          th.classList.add("active-sort");
+          if (iconSpan) iconSpan.textContent = contribSortUpDir === "asc" ? "▲" : "▼";
+        } else {
+          th.classList.remove("active-sort");
+          if (iconSpan) iconSpan.textContent = "↕";
+        }
+      });
+    }
+  }
 
   function initBreadthContribution() {
+    initContribSortHeaders();
     // Date picker input
     const dateInput = document.getElementById("contribDateInput");
     if (dateInput) {
       dateInput.value = currentContribDate;
       dateInput.addEventListener("change", (e) => {
-        currentContribDate = e.target.value || _todayStr;
-        loadBreadthContributionSuite(currentContribIndex, currentContribDate, true);
+        const val = e.target.value;
+        if (val) {
+          isExplicitContribDate = true;
+          currentContribDate = val;
+          loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
+        }
       });
     }
 
@@ -3978,11 +1958,11 @@
         idxBtns.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         currentContribIndex = btn.getAttribute("data-index");
-        loadBreadthContributionSuite(currentContribIndex, currentContribDate, true);
+        loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
       });
     });
 
-    // Refresh button
+    // Refresh button (explicit manual refresh)
     const refBtn = document.getElementById("contribRefreshBtn");
     if (refBtn) {
       refBtn.addEventListener("click", () => {
@@ -4001,30 +1981,35 @@
       });
     });
 
-    // Symbol Search input
+    // Symbol Search input with 40ms debounce for ultra-responsive typing
     const searchInput = document.getElementById("contribSymbolSearchInput");
     if (searchInput) {
+      let searchDebounceTimer = null;
       searchInput.addEventListener("input", (e) => {
-        currentContribSearch = (e.target.value || "").trim().toLowerCase();
-        renderContributionTables();
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+          currentContribSearch = (e.target.value || "").trim().toLowerCase();
+          renderContributionTables();
+        }, 40);
       });
     }
 
     // Setup Canvas interaction
     setupContribCanvasEvents();
 
-    // Auto-refresh live data every 45 seconds if viewing today's session
+    // Auto-refresh live data every 10 seconds if viewing today's session and market is open
     if (!window._contribAutoRefreshTimer) {
       window._contribAutoRefreshTimer = setInterval(() => {
         const isContribActive = (typeof currentSuite !== "undefined" && currentSuite === "contribution") ||
                                 (document.getElementById("p2ViewContribution")?.style.display !== "none");
         if (isContribActive) {
-          const isToday = !currentContribDate || currentContribDate === _todayStr;
-          if (isToday) {
-            loadBreadthContributionSuite(currentContribIndex, currentContribDate, true);
+          const isToday = !isExplicitContribDate && (!currentContribDate || currentContribDate === _todayStr);
+          const isMarketOpenNow = contribDataCache ? (!contribDataCache.isMarketClosed && !contribDataCache.isHoliday) : true;
+          if (isToday && isMarketOpenNow) {
+            loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
           }
         }
-      }, 45000);
+      }, 10000);
     }
   }
 
@@ -4044,11 +2029,45 @@
       contribDataCache = data;
       contribTimeline = data.timeline || [];
 
-      // Update Date elements
+      // Update Date elements without overwriting user's explicit selection
       const displayDate = data.displayDate || "22-Sep-2026";
       const dateInput = document.getElementById("contribDateInput");
-      if (dateBadge) dateBadge.textContent = displayDate;
-      if (dateInput && data.date) dateInput.value = data.date;
+      if (dateInput) {
+        if (!isExplicitContribDate) {
+          dateInput.value = data.requestedDate || data.date || effDate;
+        } else {
+          dateInput.value = currentContribDate;
+        }
+      }
+
+      // Update date badge based on market status
+      if (dateBadge) {
+        if (data.isHoliday) {
+          dateBadge.textContent = "🏛️ Holiday";
+          dateBadge.className = "p2-badge p2-badge-amber";
+        } else if (data.isMarketClosed) {
+          dateBadge.textContent = "🔴 Market Closed";
+          dateBadge.className = "p2-badge p2-badge-red";
+        } else {
+          dateBadge.textContent = "🟢 Live (09:15 - 15:30)";
+          dateBadge.className = "p2-badge p2-badge-teal";
+        }
+      }
+
+      // Update Market Status Notice Banner
+      const noticeBanner = document.getElementById("contribMarketNoticeBanner");
+      const noticeText = document.getElementById("contribMarketNoticeText");
+      if (noticeBanner && noticeText) {
+        if (data.holidayNotice) {
+          noticeText.textContent = data.holidayNotice;
+          noticeBanner.style.display = "flex";
+        } else if (data.requestedDate && data.date && data.requestedDate !== data.date) {
+          noticeText.textContent = `🔴 Market was closed on ${data.requestedDate} • Showing Completed Session of ${data.displayDate || data.date}`;
+          noticeBanner.style.display = "flex";
+        } else {
+          noticeBanner.style.display = "none";
+        }
+      }
 
       // Update spot pill
       const idxInfo = data.indexInfo || {};
@@ -4148,8 +2167,10 @@
       renderContributionTables();
 
       // Render Dual Synchronized Charts (Exact Page 1 Breadth Styling)
-      renderIntradayBreadthChart(contribTimeline);
-      renderIntradayIndexChart(contribTimeline, idxInfo);
+      requestAnimationFrame(() => {
+        renderIntradayBreadthChart(contribTimeline);
+        renderIntradayIndexChart(contribTimeline, idxInfo);
+      });
 
     } catch (err) {
       console.error("Failed to load Breadth Contribution suite:", err);
@@ -4164,134 +2185,228 @@
 
     // Filter by sector if not ALL
     if (currentContribSector !== "ALL") {
-      dragging = dragging.filter(s => (s.sector || "").toLowerCase().includes(currentContribSector.toLowerCase()));
-      supporting = supporting.filter(s => (s.sector || "").toLowerCase().includes(currentContribSector.toLowerCase()));
+      const sec = currentContribSector.toLowerCase();
+      dragging = dragging.filter(s => (s.sector || "").toLowerCase().includes(sec));
+      supporting = supporting.filter(s => (s.sector || "").toLowerCase().includes(sec));
     }
 
     // Filter by search query
     if (currentContribSearch) {
-      dragging = dragging.filter(s => (s.symbol || "").toLowerCase().includes(currentContribSearch) || (s.name || "").toLowerCase().includes(currentContribSearch));
-      supporting = supporting.filter(s => (s.symbol || "").toLowerCase().includes(currentContribSearch) || (s.name || "").toLowerCase().includes(currentContribSearch));
+      const q = currentContribSearch;
+      dragging = dragging.filter(s => (s.symbol || "").toLowerCase().includes(q) || (s.name || "").toLowerCase().includes(q));
+      supporting = supporting.filter(s => (s.symbol || "").toLowerCase().includes(q) || (s.name || "").toLowerCase().includes(q));
     }
 
-    // Update headers
+    // Update header points and counts
     const dragCountEl = document.getElementById("contribDragStockCount");
     const dragPtsEl = document.getElementById("contribDragHeaderPts");
     const supportCountEl = document.getElementById("contribSupportStockCount");
     const supportPtsEl = document.getElementById("contribSupportHeaderPts");
 
-    const filteredDragSum = dragging.reduce((acc, s) => acc + (s.contribution || 0), 0);
-    const filteredSupportSum = supporting.reduce((acc, s) => acc + (s.contribution || 0), 0);
+    let dragSum = 0;
+    for (let i = 0; i < dragging.length; i++) dragSum += (dragging[i].contribution || 0);
+    let supportSum = 0;
+    for (let i = 0; i < supporting.length; i++) supportSum += (supporting[i].contribution || 0);
 
     if (dragCountEl) dragCountEl.textContent = `${dragging.length} stocks`;
-    if (dragPtsEl) dragPtsEl.textContent = filteredDragSum.toFixed(2);
+    if (dragPtsEl) dragPtsEl.textContent = dragSum.toFixed(2);
     if (supportCountEl) supportCountEl.textContent = `${supporting.length} stocks`;
-    if (supportPtsEl) supportPtsEl.textContent = `+${filteredSupportSum.toFixed(2)}`;
+    if (supportPtsEl) supportPtsEl.textContent = `+${supportSum.toFixed(2)}`;
 
-    // Populate Pulling Down Table
+    // Sort dragging
+    const isAscDown = contribSortDownDir === "asc";
+    dragging.sort((a, b) => {
+      if (contribSortDownCol === "symbol") {
+        return isAscDown ? (a.symbol || "").localeCompare(b.symbol || "") : (b.symbol || "").localeCompare(a.symbol || "");
+      }
+      const va = Number(a[contribSortDownCol] || 0);
+      const vb = Number(b[contribSortDownCol] || 0);
+      return isAscDown ? va - vb : vb - va;
+    });
+
+    // Sort supporting
+    const isAscUp = contribSortUpDir === "asc";
+    supporting.sort((a, b) => {
+      if (contribSortUpCol === "symbol") {
+        return isAscUp ? (a.symbol || "").localeCompare(b.symbol || "") : (b.symbol || "").localeCompare(a.symbol || "");
+      }
+      const va = Number(a[contribSortUpCol] || 0);
+      const vb = Number(b[contribSortUpCol] || 0);
+      return isAscUp ? va - vb : vb - va;
+    });
+
+    // Ultra-Fast Table Generation using single-pass HTML concatenation
     const tbodyDown = document.getElementById("tbodyPullingDown");
     if (tbodyDown) {
-      tbodyDown.innerHTML = "";
-      dragging.forEach(stock => {
-        const tr = document.createElement("tr");
-        if (stock.isHighlighted) tr.classList.add("row-highlight-amber");
+      let html = "";
+      for (let i = 0; i < dragging.length; i++) {
+        const s = dragging[i];
+        const rowCls = s.isHighlighted ? ' class="row-highlight-amber"' : "";
+        const ltp = Number(s.ltp || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const chg = Number(s.change || 0).toFixed(2);
+        const chgPct = `${Number(s.changePct || 0).toFixed(2)}%`;
+        const contrib = Number(s.contribution || 0).toFixed(2);
+        const barW = Math.max(4, Math.min(100, s.barPct || 0));
 
-        const ltpFmt = Number(stock.ltp || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const chgFmt = Number(stock.change || 0).toFixed(2);
-        const chgPctFmt = `${Number(stock.changePct || 0).toFixed(2)}%`;
-        const contribFmt = Number(stock.contribution || 0).toFixed(2);
-        const barW = Math.max(4, Math.min(100, stock.barPct || 0));
-
-        tr.innerHTML = `
-          <td><strong>${stock.symbol}</strong></td>
-          <td class="text-right font-mono">${ltpFmt}</td>
-          <td class="text-right font-mono text-red">${chgFmt}</td>
-          <td class="text-right font-mono text-red">${chgPctFmt}</td>
+        html += `<tr${rowCls}>
+          <td><strong>${s.symbol}</strong></td>
+          <td class="text-right font-mono">${ltp}</td>
+          <td class="text-right font-mono text-red">${chg}</td>
+          <td class="text-right font-mono text-red">${chgPct}</td>
           <td class="text-right">
             <div class="contrib-impact-cell">
-              <span class="font-mono text-red font-bold">${contribFmt}</span>
+              <span class="font-mono text-red font-bold">${contrib}</span>
               <span class="contrib-mini-track"><span class="contrib-mini-fill red" style="width:${barW}%;"></span></span>
             </div>
           </td>
-        `;
-        tbodyDown.appendChild(tr);
-      });
+        </tr>`;
+      }
+      tbodyDown.innerHTML = html;
     }
 
-    // Populate Supporting Table
     const tbodyUp = document.getElementById("tbodySupporting");
     if (tbodyUp) {
-      tbodyUp.innerHTML = "";
-      supporting.forEach(stock => {
-        const tr = document.createElement("tr");
-        if (stock.isHighlighted) tr.classList.add("row-highlight-amber");
+      let html = "";
+      for (let i = 0; i < supporting.length; i++) {
+        const s = supporting[i];
+        const rowCls = s.isHighlighted ? ' class="row-highlight-amber"' : "";
+        const ltp = Number(s.ltp || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const chg = `+${Number(s.change || 0).toFixed(2)}`;
+        const chgPct = `+${Number(s.changePct || 0).toFixed(2)}%`;
+        const contrib = `+${Number(s.contribution || 0).toFixed(2)}`;
+        const barW = Math.max(4, Math.min(100, s.barPct || 0));
 
-        const ltpFmt = Number(stock.ltp || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const chgFmt = `+${Number(stock.change || 0).toFixed(2)}`;
-        const chgPctFmt = `+${Number(stock.changePct || 0).toFixed(2)}%`;
-        const contribFmt = `+${Number(stock.contribution || 0).toFixed(2)}`;
-        const barW = Math.max(4, Math.min(100, stock.barPct || 0));
-
-        tr.innerHTML = `
-          <td><strong>${stock.symbol}</strong></td>
-          <td class="text-right font-mono">${ltpFmt}</td>
-          <td class="text-right font-mono text-green">${chgFmt}</td>
-          <td class="text-right font-mono text-green">${chgPctFmt}</td>
+        html += `<tr${rowCls}>
+          <td><strong>${s.symbol}</strong></td>
+          <td class="text-right font-mono">${ltp}</td>
+          <td class="text-right font-mono text-green">${chg}</td>
+          <td class="text-right font-mono text-green">${chgPct}</td>
           <td class="text-right">
             <div class="contrib-impact-cell">
-              <span class="font-mono text-green font-bold">${contribFmt}</span>
+              <span class="font-mono text-green font-bold">${contrib}</span>
               <span class="contrib-mini-track"><span class="contrib-mini-fill green" style="width:${barW}%;"></span></span>
             </div>
           </td>
-        `;
-        tbodyUp.appendChild(tr);
-      });
+        </tr>`;
+      }
+      tbodyUp.innerHTML = html;
     }
   }
 
   // ========================================================================
-  // DUAL SYNCHRONIZED CANVASES (EXACT PAGE 1 BREADTH STYLING)
+  // DUAL SYNCHRONIZED CANVASES & ULTRA-SMOOTH CROSSHAIR ENGINE
   // ========================================================================
-  const CHART_PADDING = { top: 15, right: 15, bottom: 25, left: 45 };
+  const BREADTH_CHART_PAD = { top: 16, right: 18, bottom: 26, left: 45 };
+  const NIFTY_CHART_PAD   = { top: 16, right: 18, bottom: 26, left: 62 };
+
+  let breadthChartGeom = null;
+  let niftyChartGeom = null;
+  let isContribRafPending = false;
+
+  function drawRoundRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
 
   function renderIntradayBreadthChart(timeline) {
     const canvas = document.getElementById("chartIntradayBreadthCanvas");
     if (!canvas || !timeline || timeline.length === 0) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const container = canvas.parentElement;
     const rect = canvas.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
+    const w = rect.width > 0 ? rect.width : (container ? container.clientWidth : 0) || 600;
+    const h = rect.height > 0 ? rect.height : (container ? container.clientHeight : 0) || 440;
+    if (w <= 0 || h <= 0) return;
 
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
+    const dpr = window.devicePixelRatio || 1;
+    const targetW = Math.round(w * dpr);
+    const targetH = Math.round(h * dpr);
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+
     const ctx = canvas.getContext("2d");
-    ctx.scale(dpr, dpr);
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const bgColor = "#0c121e";
-    const textColor = "#94a3b8";
-    const gridColor = "#1e293d";
-    const axisColor = "#cbd5e1";
+    const isLightMode = document.body.classList.contains("theme-light");
+    const bgColor = isLightMode ? "#ffffff" : "#0c121e";
+    const textColor = isLightMode ? "#64748b" : "#94a3b8";
+    const gridColor = isLightMode ? "#e2e8f0" : "#1e293d";
+    const axisColor = isLightMode ? "#cbd5e1" : "#334155";
 
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, w, h);
 
-    const pad = CHART_PADDING;
+    const pad = BREADTH_CHART_PAD;
     const plotW = w - pad.left - pad.right;
     const plotH = h - pad.top - pad.bottom;
 
-    // Draw 0, 25, 50, 75, 100% Horizontal Grid lines (Exact Page 1 style)
+    let minB = 100;
+    let maxB = 0;
+    for (let i = 0; i < timeline.length; i++) {
+      const pt = timeline[i];
+      const b = Number(pt.breadth);
+      if (Number.isFinite(b)) {
+        if (b < minB) minB = b;
+        if (b > maxB) maxB = b;
+      }
+      if (pt.ma !== null && pt.ma !== undefined) {
+        const ma = Number(pt.ma);
+        if (Number.isFinite(ma)) {
+          if (ma < minB) minB = ma;
+          if (ma > maxB) maxB = ma;
+        }
+      }
+    }
+    if (minB > maxB) { minB = 10; maxB = 90; }
+
+    // Dynamic responsive Y-axis bounds so chart curve fills canvas gracefully without squashing
+    const centerB = (minB + maxB) / 2.0;
+    const targetSpan = Math.max(35, (maxB - minB) * 1.35);
+    let yMin = Math.max(0, Math.floor((centerB - targetSpan / 2.0) / 10.0) * 10);
+    let yMax = Math.min(100, Math.ceil((centerB + targetSpan / 2.0) / 10.0) * 10);
+    if (yMax - yMin < 30) {
+      if (yMax <= 70) yMax = Math.min(100, yMin + 30);
+      else yMin = Math.max(0, yMax - 30);
+    }
+
+    const xFor = (index) => pad.left + (index / Math.max(1, timeline.length - 1)) * plotW;
+    const yFor = (value) => pad.top + plotH - ((Math.max(yMin, Math.min(yMax, value)) - yMin) / Math.max(1, (yMax - yMin))) * plotH;
+
+    breadthChartGeom = { pad, plotW, plotH, w, h, xFor, yFor, timeline, yMin, yMax };
+
+    // Draw Dynamic Horizontal Grid lines
     ctx.font = "10px 'JetBrains Mono', monospace";
     ctx.fillStyle = textColor;
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
 
-    [0, 25, 50, 75, 100].forEach((level) => {
-      const y = pad.top + plotH - (level / 100.0) * plotH;
+    const gridStep = (yMax - yMin) <= 30 ? 10 : ((yMax - yMin) <= 60 ? 15 : 20);
+    const gridLevels = [];
+    for (let l = yMin; l <= yMax; l += gridStep) {
+      gridLevels.push(l);
+    }
+    if (!gridLevels.includes(yMax)) gridLevels.push(yMax);
+
+    gridLevels.forEach((level) => {
+      const y = yFor(level);
       ctx.strokeStyle = gridColor;
       ctx.lineWidth = 1;
-      ctx.setLineDash(level === 25 || level === 50 || level === 75 ? [4, 4] : []);
+      ctx.setLineDash(level === 50 ? [] : [4, 4]);
       ctx.beginPath();
       ctx.moveTo(pad.left, y);
       ctx.lineTo(w - pad.right, y);
@@ -4309,15 +2424,13 @@
     ctx.lineTo(w - pad.right, h - pad.bottom);
     ctx.stroke();
 
-    const xFor = (index) => pad.left + (index / (timeline.length - 1)) * plotW;
-    const yFor = (value) => pad.top + plotH - (Math.max(0, Math.min(100, value)) / 100.0) * plotH;
-
-    // 1. Fill Area with Sky Blue Gradient (Exact Page 1 style)
+    // 1. Fill Area with Sky Blue Gradient
     let started = false;
     ctx.beginPath();
-    timeline.forEach((point, index) => {
-      if (point.breadth === null || point.breadth === undefined) return;
-      const x = xFor(index);
+    for (let i = 0; i < timeline.length; i++) {
+      const point = timeline[i];
+      if (point.breadth === null || point.breadth === undefined) continue;
+      const x = xFor(i);
       const y = yFor(point.breadth);
       if (!started) {
         ctx.moveTo(x, pad.top + plotH);
@@ -4326,7 +2439,7 @@
       } else {
         ctx.lineTo(x, y);
       }
-    });
+    }
     if (started) {
       ctx.lineTo(xFor(timeline.length - 1), pad.top + plotH);
       ctx.closePath();
@@ -4338,24 +2451,23 @@
     }
 
     // 2. Draw Breadth % Line (Sky Blue #38bdf8, 2.2px)
-    ctx.save();
     ctx.strokeStyle = "#38bdf8";
     ctx.lineWidth = 2.2;
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.beginPath();
     started = false;
-    timeline.forEach((point, index) => {
-      if (point.breadth === null || point.breadth === undefined) return;
-      const x = xFor(index);
+    for (let i = 0; i < timeline.length; i++) {
+      const point = timeline[i];
+      if (point.breadth === null || point.breadth === undefined) continue;
+      const x = xFor(i);
       const y = yFor(point.breadth);
       if (!started) { ctx.moveTo(x, y); started = true; }
       else ctx.lineTo(x, y);
-    });
+    }
     if (started) ctx.stroke();
-    ctx.restore();
 
-    // 3. Draw 20 SMA Line (Amber #f59e0b, 2.0px with subtle glow)
+    // 3. Draw 20 SMA Line (Amber #f59e0b, 2.0px with glow)
     ctx.save();
     ctx.strokeStyle = "#f59e0b";
     ctx.lineWidth = 2.0;
@@ -4365,13 +2477,14 @@
     ctx.shadowBlur = 4;
     ctx.beginPath();
     started = false;
-    timeline.forEach((point, index) => {
-      if (point.ma === null || point.ma === undefined) return;
-      const x = xFor(index);
+    for (let i = 0; i < timeline.length; i++) {
+      const point = timeline[i];
+      if (point.ma === null || point.ma === undefined) continue;
+      const x = xFor(i);
       const y = yFor(point.ma);
       if (!started) { ctx.moveTo(x, y); started = true; }
       else ctx.lineTo(x, y);
-    });
+    }
     if (started) ctx.stroke();
     ctx.restore();
 
@@ -4391,97 +2504,170 @@
     ctx.textAlign = "right";
     ctx.fillText(formatTimeShort(timeline[timeline.length - 1].time), w - pad.right, h - pad.bottom + 6);
 
-    // Mid-day milestone markers
     ctx.textAlign = "center";
-    ["11:30", "13:30"].forEach(tStr => {
+    const timeLabels = ["10:15", "11:15", "12:15", "13:15", "14:15", "15:15"];
+    timeLabels.forEach(tStr => {
       const idx = timeline.findIndex(p => String(p.time).includes(tStr) || p.displayTime === tStr);
       if (idx > 0) {
         ctx.fillText(tStr, xFor(idx), h - pad.bottom + 6);
+        ctx.save();
+        ctx.strokeStyle = isLightMode ? "rgba(0, 0, 0, 0.05)" : "rgba(255, 255, 255, 0.04)";
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(xFor(idx), pad.top);
+        ctx.lineTo(xFor(idx), h - pad.bottom);
+        ctx.stroke();
+        ctx.restore();
       }
     });
 
-    // 5. Crosshair on hover
+    // 5. Institutional Crosshair Rendering (Vertical + Horizontal + Axis Badges)
     if (activeContribHoverIndex >= 0 && activeContribHoverIndex < timeline.length) {
       const pt = timeline[activeContribHoverIndex];
       const cx = xFor(activeContribHoverIndex);
-      const cyBreadth = yFor(pt.breadth);
-      const cyMa = yFor(pt.ma !== null && pt.ma !== undefined ? pt.ma : pt.breadth);
+      const bVal = pt.breadth !== null && pt.breadth !== undefined ? Number(pt.breadth) : 50;
+      const cyBreadth = yFor(bVal);
 
       ctx.save();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = isLightMode ? "rgba(0, 0, 0, 0.5)" : "rgba(56, 189, 248, 0.85)";
+      ctx.lineWidth = 1.2;
       ctx.setLineDash([3, 3]);
+
+      // Vertical crosshair line
       ctx.beginPath();
       ctx.moveTo(cx, pad.top);
-      ctx.lineTo(cx, pad.top + plotH);
+      ctx.lineTo(cx, h - pad.bottom);
+      ctx.stroke();
+
+      // Horizontal crosshair line
+      ctx.beginPath();
+      ctx.moveTo(pad.left, cyBreadth);
+      ctx.lineTo(w - pad.right, cyBreadth);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Blue dot on Breadth %
+      // Hover dot on Breadth %
       ctx.fillStyle = "#38bdf8";
       ctx.beginPath();
-      ctx.arc(cx, cyBreadth, 4.5, 0, Math.PI * 2);
+      ctx.arc(cx, cyBreadth, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(cx, cyBreadth, 2.2, 0, Math.PI * 2);
       ctx.fill();
 
-      // Amber dot on 20 SMA
+      // Hover dot on 20 SMA
       if (pt.ma !== null && pt.ma !== undefined) {
+        const cyMa = yFor(pt.ma);
         ctx.fillStyle = "#f59e0b";
         ctx.beginPath();
-        ctx.arc(cx, cyMa, 3.5, 0, Math.PI * 2);
+        ctx.arc(cx, cyMa, 4, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      // Left Y-Axis Breadth Badge
+      const bBadgeW = 42;
+      const bBadgeH = 17;
+      ctx.fillStyle = "#0284c7";
+      drawRoundRect(ctx, pad.left - bBadgeW - 3, cyBreadth - bBadgeH / 2, bBadgeW, bBadgeH, 3);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 9.5px 'JetBrains Mono', monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${bVal.toFixed(1)}%`, pad.left - bBadgeW / 2 - 3, cyBreadth);
+
+      // Bottom X-Axis Time Badge
+      const timeStr = pt.displayTime || formatTimeShort(pt.time);
+      const timeBadgeW = 46;
+      const timeBadgeH = 17;
+      ctx.fillStyle = isLightMode ? "#334155" : "#0284c7";
+      drawRoundRect(ctx, cx - timeBadgeW / 2, h - pad.bottom + 2, timeBadgeW, timeBadgeH, 3);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 9.5px 'JetBrains Mono', monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(timeStr, cx, h - pad.bottom + 2 + timeBadgeH / 2);
+
       ctx.restore();
     }
+
+    ctx.restore();
   }
 
   function renderIntradayIndexChart(timeline, idxInfo) {
     const canvas = document.getElementById("chartIntradayNiftyCanvas");
     if (!canvas || !timeline || timeline.length === 0) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const container = canvas.parentElement;
     const rect = canvas.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
+    const w = rect.width > 0 ? rect.width : (container ? container.clientWidth : 0) || 600;
+    const h = rect.height > 0 ? rect.height : (container ? container.clientHeight : 0) || 440;
+    if (w <= 0 || h <= 0) return;
 
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
+    const dpr = window.devicePixelRatio || 1;
+    const targetW = Math.round(w * dpr);
+    const targetH = Math.round(h * dpr);
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+
     const ctx = canvas.getContext("2d");
-    ctx.scale(dpr, dpr);
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const bgColor = "#0c121e";
-    const textColor = "#94a3b8";
-    const gridColor = "#1e293d";
-    const axisColor = "#cbd5e1";
+    const isLightMode = document.body.classList.contains("theme-light");
+    const bgColor = isLightMode ? "#ffffff" : "#0c121e";
+    const textColor = isLightMode ? "#64748b" : "#94a3b8";
+    const gridColor = isLightMode ? "#e2e8f0" : "#1e293d";
+    const axisColor = isLightMode ? "#cbd5e1" : "#334155";
 
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, w, h);
 
-    const pad = { top: 15, right: 15, bottom: 25, left: 60 };
+    const pad = NIFTY_CHART_PAD;
     const plotW = w - pad.left - pad.right;
     const plotH = h - pad.top - pad.bottom;
 
     let minSpot = Infinity;
     let maxSpot = -Infinity;
-    timeline.forEach(pt => {
-      const s = Number(pt.spot || pt.close);
-      if (s < minSpot) minSpot = s;
-      if (s > maxSpot) maxSpot = s;
+    for (let i = 0; i < timeline.length; i++) {
+      const pt = timeline[i];
+      const s = Number(pt.spot !== undefined && pt.spot !== null ? pt.spot : pt.close);
+      if (Number.isFinite(s) && s > 0) {
+        if (s < minSpot) minSpot = s;
+        if (s > maxSpot) maxSpot = s;
+      }
       if (pt.vwap) {
         const v = Number(pt.vwap);
-        if (v < minSpot) minSpot = v;
-        if (v > maxSpot) maxSpot = v;
+        if (Number.isFinite(v) && v > 0) {
+          if (v < minSpot) minSpot = v;
+          if (v > maxSpot) maxSpot = v;
+        }
       }
-    });
+    }
 
-    const span = Math.max(10, maxSpot - minSpot);
+    if (!Number.isFinite(minSpot) || !Number.isFinite(maxSpot) || minSpot === maxSpot) {
+      const baseS = (idxInfo && idxInfo.spot) ? Number(idxInfo.spot) : (minSpot > 0 ? minSpot : 23000);
+      minSpot = baseS - 50;
+      maxSpot = baseS + 50;
+    }
+
+    const span = Math.max(15, maxSpot - minSpot);
     const yMin = minSpot - span * 0.08;
     const yMax = maxSpot + span * 0.08;
 
-    const xFor = (index) => pad.left + (index / (timeline.length - 1)) * plotW;
+    const xFor = (index) => pad.left + (index / Math.max(1, timeline.length - 1)) * plotW;
     const yFor = (value) => pad.top + plotH - ((value - yMin) / (yMax - yMin)) * plotH;
 
-    // Y Axis Price Steps (Exact Page 1 style)
+    niftyChartGeom = { pad, plotW, plotH, w, h, xFor, yFor, timeline, yMin, yMax };
+
+    // Y Axis Price Steps
     ctx.font = "10px 'JetBrains Mono', monospace";
     ctx.fillStyle = textColor;
     ctx.textAlign = "right";
@@ -4492,12 +2678,14 @@
       const y = yFor(val);
       ctx.strokeStyle = gridColor;
       ctx.lineWidth = 1;
+      ctx.setLineDash(i > 0 && i < 4 ? [4, 4] : []);
       ctx.beginPath();
       ctx.moveTo(pad.left, y);
       ctx.lineTo(w - pad.right, y);
       ctx.stroke();
       ctx.fillText(Number(val).toLocaleString('en-IN', { maximumFractionDigits: 0 }), pad.left - 6, y);
     }
+    ctx.setLineDash([]);
 
     // Solid Axis lines on left and bottom
     ctx.strokeStyle = axisColor;
@@ -4515,22 +2703,24 @@
     ctx.setLineDash([4, 3]);
     ctx.beginPath();
     let started = false;
-    timeline.forEach((point, index) => {
-      if (!point.vwap) return;
-      const x = xFor(index);
+    for (let i = 0; i < timeline.length; i++) {
+      const point = timeline[i];
+      if (!point.vwap) continue;
+      const x = xFor(i);
       const y = yFor(point.vwap);
       if (!started) { ctx.moveTo(x, y); started = true; }
       else ctx.lineTo(x, y);
-    });
+    }
     if (started) ctx.stroke();
     ctx.restore();
 
     // 2. Spot Price Area Gradient Fill
     ctx.beginPath();
     started = false;
-    timeline.forEach((point, index) => {
-      const s = Number(point.spot || point.close);
-      const x = xFor(index);
+    for (let i = 0; i < timeline.length; i++) {
+      const point = timeline[i];
+      const s = Number(point.spot !== undefined && point.spot !== null ? point.spot : point.close);
+      const x = xFor(i);
       const y = yFor(s);
       if (!started) {
         ctx.moveTo(x, pad.top + plotH);
@@ -4539,7 +2729,7 @@
       } else {
         ctx.lineTo(x, y);
       }
-    });
+    }
     if (started) {
       ctx.lineTo(xFor(timeline.length - 1), pad.top + plotH);
       ctx.closePath();
@@ -4551,22 +2741,21 @@
     }
 
     // 3. Spot Price Curve (Sky Blue #38bdf8, 2.2px)
-    ctx.save();
     ctx.strokeStyle = "#38bdf8";
     ctx.lineWidth = 2.2;
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.beginPath();
     started = false;
-    timeline.forEach((point, index) => {
-      const s = Number(point.spot || point.close);
-      const x = xFor(index);
+    for (let i = 0; i < timeline.length; i++) {
+      const point = timeline[i];
+      const s = Number(point.spot !== undefined && point.spot !== null ? point.spot : point.close);
+      const x = xFor(i);
       const y = yFor(s);
       if (!started) { ctx.moveTo(x, y); started = true; }
       else ctx.lineTo(x, y);
-    });
+    }
     if (started) ctx.stroke();
-    ctx.restore();
 
     // 4. X-Axis Time Labels
     function formatTimeShort(val) {
@@ -4585,105 +2774,227 @@
     ctx.fillText(formatTimeShort(timeline[timeline.length - 1].time), w - pad.right, h - pad.bottom + 6);
 
     ctx.textAlign = "center";
-    ["11:30", "13:30"].forEach(tStr => {
+    const timeLabels = ["10:15", "11:15", "12:15", "13:15", "14:15", "15:15"];
+    timeLabels.forEach(tStr => {
       const idx = timeline.findIndex(p => String(p.time).includes(tStr) || p.displayTime === tStr);
       if (idx > 0) {
         ctx.fillText(tStr, xFor(idx), h - pad.bottom + 6);
+        ctx.save();
+        ctx.strokeStyle = isLightMode ? "rgba(0, 0, 0, 0.05)" : "rgba(255, 255, 255, 0.04)";
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(xFor(idx), pad.top);
+        ctx.lineTo(xFor(idx), h - pad.bottom);
+        ctx.stroke();
+        ctx.restore();
       }
     });
 
-    // 5. Crosshair on hover
+    // 5. Institutional Crosshair Rendering (Vertical + Horizontal + Price Badges)
     if (activeContribHoverIndex >= 0 && activeContribHoverIndex < timeline.length) {
       const pt = timeline[activeContribHoverIndex];
       const cx = xFor(activeContribHoverIndex);
-      const cySpot = yFor(pt.spot);
-      const cyVwap = yFor(pt.vwap || pt.spot);
+      const spotVal = Number(pt.spot !== undefined && pt.spot !== null ? pt.spot : pt.close);
+      const cySpot = yFor(spotVal);
 
       ctx.save();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = isLightMode ? "rgba(0, 0, 0, 0.5)" : "rgba(56, 189, 248, 0.85)";
+      ctx.lineWidth = 1.2;
       ctx.setLineDash([3, 3]);
+
+      // Vertical crosshair line
       ctx.beginPath();
       ctx.moveTo(cx, pad.top);
-      ctx.lineTo(cx, pad.top + plotH);
+      ctx.lineTo(cx, h - pad.bottom);
+      ctx.stroke();
+
+      // Horizontal crosshair line
+      ctx.beginPath();
+      ctx.moveTo(pad.left, cySpot);
+      ctx.lineTo(w - pad.right, cySpot);
       ctx.stroke();
       ctx.setLineDash([]);
 
+      // Hover dot on Spot curve
       ctx.fillStyle = "#38bdf8";
       ctx.beginPath();
-      ctx.arc(cx, cySpot, 4.5, 0, Math.PI * 2);
+      ctx.arc(cx, cySpot, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(cx, cySpot, 2.2, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = "#f59e0b";
-      ctx.beginPath();
-      ctx.arc(cx, cyVwap, 3.5, 0, Math.PI * 2);
+      // Hover dot on VWAP
+      if (pt.vwap) {
+        const cyVwap = yFor(pt.vwap);
+        ctx.fillStyle = "#f59e0b";
+        ctx.beginPath();
+        ctx.arc(cx, cyVwap, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Left Y-Axis Price Badge
+      const pBadgeW = 56;
+      const pBadgeH = 17;
+      ctx.fillStyle = "#0284c7";
+      drawRoundRect(ctx, pad.left - pBadgeW - 3, cySpot - pBadgeH / 2, pBadgeW, pBadgeH, 3);
       ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 9.5px 'JetBrains Mono', monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(Number(spotVal).toLocaleString('en-IN', { maximumFractionDigits: 0 }), pad.left - pBadgeW / 2 - 3, cySpot);
+
+      // Bottom X-Axis Time Badge
+      const timeStr = pt.displayTime || formatTimeShort(pt.time);
+      const timeBadgeW = 46;
+      const timeBadgeH = 17;
+      ctx.fillStyle = isLightMode ? "#334155" : "#0284c7";
+      drawRoundRect(ctx, cx - timeBadgeW / 2, h - pad.bottom + 2, timeBadgeW, timeBadgeH, 3);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 9.5px 'JetBrains Mono', monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(timeStr, cx, h - pad.bottom + 2 + timeBadgeH / 2);
+
       ctx.restore();
     }
+
+    ctx.restore();
+  }
+
+  function scheduleContribChartsRedraw() {
+    if (isContribRafPending) return;
+    isContribRafPending = true;
+    requestAnimationFrame(() => {
+      isContribRafPending = false;
+      if (contribTimeline && contribTimeline.length > 0) {
+        renderIntradayBreadthChart(contribTimeline);
+        renderIntradayIndexChart(contribTimeline, contribDataCache ? contribDataCache.indexInfo : null);
+        updateContribTooltips(activeContribHoverIndex);
+      }
+    });
   }
 
   function setupContribCanvasEvents() {
     const breadthCanvas = document.getElementById("chartIntradayBreadthCanvas");
     const niftyCanvas = document.getElementById("chartIntradayNiftyCanvas");
+    if (!breadthCanvas || !niftyCanvas) return;
+    if (breadthCanvas._eventsAttached) return;
+    breadthCanvas._eventsAttached = true;
+    niftyCanvas._eventsAttached = true;
 
     function handleMouseMove(e, srcCanvas) {
       if (!contribTimeline || contribTimeline.length === 0) return;
+      const geom = srcCanvas === breadthCanvas ? breadthChartGeom : niftyChartGeom;
+      if (!geom || !geom.plotW) return;
+
       const rect = srcCanvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
-      const padLeft = srcCanvas === breadthCanvas ? 45 : 60;
-      const padRight = 15;
-      const drawW = rect.width - padLeft - padRight;
-      const relX = mouseX - padLeft;
-      const ratio = Math.max(0, Math.min(1, relX / drawW));
-      const idx = Math.round(ratio * (contribTimeline.length - 1));
+      const relX = mouseX - geom.pad.left;
+      const ratio = Math.max(0, Math.min(1, relX / Math.max(1, geom.plotW)));
+      const idx = Math.max(0, Math.min(contribTimeline.length - 1, Math.round(ratio * (contribTimeline.length - 1))));
 
       activeContribHoverIndex = idx;
-      renderIntradayBreadthChart(contribTimeline);
-      renderIntradayIndexChart(contribTimeline, contribDataCache ? contribDataCache.indexInfo : null);
-
-      updateContribTooltips(idx, mouseX);
+      scheduleContribChartsRedraw();
     }
 
     function handleMouseLeave() {
-      activeContribHoverIndex = -1;
-      renderIntradayBreadthChart(contribTimeline);
-      renderIntradayIndexChart(contribTimeline, contribDataCache ? contribDataCache.indexInfo : null);
-
+      if (activeContribHoverIndex !== -1) {
+        activeContribHoverIndex = -1;
+        scheduleContribChartsRedraw();
+      }
       const bTip = document.getElementById("breadthCrosshairTooltip");
       const nTip = document.getElementById("niftyCrosshairTooltip");
       if (bTip) bTip.style.display = "none";
       if (nTip) nTip.style.display = "none";
+
+      const bStatus = document.getElementById("breadthCrosshairStatus");
+      const nStatus = document.getElementById("niftyCrosshairStatus");
+      if (bStatus) bStatus.textContent = "Active";
+      if (nStatus) nStatus.textContent = "Locked";
+    }
+
+    function handleTouch(e, srcCanvas) {
+      if (e.touches && e.touches.length > 0) {
+        handleMouseMove(e.touches[0], srcCanvas);
+      }
     }
 
     if (breadthCanvas) {
       breadthCanvas.addEventListener("mousemove", (e) => handleMouseMove(e, breadthCanvas));
       breadthCanvas.addEventListener("mouseleave", handleMouseLeave);
+      breadthCanvas.addEventListener("touchstart", (e) => handleTouch(e, breadthCanvas), { passive: true });
+      breadthCanvas.addEventListener("touchmove", (e) => handleTouch(e, breadthCanvas), { passive: true });
+      breadthCanvas.addEventListener("touchend", handleMouseLeave);
     }
 
     if (niftyCanvas) {
       niftyCanvas.addEventListener("mousemove", (e) => handleMouseMove(e, niftyCanvas));
       niftyCanvas.addEventListener("mouseleave", handleMouseLeave);
+      niftyCanvas.addEventListener("touchstart", (e) => handleTouch(e, niftyCanvas), { passive: true });
+      niftyCanvas.addEventListener("touchmove", (e) => handleTouch(e, niftyCanvas), { passive: true });
+      niftyCanvas.addEventListener("touchend", handleMouseLeave);
+    }
+
+    window.addEventListener("resize", () => {
+      if (contribTimeline && contribTimeline.length > 0) {
+        scheduleContribChartsRedraw();
+      }
+    });
+
+    if (window.ResizeObserver) {
+      const bWrapper = document.getElementById("breadthChartWrapper");
+      const nWrapper = document.getElementById("niftyChartWrapper");
+      if (bWrapper && !bWrapper._roAttached) {
+        bWrapper._roAttached = true;
+        const ro = new ResizeObserver(() => {
+          if (contribTimeline && contribTimeline.length > 0) {
+            scheduleContribChartsRedraw();
+          }
+        });
+        ro.observe(bWrapper);
+        if (nWrapper) ro.observe(nWrapper);
+      }
     }
   }
 
-  function updateContribTooltips(idx, mouseX) {
-    if (!contribTimeline || idx < 0 || idx >= contribTimeline.length) return;
-    const pt = contribTimeline[idx];
-    const displayDate = contribDataCache ? (contribDataCache.displayDate || contribDataCache.date) : "18-Sep-2026";
-    const timeStr = pt.displayTime || (String(pt.time).includes("T") ? pt.time.split("T")[1].slice(0, 5) : pt.time);
-
+  function updateContribTooltips(idx) {
     const bTip = document.getElementById("breadthCrosshairTooltip");
     const nTip = document.getElementById("niftyCrosshairTooltip");
+    if (!contribTimeline || idx < 0 || idx >= contribTimeline.length) {
+      if (bTip) bTip.style.display = "none";
+      if (nTip) nTip.style.display = "none";
+      return;
+    }
 
-    if (bTip) {
+    const pt = contribTimeline[idx];
+    const displayDate = contribDataCache ? (contribDataCache.displayDate || contribDataCache.date) : "22-Sep-2026";
+    const timeStr = pt.displayTime || (String(pt.time).includes("T") ? pt.time.split("T")[1].slice(0, 5) : pt.time);
+    const maStr = pt.ma !== null && pt.ma !== undefined ? `${Number(pt.ma).toFixed(2)}%` : "--";
+    const idxInfo = contribDataCache && contribDataCache.indexInfo ? contribDataCache.indexInfo : {};
+    const idxName = idxInfo.name || "NIFTY 50";
+    const sVal = Number(pt.spot !== undefined && pt.spot !== null ? pt.spot : pt.close);
+    const vwapStr = pt.vwap ? Number(pt.vwap).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "--";
+
+    // Update Header Status Badges with live hovered metrics
+    const bStatus = document.getElementById("breadthCrosshairStatus");
+    const nStatus = document.getElementById("niftyCrosshairStatus");
+    if (bStatus) bStatus.textContent = `${timeStr} • ${Number(pt.breadth).toFixed(1)}%`;
+    if (nStatus) nStatus.textContent = `${timeStr} • ₹${sVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+
+    if (bTip && breadthChartGeom) {
       bTip.style.display = "block";
-      bTip.style.left = `${Math.min(window.innerWidth > 600 ? mouseX + 12 : 10, 240)}px`;
-      bTip.style.top = "15px";
-      bTip.style.minWidth = "220px";
-      const maStr = pt.ma !== null && pt.ma !== undefined ? `${Number(pt.ma).toFixed(2)}%` : "--";
+      const cx = breadthChartGeom.xFor(idx);
+      const isLeftHalf = cx < (breadthChartGeom.plotW * 0.55);
+      bTip.style.left = isLeftHalf ? `${cx + 18}px` : "auto";
+      bTip.style.right = isLeftHalf ? "auto" : `${breadthChartGeom.w - cx + 18}px`;
+      bTip.style.top = "16px";
       bTip.innerHTML = `
-        <div style="font-weight:800; color:var(--p2-teal-light); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; margin-bottom:6px;">
-          📅 ${displayDate} &nbsp;⏱️ ${timeStr} IST
+        <div style="font-weight:800; color:var(--p2-teal-light); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; margin-bottom:6px; display:flex; justify-content:space-between;">
+          <span>📅 ${displayDate}</span><span>⏱️ ${timeStr} IST</span>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
           <span style="color:#60a5fa;">Breadth %:</span> <strong class="font-mono">${Number(pt.breadth).toFixed(2)}%</strong>
@@ -4700,21 +3011,22 @@
       `;
     }
 
-    if (nTip) {
-      const idxName = contribDataCache && contribDataCache.indexInfo ? contribDataCache.indexInfo.name : "NIFTY 50";
+    if (nTip && niftyChartGeom) {
       nTip.style.display = "block";
-      nTip.style.left = `${Math.min(window.innerWidth > 600 ? mouseX + 12 : 10, 240)}px`;
-      nTip.style.top = "15px";
-      nTip.style.minWidth = "220px";
+      const cx = niftyChartGeom.xFor(idx);
+      const isLeftHalf = cx < (niftyChartGeom.plotW * 0.55);
+      nTip.style.left = isLeftHalf ? `${cx + 18}px` : "auto";
+      nTip.style.right = isLeftHalf ? "auto" : `${niftyChartGeom.w - cx + 18}px`;
+      nTip.style.top = "16px";
       nTip.innerHTML = `
-        <div style="font-weight:800; color:var(--p2-teal-light); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; margin-bottom:6px;">
-          📅 ${displayDate} &nbsp;⏱️ ${timeStr} IST - ${idxName}
+        <div style="font-weight:800; color:var(--p2-teal-light); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; margin-bottom:6px; display:flex; justify-content:space-between;">
+          <span>📅 ${displayDate}</span><span>⏱️ ${timeStr} • ${idxName}</span>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
-          <span style="color:#38bdf8;">Spot Price:</span> <strong class="font-mono">${Number(pt.spot).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+          <span style="color:#38bdf8;">Spot Price:</span> <strong class="font-mono">${sVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
         </div>
         <div style="display:flex; justify-content:space-between;">
-          <span style="color:#f59e0b;">VWAP:</span> <strong class="font-mono">${Number(pt.vwap).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+          <span style="color:#f59e0b;">VWAP:</span> <strong class="font-mono">${vwapStr}</strong>
         </div>
       `;
     }
@@ -4730,23 +3042,13 @@
     const gmView = document.getElementById("p2ViewGlobalMarkets");
     const stView = document.getElementById("p2ViewStraddle");
 
-    if (gmBtn && stBtn && gmView && stView) {
+    if (gmBtn && stBtn) {
       gmBtn.addEventListener("click", () => {
-        currentToolsSubView = "global";
-        gmBtn.classList.add("active");
-        stBtn.classList.remove("active");
-        gmView.style.display = "block";
-        stView.style.display = "none";
-        loadGlobalMarketsSuite();
+        setToolsSubView("global", true);
       });
 
       stBtn.addEventListener("click", () => {
-        currentToolsSubView = "straddle";
-        stBtn.classList.add("active");
-        gmBtn.classList.remove("active");
-        stView.style.display = "block";
-        gmView.style.display = "none";
-        loadStraddleTool();
+        setToolsSubView("straddle", true);
       });
     }
 

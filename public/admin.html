@@ -525,6 +525,152 @@
         border-radius: 4px;
         background: rgba(255, 255, 255, 0.05);
       }
+
+      /* SEO URL Manager & SERP Simulator Styles */
+      .seo-badge-cat {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 4px;
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+      }
+      .seo-badge-indexed {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 4px;
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+      .seo-badge-noindex {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 4px;
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+      .seo-badge-custom {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 4px;
+        background: rgba(168, 85, 247, 0.15);
+        color: #c084fc;
+        border: 1px solid rgba(168, 85, 247, 0.3);
+      }
+      .seo-pill-btn {
+        background: #0b1329;
+        border: 1px solid var(--adm-border);
+        color: var(--adm-muted);
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .seo-pill-btn:hover, .seo-pill-btn.active {
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        border-color: rgba(59, 130, 246, 0.4);
+      }
+      .seo-table-wrap {
+        max-height: 560px;
+        overflow-y: auto;
+        border: 1px solid var(--adm-border);
+        border-radius: 8px;
+        background: #040814;
+      }
+      .seo-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        text-align: left;
+      }
+      .seo-table th {
+        position: sticky;
+        top: 0;
+        background: #081022;
+        padding: 10px 12px;
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--adm-border);
+        z-index: 2;
+      }
+      .seo-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        vertical-align: middle;
+      }
+      .seo-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .serp-preview-card {
+        background: #202124;
+        border: 1px solid #3c4043;
+        border-radius: 8px;
+        padding: 14px 16px;
+        font-family: Arial, sans-serif;
+        color: #bdc1c6;
+        margin-top: 10px;
+      }
+      .serp-url-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #dadce0;
+        margin-bottom: 4px;
+      }
+      .serp-title-line {
+        font-size: 17px;
+        color: #8ab4f8;
+        font-weight: 400;
+        line-height: 1.3;
+        margin-bottom: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+      }
+      .serp-title-line:hover {
+        text-decoration: underline;
+      }
+      .serp-desc-line {
+        font-size: 12.5px;
+        line-height: 1.4;
+        color: #bdc1c6;
+        word-break: break-word;
+      }
+      .adm-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      }
+      .adm-modal-box {
+        width: 100%;
+        max-width: 760px;
+        max-height: 90vh;
+        overflow-y: auto;
+        background: #0b1329;
+        border: 1px solid var(--adm-border);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+      }
+
     </style>
   </head>
   <body>
@@ -580,6 +726,9 @@
           </div>
           <div class="admin-nav-item" data-tab="security" onclick="switchAdminTab('security')">
             <span class="icon">🛡️</span> Security &amp; PIN
+          </div>
+          <div class="admin-nav-item" data-tab="footer" onclick="switchAdminTab('footer')">
+            <span class="icon">🔗</span> Footer Link Manager
           </div>
         </nav>
 
@@ -828,60 +977,134 @@
         <section id="panelSeo" class="admin-panel-view">
           <div class="admin-header">
             <div>
-              <h1>🔍 SEO &amp; Google Search Console Manager</h1>
-              <p>Manage meta tags, Google site verification, and tracking without editing source code.</p>
+              <h1>🔍 Dynamic SEO &amp; URL Metadata Suite</h1>
+              <p>Manage route-by-route meta tags, auto-discover newly built pages, and re-sync sitemap without code changes.</p>
             </div>
-            <button type="button" class="btn-adm-primary" onclick="saveSeoConfig()">💾 Save SEO Changes</button>
-          </div>
-
-          <div class="adm-card">
-            <div class="adm-card-header">
-              <h3>Google Verification &amp; Analytics</h3>
-            </div>
-            <div class="adm-form-group">
-              <label>Google Site Verification Meta Tag Content (google-site-verification)</label>
-              <input type="text" id="admSeoGoogleVerify" class="adm-input" placeholder="e.g. abcd1234efgh5678ijkl" />
-              <small style="color:var(--adm-muted); font-size:11px; margin-top:4px; display:block;">Pasting your token here allows 1-click ownership verification in Google Search Console.</small>
-            </div>
-            <div class="adm-form-group">
-              <label>Google Analytics 4 / GTM Measurement ID</label>
-              <input type="text" id="admSeoGoogleAnalytics" class="adm-input" placeholder="e.g. G-XXXXXXXXXX" />
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-adm-primary" style="background:#10b981;" onclick="openRouteSeoModal('')">➕ Add New Page / URL</button>
+              <button type="button" class="btn-adm-primary" onclick="saveSeoConfig()">💾 Save Global SEO</button>
             </div>
           </div>
 
+          <!-- SEO Stats Overview Strip -->
+          <div class="stat-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
+            <div class="stat-box">
+              <div class="stat-label">Total Registered URLs</div>
+              <div class="stat-val" id="seoStatTotalUrls" style="color:#60a5fa;">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Indexed in Sitemap</div>
+              <div class="stat-val" id="seoStatIndexed" style="color:#34d399;">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Custom Added Routes</div>
+              <div class="stat-val" id="seoStatCustom" style="color:#c084fc;">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Master Search Indexing</div>
+              <div class="stat-val" id="seoStatMasterIndexing" style="font-size:16px; color:#34d399; padding-top:6px;">ACTIVE</div>
+            </div>
+          </div>
+
+          <!-- 1. All URLs & Pages Management Table -->
+          <div class="adm-card">
+            <div class="adm-card-header" style="flex-wrap:wrap; gap:12px;">
+              <div>
+                <h3>🌐 All Pages &amp; URLs SEO Directory</h3>
+                <small style="color:var(--adm-muted); font-size:12px;">Click <b>Edit</b> on any route to tune meta titles, search descriptions, or social tags. All future pages appear here.</small>
+              </div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button type="button" class="seo-pill-btn" style="background:#1e293b; color:#fff;" onclick="autoDiscoverSeoRoutes()">🔍 Auto-Discover Pages</button>
+                <button type="button" class="seo-pill-btn" style="background:#064e3b; color:#34d399; border-color:#059669;" onclick="rebuildSitemap()">⚡ Rebuild sitemap.xml</button>
+                <a href="/sitemap.xml" target="_blank" class="seo-pill-btn" style="text-decoration:none;">📄 View sitemap.xml ↗</a>
+                <a href="/robots.txt" target="_blank" class="seo-pill-btn" style="text-decoration:none;">🤖 View robots.txt ↗</a>
+              </div>
+            </div>
+
+            <!-- Filter & Search Toolbar -->
+            <div style="display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
+              <div style="flex:1; min-width:240px;">
+                <input type="text" id="seoRouteSearchInput" class="adm-input" placeholder="🔍 Search URL path, title, description, keywords..." oninput="filterSeoRoutes()" style="padding:8px 12px; font-size:12.5px;" />
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;" id="seoCatFilterBar">
+                <button class="seo-pill-btn active" data-cat="all" onclick="setSeoCatFilter('all')">All</button>
+                <button class="seo-pill-btn" data-cat="futures" onclick="setSeoCatFilter('futures')">Futures</button>
+                <button class="seo-pill-btn" data-cat="options" onclick="setSeoCatFilter('options')">Options</button>
+                <button class="seo-pill-btn" data-cat="mtf" onclick="setSeoCatFilter('mtf')">MTF</button>
+                <button class="seo-pill-btn" data-cat="delivery" onclick="setSeoCatFilter('delivery')">Delivery</button>
+                <button class="seo-pill-btn" data-cat="breadth" onclick="setSeoCatFilter('breadth')">Breadth</button>
+                <button class="seo-pill-btn" data-cat="global" onclick="setSeoCatFilter('global')">Global</button>
+                <button class="seo-pill-btn" data-cat="legal" onclick="setSeoCatFilter('legal')">Legal/Static</button>
+                <button class="seo-pill-btn" data-cat="custom" onclick="setSeoCatFilter('custom')">Custom</button>
+              </div>
+            </div>
+
+            <!-- Route Table -->
+            <div class="seo-table-wrap">
+              <table class="seo-table" id="tblSeoRoutes">
+                <thead>
+                  <tr>
+                    <th style="width:220px;">PAGE URL / ROUTE</th>
+                    <th>TITLE TAG (&lt;title&gt;)</th>
+                    <th>SEARCH DESCRIPTION</th>
+                    <th style="width:110px;">CATEGORY</th>
+                    <th style="width:90px;">ROBOTS</th>
+                    <th style="width:80px; text-align:center;">PRIORITY</th>
+                    <th style="width:130px; text-align:right;">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodySeoRoutes">
+                  <tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">Loading SEO route catalog...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 2. Global Site Verification & Tracking -->
           <div class="adm-card">
             <div class="adm-card-header">
-              <h3>Meta Tags &amp; Search Snippets</h3>
+              <h3>Google Search Console &amp; Tracking Credentials</h3>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+              <div class="adm-form-group">
+                <label>Google Site Verification Meta Tag Content (google-site-verification)</label>
+                <input type="text" id="admSeoGoogleVerify" class="adm-input" placeholder="e.g. abcd1234efgh5678ijkl" />
+                <small style="color:var(--adm-muted); font-size:11px; margin-top:4px; display:block;">Pasting your token here allows 1-click ownership verification in Google Search Console.</small>
+              </div>
+              <div class="adm-form-group">
+                <label>Google Analytics 4 / GTM Measurement ID</label>
+                <input type="text" id="admSeoGoogleAnalytics" class="adm-input" placeholder="e.g. G-XXXXXXXXXX" />
+                <small style="color:var(--adm-muted); font-size:11px; margin-top:4px; display:block;">Automatically streams pageview events to Google Analytics for all visitors.</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Global Meta Defaults -->
+          <div class="adm-card">
+            <div class="adm-card-header">
+              <h3>Default Homepage Fallbacks</h3>
             </div>
             <div class="adm-form-group">
               <label>Homepage Title Tag (&lt;title&gt;)</label>
               <input type="text" id="admSeoTitle" class="adm-input" />
             </div>
             <div class="adm-form-group">
-              <label>Meta Description (Shown in Google Search Results)</label>
+              <label>Default Meta Description</label>
               <textarea id="admSeoDesc" class="adm-textarea"></textarea>
             </div>
-            <div class="adm-form-group">
-              <label>Keywords (Comma separated)</label>
-              <input type="text" id="admSeoKeywords" class="adm-input" />
-            </div>
-            <div class="adm-form-group">
-              <label>Canonical Base URL</label>
-              <input type="text" id="admSeoCanonical" class="adm-input" />
-            </div>
-          </div>
-
-          <div class="adm-card">
-            <div class="adm-card-header">
-              <h3>Search Engine Links</h3>
-            </div>
-            <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:13px;">
-              <a href="/sitemap.xml" target="_blank" style="color:#60a5fa;">📄 Open sitemap.xml ↗</a>
-              <a href="/robots.txt" target="_blank" style="color:#60a5fa;">🤖 Open robots.txt ↗</a>
-              <a href="https://search.google.com/search-console" target="_blank" style="color:#34d399;">🌐 Google Search Console ↗</a>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+              <div class="adm-form-group">
+                <label>Default Keywords (Comma separated)</label>
+                <input type="text" id="admSeoKeywords" class="adm-input" />
+              </div>
+              <div class="adm-form-group">
+                <label>Canonical Base URL</label>
+                <input type="text" id="admSeoCanonical" class="adm-input" />
+              </div>
             </div>
           </div>
         </section>
+
 
         <!-- TAB 4: CACHE & MARKET ENGINE -->
         <section id="panelCache" class="admin-panel-view">
@@ -1081,6 +1304,45 @@
               <div style="padding:32px; text-align:center; color:var(--adm-muted);">No logs captured yet.</div>
             </div>
           </div>
+        <!-- TAB 8: FOOTER & NAVIGATION LINKS COMMAND CENTER -->
+        <section id="panelFooter" class="admin-panel-view">
+          <div class="admin-header">
+            <div>
+              <h1>🔗 4-Column Footer Navigation Command Center</h1>
+              <p>Command and customize the platform's 4-column institutional footer links with real-time preview and server-side persistence.</p>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <button type="button" class="btn-adm-primary" onclick="saveFooterAdmin()" style="display:flex; align-items:center; gap:6px;">
+                <span>💾</span> Save All Changes
+              </button>
+              <button type="button" class="btn-adm-danger" onclick="resetFooterAdmin()" style="display:flex; align-items:center; gap:6px;">
+                <span>🔄</span> Reset to Defaults
+              </button>
+            </div>
+          </div>
+
+          <div id="admFooterAlert" class="alert-adm" style="display:none; margin-bottom:16px;"></div>
+
+          <!-- 4 Columns Management Grid -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:18px; margin-bottom:24px;" id="admFooterColsContainer">
+            <!-- Populated dynamically by renderFooterAdmin() -->
+            <div style="grid-column:1/-1; padding:30px; text-align:center; color:var(--adm-muted); background:var(--adm-card); border-radius:10px; border:1px solid var(--adm-border);">
+              ⏳ Loading footer link configuration...
+            </div>
+          </div>
+
+          <!-- Live Interactive Preview Card -->
+          <div class="adm-card" style="margin-top:24px; border:1px solid #38bdf8; background:#071026;">
+            <div class="adm-card-header" style="border-bottom:1px solid rgba(56,189,248,0.2);">
+              <h3 style="display:flex; align-items:center; gap:8px; color:#38bdf8;">
+                <span>👁️</span> Live Terminal Footer Preview
+              </h3>
+              <span style="font-size:11px; background:rgba(56,189,248,0.15); color:#38bdf8; padding:3px 10px; border-radius:12px; font-weight:700;">Updates in real-time</span>
+            </div>
+            <div id="admFooterLivePreview" style="padding:14px;">
+              <!-- Live preview rendered dynamically -->
+            </div>
+          </div>
         </section>
 
       </main>
@@ -1162,7 +1424,14 @@
         if (tabName === 'logs') {
           fetchAdminLogs();
         }
+        if (tabName === 'footer') {
+          loadFooterAdmin();
+        }
+        if (tabName === 'seo') {
+          loadSeoConfig();
+        }
       }
+
 
       // 1. Telemetry
       async function loadTelemetry() {
@@ -1564,21 +1833,32 @@
         }
       }
 
-      // 3. SEO
+      // 3. SEO & Route Metadata Suite
+      let allSeoRoutes = [];
+      let currentSeoCatFilter = 'all';
+
       async function loadSeoConfig() {
         try {
           const res = await fetch('/api/admin/seo', { headers: getAuthHeaders() });
-          if (!res.ok) return;
-          const data = await res.json();
-          if (data.ok && data.seo) {
-            document.getElementById('admSeoGoogleVerify').value = data.seo.google_site_verification || '';
-            document.getElementById('admSeoGoogleAnalytics').value = data.seo.google_analytics_id || '';
-            document.getElementById('admSeoTitle').value = data.seo.site_title || '';
-            document.getElementById('admSeoDesc').value = data.seo.meta_description || '';
-            document.getElementById('admSeoKeywords').value = data.seo.keywords || '';
-            document.getElementById('admSeoCanonical').value = data.seo.canonical_url || '';
+          if (res.ok) {
+            const data = await res.json();
+            if (data.ok && data.seo) {
+              document.getElementById('admSeoGoogleVerify').value = data.seo.google_site_verification || '';
+              document.getElementById('admSeoGoogleAnalytics').value = data.seo.google_analytics_id || '';
+              document.getElementById('admSeoTitle').value = data.seo.site_title || '';
+              document.getElementById('admSeoDesc').value = data.seo.meta_description || '';
+              document.getElementById('admSeoKeywords').value = data.seo.keywords || '';
+              document.getElementById('admSeoCanonical').value = data.seo.canonical_url || '';
+              
+              const mEl = document.getElementById('seoStatMasterIndexing');
+              if (mEl) {
+                mEl.textContent = data.seo.robots_indexing ? 'ACTIVE' : 'NOINDEX (BLOCKED)';
+                mEl.style.color = data.seo.robots_indexing ? '#34d399' : '#f87171';
+              }
+            }
           }
         } catch(e) {}
+        await loadSeoRoutes();
       }
 
       async function saveSeoConfig() {
@@ -1599,14 +1879,349 @@
           });
           const result = await res.json();
           if (result.ok) {
-            showAdmAlert('✓ SEO configuration updated and applied!', 'success');
+            showAdmAlert('✓ Global SEO configuration updated and applied live!', 'success');
           } else {
-            showAdmAlert('Failed to update SEO', 'error');
+            showAdmAlert('Failed to update SEO: ' + (result.message || ''), 'error');
           }
         } catch(e) {
-          showAdmAlert(e.message, 'error');
+          showAdmAlert('Error: ' + e.message, 'error');
         }
       }
+
+      async function loadSeoRoutes() {
+        try {
+          const res = await fetch('/api/admin/seo-routes', { headers: getAuthHeaders() });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.ok && Array.isArray(data.routes)) {
+            allSeoRoutes = data.routes;
+            updateSeoStats();
+            renderSeoRoutesTable();
+          }
+        } catch(e) {
+          console.error("Error loading SEO routes:", e);
+        }
+      }
+
+      function updateSeoStats() {
+        const total = allSeoRoutes.length;
+        const indexed = allSeoRoutes.filter(r => !r.robots || !r.robots.includes('noindex')).length;
+        const custom = allSeoRoutes.filter(r => r.custom).length;
+        
+        const elTotal = document.getElementById('seoStatTotalUrls');
+        const elIndexed = document.getElementById('seoStatIndexed');
+        const elCustom = document.getElementById('seoStatCustom');
+        
+        if (elTotal) elTotal.textContent = total;
+        if (elIndexed) elIndexed.textContent = indexed;
+        if (elCustom) elCustom.textContent = custom;
+      }
+
+      function setSeoCatFilter(cat) {
+        currentSeoCatFilter = cat;
+        document.querySelectorAll('#seoCatFilterBar .seo-pill-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-cat') === cat);
+        });
+        filterSeoRoutes();
+      }
+
+      function filterSeoRoutes() {
+        const query = (document.getElementById('seoRouteSearchInput')?.value || '').trim().toLowerCase();
+        let filtered = allSeoRoutes;
+
+        if (currentSeoCatFilter !== 'all') {
+          if (currentSeoCatFilter === 'custom') {
+            filtered = filtered.filter(r => r.custom);
+          } else {
+            filtered = filtered.filter(r => (r.category || '').toLowerCase() === currentSeoCatFilter);
+          }
+        }
+
+        if (query) {
+          filtered = filtered.filter(r => {
+            return (r.path || '').toLowerCase().includes(query) ||
+                   (r.title || '').toLowerCase().includes(query) ||
+                   (r.desc || '').toLowerCase().includes(query) ||
+                   (r.keywords || '').toLowerCase().includes(query);
+          });
+        }
+
+        renderSeoRoutesTable(filtered);
+      }
+
+      function renderSeoRoutesTable(routesToRender = null) {
+        const tbody = document.getElementById('tbodySeoRoutes');
+        if (!tbody) return;
+
+        const routes = routesToRender || allSeoRoutes;
+        if (!routes || routes.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No pages or routes found matching your criteria.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = routes.map(r => {
+          const isIndexed = !r.robots || !r.robots.includes('noindex');
+          const isCustom = Boolean(r.custom);
+          const titleChars = (r.title || '').length;
+          const descChars = (r.desc || '').length;
+          
+          const titleCharColor = titleChars > 65 ? '#f87171' : (titleChars > 50 ? '#34d399' : '#94a3b8');
+          const descCharColor = descChars > 165 ? '#f87171' : (descChars > 120 ? '#34d399' : '#94a3b8');
+
+          return `
+            <tr>
+              <td>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <a href="${r.path}" target="_blank" style="font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; color:#60a5fa; text-decoration:none;" title="Open live URL">
+                    ${r.path} ↗
+                  </a>
+                  ${isCustom ? `<span class="seo-badge-custom">CUSTOM</span>` : ''}
+                </div>
+              </td>
+              <td>
+                <div style="font-weight:600; color:#f1f5f9; line-height:1.3; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(r.title || '')}">
+                  ${escapeHtml(r.title || '--')}
+                </div>
+                <small style="color:${titleCharColor}; font-size:10.5px; font-family:'JetBrains Mono', monospace;">${titleChars} chars</small>
+              </td>
+              <td>
+                <div style="font-size:11.5px; color:#94a3b8; line-height:1.35; max-width:320px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${escapeHtml(r.desc || '')}">
+                  ${escapeHtml(r.desc || '--')}
+                </div>
+                <small style="color:${descCharColor}; font-size:10.5px; font-family:'JetBrains Mono', monospace;">${descChars} chars</small>
+              </td>
+              <td>
+                <span class="seo-badge-cat">${escapeHtml(r.category || 'tools')}</span>
+              </td>
+              <td>
+                ${isIndexed 
+                  ? `<span class="seo-badge-indexed">● INDEXED</span>` 
+                  : `<span class="seo-badge-noindex">○ NOINDEX</span>`}
+              </td>
+              <td style="text-align:center; font-family:'JetBrains Mono', monospace; font-size:11px; color:#94a3b8;">
+                ${r.priority || '0.8'} <span style="font-size:9.5px; color:#64748b;">(${r.changefreq || 'daily'})</span>
+              </td>
+              <td style="text-align:right;">
+                <div style="display:inline-flex; gap:6px;">
+                  <button type="button" class="seo-pill-btn" style="padding:4px 9px;" onclick="openRouteSeoModal('${encodeURIComponent(r.path)}')">✏️ Edit</button>
+                  <button type="button" class="seo-pill-btn" style="padding:4px 9px;" onclick="previewRouteSerp('${encodeURIComponent(r.path)}')">👁️ SERP</button>
+                  ${isCustom ? `<button type="button" class="seo-pill-btn" style="padding:4px 7px; color:#f87171; border-color:rgba(239,68,68,0.3);" onclick="deleteRouteSeo('${encodeURIComponent(r.path)}')">🗑️</button>` : ''}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function openRouteSeoModal(encodedPath = '') {
+        const path = encodedPath ? decodeURIComponent(encodedPath) : '';
+        const modal = document.getElementById('modalRouteSeo');
+        if (!modal) return;
+
+        let r = null;
+        if (path) {
+          r = allSeoRoutes.find(x => x.path === path);
+        }
+
+        const isNew = !r;
+        document.getElementById('modalRouteSeoTitle').textContent = isNew ? '➕ Add New Page / URL SEO' : `✏️ Edit Page SEO: ${path}`;
+        document.getElementById('modalRouteSeoSub').textContent = isNew ? 'Configure custom route metadata for platform search engine indexing' : `Active Route: ${path}`;
+        
+        const pathInput = document.getElementById('editRoutePath');
+        pathInput.value = r ? r.path : '';
+        pathInput.readOnly = !isNew && !r.custom;
+        pathInput.style.opacity = (!isNew && !r.custom) ? '0.7' : '1';
+
+        document.getElementById('editRouteIsCustom').value = (r && r.custom) || isNew ? 'true' : 'false';
+        document.getElementById('editRouteCategory').value = r ? (r.category || 'tools') : 'tools';
+        document.getElementById('editRouteTitle').value = r ? (r.title || '') : '';
+        document.getElementById('editRouteDesc').value = r ? (r.desc || '') : '';
+        document.getElementById('editRouteKeywords').value = r ? (r.keywords || '') : '';
+        document.getElementById('editRouteCanonical').value = r ? (r.canonical || '') : '';
+        document.getElementById('editRouteOgTitle').value = r ? (r.og_title || '') : '';
+        document.getElementById('editRouteOgDesc').value = r ? (r.og_desc || '') : '';
+        document.getElementById('editRouteRobots').value = r ? (r.robots || 'index, follow') : 'index, follow';
+        document.getElementById('editRoutePriority').value = r ? (r.priority || '0.8') : '0.8';
+        document.getElementById('editRouteFreq').value = r ? (r.changefreq || 'daily') : 'daily';
+
+        const btnDel = document.getElementById('btnDeleteCustomRoute');
+        if (btnDel) {
+          btnDel.style.display = (r && r.custom) ? 'block' : 'none';
+        }
+
+        updateSerpPreview();
+        modal.style.display = 'flex';
+      }
+
+      function closeRouteSeoModal() {
+        const modal = document.getElementById('modalRouteSeo');
+        if (modal) modal.style.display = 'none';
+      }
+
+      function updateSerpPreview() {
+        const path = document.getElementById('editRoutePath')?.value || '/';
+        const title = document.getElementById('editRouteTitle')?.value || 'Title | TradersDesk.in';
+        const desc = document.getElementById('editRouteDesc')?.value || 'Meta description snippet appears here...';
+
+        const titleLen = title.length;
+        const descLen = desc.length;
+
+        const elTitleCount = document.getElementById('titleCharCount');
+        if (elTitleCount) {
+          elTitleCount.textContent = `${titleLen} / 60`;
+          elTitleCount.style.color = titleLen > 65 ? '#f87171' : (titleLen > 40 ? '#34d399' : '#fbbf24');
+        }
+
+        const elDescCount = document.getElementById('descCharCount');
+        if (elDescCount) {
+          elDescCount.textContent = `${descLen} / 160`;
+          elDescCount.style.color = descLen > 165 ? '#f87171' : (descLen > 110 ? '#34d399' : '#fbbf24');
+        }
+
+        const cleanBreadcrumb = 'tradersdesk.in ' + (path === '/' ? '' : path.split('/').filter(Boolean).map(x => '› ' + x).join(' '));
+        const breadEl = document.getElementById('serpBreadcrumb');
+        if (breadEl) breadEl.textContent = cleanBreadcrumb;
+
+        const titleEl = document.getElementById('serpTitle');
+        if (titleEl) titleEl.textContent = title;
+
+        const descEl = document.getElementById('serpDesc');
+        if (descEl) descEl.textContent = desc;
+
+        // Auto-fill canonical if blank
+        const canInput = document.getElementById('editRouteCanonical');
+        if (canInput && !canInput.value) {
+          canInput.value = `https://tradersdesk.in${path === '/' ? '' : path}`;
+        }
+      }
+
+      function previewRouteSerp(encodedPath) {
+        openRouteSeoModal(encodedPath);
+        const card = document.querySelector('.serp-preview-card');
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+
+      async function saveRouteSeo() {
+        const path = (document.getElementById('editRoutePath')?.value || '').trim();
+        if (!path) {
+          alert('Route Path is required (must start with /)');
+          return;
+        }
+        const cleanPath = path.startsWith('/') ? path : '/' + path;
+
+        const payload = {
+          path: cleanPath,
+          category: document.getElementById('editRouteCategory')?.value || 'tools',
+          title: (document.getElementById('editRouteTitle')?.value || '').trim(),
+          desc: (document.getElementById('editRouteDesc')?.value || '').trim(),
+          keywords: (document.getElementById('editRouteKeywords')?.value || '').trim(),
+          canonical: (document.getElementById('editRouteCanonical')?.value || '').trim(),
+          og_title: (document.getElementById('editRouteOgTitle')?.value || '').trim(),
+          og_desc: (document.getElementById('editRouteOgDesc')?.value || '').trim(),
+          robots: document.getElementById('editRouteRobots')?.value || 'index, follow',
+          priority: document.getElementById('editRoutePriority')?.value || '0.8',
+          changefreq: document.getElementById('editRouteFreq')?.value || 'daily',
+          custom: document.getElementById('editRouteIsCustom')?.value === 'true'
+        };
+
+        try {
+          const res = await fetch('/api/admin/seo-routes', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.ok) {
+            closeRouteSeoModal();
+            showAdmAlert(`✓ SEO saved for ${cleanPath}!`, 'success');
+            await loadSeoRoutes();
+          } else {
+            showAdmAlert('Failed to save route SEO: ' + (data.message || ''), 'error');
+          }
+        } catch(e) {
+          showAdmAlert('Error saving route SEO: ' + e.message, 'error');
+        }
+      }
+
+      async function deleteRouteSeo(encodedPath) {
+        const path = decodeURIComponent(encodedPath);
+        if (!confirm(`Are you sure you want to delete custom SEO route: ${path}?`)) return;
+
+        try {
+          const res = await fetch('/api/admin/seo-routes/delete', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ path })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            showAdmAlert(`✓ Deleted custom route: ${path}`, 'success');
+            await loadSeoRoutes();
+          } else {
+            showAdmAlert('Failed to delete: ' + (data.message || ''), 'error');
+          }
+        } catch(e) {
+          showAdmAlert('Error: ' + e.message, 'error');
+        }
+      }
+
+      function deleteCurrentRoute() {
+        const path = document.getElementById('editRoutePath')?.value;
+        if (path) {
+          closeRouteSeoModal();
+          deleteRouteSeo(encodeURIComponent(path));
+        }
+      }
+
+      async function autoDiscoverSeoRoutes() {
+        showAdmAlert('🔍 Scanning workspace HTML files and active platform endpoints...', 'info');
+        try {
+          const res = await fetch('/api/admin/seo-routes/auto-discover', {
+            method: 'POST',
+            headers: getAuthHeaders()
+          });
+          const data = await res.json();
+          if (data.ok) {
+            showAdmAlert(`✓ ${data.message} (Total: ${data.totalRoutes} routes)`, 'success');
+            await loadSeoRoutes();
+          } else {
+            showAdmAlert('Auto-discovery failed: ' + (data.message || ''), 'error');
+          }
+        } catch(e) {
+          showAdmAlert('Error scanning routes: ' + e.message, 'error');
+        }
+      }
+
+      async function rebuildSitemap() {
+        showAdmAlert('⚡ Rebuilding public/sitemap.xml with live active routes...', 'info');
+        try {
+          const res = await fetch('/api/admin/seo-routes/rebuild-sitemap', {
+            method: 'POST',
+            headers: getAuthHeaders()
+          });
+          const data = await res.json();
+          if (data.ok) {
+            showAdmAlert(`✓ ${data.message}`, 'success');
+          } else {
+            showAdmAlert('Failed to rebuild sitemap: ' + (data.message || ''), 'error');
+          }
+        } catch(e) {
+          showAdmAlert('Error rebuilding sitemap: ' + e.message, 'error');
+        }
+      }
+
 
       // 4. Cache
       async function purgeCache() {
@@ -1813,6 +2428,191 @@
         }
       }
 
+      // =========================================================================
+      // 8. FOOTER LINK MANAGER COMMAND CENTER
+      // =========================================================================
+      let admFooterState = null;
+
+      async function loadFooterAdmin(force = false) {
+        if (admFooterState && !force) {
+          renderFooterAdmin();
+          return;
+        }
+        const container = document.getElementById('admFooterColsContainer');
+        if (container) container.innerHTML = `<div style="grid-column:1/-1; padding:30px; text-align:center; color:var(--adm-muted);">⏳ Fetching footer link configuration...</div>`;
+        try {
+          const res = await fetch('/api/admin/footer-links', { headers: getAuthHeaders() });
+          const data = await res.json();
+          if (data && data.columns) {
+            admFooterState = JSON.parse(JSON.stringify(data));
+            renderFooterAdmin();
+          } else {
+            showFooterAlert('Failed to load footer links from backend', 'fail');
+          }
+        } catch (e) {
+          showFooterAlert('Error loading footer: ' + e.message, 'fail');
+        }
+      }
+
+      function showFooterAlert(msg, type = 'pass') {
+        const el = document.getElementById('admFooterAlert');
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'alert-adm ' + (type === 'fail' ? 'fail' : 'pass');
+        el.style.display = 'block';
+        el.style.background = type === 'fail' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)';
+        el.style.color = type === 'fail' ? '#f87171' : '#34d399';
+        el.style.border = '1px solid ' + (type === 'fail' ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)');
+        setTimeout(() => { if (el) el.style.display = 'none'; }, 4000);
+      }
+
+      function renderFooterAdmin() {
+        const container = document.getElementById('admFooterColsContainer');
+        if (!container || !admFooterState || !admFooterState.columns) return;
+
+        const colThemes = [
+          { border: '#38bdf8', badge: 'rgba(56,189,248,0.15)', text: '#38bdf8' },
+          { border: '#a78bfa', badge: 'rgba(167,139,250,0.15)', text: '#a78bfa' },
+          { border: '#34d399', badge: 'rgba(52,211,153,0.15)', text: '#34d399' },
+          { border: '#f59e0b', badge: 'rgba(245,158,11,0.15)', text: '#f59e0b' }
+        ];
+
+        container.innerHTML = admFooterState.columns.map((col, cIdx) => {
+          const theme = colThemes[cIdx % colThemes.length];
+          const linksHtml = (col.links || []).map((lnk, lIdx) => `
+            <div style="background:#050b18; border:1px solid var(--adm-border); border-radius:8px; padding:10px; margin-bottom:8px; display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="text" class="adm-input" value="${(lnk.label || '').replace(/"/g, '&quot;')}" placeholder="Link label..." style="padding:6px 10px; font-size:12px; font-weight:700; flex:1;" oninput="updateFooterLinkField('${col.id}', ${lIdx}, 'label', this.value)">
+                <button type="button" class="btn-adm-danger" style="padding:4px 8px; font-size:11px;" onclick="removeFooterLink('${col.id}', ${lIdx})" title="Delete link">🗑️</button>
+              </div>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <input type="text" class="adm-input" value="${(lnk.url || '').replace(/"/g, '&quot;')}" placeholder="URL (e.g. /breadth)..." style="padding:5px 8px; font-size:11px; flex:2; font-family:'JetBrains Mono',monospace;" oninput="updateFooterLinkField('${col.id}', ${lIdx}, 'url', this.value)">
+                <select class="adm-input" style="padding:5px 6px; font-size:10.5px; width:80px;" onchange="updateFooterLinkField('${col.id}', ${lIdx}, 'target', this.value)">
+                  <option value="_self" ${lnk.target !== '_blank' ? 'selected' : ''}>_self</option>
+                  <option value="_blank" ${lnk.target === '_blank' ? 'selected' : ''}>_blank</option>
+                </select>
+              </div>
+            </div>
+          `).join('');
+
+          return `
+            <div class="adm-card" style="border-top:3px solid ${theme.border}; padding:14px; display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--adm-border); padding-bottom:8px;">
+                  <strong style="color:${theme.text}; font-size:13px;">COLUMN ${cIdx + 1}</strong>
+                  <span style="font-size:11px; font-weight:800; background:${theme.badge}; color:${theme.text}; padding:2px 8px; border-radius:12px;">${(col.links || []).length} Links</span>
+                </div>
+                <div style="margin-bottom:10px;">
+                  <label style="font-size:11px; color:var(--adm-muted); font-weight:700; display:block; margin-bottom:4px;">COLUMN HEADER TITLE</label>
+                  <input type="text" class="adm-input" value="${(col.title || '').replace(/"/g, '&quot;')}" style="font-weight:700; padding:6px 10px; font-size:12px;" oninput="updateFooterColTitle('${col.id}', this.value)">
+                </div>
+                <div style="max-height:360px; overflow-y:auto; padding-right:2px;">
+                  ${linksHtml}
+                </div>
+              </div>
+              <button type="button" class="btn-adm-primary" style="margin-top:10px; width:100%; padding:7px; font-size:12px; background:rgba(255,255,255,0.06); border:1px dashed var(--adm-border);" onclick="addFooterLink('${col.id}')">
+                ➕ Add Link to Column ${cIdx + 1}
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        renderFooterLivePreview();
+      }
+
+      function updateFooterColTitle(colId, val) {
+        if (!admFooterState) return;
+        const col = admFooterState.columns.find(c => c.id === colId);
+        if (col) {
+          col.title = val;
+          renderFooterLivePreview();
+        }
+      }
+
+      function updateFooterLinkField(colId, lIdx, field, val) {
+        if (!admFooterState) return;
+        const col = admFooterState.columns.find(c => c.id === colId);
+        if (col && col.links && col.links[lIdx]) {
+          col.links[lIdx][field] = val;
+          renderFooterLivePreview();
+        }
+      }
+
+      function addFooterLink(colId) {
+        if (!admFooterState) return;
+        const col = admFooterState.columns.find(c => c.id === colId);
+        if (col) {
+          col.links = col.links || [];
+          col.links.push({ label: 'New Custom Link', url: '#', type: 'link', target: '_self' });
+          renderFooterAdmin();
+        }
+      }
+
+      function removeFooterLink(colId, lIdx) {
+        if (!admFooterState) return;
+        const col = admFooterState.columns.find(c => c.id === colId);
+        if (col && col.links) {
+          col.links.splice(lIdx, 1);
+          renderFooterAdmin();
+        }
+      }
+
+      function renderFooterLivePreview() {
+        const preview = document.getElementById('admFooterLivePreview');
+        if (!preview || !admFooterState || !admFooterState.columns) return;
+
+        const titleColors = { col1: "#38bdf8", col2: "#a78bfa", col3: "#34d399", col4: "#f59e0b" };
+        preview.innerHTML = `
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; background:#040914; border-radius:8px; padding:16px; border:1px solid rgba(255,255,255,0.08);">
+            ${admFooterState.columns.map(col => `
+              <div>
+                <h4 style="margin:0 0 10px 0; font-size:12px; font-weight:800; color:${titleColors[col.id] || '#fff'}; text-transform:uppercase;">${col.title}</h4>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  ${(col.links || []).map(lnk => `
+                    <span style="font-size:12px; color:#94a3b8; font-weight:500;">&bull; ${lnk.label} <code style="font-size:10px; color:#64748b;">(${lnk.url})</code></span>
+                  `).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      async function saveFooterAdmin() {
+        if (!admFooterState) return;
+        try {
+          const res = await fetch('/api/admin/footer-links', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(admFooterState)
+          });
+          const data = await res.json();
+          if (data.ok) {
+            showFooterAlert('✅ Footer configuration successfully saved and broadcast across platform!', 'pass');
+          } else {
+            showFooterAlert('❌ Failed to save: ' + (data.message || 'Unknown error'), 'fail');
+          }
+        } catch (e) {
+          showFooterAlert('❌ Error saving footer: ' + e.message, 'fail');
+        }
+      }
+
+      async function resetFooterAdmin() {
+        if (!confirm('Are you sure you want to restore the default institutional 4-column footer links? Any custom changes will be overwritten.')) return;
+        try {
+          const res = await fetch('/api/footer-links');
+          const data = await res.json();
+          if (data && data.columns) {
+            admFooterState = data;
+            await saveFooterAdmin();
+            renderFooterAdmin();
+            showFooterAlert('✅ Restored default 4-column footer configuration.', 'pass');
+          }
+        } catch (e) {
+          showFooterAlert('Error resetting footer: ' + e.message, 'fail');
+        }
+      }
+
       // Auto-unlock if session key exists
       if (adminSecretKey) {
         fetch('/api/admin/verify', {
@@ -1833,5 +2633,140 @@
         }).catch(() => {});
       }
     </script>
+    <!-- Modal: Route SEO & SERP Editor -->
+    <div id="modalRouteSeo" class="adm-modal-overlay">
+      <div class="adm-modal-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--adm-border); padding-bottom:14px;">
+          <div>
+            <h3 id="modalRouteSeoTitle" style="margin:0; font-size:17px; font-weight:800; color:#fff;">Edit Page SEO</h3>
+            <span id="modalRouteSeoSub" style="font-size:12px; color:#94a3b8; font-family:'JetBrains Mono', monospace;">/futures</span>
+          </div>
+          <button type="button" onclick="closeRouteSeoModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
+        </div>
+
+        <form id="formRouteSeo" onsubmit="event.preventDefault(); saveRouteSeo();">
+          <input type="hidden" id="editRouteIsCustom" value="false" />
+          
+          <div style="display:grid; grid-template-columns: 2fr 1fr; gap:14px;">
+            <div class="adm-form-group">
+              <label>Page URL / Route Path <span style="color:#ef4444;">*</span></label>
+              <input type="text" id="editRoutePath" class="adm-input" placeholder="e.g. /my-new-screener" required />
+            </div>
+            <div class="adm-form-group">
+              <label>Category</label>
+              <select id="editRouteCategory" class="adm-input" style="cursor:pointer;">
+                <option value="dashboard">Dashboard</option>
+                <option value="futures">Futures</option>
+                <option value="options">Options</option>
+                <option value="mtf">MTF</option>
+                <option value="delivery">Delivery</option>
+                <option value="breadth">Breadth</option>
+                <option value="global">Global</option>
+                <option value="smart-money">Smart Money</option>
+                <option value="tools">Tools</option>
+                <option value="legal">Legal/Static</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Page Title with Live Character Counter -->
+          <div class="adm-form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label>Page Title Tag (&lt;title&gt;) <span style="color:#ef4444;">*</span></label>
+              <span id="titleCharCount" style="font-size:11px; font-weight:700; color:#34d399;">0 / 60</span>
+            </div>
+            <input type="text" id="editRouteTitle" class="adm-input" placeholder="Page Title (Keep under 60 chars for best Google display)" required oninput="updateSerpPreview()" />
+          </div>
+
+          <!-- Meta Description with Live Character Counter -->
+          <div class="adm-form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label>Meta Description (Google SERP Snippet) <span style="color:#ef4444;">*</span></label>
+              <span id="descCharCount" style="font-size:11px; font-weight:700; color:#34d399;">0 / 160</span>
+            </div>
+            <textarea id="editRouteDesc" class="adm-textarea" placeholder="Compelling 150-160 character snippet describing this page..." required oninput="updateSerpPreview()" style="min-height:70px;"></textarea>
+          </div>
+
+          <!-- Live Google SERP Snippet Simulator -->
+          <div class="adm-form-group">
+            <label style="color:#60a5fa; display:flex; align-items:center; gap:6px;">
+              <span>🌐 Live Google SERP Snippet Simulator</span>
+              <span style="font-size:10px; font-weight:normal; color:#94a3b8;">(How this URL appears in Google Search results)</span>
+            </label>
+            <div class="serp-preview-card">
+              <div class="serp-url-line">
+                <span style="display:inline-block; width:16px; height:16px; border-radius:50%; background:#3b82f6; text-align:center; font-size:10px; line-height:16px; color:#fff; font-weight:bold;">T</span>
+                <span id="serpBreadcrumb">tradersdesk.in › futures › buildup</span>
+              </div>
+              <a href="javascript:void(0)" class="serp-title-line" id="serpTitle">Page Title | TradersDesk</a>
+              <div class="serp-desc-line" id="serpDesc">Meta description snippet appears here for the searcher...</div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
+            <div class="adm-form-group">
+              <label>Target Keywords (comma separated)</label>
+              <input type="text" id="editRouteKeywords" class="adm-input" placeholder="e.g. nifty, futures, options" />
+            </div>
+            <div class="adm-form-group">
+              <label>Canonical URL</label>
+              <input type="text" id="editRouteCanonical" class="adm-input" placeholder="https://tradersdesk.in/..." />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
+            <div class="adm-form-group">
+              <label>OpenGraph Title (og:title)</label>
+              <input type="text" id="editRouteOgTitle" class="adm-input" placeholder="Defaults to Title Tag" />
+            </div>
+            <div class="adm-form-group">
+              <label>OpenGraph Description (og:desc)</label>
+              <input type="text" id="editRouteOgDesc" class="adm-input" placeholder="Defaults to Meta Description" />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px;">
+            <div class="adm-form-group">
+              <label>Robots Directive</label>
+              <select id="editRouteRobots" class="adm-input" style="cursor:pointer;">
+                <option value="index, follow">index, follow (Indexed)</option>
+                <option value="noindex, follow">noindex, follow (Hidden)</option>
+                <option value="noindex, nofollow">noindex, nofollow (Blocked)</option>
+              </select>
+            </div>
+            <div class="adm-form-group">
+              <label>Sitemap Priority</label>
+              <select id="editRoutePriority" class="adm-input" style="cursor:pointer;">
+                <option value="1.0">1.0 (Highest - Homepage)</option>
+                <option value="0.9">0.9 (Very High - Core Desks)</option>
+                <option value="0.8">0.8 (Standard - Sub Tools)</option>
+                <option value="0.7">0.7 (Medium)</option>
+                <option value="0.5">0.5 (Low - Legal / Terms)</option>
+              </select>
+            </div>
+            <div class="adm-form-group">
+              <label>Change Frequency</label>
+              <select id="editRouteFreq" class="adm-input" style="cursor:pointer;">
+                <option value="always">always (Live Real-Time)</option>
+                <option value="hourly">hourly</option>
+                <option value="daily">daily</option>
+                <option value="weekly">weekly</option>
+                <option value="monthly">monthly</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid var(--adm-border); padding-top:16px;">
+            <button type="button" id="btnDeleteCustomRoute" class="btn-adm-danger" style="display:none;" onclick="deleteCurrentRoute()">🗑️ Delete URL</button>
+            <div style="display:flex; gap:10px; margin-left:auto;">
+              <button type="button" class="seo-pill-btn" onclick="closeRouteSeoModal()">Cancel</button>
+              <button type="submit" class="btn-adm-primary" style="background:#10b981;">💾 Save Page SEO</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
   </body>
 </html>
+

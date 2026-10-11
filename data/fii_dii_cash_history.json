@@ -183,10 +183,16 @@
   ],
   "monthly": [
     {
+      "period": "Oct 2026",
+      "fiiNet": -39778.51,
+      "diiNet": 40355.32,
+      "totalNet": 576.81
+    },
+    {
       "period": "Sep 2026",
-      "fiiNet": -24823.5,
-      "diiNet": 58730.1,
-      "totalNet": 33906.6
+      "fiiNet": -34803.72,
+      "diiNet": 65682.81,
+      "totalNet": 30879.09
     },
     {
       "period": "Aug 2026",
@@ -292,6 +298,104 @@
     }
   ],
   "daily": [
+    {
+      "period": "09-Oct-2026",
+      "date": "09-Oct-2026",
+      "niftyClose": 23414.3,
+      "niftyChange": 67.9,
+      "niftyPct": 0.29,
+      "totalNet": 1174.36,
+      "fiiNet": -3568.9,
+      "diiNet": 4743.26,
+      "fiiBuy": 10373.99,
+      "fiiSell": 13942.89,
+      "diiBuy": 15626.53,
+      "diiSell": 10883.27
+    },
+    {
+      "period": "08-Oct-2026",
+      "date": "08-Oct-2026",
+      "niftyClose": 23414.3,
+      "niftyChange": 67.9,
+      "niftyPct": 0.29,
+      "totalNet": -2240.47,
+      "fiiNet": -12943.58,
+      "diiNet": 10703.11,
+      "fiiBuy": 15725.45,
+      "fiiSell": 28669.03,
+      "diiBuy": 22987.97,
+      "diiSell": 12284.86
+    },
+    {
+      "period": "07-Oct-2026",
+      "date": "07-Oct-2026",
+      "niftyClose": 23414.3,
+      "niftyChange": 67.9,
+      "niftyPct": 0.29,
+      "totalNet": -1524.8,
+      "fiiNet": -6121.37,
+      "diiNet": 4596.57,
+      "fiiBuy": 12577.96,
+      "fiiSell": 18699.33,
+      "diiBuy": 18707.03,
+      "diiSell": 14110.46
+    },
+    {
+      "period": "06-Oct-2026",
+      "date": "06-Oct-2026",
+      "niftyClose": 23414.3,
+      "niftyChange": 67.9,
+      "niftyPct": 0.29,
+      "totalNet": 2127.62,
+      "fiiNet": -2961.3,
+      "diiNet": 5088.92,
+      "fiiBuy": 11258.72,
+      "fiiSell": 14220.02,
+      "diiBuy": 20146.4,
+      "diiSell": 15057.48
+    },
+    {
+      "period": "05-Oct-2026",
+      "date": "05-Oct-2026",
+      "niftyClose": 23414.3,
+      "niftyChange": 67.9,
+      "niftyPct": 0.29,
+      "totalNet": 482.48,
+      "fiiNet": -4699.14,
+      "diiNet": 5181.62,
+      "fiiBuy": 15674.61,
+      "fiiSell": 20373.75,
+      "diiBuy": 20492.93,
+      "diiSell": 15311.31
+    },
+    {
+      "period": "01-Oct-2026",
+      "date": "01-Oct-2026",
+      "niftyClose": 23414.3,
+      "niftyChange": 67.9,
+      "niftyPct": 0.29,
+      "totalNet": 557.62,
+      "fiiNet": -9484.22,
+      "diiNet": 10041.84,
+      "fiiBuy": 12260.26,
+      "fiiSell": 21744.48,
+      "diiBuy": 25420.04,
+      "diiSell": 15378.2
+    },
+    {
+      "period": "29-Sep-2026",
+      "date": "29-Sep-2026",
+      "niftyClose": 23414.3,
+      "niftyChange": 67.9,
+      "niftyPct": 0.29,
+      "totalNet": -3027.51,
+      "fiiNet": -9980.22,
+      "diiNet": 6952.71,
+      "fiiBuy": 22472.7,
+      "fiiSell": 32452.92,
+      "diiBuy": 46261.11,
+      "diiSell": 39308.4
+    },
     {
       "period": "28-Sep-2026",
       "date": "28-Sep-2026",
@@ -867,5 +971,5 @@
       "niftyPct": 0.12
     }
   ],
-  "lastUpdated": "28-Sep-2026 22:20 IST"
+  "lastUpdated": "09-Oct-2026 18:19 IST"
 }

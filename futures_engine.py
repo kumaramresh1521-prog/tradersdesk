@@ -605,6 +605,137 @@ _LIVE_QUOTES_CACHE: dict = {"ts": 0.0, "data": {}}
 _KOTAK_FO_MAP: dict = {}
 _KOTAK_CASH_MAP: dict = {}
 
+def _ensure_unexpired_contracts(fo_map: dict) -> dict:
+    today = datetime.now().date()
+    changed = False
+    for sym, info in fo_map.items():
+        contracts = info.get("all_contracts", [])
+        unexpired = []
+        for c in contracts:
+            try:
+                exp_d = datetime.strptime(c["expiry"], "%d-%b-%Y").date()
+                if exp_d >= today:
+                    unexpired.append(c)
+            except Exception:
+                pass
+        if unexpired:
+            near = unexpired[0]
+            if info.get("expiry") != near["expiry"] or info.get("token") != near["token"]:
+                info["token"] = near["token"]
+                info["trd_sym"] = near["trd_sym"]
+                info["ref_key"] = near["ref_key"]
+                info["expiry"] = near["expiry"]
+                info["all_expiries"] = [c["expiry"] for c in unexpired]
+                info["all_contracts"] = unexpired
+                changed = True
+    if changed:
+        try:
+            Path("cache/kotak_fo_contract_map.json").write_text(json.dumps(fo_map, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+    return fo_map
+
+_BHAVCOPY_CACHE: dict = {"ts": 0.0, "data": {}, "date": ""}
+
+def _load_latest_bhavcopy_data() -> tuple[dict[str, dict], str]:
+    """
+    Loads latest official NSE F&O Bhavcopy EOD prices, OI, volume, and spot quotes.
+    Caches for 60 seconds to provide zero-latency fallback when market is closed or broker feed is idle.
+    """
+    global _BHAVCOPY_CACHE
+    now = time.time()
+    if _BHAVCOPY_CACHE["data"] and (now - _BHAVCOPY_CACHE["ts"]) < 60.0:
+        return _BHAVCOPY_CACHE["data"], _BHAVCOPY_CACHE["date"]
+
+    fo_dir = Path("cache/fo_bhav")
+    if not fo_dir.exists():
+        return {}, ""
+    csvs = sorted(fo_dir.glob("BhavCopy_NSE_FO_*.csv"), key=lambda p: p.name, reverse=True)
+    if not csvs:
+        return {}, ""
+
+    latest_csv = csvs[0]
+    bhav_map = {}
+    bhav_date_str = ""
+    today = datetime.now().date()
+    try:
+        import csv
+        with open(latest_csv, mode="r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                inst_tp = row.get("FinInstrmTp", "")
+                if inst_tp not in ("IDF", "STF"):
+                    continue
+                sym = row.get("TckrSymb", "").strip().upper()
+                xpry_str = row.get("XpryDt", "").strip()
+                if not xpry_str:
+                    continue
+                try:
+                    exp_dt = datetime.strptime(xpry_str, "%Y-%m-%d").date()
+                except Exception:
+                    continue
+                if exp_dt < today and exp_dt < datetime(2026, 10, 1).date():
+                    continue
+
+                if not bhav_date_str:
+                    raw_dt = row.get("TradDt", "")
+                    if raw_dt:
+                        try:
+                            bhav_date_str = datetime.strptime(raw_dt, "%Y-%m-%d").strftime("%d-%b-%Y")
+                        except Exception:
+                            bhav_date_str = raw_dt
+
+                existing = bhav_map.get(sym)
+                if existing and existing["exp_dt"] <= exp_dt:
+                    continue
+
+                try:
+                    cls_p = float(row.get("ClsPric") or 0.0)
+                    last_p = float(row.get("LastPric") or cls_p)
+                    prev_cls = float(row.get("PrvsClsgPric") or cls_p)
+                    spot_p = float(row.get("UndrlygPric") or last_p)
+                    oi = float(row.get("OpnIntrst") or 0.0)
+                    oi_chg = float(row.get("ChngInOpnIntrst") or 0.0)
+                    vol = float(row.get("TtlTradgVol") or 0.0)
+                    turnover = float(row.get("TtlTrfVal") or 0.0)
+                    lot = int(row.get("NewBrdLotQty") or 1)
+
+                    price_chg = round(last_p - prev_cls, 2)
+                    price_chg_pct = round((price_chg / prev_cls * 100.0), 2) if prev_cls > 0 else 0.0
+                    prev_oi = oi - oi_chg
+                    oi_chg_pct = round((oi_chg / prev_oi * 100.0), 2) if prev_oi > 0 else 0.0
+
+                    bhav_map[sym] = {
+                        "symbol": sym,
+                        "exp_dt": exp_dt,
+                        "expiry": exp_dt.strftime("%d-%b-%Y"),
+                        "ltp": last_p,
+                        "close": cls_p,
+                        "prevClose": prev_cls,
+                        "priceChange": price_chg,
+                        "priceChangePct": price_chg_pct,
+                        "spotPrice": spot_p,
+                        "oi": oi,
+                        "oiChange": oi_chg,
+                        "oiChangePct": oi_chg_pct,
+                        "volume": vol,
+                        "turnoverCr": round(turnover / 10000000.0, 2),
+                        "lot": lot,
+                        "high": float(row.get("HghPric") or last_p),
+                        "low": float(row.get("LwPric") or last_p),
+                        "date": bhav_date_str
+                    }
+                except Exception:
+                    pass
+
+        _BHAVCOPY_CACHE["ts"] = now
+        _BHAVCOPY_CACHE["data"] = bhav_map
+        _BHAVCOPY_CACHE["date"] = bhav_date_str
+    except Exception as e:
+        logger.error(f"Error loading bhavcopy quotes: {e}")
+
+    return bhav_map, bhav_date_str
+
 def get_live_kotak_quotes_map() -> dict[str, dict]:
     """
     Unified high-fidelity live quote engine:
@@ -625,6 +756,7 @@ def get_live_kotak_quotes_map() -> dict[str, dict]:
             map_file = Path("cache/kotak_fo_contract_map.json")
             if map_file.exists():
                 _KOTAK_FO_MAP = json.loads(map_file.read_text(encoding="utf-8"))
+                _KOTAK_FO_MAP = _ensure_unexpired_contracts(_KOTAK_FO_MAP)
         except Exception:
             _KOTAK_FO_MAP = {}
 
@@ -843,11 +975,13 @@ def get_live_kotak_quotes_map() -> dict[str, dict]:
 def _build_master_futures_records() -> list[dict]:
     """
     Constructs high-fidelity records for all F&O universe symbols with real-time
-    Kotak Securities Neo API and Angel SmartAPI exchange quotes, basis, OI, and buildup.
+    Kotak Securities Neo API and Angel SmartAPI exchange quotes, basis, OI, and buildup,
+    with automatic official NSE Bhavcopy EOD seeding when market is closed.
     """
     now = datetime.now()
     records = []
     live_quotes = get_live_kotak_quotes_map()
+    bhav_map, bhav_date_str = _load_latest_bhavcopy_data()
 
     # Load baseline OI cache for real OI Change calculation
     baseline_cache_file = Path("cache/daily_oi_baseline.json")
@@ -906,7 +1040,13 @@ def _build_master_futures_records() -> list[dict]:
         c_info = _KOTAK_FO_MAP.get(sym, {})
         if c_info.get("lot"):
             lot = c_info["lot"]
-        expiry = c_info.get("expiry", "29-Sep-2026")
+        expiry = c_info.get("expiry", "27-Oct-2026")
+
+        bhav_q = bhav_map.get(sym, {})
+        if bhav_q.get("expiry"):
+            expiry = bhav_q["expiry"]
+        if bhav_q.get("lot"):
+            lot = bhav_q["lot"]
 
         fut_q = live_quotes.get(f"FUT:{sym}")
         spot_q = live_quotes.get(f"SPOT:{sym}") or live_quotes.get(sym)
@@ -923,6 +1063,17 @@ def _build_master_futures_records() -> list[dict]:
             day_high = float(fut_q.get("high") or fut_price)
             day_low = float(fut_q.get("low") or fut_price)
             prev_close = float(fut_q.get("close") or (fut_price - fut_chg))
+        elif bhav_q:
+            # Fall back to latest official NSE Bhavcopy session data
+            fut_price = float(bhav_q.get("ltp") or base)
+            fut_chg = float(bhav_q.get("priceChange") or 0.0)
+            fut_chg_pct = float(bhav_q.get("priceChangePct") or 0.0)
+            curr_oi = int(float(bhav_q.get("oi") or 0))
+            raw_vol = int(float(bhav_q.get("volume") or 0))
+            vwap = float(bhav_q.get("close") or fut_price)
+            day_high = float(bhav_q.get("high") or fut_price)
+            day_low = float(bhav_q.get("low") or fut_price)
+            prev_close = float(bhav_q.get("prevClose") or fut_price)
         else:
             fut_price = round(base, 2)
             fut_chg = 0.0
@@ -939,6 +1090,9 @@ def _build_master_futures_records() -> list[dict]:
             spot_chg_pct = float(spot_q.get("changePct") or 0.0)
             if not is_live_broker:
                 is_live_broker = True
+        elif bhav_q and bhav_q.get("spotPrice"):
+            spot_price = float(bhav_q["spotPrice"])
+            spot_chg_pct = fut_chg_pct
         else:
             spot_price = fut_price if fut_price > 0 else base
             spot_chg_pct = fut_chg_pct
@@ -956,23 +1110,31 @@ def _build_master_futures_records() -> list[dict]:
         coc = round(basis_pct * (365.0 / dte), 2)
 
         # Real OI metrics
-        if curr_oi > 0:
+        if is_live_broker and curr_oi > 0:
             if sym not in baseline_oi:
                 baseline_oi[sym] = curr_oi
                 new_baseline_needed = True
             base_sym_oi = baseline_oi.get(sym, curr_oi)
-            if base_sym_oi > 0:
+            if base_sym_oi > 0 and curr_oi != base_sym_oi:
                 oi_chg_pct = round(((curr_oi - base_sym_oi) / base_sym_oi) * 100.0, 2)
+            elif bhav_q and "oiChangePct" in bhav_q:
+                oi_chg_pct = bhav_q["oiChangePct"]
             else:
                 oi_chg_pct = 0.0
+        elif bhav_q and "oiChangePct" in bhav_q:
+            oi_chg_pct = bhav_q["oiChangePct"]
         else:
             oi_chg_pct = 0.0
 
         oi_contracts = curr_oi // lot if (lot > 0 and curr_oi > 0) else curr_oi
         oi_val_cr = round((curr_oi * fut_price) / 10000000.0, 2)
 
-        vol_contracts = raw_vol // lot if (lot > 0 and raw_vol > 0) else raw_vol
-        vol_cr = round((vol_contracts * lot * fut_price) / 10000000.0, 2)
+        if raw_vol == 0 and bhav_q and bhav_q.get("volume"):
+            vol_contracts = int(bhav_q["volume"])
+            vol_cr = bhav_q.get("turnoverCr", 0.0)
+        else:
+            vol_contracts = raw_vol // lot if (lot > 0 and raw_vol > 0) else raw_vol
+            vol_cr = round(bhav_q.get("turnoverCr") or ((vol_contracts * lot * fut_price) / 10000000.0), 2)
 
         buildup_name, buildup_cls, buildup_code = classify_buildup(fut_chg_pct, oi_chg_pct)
 
@@ -1079,10 +1241,14 @@ def get_futures_dashboard() -> dict:
     # Indices
     indices_list = [r for r in records if r["isIndex"]]
 
+    _, bhav_date_str = _load_latest_bhavcopy_data()
+
     return {
         "ok": True,
         "timestamp": datetime.now().strftime("%H:%M:%S"),
         "date": datetime.now().strftime("%d-%b-%Y"),
+        "asOfDate": bhav_date_str or datetime.now().strftime("%d-%b-%Y"),
+        "activeExpiry": "27-Oct-2026",
         "tickSeq": int(time.time() / 3),
         "totalTurnoverCr": round(total_turnover, 2),
         "totalOiCr": round(total_oi_cr, 2),
@@ -1229,6 +1395,7 @@ def get_futures_heatmap(sector: str = "ALL") -> dict:
             "price": r["futPrice"],
             "changePct": pct,
             "oiCr": r["oiValueCr"],
+            "oi": r["oiContracts"],
             "weight": max(1.5, min(14.0, weight * 1.8)),
             "buildup": r["buildup"],
             "colorGrade": color_grade,
@@ -1249,11 +1416,21 @@ def get_mwpl_data() -> dict:
     - Safe Zone (<80%)
     """
     records = get_futures_master()
-    stocks = [r for r in records if not r["isIndex"]]
+    stocks = [r for r in records if not r.get("isIndex")]
 
-    banned = sorted([r for r in stocks if r["mwplStatus"] == "BANNED"], key=lambda x: x["mwplPct"], reverse=True)
-    alert = sorted([r for r in stocks if r["mwplStatus"] == "ALERT"], key=lambda x: x["mwplPct"], reverse=True)
-    normal = sorted([r for r in stocks if r["mwplStatus"] == "NORMAL"], key=lambda x: x["mwplPct"], reverse=True)
+    for s in stocks:
+        mwpl_pct = float(s.get("mwplPct") or 0.0)
+        cur_oi = int(s.get("openInterest") or s.get("oiContracts") or 0)
+        limit_oi = int(round(cur_oi / (mwpl_pct / 100.0))) if mwpl_pct > 0 and cur_oi > 0 else max(cur_oi * 2, 250000)
+        s["limitOi"] = limit_oi
+        s["currentOi"] = cur_oi
+        s["price"] = float(s.get("futPrice") or s.get("ltp") or s.get("spotPrice") or 0.0)
+        st = s.get("mwplStatus") or ("BANNED" if mwpl_pct >= 95.0 else ("ALERT" if mwpl_pct >= 80.0 else "NORMAL"))
+        s["status"] = st
+
+    banned = sorted([r for r in stocks if r.get("mwplStatus") == "BANNED" or r.get("mwplPct", 0) >= 95.0], key=lambda x: x.get("mwplPct", 0), reverse=True)
+    alert = sorted([r for r in stocks if (r.get("mwplStatus") == "ALERT" or (80.0 <= r.get("mwplPct", 0) < 95.0))], key=lambda x: x.get("mwplPct", 0), reverse=True)
+    normal = sorted([r for r in stocks if r not in banned and r not in alert], key=lambda x: x.get("mwplPct", 0), reverse=True)
 
     return {
         "ok": True,
@@ -1262,7 +1439,9 @@ def get_mwpl_data() -> dict:
         "alertCount": len(alert),
         "normalCount": len(normal),
         "banned": banned,
+        "bannedStocks": banned,
         "alertZone": alert,
+        "alertStocks": alert,
         "allStocks": banned + alert + normal,
     }
 
@@ -1366,6 +1545,66 @@ def get_official_rollover(sym: str, month: str) -> str | float:
     return "-"
 
 
+_ACTIVE_FNO_SYMBOLS_CACHE: dict = {"ts": 0.0, "symbols": set()}
+
+def get_active_fno_symbols() -> set[str]:
+    """
+    Returns the set of currently active F&O contracts trading on NSE (exact ~218-219 active contracts).
+    Excludes inactive, delisted, or historical contracts that are no longer traded in NSE F&O.
+    """
+    global _ACTIVE_FNO_SYMBOLS_CACHE
+    now = time.time()
+    if _ACTIVE_FNO_SYMBOLS_CACHE["symbols"] and (now - _ACTIVE_FNO_SYMBOLS_CACHE["ts"]) < 300.0:
+        return _ACTIVE_FNO_SYMBOLS_CACHE["symbols"]
+
+    active = set()
+    # 1. Official latest Bhavcopy rollover cache
+    latest_json = Path("cache/latest_fo_bhav_rollover.json")
+    if latest_json.exists():
+        try:
+            with open(latest_json, "r", encoding="utf-8") as f:
+                d = json.load(f)
+                active.update(sym.strip().upper() for sym in d.get("records", {}).keys())
+        except Exception as e:
+            logger.debug(f"Error reading latest_fo_bhav_rollover.json: {e}")
+
+    # 2. Latest official Bhavcopy CSV (contains all active STF and IDF contracts)
+    fo_dir = Path("cache/fo_bhav")
+    if fo_dir.exists():
+        csvs = sorted(fo_dir.glob("BhavCopy_NSE_FO_*.csv"), key=lambda p: p.name, reverse=True)
+        if csvs:
+            try:
+                import csv
+                with open(csvs[0], "r", encoding="utf-8", errors="ignore") as f:
+                    r = csv.DictReader(f)
+                    for row in r:
+                        if row.get("FinInstrmTp") in ("STF", "IDF"):
+                            sym = row.get("TckrSymb", "").strip().upper()
+                            if sym:
+                                active.add(sym)
+            except Exception as e:
+                logger.debug(f"Error parsing latest BhavCopy for active symbols: {e}")
+
+    # Fallback to _load_latest_bhavcopy_data if needed
+    if not active:
+        bmap, _ = _load_latest_bhavcopy_data()
+        active = set(bmap.keys())
+
+    if active:
+        _ACTIVE_FNO_SYMBOLS_CACHE["ts"] = now
+        _ACTIVE_FNO_SYMBOLS_CACHE["symbols"] = active
+
+    return active
+
+
+_ROLLOVER_CACHE = {
+    "ts": 0.0,
+    "rows": [],
+    "all_latest_vals": [],
+    "latest_month": "SEP 2026"
+}
+
+
 def get_futures_rollover_matrix(
     sector: str = "ALL",
     search: str = "",
@@ -1373,88 +1612,183 @@ def get_futures_rollover_matrix(
     sort_dir: str = "asc"
 ) -> dict:
     """
-    Returns full Historical & Monthly Futures Rollover Matrix for all F&O universe symbols.
+    Returns full Historical & Monthly Futures Rollover Matrix for ONLY currently active F&O universe symbols.
+    Excludes inactive, delisted, or historical contracts that are no longer trading in F&O.
     Uses official historical records from cache/futures_rollover_official.json and
-    real-time contract calculations from cache/nse_fo.csv.
+    real-time contract calculations from official NSE Bhavcopy and cache/nse_fo.csv.
     """
-    records = get_futures_master()
-    rec_by_sym = {r["symbol"].upper(): r for r in records}
+    global _ROLLOVER_CACHE
+    now = time.time()
 
-    # Merge in any extra symbols from official records (e.g. historical F&O stocks)
-    official_records = _OFFICIAL_ROLLOVER_DATA.get("records", {})
-    all_syms = list(rec_by_sym.keys())
-    for off_sym in sorted(official_records.keys()):
-        if off_sym not in rec_by_sym:
-            all_syms.append(off_sym)
+    latest_month = ROLLOVER_MONTHS[0] if ROLLOVER_MONTHS else "SEP 2026"
 
-    real_ro_map = get_real_contract_rollover_map()
+    if _ROLLOVER_CACHE["rows"] and (now - _ROLLOVER_CACHE["ts"]) < 60.0:
+        base_rows = _ROLLOVER_CACHE["rows"]
+        all_latest_vals = _ROLLOVER_CACHE["all_latest_vals"]
+    else:
+        # Get authoritative set of currently active F&O symbols
+        active_fno_syms = get_active_fno_symbols()
 
-    rollover_rows = []
-    all_aug_vals = []
+        # Build symbol metadata lookup
+        sym_meta = {}
+        for item in FO_UNIVERSE:
+            sym_meta[item["symbol"].upper()] = {
+                "name": item.get("name", item["symbol"]),
+                "sector": item.get("sector", "Others"),
+                "isIndex": item.get("isIndex", False),
+            }
+        _EXTRA_META = {
+            'SWIGGY': ('Swiggy Ltd', 'Services'), 'ETERNAL': ('Eternal Ltd (Zomato)', 'Services'), 'ZOMATO': ('Zomato Ltd', 'Services'),
+            'HYUNDAI': ('Hyundai Motor India', 'Auto'), 'TMPV': ('Tata Motors Passenger Vehicles', 'Auto'),
+            'FORCEMOT': ('Force Motors Ltd', 'Auto'), 'ATHERENERG': ('Ather Energy Ltd', 'Auto'),
+            'UNOMINDA': ('Uno Minda Ltd', 'Auto'), 'SONACOMS': ('Sona BLW Precision', 'Auto'),
+            'WAAREEENER': ('Waaree Energies Ltd', 'Power'), 'PREMIERENE': ('Premier Energies Ltd', 'Power'),
+            'SUZLON': ('Suzlon Energy Ltd', 'Power'), 'INOXWIND': ('Inox Wind Ltd', 'Power'),
+            'ADANIENSOL': ('Adani Energy Solutions', 'Power'), 'POWERINDIA': ('Hitachi Energy India', 'Power'),
+            'CGPOWER': ('CG Power & Industrial', 'Power'), 'GVT&D': ('GE Vernova T&D India', 'Power'),
+            'JIOFIN': ('Jio Financial Services', 'Financials'), 'LICI': ('Life Insurance Corp', 'Financials'),
+            'POLICYBZR': ('PB Fintech Ltd', 'Financials'), 'IREDA': ('Indian Renewable Energy Dev', 'Financials'),
+            'IRFC': ('Indian Railway Finance Corp', 'Financials'), 'MAHABANK': ('Bank of Maharashtra', 'Banking'),
+            'INDIANB': ('Indian Bank', 'Banking'), 'BANKINDIA': ('Bank of India', 'Banking'),
+            'YESBANK': ('Yes Bank Ltd', 'Banking'), 'ABCAPITAL': ('Aditya Birla Capital', 'Financials'),
+            'BAJAJHLDNG': ('Bajaj Holdings & Inv', 'Financials'), 'KFINTECH': ('KFin Technologies Ltd', 'Financials'),
+            '360ONE': ('360 ONE WAM Ltd', 'Financials'), 'MOTILALOFS': ('Motilal Oswal Financial', 'Financials'),
+            'CAMS': ('Computer Age Management', 'Financials'), 'MFSL': ('Max Financial Services', 'Financials'),
+            'LTF': ('L&T Finance Ltd', 'Financials'), 'PNBHOUSING': ('PNB Housing Finance', 'Financials'),
+            'PAYTM': ('One97 Communications', 'Financials'), 'KALYANKJIL': ('Kalyan Jewellers India', 'FMCG'),
+            'TITAN': ('Titan Company Ltd', 'FMCG'), 'MANKIND': ('Mankind Pharma Ltd', 'Pharma'),
+            'FORTIS': ('Fortis Healthcare Ltd', 'Pharma'), 'SAGILITY': ('Sagility India Ltd', 'Services'),
+            'INDHOTEL': ('Indian Hotels Co Ltd', 'Services'), 'LODHA': ('Macrotech Developers', 'Realty'),
+            'RVNL': ('Rail Vikas Nigam Ltd', 'Infrastructure'), 'LTM': ('LTIMindtree Ltd', 'IT'),
+            'HINDPETRO': ('Hindustan Petroleum Corp', 'Energy'), 'UNITDSPR': ('United Spirits Ltd', 'FMCG'),
+            'KAYNES': ('Kaynes Technology India', 'Capital Goods'), 'PGEL': ('PG Electroplast Ltd', 'Capital Goods'),
+            'AMBER': ('Amber Enterprises India', 'Capital Goods'), 'APLAPOLLO': ('APL Apollo Tubes', 'Metals'),
+            'SUPREMEIND': ('Supreme Industries', 'Industrial'), 'PAGEIND': ('Page Industries Ltd', 'FMCG'),
+            'CROMPTON': ('Crompton Greaves Cons', 'Consumer'), 'GODFRYPHLP': ('Godfrey Phillips India', 'FMCG'),
+            'PATANJALI': ('Patanjali Foods Ltd', 'FMCG'), 'SOLARINDS': ('Solar Industries India', 'Chemicals'),
+            'IEX': ('Indian Energy Exchange', 'Financials'), 'GMRAIRPORT': ('GMR Airports Infrastructure', 'Infrastructure'),
+            'VMM': ('V-Mart Retail Ltd', 'Consumer'), 'NIFTYFPI': ('Nifty Financial Services FPI', 'Index'),
+            'ANANDRATHI': ('Anand Rathi Wealth Ltd', 'Financials'), 'ENRIN': ('Enviro Infra Engineers', 'Energy'),
+            'UJJIVANSFB': ('Ujjivan Small Finance Bank', 'Banking')
+        }
+        for s, (nm, sc) in _EXTRA_META.items():
+            sym_meta[s] = {"name": nm, "sector": sc, "isIndex": s in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50", "NIFTYFPI")}
 
-    for sym in all_syms:
-        rec = rec_by_sym.get(sym)
-        if rec:
-            sec = rec.get("sector", "Others")
-            name = rec.get("name", sym)
-            is_index = rec.get("isIndex", False)
-            spot_price = rec.get("spotPrice", 0.0)
-            fut_price = rec.get("futPrice", 0.0)
-            basis = rec.get("basis", 0.0)
-            curr_ro = real_ro_map.get(sym) or round(rec.get("rolloverPct", 0.0), 4)
-        else:
-            is_index = sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50")
-            sec = "Indices" if is_index else "Others"
-            name = sym
-            spot_price = 0.0
-            fut_price = 0.0
-            basis = 0.0
-            curr_ro = real_ro_map.get(sym) or 0.0
+        # Check if master records already cached in memory
+        rec_by_sym = {}
+        if "master" in _FUTURES_CACHE and _FUTURES_CACHE.get("master"):
+            for r in _FUTURES_CACHE["master"]:
+                sym_u = r["symbol"].upper()
+                if sym_u in active_fno_syms:
+                    rec_by_sym[sym_u] = r
 
-        # Build monthly rollover mapping from official data
-        monthly_map = {}
-        active_vals = []
-        for m in ROLLOVER_MONTHS:
-            v = get_official_rollover(sym, m)
-            monthly_map[m] = v
-            if isinstance(v, (int, float)):
-                active_vals.append(v)
-                if m == "AUG 2026":
-                    all_aug_vals.append(v)
+        # Fill/supplement from bhav_map for zero-latency quotes
+        bhav_map, _ = _load_latest_bhavcopy_data()
+        for sym_u in active_fno_syms:
+            if sym_u not in rec_by_sym:
+                b_q = bhav_map.get(sym_u) or {}
+                meta = sym_meta.get(sym_u, {})
+                spot_p = float(b_q.get("spotPrice") or b_q.get("close") or 0.0)
+                fut_p = float(b_q.get("ltp") or b_q.get("close") or spot_p)
+                basis = round(fut_p - spot_p, 2)
+                rec_by_sym[sym_u] = {
+                    "symbol": sym_u,
+                    "name": meta.get("name", sym_u),
+                    "sector": meta.get("sector", "Others"),
+                    "isIndex": sym_u in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50", "NIFTYFPI"),
+                    "spotPrice": spot_p,
+                    "futPrice": fut_p,
+                    "basis": basis,
+                    "rolloverPct": 0.0,
+                }
 
-        # Calculate 3M Average (AUG 2026, JUL 2026, JUN 2026)
-        m3_vals = [
-            monthly_map[m] for m in ["AUG 2026", "JUL 2026", "JUN 2026"]
-            if isinstance(monthly_map.get(m), (int, float))
-        ]
-        avg_3m = round(sum(m3_vals) / len(m3_vals), 4) if m3_vals else 0.0
+        real_ro_map = get_real_contract_rollover_map()
 
-        # Calculate 6M Average
-        avg_6m = round(sum(active_vals[:6]) / len(active_vals[:6]), 4) if len(active_vals) >= 6 else avg_3m
+        base_rows = []
+        all_latest_vals = []
+        m3_months = ROLLOVER_MONTHS[:3] if len(ROLLOVER_MONTHS) >= 3 else ROLLOVER_MONTHS
 
-        latest_ro = monthly_map.get("AUG 2026")
-        if isinstance(latest_ro, (int, float)) and avg_3m > 0:
-            trend = "UP" if latest_ro >= avg_3m else "DOWN"
-            diff_from_avg = round(latest_ro - avg_3m, 4)
-        else:
-            trend = "FLAT"
-            diff_from_avg = 0.0
+        # Strictly sort: major benchmark indices first, then alphabetically by symbol
+        INDEX_ORDER = ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50"]
+        def _sort_universe(s):
+            if s in INDEX_ORDER:
+                return (0, INDEX_ORDER.index(s))
+            return (1, s)
 
-        rollover_rows.append({
-            "symbol": sym,
-            "name": name,
-            "sector": sec,
-            "isIndex": is_index,
-            "spotPrice": spot_price,
-            "futPrice": fut_price,
-            "basis": basis,
-            "currentRo": curr_ro,
-            "rollovers": monthly_map,
-            "avg3M": avg_3m,
-            "avg6M": avg_6m,
-            "diff3M": diff_from_avg,
-            "trend": trend,
-        })
+        all_syms = sorted([s for s in active_fno_syms], key=_sort_universe)
+
+        for sym in all_syms:
+            rec = rec_by_sym.get(sym)
+            meta = sym_meta.get(sym, {})
+            if rec:
+                sec = rec.get("sector") or meta.get("sector", "Others")
+                name = rec.get("name") or meta.get("name", sym)
+                is_index = rec.get("isIndex", sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50", "NIFTYFPI"))
+                spot_price = rec.get("spotPrice", 0.0)
+                fut_price = rec.get("futPrice", 0.0)
+                basis = rec.get("basis", 0.0)
+                curr_ro = real_ro_map.get(sym) or round(rec.get("rolloverPct", 0.0), 4)
+            else:
+                is_index = sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50", "NIFTYFPI")
+                sec = "Indices" if is_index else meta.get("sector", "Others")
+                name = meta.get("name", sym)
+                spot_price = 0.0
+                fut_price = 0.0
+                basis = 0.0
+                curr_ro = real_ro_map.get(sym) or 0.0
+
+            # Build monthly rollover mapping from official data
+            monthly_map = {}
+            active_vals = []
+            for m in ROLLOVER_MONTHS:
+                v = get_official_rollover(sym, m)
+                monthly_map[m] = v
+                if isinstance(v, (int, float)):
+                    active_vals.append(v)
+                    if m == latest_month:
+                        all_latest_vals.append(v)
+
+            # Calculate 3M Average
+            m3_vals = [
+                monthly_map[m] for m in m3_months
+                if isinstance(monthly_map.get(m), (int, float))
+            ]
+            avg_3m = round(sum(m3_vals) / len(m3_vals), 4) if m3_vals else 0.0
+
+            # Calculate 6M Average
+            avg_6m = round(sum(active_vals[:6]) / len(active_vals[:6]), 4) if len(active_vals) >= 6 else avg_3m
+
+            latest_ro = monthly_map.get(latest_month)
+            if isinstance(latest_ro, (int, float)) and avg_3m > 0:
+                trend = "UP" if latest_ro >= avg_3m else "DOWN"
+                diff_from_avg = round(latest_ro - avg_3m, 4)
+            else:
+                trend = "FLAT"
+                diff_from_avg = 0.0
+
+            base_rows.append({
+                "symbol": sym,
+                "name": name,
+                "sector": sec,
+                "isIndex": is_index,
+                "spotPrice": spot_price,
+                "futPrice": fut_price,
+                "basis": basis,
+                "currentRo": curr_ro,
+                "rollovers": monthly_map,
+                "avg3M": avg_3m,
+                "avg6M": avg_6m,
+                "diff3M": diff_from_avg,
+                "trend": trend,
+            })
+
+        _ROLLOVER_CACHE["ts"] = now
+        _ROLLOVER_CACHE["rows"] = base_rows
+        _ROLLOVER_CACHE["all_latest_vals"] = all_latest_vals
+        _ROLLOVER_CACHE["latest_month"] = latest_month
+
+    # Clone list for filtering and sorting
+    rollover_rows = list(base_rows)
 
     # Sector Filter
     if sector and sector.upper() != "ALL":
@@ -1474,7 +1808,16 @@ def get_futures_rollover_matrix(
     # Sorting
     rev = sort_dir.lower() == "desc"
     if sort_by == "symbol":
-        rollover_rows = sorted(rollover_rows, key=lambda x: x["symbol"], reverse=rev)
+        if rev:
+            rollover_rows = sorted(rollover_rows, key=lambda x: x["symbol"], reverse=True)
+        else:
+            INDEX_ORDER = ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50"]
+            def _sort_sym_asc(x):
+                s = x["symbol"]
+                if s in INDEX_ORDER:
+                    return (0, INDEX_ORDER.index(s))
+                return (1, s)
+            rollover_rows = sorted(rollover_rows, key=_sort_sym_asc)
     elif sort_by in ROLLOVER_MONTHS:
         def _sort_key(x):
             v = x["rollovers"].get(sort_by)
@@ -1486,9 +1829,9 @@ def get_futures_rollover_matrix(
         rollover_rows = sorted(rollover_rows, key=lambda x: x["symbol"], reverse=rev)
 
     # Market Macro Rollover Stats
-    avg_market_ro = round(sum(all_aug_vals) / len(all_aug_vals), 2) if all_aug_vals else 0.0
-    high_ro_count = sum(1 for v in all_aug_vals if v >= 90.0)
-    low_ro_count = sum(1 for v in all_aug_vals if v < 75.0)
+    avg_market_ro = round(sum(all_latest_vals) / len(all_latest_vals), 2) if all_latest_vals else 0.0
+    high_ro_count = sum(1 for v in all_latest_vals if v >= 90.0)
+    low_ro_count = sum(1 for v in all_latest_vals if v < 75.0)
 
     return {
         "ok": True,
@@ -1496,13 +1839,14 @@ def get_futures_rollover_matrix(
         "date": datetime.now().strftime("%d-%b-%Y"),
         "months": ROLLOVER_MONTHS,
         "count": len(rollover_rows),
-        "totalUniverse": len(rollover_rows),
+        "totalUniverse": len(base_rows),
         "stats": {
             "avgMarketRollover": avg_market_ro,
             "highRolloverCount": high_ro_count,
             "lowRolloverCount": low_ro_count,
-            "totalTracked": len(rollover_rows)
+            "totalTracked": len(base_rows)
         },
         "data": rollover_rows,
     }
+
 

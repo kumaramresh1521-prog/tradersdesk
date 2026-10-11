@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 28" height="28" fill="none">
+  <!-- Traders (Dark Slate for Light Theme) -->
+  <text x="0" y="21" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="21" font-weight="800" fill="#0f172a" letter-spacing="-0.4">Traders</text>
+
+  <!-- Desk (Ocean Sky Blue) rendered as unified word with optical kerning -->
+  <text x="80" y="21" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="21" font-weight="800" fill="#0284c7" letter-spacing="-0.3">Desk</text>
+
+  <!-- Breakout Arrow Accent above 'k' -->
+  <g transform="translate(126, 4)">
+    <path d="M 0 8 L 6 2" stroke="#0284c7" stroke-width="2.4" stroke-linecap="round" />
+    <path d="M 2 2 L 6 2 L 6 6" stroke="#0284c7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <!-- .in Emerald Pill Badge -->
+  <g transform="translate(138, 5.5)">
+    <rect x="0" y="0" width="34" height="17" rx="4.5" fill="#10b981" />
+    <text x="17" y="12.5" font-family="'JetBrains Mono', 'Inter', monospace" font-size="11.5" font-weight="900" fill="#030712" text-anchor="middle" letter-spacing="0.2">.in</text>
+  </g>
+</svg>

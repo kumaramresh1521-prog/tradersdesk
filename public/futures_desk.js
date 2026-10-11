@@ -68,18 +68,78 @@
     return `<span class="fut-badge fut-badge-neutral">⚪ NEUTRAL</span>`;
   }
 
-  // --- Sub-Tab Switching ---
+  // Metadata for each dedicated Futures Desk view
+  const DESK_VIEW_META = {
+    matrix: {
+      title: "FUTURE MARKETWATCH",
+      countBadge: "200 CONTRACTS",
+      icon: "📊",
+      desc: "Live institutional matrix, cash-futures spread, cost of carry & open interest analytics for all NSE F&O contracts.",
+      showSearch: true
+    },
+    indices: {
+      title: "INDEX TERM STRUCTURE & BASIS",
+      countBadge: "7 INDICES",
+      icon: "📈",
+      desc: "Cash-futures basis spread, cost of carry & multi-expiry rollover term structure for benchmark indices.",
+      showSearch: false
+    },
+    buildup: {
+      title: "FUTURE BUILDUP QUADRANTS",
+      countBadge: "4 QUADRANTS",
+      icon: "⚡",
+      desc: "Real-time institutional momentum classification: Long Buildup, Short Buildup, Short Covering & Long Unwinding.",
+      showSearch: false
+    },
+    heatmap: {
+      title: "FUTURE VISUAL HEATMAP",
+      countBadge: "F&O SECTOR MAP",
+      icon: "🗺️",
+      desc: "Visual sector heatmap & momentum distribution mapped across all F&O market sectors.",
+      showSearch: false
+    },
+    mwpl: {
+      title: "MWPL & BAN RADAR",
+      countBadge: "POSITION LIMIT RADAR",
+      icon: "🚫",
+      desc: "Market-Wide Position Limit tracker, current F&O ban list & 80%-95% pre-ban alert zone.",
+      showSearch: false
+    },
+    rollover: {
+      title: "HISTORICAL FUTURES ROLLOVER MATRIX",
+      countBadge: "280+ CONTRACTS",
+      icon: "🔄",
+      desc: "Comprehensive monthly expiry rollover percentages, 3M/6M averages & institutional rollover velocity across all NSE F&O equities and indices.",
+      showSearch: false
+    }
+  };
+
+  // --- Sub-Tab Switching (Strict View Isolation) ---
   function switchSubTab(tabName) {
     // Aliases for compatibility
-    if (tabName === 'dashboard' || tabName === 'screener') tabName = 'matrix';
-    if (tabName === 'heatmap') tabName = 'buildup';
+    if (tabName === 'dashboard' || tabName === 'screener' || tabName === 'marketwatch') tabName = 'matrix';
+    if (tabName === 'termstructure' || tabName === 'basis') tabName = 'indices';
 
     state.activeSubTab = tabName;
+
+    // Dynamically update header command bar for the active tool
+    const meta = DESK_VIEW_META[tabName] || DESK_VIEW_META.matrix;
+    const headingEl = document.getElementById('futDeskHeadingText');
+    if (headingEl) headingEl.textContent = meta.title;
+    const iconEl = document.getElementById('futDeskBrandIcon');
+    if (iconEl) iconEl.textContent = meta.icon;
+    const countEl = document.getElementById('futUniverseCountBadge');
+    if (countEl) countEl.textContent = meta.countBadge;
+    const descEl = document.getElementById('futDeskSubheading');
+    if (descEl) descEl.textContent = meta.desc;
+    const searchBox = document.getElementById('futSearchBoxWrapper');
+    if (searchBox) searchBox.style.display = meta.showSearch ? 'flex' : 'none';
+
     document.querySelectorAll('.fut-tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    const views = ['matrix', 'buildup', 'indices', 'mwpl', 'rollover'];
+    const views = ['matrix', 'indices', 'buildup', 'heatmap', 'mwpl', 'rollover'];
     views.forEach(v => {
       const el = document.getElementById(`futView_${v}`);
       if (el) {
@@ -88,13 +148,24 @@
     });
 
     refreshCurrentSubTab();
+
+    // Sync clean URL when navigating within Futures Desk
+    try {
+      if (typeof window !== "undefined" && window.location.pathname.startsWith("/futures")) {
+        const futSubUrl = tabName === "matrix" ? "/futures" : `/futures/${tabName}`;
+        if (window.location.pathname !== futSubUrl && typeof history !== "undefined" && history.pushState) {
+          history.pushState({ desk: "futures", subview: tabName }, document.title, futSubUrl);
+        }
+      }
+    } catch (_) {}
   }
 
   function refreshCurrentSubTab() {
     loadBenchmarkRibbon();
     if (state.activeSubTab === 'matrix') loadMatrix();
-    else if (state.activeSubTab === 'buildup') loadBuildupView();
     else if (state.activeSubTab === 'indices') loadIndicesDetailView();
+    else if (state.activeSubTab === 'buildup') loadBuildupView();
+    else if (state.activeSubTab === 'heatmap') loadHeatmapView();
     else if (state.activeSubTab === 'mwpl') loadMwpl();
     else if (state.activeSubTab === 'rollover') loadRolloverMatrix();
   }
@@ -107,7 +178,7 @@
       const data = await res.json();
       state.dashboardData = data;
 
-      // Update Macro Turnover & OI
+      // Update Macro Turnover & OI for Matrix
       const turnoverEl = document.getElementById('futKpiTurnover');
       if (turnoverEl && data.totalTurnoverCr) {
         turnoverEl.textContent = `₹${fmtNum(data.totalTurnoverCr, 1)} Cr`;
@@ -117,7 +188,22 @@
         oiEl.textContent = `₹${fmtNum(data.totalOiCr, 1)} Cr (${fmtQty(data.cumulativeOiContracts)})`;
       }
 
-      // Sentiment Ratio Bar
+      // Also update Macro Turnover & OI for Buildup view
+      const bTurnoverEl = document.getElementById('futBuildupKpiTurnover');
+      if (bTurnoverEl && data.totalTurnoverCr) {
+        bTurnoverEl.textContent = `₹${fmtNum(data.totalTurnoverCr, 1)} Cr`;
+      }
+      const bOiEl = document.getElementById('futBuildupKpiOi');
+      if (bOiEl && data.totalOiCr) {
+        bOiEl.textContent = `₹${fmtNum(data.totalOiCr, 1)} Cr (${fmtQty(data.cumulativeOiContracts)})`;
+      }
+
+      const sessionDateEl = document.getElementById('futSessionDateBadge');
+      if (sessionDateEl && data.asOfDate) {
+        sessionDateEl.textContent = `EOD • ${data.asOfDate.toUpperCase()}`;
+      }
+
+      // Sentiment Ratio Bar (Dual update for Matrix & Buildup)
       const counts = data.buildupCounts || {};
       const lb = counts.longBuildup || 0;
       const sb = counts.shortBuildup || 0;
@@ -125,24 +211,28 @@
       const lu = counts.longUnwinding || 0;
       const tot = (lb + sb + sc + lu) || 1;
 
+      const ratioHtml = `
+        <div style="width:${(lb/tot)*100}%; background:#10b981;" title="Longs: ${lb}"></div>
+        <div style="width:${(sb/tot)*100}%; background:#ef4444;" title="Shorts: ${sb}"></div>
+        <div style="width:${(sc/tot)*100}%; background:#3b82f6;" title="Short Covering: ${sc}"></div>
+        <div style="width:${(lu/tot)*100}%; background:#f59e0b;" title="Long Unwinding: ${lu}"></div>
+      `;
+      const countHtml = `
+        <span style="color:#10b981; font-weight:700;">🟢 ${lb}L</span> &bull; 
+        <span style="color:#ef4444; font-weight:700;">🔴 ${sb}S</span> &bull; 
+        <span style="color:#3b82f6; font-weight:700;">🔵 ${sc}SC</span> &bull; 
+        <span style="color:#f59e0b; font-weight:700;">🟡 ${lu}LU</span>
+      `;
+
       const rBar = document.getElementById('futBuildupRatioBar');
-      if (rBar) {
-        rBar.innerHTML = `
-          <div style="width:${(lb/tot)*100}%; background:#10b981;" title="Longs: ${lb}"></div>
-          <div style="width:${(sb/tot)*100}%; background:#ef4444;" title="Shorts: ${sb}"></div>
-          <div style="width:${(sc/tot)*100}%; background:#3b82f6;" title="Short Covering: ${sc}"></div>
-          <div style="width:${(lu/tot)*100}%; background:#f59e0b;" title="Long Unwinding: ${lu}"></div>
-        `;
-      }
+      if (rBar) rBar.innerHTML = ratioHtml;
       const cText = document.getElementById('futBuildupCountText');
-      if (cText) {
-        cText.innerHTML = `
-          <span style="color:#10b981; font-weight:700;">🟢 ${lb}L</span> &bull; 
-          <span style="color:#ef4444; font-weight:700;">🔴 ${sb}S</span> &bull; 
-          <span style="color:#3b82f6; font-weight:700;">🔵 ${sc}SC</span> &bull; 
-          <span style="color:#f59e0b; font-weight:700;">🟡 ${lu}LU</span>
-        `;
-      }
+      if (cText) cText.innerHTML = countHtml;
+
+      const bRBar = document.getElementById('futBuildupQuadRatioBar');
+      if (bRBar) bRBar.innerHTML = ratioHtml;
+      const bCText = document.getElementById('futBuildupQuadCountText');
+      if (bCText) bCText.innerHTML = countHtml;
 
       // Signal Pill Counts
       const elLb = document.getElementById('countLb'); if (elLb) elLb.textContent = lb;
@@ -171,7 +261,7 @@
               <div class="fut-ic-top">
                 <div>
                   <span class="fut-ic-sym">${idx.symbol} FUT</span>
-                  <span class="fut-ic-exp">${idx.expiry || '26-Mar'}</span>
+                  <span class="fut-ic-exp">${idx.expiry || '27-Oct'}</span>
                 </div>
                 <span class="fut-badge ${isPos ? 'fut-badge-lb' : 'fut-badge-sb'}">${idx.buildupCode || (isPos ? 'LB' : 'SB')}</span>
               </div>
@@ -274,14 +364,14 @@
             <td style="color:#64748b; font-size:11px;">${i + 1}</td>
             <td>
               <div style="display:flex; align-items:center; gap:6px;">
-                <strong style="color:#f8fafc; font-size:12.5px;">${r.symbol}</strong>
+                <strong style="color:var(--text-primary, #f8fafc); font-size:12.5px;">${r.symbol}</strong>
                 ${r.isIndex ? '<span style="font-size:9px; background:rgba(239,68,68,0.2); color:#f87171; border:1px solid rgba(239,68,68,0.4); padding:1px 4px; border-radius:3px; font-weight:800;">INDEX</span>' : ''}
-                <span style="font-size:10px; color:#64748b;">${r.expiry || '26-Mar'}</span>
+                <span style="font-size:10px; color:#64748b;">${r.expiry || '27-Oct'}</span>
               </div>
-              <div style="font-size:10px; color:#94a3b8; font-family:-apple-system,BlinkMacSystemFont,sans-serif;">${r.name || r.symbol}</div>
+              <div style="font-size:10px; color:var(--text-muted, #94a3b8); font-family:-apple-system,BlinkMacSystemFont,sans-serif;">${r.name || r.symbol}</div>
             </td>
-            <td><span style="font-size:11px; color:#94a3b8; background:#0c1424; padding:2px 6px; border-radius:3px;">${r.sector}</span></td>
-            <td style="text-align:right; color:#94a3b8;">₹${fmtNum(r.spotPrice)}</td>
+            <td><span class="fut-sector-badge">${r.sector}</span></td>
+            <td style="text-align:right; color:var(--text-muted, #94a3b8);">₹${fmtNum(r.spotPrice)}</td>
             <td style="text-align:right;">
               <span style="color:${color}; font-weight:800;">₹${fmtNum(r.futPrice)}</span>
               <span style="color:${tickColor}; font-size:9px; margin-left:2px;">${tickArrow}</span>
@@ -296,13 +386,13 @@
               ${cocSign}${fmtNum(cocVal, 1)}%
             </td>
             <td style="text-align:right;">
-              <span style="color:#f8fafc; font-weight:700;">${fmtQty(r.oiContracts)}</span>
+              <span style="color:var(--text-primary, #f8fafc); font-weight:700;">${fmtQty(r.oiContracts)}</span>
               <span style="font-size:10px; color:#64748b; display:block;">${fmtNum(r.oiContracts)} lots</span>
             </td>
             <td style="text-align:right; color:${oiColor}; font-weight:700;">
               ${oiSign}${fmtNum(oiChg)}%
             </td>
-            <td style="text-align:right; color:#cbd5e1; font-weight:700;">
+            <td style="text-align:right; color:var(--text-secondary, #cbd5e1); font-weight:700;">
               ₹${fmtNum(r.oiValueCr, 1)} Cr
             </td>
             <td style="text-align:center;">
@@ -334,24 +424,29 @@
     }
   }
 
-  // --- Sub-Tab 2: Buildup Quadrants & Heatmap ---
+  // --- Sub-Tab 3: Future Buildup Quadrants ---
   async function loadBuildupView() {
     try {
-      const [resB, resH] = await Promise.all([
-        fetch('/api/futures/buildup'),
-        fetch(`/api/futures/heatmap?sector=${state.sector}`)
-      ]);
-
+      const resB = await fetch('/api/futures/buildup');
       if (resB.ok) {
         const dataB = await resB.json();
         renderQuadrants(dataB);
       }
+    } catch (err) {
+      console.warn('Buildup view load error:', err);
+    }
+  }
+
+  // --- Sub-Tab 4: Dedicated Visual Heatmap View ---
+  async function loadHeatmapView() {
+    try {
+      const resH = await fetch(`/api/futures/heatmap?sector=${state.sector}`);
       if (resH.ok) {
         const dataH = await resH.json();
         renderHeatmap(dataH);
       }
     } catch (err) {
-      console.warn('Buildup view load error:', err);
+      console.warn('Heatmap view load error:', err);
     }
   }
 
@@ -372,7 +467,7 @@
         return `
           <div class="fut-quad-item" onclick="window.futuresDesk.inspectContract('${s.symbol}')">
             <div style="display:flex; align-items:center; gap:6px;">
-              <strong style="color:#f8fafc; font-size:12px;">${s.symbol}</strong>
+              <strong style="color:var(--text-primary, #f8fafc); font-size:12px;">${s.symbol}</strong>
               <span style="font-size:9.5px; color:#64748b;">${s.sector}</span>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -399,25 +494,64 @@
     const grid = document.getElementById('futHeatmapGrid');
     if (!grid || !data || !data.tiles) return;
 
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light' || document.body.getAttribute('data-theme') === 'light';
+
     grid.innerHTML = data.tiles.map(tile => {
       const isPos = tile.changePct >= 0;
-      const absChg = Math.abs(tile.changePct);
-      let bg = '#1e293b';
-      let border = '#334155';
-      if (tile.changePct >= 1.5) { bg = 'rgba(16, 185, 129, 0.4)'; border = '#10b981'; }
-      else if (tile.changePct > 0.2) { bg = 'rgba(16, 185, 129, 0.2)'; border = '#059669'; }
-      else if (tile.changePct <= -1.5) { bg = 'rgba(239, 68, 68, 0.4)'; border = '#ef4444'; }
-      else if (tile.changePct < -0.2) { bg = 'rgba(239, 68, 68, 0.2)'; border = '#dc2626'; }
+      let bg, border;
+
+      if (isLight) {
+        if (tile.changePct >= 1.5) {
+          bg = 'rgba(16, 185, 129, 0.22)';
+          border = '#10b981';
+        } else if (tile.changePct > 0.2) {
+          bg = 'rgba(16, 185, 129, 0.11)';
+          border = '#34d399';
+        } else if (tile.changePct <= -1.5) {
+          bg = 'rgba(239, 68, 68, 0.22)';
+          border = '#ef4444';
+        } else if (tile.changePct < -0.2) {
+          bg = 'rgba(239, 68, 68, 0.11)';
+          border = '#f87171';
+        } else {
+          // Neutral tiles: sleek institutional light slate in Day Mode (NO black boxes)
+          bg = '#f1f5f9';
+          border = '#cbd5e1';
+        }
+      } else {
+        if (tile.changePct >= 1.5) {
+          bg = 'rgba(16, 185, 129, 0.4)';
+          border = '#10b981';
+        } else if (tile.changePct > 0.2) {
+          bg = 'rgba(16, 185, 129, 0.2)';
+          border = '#059669';
+        } else if (tile.changePct <= -1.5) {
+          bg = 'rgba(239, 68, 68, 0.4)';
+          border = '#ef4444';
+        } else if (tile.changePct < -0.2) {
+          bg = 'rgba(239, 68, 68, 0.2)';
+          border = '#dc2626';
+        } else {
+          bg = '#1e293b';
+          border = '#334155';
+        }
+      }
+
+      const symColor = isLight ? '#0f172a' : '#ffffff';
+      const chgColor = isPos ? (isLight ? '#059669' : '#34d399') : (isLight ? '#dc2626' : '#f87171');
+      const subPriceColor = isLight ? '#334155' : '#cbd5e1';
+      const subOiColor = isLight ? '#64748b' : '#94a3b8';
+      const oiVal = tile.oi ? fmtQty(tile.oi) : (tile.oiCr ? '₹' + fmtNum(tile.oiCr, 0) + 'Cr' : '--');
 
       return `
         <div class="fut-heatmap-tile" style="background:${bg}; border:1px solid ${border};" onclick="window.futuresDesk.inspectContract('${tile.symbol}')">
           <div style="display:flex; justify-content:space-between; align-items:baseline;">
-            <strong style="font-size:11.5px; color:#ffffff;">${tile.symbol}</strong>
-            <span style="font-size:10px; color:${isPos ? '#34d399' : '#f87171'}; font-weight:800;">${isPos ? '+' : ''}${tile.changePct.toFixed(1)}%</span>
+            <strong style="font-size:11.5px; color:${symColor}; font-weight:800;">${tile.symbol}</strong>
+            <span style="font-size:10px; color:${chgColor}; font-weight:800;">${isPos ? '+' : ''}${tile.changePct.toFixed(1)}%</span>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:10px; color:#cbd5e1; margin-top:4px;">
-            <span>₹${fmtNum(tile.price, 0)}</span>
-            <span style="color:#94a3b8;">OI: ${fmtQty(tile.oi)}</span>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:10px; color:${subPriceColor}; margin-top:4px;">
+            <span style="font-family:'JetBrains Mono',monospace;">₹${fmtNum(tile.price, 0)}</span>
+            <span style="color:${subOiColor}; font-family:'JetBrains Mono',monospace;">OI: ${oiVal}</span>
           </div>
         </div>
       `;
@@ -446,47 +580,47 @@
               <div class="fut-index-card" style="padding:16px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                   <div>
-                    <h3 style="margin:0; font-size:16px; font-weight:800; color:#f8fafc;">${idx.symbol} FUTURES</h3>
-                    <span style="font-size:11px; color:#94a3b8;">${idx.name} &bull; Lot: ${idx.lot}</span>
+                    <h3 class="fut-idx-card-title">${idx.symbol} FUTURES</h3>
+                    <span style="font-size:11px; color:var(--text-muted, #94a3b8);">${idx.name} &bull; Lot: ${idx.lot}</span>
                   </div>
                   <span class="fut-badge ${isPos ? 'fut-badge-lb' : 'fut-badge-sb'}" style="font-size:11px;">${idx.buildup}</span>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; background:#080c14; padding:10px 14px; border-radius:6px; border:1px solid #1a2538;">
+                <div class="fut-idx-price-box" style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px; padding:10px 14px; border-radius:6px;">
                   <div>
                     <span style="font-size:10px; color:#64748b; display:block; text-transform:uppercase;">Futures LTP</span>
                     <strong style="font-size:20px; color:${color}; font-family:'JetBrains Mono',monospace;">₹${fmtNum(idx.futPrice)}</strong>
                   </div>
                   <div style="text-align:right;">
                     <span style="font-size:10px; color:#64748b; display:block; text-transform:uppercase;">Spot Price</span>
-                    <strong style="font-size:16px; color:#cbd5e1; font-family:'JetBrains Mono',monospace;">₹${fmtNum(idx.spotPrice)}</strong>
+                    <strong class="fut-idx-spot-num" style="font-size:16px; font-family:'JetBrains Mono',monospace;">₹${fmtNum(idx.spotPrice)}</strong>
                   </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:11.5px; border-top:1px solid #1a2538; padding-top:12px;">
+                <div class="fut-idx-grid-stats" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:11.5px; padding-top:12px;">
                   <div style="display:flex; justify-content:space-between;">
-                    <span style="color:#94a3b8;">Cash-Fut Basis:</span>
+                    <span style="color:var(--text-muted, #94a3b8);">Cash-Fut Basis:</span>
                     <strong style="color:${basisColor}; font-family:'JetBrains Mono',monospace;">${basisSign}${fmtNum(idx.basis, 1)} pts (${basisSign}${fmtNum(idx.basisPct, 2)}%)</strong>
                   </div>
                   <div style="display:flex; justify-content:space-between;">
-                    <span style="color:#94a3b8;">Cost of Carry:</span>
+                    <span style="color:var(--text-muted, #94a3b8);">Cost of Carry:</span>
                     <strong style="color:${basisColor}; font-family:'JetBrains Mono',monospace;">${basisSign}${fmtNum(idx.coc, 1)}% p.a.</strong>
                   </div>
                   <div style="display:flex; justify-content:space-between;">
-                    <span style="color:#94a3b8;">Open Interest:</span>
-                    <strong style="color:#f8fafc; font-family:'JetBrains Mono',monospace;">${fmtQty(idx.oiContracts)} (${fmtNum(idx.oiContracts)} lots)</strong>
+                    <span style="color:var(--text-muted, #94a3b8);">Open Interest:</span>
+                    <strong class="fut-idx-oi-num" style="font-family:'JetBrains Mono',monospace;">${fmtQty(idx.oiContracts)} (${fmtNum(idx.oiContracts)} lots)</strong>
                   </div>
                   <div style="display:flex; justify-content:space-between;">
-                    <span style="color:#94a3b8;">OI Change:</span>
+                    <span style="color:var(--text-muted, #94a3b8);">OI Change:</span>
                     <strong style="color:${idx.oiChangePct >= 0 ? '#38bdf8' : '#f59e0b'}; font-family:'JetBrains Mono',monospace;">${idx.oiChangePct >= 0 ? '+' : ''}${fmtNum(idx.oiChangePct)}%</strong>
                   </div>
                   <div style="display:flex; justify-content:space-between;">
-                    <span style="color:#94a3b8;">Rollover %:</span>
+                    <span style="color:var(--text-muted, #94a3b8);">Rollover %:</span>
                     <strong style="color:#a855f7; font-family:'JetBrains Mono',monospace;">${fmtNum(idx.rolloverPct, 1)}%</strong>
                   </div>
                   <div style="display:flex; justify-content:space-between;">
-                    <span style="color:#94a3b8;">VWAP:</span>
-                    <strong style="color:#cbd5e1; font-family:'JetBrains Mono',monospace;">₹${fmtNum(idx.vwap)}</strong>
+                    <span style="color:var(--text-muted, #94a3b8);">VWAP:</span>
+                    <strong class="fut-idx-vwap-num" style="font-family:'JetBrains Mono',monospace;">₹${fmtNum(idx.vwap)}</strong>
                   </div>
                 </div>
               </div>
@@ -509,14 +643,15 @@
 
       // Ban Banner
       const banBox = document.getElementById('futMwplBanBanner');
+      const bannedList = data.bannedStocks || data.banned || [];
       if (banBox) {
-        if (data.bannedCount > 0) {
+        if (bannedList.length > 0) {
           banBox.innerHTML = `
             <div style="background:rgba(239,68,68,0.15); border:1px solid #ef4444; border-radius:8px; padding:12px 16px;">
-              <strong style="color:#ef4444; font-size:13px;">🚫 ${data.bannedCount} Securities in Official F&O Ban Period (&gt;95% Limit)</strong>
+              <strong style="color:#ef4444; font-size:13px;">🚫 ${bannedList.length} Securities in Official F&O Ban Period (&gt;95% Limit)</strong>
               <p style="margin:4px 0 8px 0; font-size:11.5px; color:#fca5a5;">Exchange prohibited fresh position creation. Intraday squaring-off permitted only.</p>
               <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                ${data.bannedStocks.map(s => `
+                ${bannedList.map(s => `
                   <span class="fut-badge fut-badge-sb" style="font-size:11px; padding:4px 9px;">${s.symbol}: ${s.mwplPct}% MWPL</span>
                 `).join('')}
               </div>
@@ -524,8 +659,9 @@
           `;
         } else {
           banBox.innerHTML = `
-            <div style="background:rgba(16,185,129,0.1); border:1px solid #10b981; border-radius:8px; padding:10px 14px; font-size:12px; color:#34d399;">
-              ✅ Zero Securities currently in F&O Ban. All 200 contracts open for fresh trading.
+            <div style="background:rgba(16,185,129,0.1); border:1px solid #10b981; border-radius:8px; padding:10px 14px; font-size:12px; color:#34d399; display:flex; align-items:center; gap:8px;">
+              <span style="font-size:15px;">✅</span>
+              <span><strong>Zero Securities currently in F&O Ban.</strong> All ~200 NSE F&O contracts open for fresh trading positions.</span>
             </div>
           `;
         }
@@ -533,42 +669,57 @@
 
       // Warning Alert List
       const alertBox = document.getElementById('futMwplAlertList');
-      if (alertBox && data.alertStocks) {
-        alertBox.innerHTML = data.alertStocks.map(s => `
-          <div style="background:#0c1322; border:1px solid #f59e0b; border-radius:6px; padding:10px 12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <strong style="color:#f8fafc; font-size:13px;">${s.symbol}</strong>
-              <span style="color:#f59e0b; font-weight:800; font-family:'JetBrains Mono',monospace;">${s.mwplPct}%</span>
+      const alertList = data.alertStocks || data.alertZone || [];
+      if (alertBox) {
+        if (alertList.length > 0) {
+          alertBox.innerHTML = alertList.map(s => `
+            <div class="fut-alert-card" style="border:1px solid #f59e0b; border-radius:6px; padding:10px 12px; background:rgba(245,158,11,0.06);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong class="fut-alert-sym" style="font-size:13px; color:var(--text-primary, #f8fafc);">${s.symbol}</strong>
+                <span style="color:#f59e0b; font-weight:800; font-family:'JetBrains Mono',monospace;">${s.mwplPct}%</span>
+              </div>
+              <div style="font-size:10.5px; color:var(--text-muted, #94a3b8); margin:4px 0;">Lot: ${s.lot || '--'} &bull; Headroom: ~${Math.max(50, Math.round((95 - s.mwplPct) * 120))} lots</div>
+              <div class="fut-mwpl-pbar" style="margin-top:6px;">
+                <div class="fut-mwpl-pfill" style="width:${s.mwplPct}%; background:#f59e0b;"></div>
+              </div>
             </div>
-            <div style="font-size:10.5px; color:#94a3b8; margin:4px 0;">Lot: ${s.lot} &bull; Headroom: ~${Math.max(50, Math.round((95 - s.mwplPct) * 120))} lots</div>
-            <div class="fut-mwpl-pbar" style="margin-top:6px;">
-              <div class="fut-mwpl-pfill" style="width:${s.mwplPct}%; background:#f59e0b;"></div>
+          `).join('');
+        } else {
+          alertBox.innerHTML = `
+            <div style="grid-column:1/-1; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px 16px; font-size:12px; color:var(--text-muted, #94a3b8);">
+              🛡️ No securities currently in the 80%–95% pre-ban alert danger zone. All positions well within institutional position limits.
             </div>
-          </div>
-        `).join('');
+          `;
+        }
       }
 
       // Full MWPL Table
       const tb = document.getElementById('futMwplTableBody');
-      if (tb && data.allStocks) {
-        tb.innerHTML = data.allStocks.map((s, i) => {
-          const col = s.mwplPct >= 95 ? '#ef4444' : (s.mwplPct >= 80 ? '#f59e0b' : '#10b981');
+      const allStocks = data.allStocks || [];
+      if (tb && allStocks.length > 0) {
+        tb.innerHTML = allStocks.map((s, i) => {
+          const mwpl = Number(s.mwplPct || 0);
+          const col = mwpl >= 95 ? '#ef4444' : (mwpl >= 80 ? '#f59e0b' : '#10b981');
+          const pr = s.price || s.futPrice || s.ltp || s.spotPrice || 0;
+          const curOi = s.currentOi || s.openInterest || s.oiContracts || 0;
+          const limOi = s.limitOi || (curOi && mwpl ? Math.round(curOi * 100 / mwpl) : '--');
+          const st = s.status || s.mwplStatus || (mwpl >= 95 ? 'BANNED' : (mwpl >= 80 ? 'ALERT' : 'NORMAL'));
           return `
             <tr>
               <td style="color:#64748b;">${i + 1}</td>
-              <td><strong style="color:#f8fafc;">${s.symbol}</strong></td>
-              <td><span style="color:#94a3b8; font-size:11px;">${s.sector}</span></td>
-              <td style="text-align:right;">₹${fmtNum(s.price)}</td>
-              <td style="text-align:right;">${fmtQty(s.currentOi)}</td>
-              <td style="text-align:right; color:#94a3b8;">${fmtQty(s.limitOi)}</td>
-              <td style="text-align:right; color:${col}; font-weight:800;">${fmtNum(s.mwplPct, 1)}%</td>
+              <td><strong style="color:var(--text-primary, #f8fafc);">${s.symbol}</strong></td>
+              <td><span style="color:var(--text-muted, #94a3b8); font-size:11px;">${s.sector || 'F&O'}</span></td>
+              <td style="text-align:right;">₹${fmtNum(pr)}</td>
+              <td style="text-align:right;">${fmtQty(curOi)}</td>
+              <td style="text-align:right; color:#94a3b8;">${typeof limOi === 'number' ? fmtQty(limOi) : limOi}</td>
+              <td style="text-align:right; color:${col}; font-weight:800;">${fmtNum(mwpl, 1)}%</td>
               <td>
                 <div class="fut-mwpl-pbar">
-                  <div class="fut-mwpl-pfill" style="width:${Math.min(100, s.mwplPct)}%; background:${col};"></div>
+                  <div class="fut-mwpl-pfill" style="width:${Math.min(100, mwpl)}%; background:${col};"></div>
                 </div>
               </td>
               <td style="text-align:center;">
-                <span class="fut-badge ${s.status === 'BANNED' ? 'fut-badge-sb' : (s.status === 'ALERT' ? 'fut-badge-lu' : 'fut-badge-lb')}">${s.status}</span>
+                <span class="fut-badge ${st === 'BANNED' ? 'fut-badge-sb' : (st === 'ALERT' ? 'fut-badge-lu' : 'fut-badge-lb')}">${st}</span>
               </td>
             </tr>
           `;
@@ -671,19 +822,20 @@
     }
 
     // Filter by tier
+    const latestMonth = (months && months[0]) || 'SEP 2026';
     if (state.rolloverTier === 'HIGH') {
       rows = rows.filter(r => {
-        const v = r.rollovers ? r.rollovers['AUG 2026'] : null;
+        const v = (r.rollovers && typeof r.rollovers[latestMonth] === 'number') ? r.rollovers[latestMonth] : r.currentRo;
         return typeof v === 'number' && v >= 90.0;
       });
     } else if (state.rolloverTier === 'NORMAL') {
       rows = rows.filter(r => {
-        const v = r.rollovers ? r.rollovers['AUG 2026'] : null;
+        const v = (r.rollovers && typeof r.rollovers[latestMonth] === 'number') ? r.rollovers[latestMonth] : r.currentRo;
         return typeof v === 'number' && v >= 75.0 && v < 90.0;
       });
     } else if (state.rolloverTier === 'LOW') {
       rows = rows.filter(r => {
-        const v = r.rollovers ? r.rollovers['AUG 2026'] : null;
+        const v = (r.rollovers && typeof r.rollovers[latestMonth] === 'number') ? r.rollovers[latestMonth] : r.currentRo;
         return typeof v === 'number' && v < 75.0;
       });
     }
@@ -1007,16 +1159,73 @@
       });
     }
 
+    // Benchmark Index Futures Strip Toggle
+    const idxHeader = document.getElementById('futIndexStripHeader');
+    if (idxHeader) {
+      idxHeader.addEventListener('click', toggleFutIndexStrip);
+    }
+
     // Start 5s Live Auto-Refresh Immediately
     setAutoRefresh(5);
 
-    // Initial View
+    // Initial View (Detect subview from URL pathname if specified)
+    const initPath = (window.location.pathname || '').toLowerCase();
+    if (initPath.includes('/rollover')) {
+      state.activeSubTab = 'rollover';
+    } else if (initPath.includes('/buildup')) {
+      state.activeSubTab = 'buildup';
+    } else if (initPath.includes('/heatmap')) {
+      state.activeSubTab = 'heatmap';
+    } else if (initPath.includes('/mwpl')) {
+      state.activeSubTab = 'mwpl';
+    } else if (initPath.includes('/indices')) {
+      state.activeSubTab = 'indices';
+    }
     switchSubTab(state.activeSubTab);
   }
+
+  function toggleFutIndexStrip() {
+    const grid = document.getElementById('futIndexCardsGrid');
+    const icon = document.getElementById('futIndexStripIcon');
+    const badge = document.getElementById('futIndexStripBadge');
+    const header = document.getElementById('futIndexStripHeader');
+    if (!grid) return;
+    const isHidden = window.getComputedStyle(grid).display === 'none' || grid.style.display === 'none';
+    if (isHidden) {
+      grid.style.display = 'grid';
+      if (icon) {
+        icon.textContent = '▼';
+        icon.style.color = '#10b981';
+      }
+      if (badge) {
+        badge.textContent = 'COLLAPSE';
+        badge.style.color = '#10b981';
+        badge.style.borderColor = 'rgba(16,185,129,0.3)';
+        badge.style.background = 'rgba(16,185,129,0.12)';
+      }
+      if (header) header.style.marginBottom = '10px';
+    } else {
+      grid.style.display = 'none';
+      if (icon) {
+        icon.textContent = '▶';
+        icon.style.color = '#38bdf8';
+      }
+      if (badge) {
+        badge.textContent = 'CLICK TO EXPAND';
+        badge.style.color = '#38bdf8';
+        badge.style.borderColor = 'rgba(56,189,248,0.3)';
+        badge.style.background = 'rgba(56,189,248,0.12)';
+      }
+      if (header) header.style.marginBottom = '0px';
+    }
+  }
+
+  window.toggleFutIndexStrip = toggleFutIndexStrip;
 
   // Export to global scope
   window.futuresDesk = {
     init,
+    toggleFutIndexStrip,
     switchSubTab,
     refreshCurrentSubTab,
     filterBySymbol,
@@ -1024,6 +1233,7 @@
     loadBenchmarkRibbon,
     loadMatrix,
     loadBuildupView,
+    loadHeatmapView,
     loadIndicesDetailView,
     loadMwpl,
     loadRolloverMatrix,

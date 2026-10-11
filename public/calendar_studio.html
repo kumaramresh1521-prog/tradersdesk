@@ -3,934 +3,1437 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Options Calendar Spread Matrix | Breadth Lab</title>
+  <title>Calendar Spread Studio - Multi-Strike Calendar &amp; Diagonal Engine | TradersDesk</title>
+  <meta name="description" content="TradersDesk Institutional Calendar Spread Studio for time decay arbitrage, term structure visualization, and dynamic Greeks spread modeling.">
+  <meta name="keywords" content="calendar spread, options calendar, diagonal spread, time decay arbitrage, tradersdesk, options greeks, term structure">
+  <meta name="author" content="TradersDesk.in Quantitative Analytics">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <link rel="canonical" href="https://tradersdesk.in/calendar-studio">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tradersdesk.in/calendar-studio">
+  <meta property="og:title" content="Calendar Spread Studio - Multi-Strike &amp; Diagonal Engine | TradersDesk">
+  <meta property="og:description" content="Institutional Calendar Spread Studio for time decay arbitrage, term structure visualization, and dynamic Greeks spread modeling.">
+  <meta property="og:site_name" content="TradersDesk.in">
+  <meta property="og:image" content="https://tradersdesk.in/tradersdesk-logo.jpg">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
   <!-- Jspreadsheet CE & jSuites Local Libraries -->
   <link rel="stylesheet" href="/libs/jsuites.css" type="text/css" />
   <link rel="stylesheet" href="/libs/jexcel.css" type="text/css" />
   <script src="/libs/jsuites.js"></script>
   <script src="/libs/jexcel.js"></script>
+  <script src="/security_shield.js"></script>
 
   <style>
+    /* ============================================================
+       PREMIUM DARK TRADING TERMINAL DESIGN SYSTEM
+       ============================================================ */
     :root {
-      --bg-root: #030712;
-      --bg-panel: #070d1a;
-      --bg-card: #0b1329;
-      --bg-header: #0d1730;
-      --bg-hover: #122042;
-      --border-subtle: #152238;
-      --border-highlight: #0ea5e9;
+      --bg-base: #080c14;
+      --bg-panel: #0d1117;
+      --bg-card: #111827;
+      --bg-elevated: #1a2236;
+      --bg-hover: #1e2a40;
+      --bg-input: #0d1421;
+      --border-dim: #1e2d45;
+      --border-normal: #263554;
+      --border-accent: #3b82f6;
+      --border-glow: rgba(59, 130, 246, 0.4);
+      --accent-blue: #3b82f6;
+      --accent-blue-bright: #60a5fa;
       --accent-cyan: #06b6d4;
-      --accent-sky: #38bdf8;
       --accent-green: #10b981;
+      --accent-green-bright: #34d399;
       --accent-red: #ef4444;
+      --accent-red-bright: #f87171;
       --accent-amber: #f59e0b;
-      --accent-purple: #a855f7;
-      --accent-indigo: #818cf8;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --font-mono: 'JetBrains Mono', monospace;
+      --accent-purple: #8b5cf6;
+      --accent-indigo: #6366f1;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #4b5a72;
+      --text-dim: #2d3f5c;
+      --font-mono: 'JetBrains Mono', 'Consolas', monospace;
       --font-sans: 'Inter', system-ui, sans-serif;
+      --glow-blue: 0 0 20px rgba(59, 130, 246, 0.15);
+      --glow-green: 0 0 20px rgba(16, 185, 129, 0.15);
+      --shadow-panel: 0 4px 24px rgba(0, 0, 0, 0.4);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { height: 100%; }
     body {
-      background: var(--bg-root);
-      color: var(--text-main);
+      background: var(--bg-base);
+      color: var(--text-primary);
       font-family: var(--font-sans);
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
     /* Scrollbars */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg-root); }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-panel); }
+    ::-webkit-scrollbar-thumb { background: #2d3f5c; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
 
-    /* Header Bar */
-    .top-bar {
+    /* ============================================================
+       TOP HEADER BAR
+       ============================================================ */
+    .cs-header {
       background: var(--bg-panel);
-      border-bottom: 1px solid var(--border-subtle);
-      padding: 10px 20px;
+      border-bottom: 1px solid var(--border-dim);
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      align-items: stretch;
+      height: 52px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 100;
     }
 
-    .brand-area {
+    /* Brand */
+    .cs-brand {
       display: flex;
       align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 18px;
+      border-right: 1px solid var(--border-dim);
+      flex-shrink: 0;
     }
-
-    .brand-badge {
-      background: linear-gradient(135deg, #0284c7, #06b6d4);
-      color: #fff;
+    .cs-brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+      flex-shrink: 0;
+    }
+    .cs-brand-texts { display: flex; flex-direction: column; gap: 1px; }
+    .cs-brand-title {
+      font-size: 13px;
       font-weight: 800;
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 4px;
+      color: var(--text-primary);
       letter-spacing: 0.5px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 7px;
     }
-
-    .brand-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text-main);
-    }
-
-    .spot-chip {
+    .cs-badge {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.8px;
       font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 700;
-      color: #38bdf8;
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      padding: 3px 10px;
-      border-radius: 6px;
+    }
+    .cs-badge-pro {
+      background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+      color: #bfdbfe;
+      border: 1px solid #3b82f6;
+    }
+    .cs-brand-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
     }
 
-    .status-chip {
+    /* Live Ticker Strip inside header */
+    .cs-ticker-row {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    .cs-ticker-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 18px;
+      border-right: 1px solid var(--border-dim);
+      flex: 1;
+      cursor: default;
+      transition: background 0.15s;
+      min-width: 0;
+    }
+    .cs-ticker-card:hover { background: rgba(59, 130, 246, 0.04); }
+    .cs-ticker-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .cs-ticker-vals { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .cs-ticker-price {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+      letter-spacing: -0.3px;
+    }
+    .cs-ticker-chg {
+      font-size: 10.5px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+    .cs-ticker-chg.pos { color: var(--accent-green); }
+    .cs-ticker-chg.neg { color: var(--accent-red); }
+
+    /* Header Action Buttons */
+    .cs-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+      border-left: 1px solid var(--border-dim);
+      flex-shrink: 0;
+    }
+    .cs-hbtn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: #10b981;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      padding: 3px 8px;
-      border-radius: 20px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      border: 1px solid var(--border-normal);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      white-space: nowrap;
     }
+    .cs-hbtn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--accent-blue); }
+    .cs-hbtn.live-on {
+      color: var(--accent-green-bright);
+      border-color: #065f46;
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .cs-hbtn.live-on:hover { background: rgba(16, 185, 129, 0.14); }
+    .cs-hbtn.api-btn {
+      color: var(--accent-blue-bright);
+      border-color: #1d4ed8;
+      background: rgba(59, 130, 246, 0.08);
+    }
+    .cs-hbtn.api-btn:hover { background: rgba(59, 130, 246, 0.14); }
 
-    .status-dot {
+    .cs-live-dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px #10b981;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulseDot 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent-green); }
+      50% { opacity: 0.7; box-shadow: 0 0 14px var(--accent-green); }
     }
 
-    .btn {
-      padding: 6px 14px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-      font-family: var(--font-sans);
-      border: 1px solid transparent;
-      user-select: none;
-      text-decoration: none;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #0284c7, #0284c7);
-      color: white;
-      box-shadow: 0 2px 10px rgba(2, 132, 199, 0.3);
-    }
-    .btn-primary:hover { background: #0369a1; }
-
-    .btn-secondary {
-      background: #1e293b;
-      color: #cbd5e1;
-      border-color: #334155;
-    }
-    .btn-secondary:hover { background: #334155; color: white; }
-
-    .btn-indigo {
-      background: #312e81;
-      color: #c7d2fe;
-      border-color: #4338ca;
-    }
-    .btn-indigo:hover { background: #3730a3; color: white; }
-
-    .btn-emerald {
-      background: #064e3b;
-      color: #a7f3d0;
-      border-color: #059669;
-    }
-    .btn-emerald:hover { background: #047857; color: white; }
-
-    /* Main Container */
-    .container {
-      max-width: 1780px;
-      margin: 0 auto;
-      padding: 14px 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      width: 100%;
-    }
-
-    /* 📑 Saved Combination Tabs Strip */
-    .saved-tabs-strip {
+    /* ============================================================
+       CONTROLS BAR
+       ============================================================ */
+    .cs-controls {
       background: var(--bg-panel);
-      border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-dim);
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .tabs-scroll-container {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
       align-items: center;
+      padding: 0 16px;
+      gap: 0;
+      height: 46px;
+      flex-shrink: 0;
     }
-
-    .combo-tab {
-      display: inline-flex;
+    .cs-ctrl-group {
+      display: flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 14px;
-      border-radius: 6px;
-      background: #0b1329;
-      border: 1px solid var(--border-subtle);
-      cursor: pointer;
-      white-space: nowrap;
-      font-size: 12px;
-      font-weight: 600;
-      color: #cbd5e1;
-      transition: all 0.15s ease;
-      user-select: none;
+      padding: 0 12px;
+      border-right: 1px solid var(--border-dim);
+      height: 100%;
     }
-    .combo-tab:hover {
-      background: #111e3b;
-      border-color: #38bdf8;
-      color: #f8fafc;
-    }
-    .combo-tab.active-combo {
-      background: linear-gradient(135deg, rgba(14, 165, 233, 0.22), rgba(99, 102, 241, 0.22));
-      border-color: #38bdf8;
-      color: #38bdf8;
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
-    }
-    .combo-tab .tab-badge {
-      font-family: var(--font-mono);
+    .cs-ctrl-group:first-child { padding-left: 0; }
+    .cs-ctrl-group:last-child { border-right: none; }
+
+    .cs-ctrl-label {
       font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.08);
-      color: #94a3b8;
-    }
-    .combo-tab.active-combo .tab-badge {
-      background: rgba(56, 189, 248, 0.2);
-      color: #38bdf8;
-      font-weight: 700;
-    }
-    .combo-tab .tab-close {
-      color: #64748b;
-      cursor: pointer;
-      padding: 0 2px;
-      font-size: 13px;
-      line-height: 1;
-      border-radius: 50%;
-    }
-    .combo-tab .tab-close:hover {
-      color: #ef4444;
-      background: rgba(239, 68, 68, 0.15);
-    }
-
-    /* Setup Strip */
-    .setup-strip {
-      background: var(--bg-panel);
-      border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 14px;
-    }
-
-    .control-box {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: 160px;
-      flex: 1;
-    }
-
-    .control-label {
-      font-size: 11px;
       font-weight: 700;
       color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .cs-select-wrap { position: relative; display: inline-flex; align-items: center; }
+    .cs-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--bg-input);
+      border: 1px solid var(--border-normal);
+      border-radius: var(--radius-sm);
+      padding: 5px 26px 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.15s;
+      height: 30px;
+    }
+    .cs-select:hover { border-color: var(--accent-blue); }
+    .cs-select:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15); }
+    .cs-select option { background: var(--bg-card); color: var(--text-primary); }
+    .cs-select-arrow {
+      position: absolute;
+      right: 8px;
+      pointer-events: none;
+      font-size: 8px;
+      color: var(--text-muted);
+    }
+
+    /* CE/PE Toggle */
+    .cs-type-toggle {
+      display: inline-flex;
+      background: var(--bg-input);
+      border: 1px solid var(--border-normal);
+      padding: 3px;
+      border-radius: 7px;
+      gap: 3px;
+    }
+    .cs-type-btn {
+      padding: 4px 12px;
+      border-radius: 5px;
+      font-size: 11.5px;
+      font-weight: 800;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: var(--font-sans);
       letter-spacing: 0.3px;
     }
+    .cs-type-btn:hover:not(.active-ce):not(.active-pe) { color: var(--text-secondary); }
+    .cs-type-btn.active-ce {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green-bright);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .cs-type-btn.active-pe {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red-bright);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
 
-    .control-select, .control-input {
-      background: #0b1329;
-      border: 1px solid #1e293b;
-      color: var(--text-main);
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 12.5px;
+    .cs-breadcrumb {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-left: auto;
+      padding: 0 8px;
+      white-space: nowrap;
+      font-family: var(--font-mono);
+    }
+
+    .cs-ctrl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 11px;
+      border-radius: var(--radius-sm);
+      font-size: 11.5px;
+      font-weight: 600;
       font-family: var(--font-sans);
-      outline: none;
-      transition: border-color 0.15s ease;
-      width: 100%;
-    }
-    .control-select:focus, .control-input:focus {
-      border-color: var(--border-highlight);
-    }
-
-    /* Type Tabs (CE / PE) */
-    .type-tabs-container {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .type-tab {
-      flex: 1;
-      min-width: 180px;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 800;
-      font-size: 13px;
-      letter-spacing: 0.5px;
-      text-align: center;
+      border: 1px solid var(--border-normal);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
       cursor: pointer;
-      background: #070d1a;
-      border: 1px solid var(--border-subtle);
-      color: var(--text-muted);
-      transition: all 0.15s ease;
-      user-select: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      transition: all 0.15s;
+      white-space: nowrap;
+      height: 30px;
     }
-    .type-tab:hover {
-      background: #0f172a;
-      color: var(--text-main);
+    .cs-ctrl-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--accent-blue); }
+    .cs-ctrl-btn.green {
+      color: var(--accent-green-bright);
+      border-color: rgba(16, 185, 129, 0.25);
+      background: rgba(16, 185, 129, 0.07);
     }
+    .cs-ctrl-btn.green:hover { background: rgba(16, 185, 129, 0.14); }
 
-    .type-tab.active-ce {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(5, 150, 105, 0.18) 100%);
-      border-color: #10b981;
-      color: #34d399;
-      box-shadow: 0 0 14px rgba(16, 185, 129, 0.2);
-    }
-
-    .type-tab.active-pe {
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(220, 38, 38, 0.18) 100%);
-      border-color: #ef4444;
-      color: #f87171;
-      box-shadow: 0 0 14px rgba(239, 68, 68, 0.2);
-    }
-
-    /* Main Spreadsheet Card */
-    .sheet-card {
+    /* ============================================================
+       STRATEGY WORKBOOK TABS BAR
+       ============================================================ */
+    .cs-tabs-bar {
       background: var(--bg-panel);
-      border: 1px solid var(--border-subtle);
-      border-radius: 10px;
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      flex-shrink: 0;
+      height: 42px;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
-
-    .sheet-toolbar {
-      padding: 10px 16px;
-      background: #0b1329;
-      border-bottom: 1px solid var(--border-subtle);
+    .cs-tabs-label {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
+      padding: 0 14px;
+      border-right: 1px solid var(--border-dim);
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
-
-    /* Excel Formula Bar (Professional Bloomberg UI) */
-    .excel-formula-bar {
+    .cs-tabs-scroll {
+      flex: 1;
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 12px;
-      background: #060b18;
-      border-bottom: 1px solid #14203d;
+      padding: 0 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+    .cs-tabs-scroll::-webkit-scrollbar { height: 2px; }
+    .cs-tab-empty {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-style: italic;
+      white-space: nowrap;
+    }
+    .sheet-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-dim);
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .sheet-tab:hover { background: var(--bg-hover); color: var(--text-secondary); border-color: var(--border-normal); }
+    .sheet-tab.active-sheet-tab {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: var(--accent-blue);
+      border-bottom: 2px solid var(--accent-blue);
+      color: var(--accent-blue-bright);
+      font-weight: 700;
+    }
+    .sheet-pill {
       font-family: var(--font-mono);
-      font-size: 12px;
-      flex-wrap: wrap;
+      font-size: 9.5px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: var(--bg-input);
+      color: var(--text-muted);
+      font-weight: 600;
+      border: 1px solid var(--border-dim);
+    }
+    .ce-pill { background: rgba(16, 185, 129, 0.12); color: var(--accent-green); border-color: rgba(16, 185, 129, 0.2); }
+    .pe-pill { background: rgba(239, 68, 68, 0.12); color: var(--accent-red); border-color: rgba(239, 68, 68, 0.2); }
+    .sheet-tab-btn {
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 2px 3px;
+      border-radius: 3px;
+      font-size: 10px;
+      transition: all 0.12s;
+    }
+    .sheet-tab-btn:hover { color: var(--text-secondary); background: var(--bg-hover); }
+    .sheet-tab-close:hover { color: var(--accent-red) !important; background: rgba(239, 68, 68, 0.1) !important; }
+
+    .cs-tabs-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      border-left: 1px solid var(--border-dim);
+      flex-shrink: 0;
     }
 
+    /* ============================================================
+       MAIN CONTENT AREA
+       ============================================================ */
+    .cs-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-base);
+    }
+
+    /* ============================================================
+       SHEET TOOLBAR
+       ============================================================ */
+    .cs-sheet-toolbar {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 14px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .cs-toolbar-left { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .cs-toolbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+    .tbtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      border: 1px solid var(--border-dim);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      height: 28px;
+    }
+    .tbtn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-normal); }
+    .tbtn.green { color: var(--accent-green); border-color: rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.06); }
+    .tbtn.green:hover { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.4); }
+    .tbtn.blue { color: var(--accent-blue-bright); border-color: rgba(59, 130, 246, 0.2); background: rgba(59, 130, 246, 0.06); }
+    .tbtn.blue:hover { background: rgba(59, 130, 246, 0.12); border-color: var(--accent-blue); }
+    .tbtn.purple { color: #a78bfa; border-color: rgba(139, 92, 246, 0.2); background: rgba(139, 92, 246, 0.06); }
+    .tbtn.purple:hover { background: rgba(139, 92, 246, 0.12); border-color: rgba(139, 92, 246, 0.4); }
+    .tbtn.red { color: var(--accent-red); border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.06); }
+    .tbtn.red:hover { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.4); }
+
+    .tbtn-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: 3px 6px;
+    }
+    .tbtn-group-label { font-size: 10px; color: var(--text-dim); font-family: var(--font-mono); white-space: nowrap; }
+
+    .spot-display {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: 3px 10px;
+      white-space: nowrap;
+    }
+    .spot-display strong { color: var(--accent-blue-bright); font-weight: 700; }
+
+    .active-pair-display {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .active-pair-display strong { color: var(--text-secondary); }
+
+    /* ============================================================
+       FORMULA BAR
+       ============================================================ */
+    .cs-formula-bar {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      flex-shrink: 0;
+      height: 38px;
+    }
     .cell-address-box {
-      background: #0d1730;
-      border: 1px solid #203560;
-      color: #38bdf8;
+      background: var(--bg-input);
+      border: 1px solid var(--border-normal);
+      color: var(--accent-blue-bright);
       font-weight: 800;
-      padding: 4px 12px;
-      border-radius: 4px;
-      min-width: 65px;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+      min-width: 52px;
       text-align: center;
       user-select: none;
-      font-size: 13px;
+      font-size: 12px;
       font-family: var(--font-mono);
       letter-spacing: 0.5px;
     }
-
     .formula-btn {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid #1e293b;
-      background: #0b1329;
-      color: #94a3b8;
+      border: 1px solid var(--border-dim);
+      background: var(--bg-elevated);
+      color: var(--text-muted);
       border-radius: 4px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
-      transition: all 0.15s ease;
-      user-select: none;
+      transition: all 0.12s;
+      flex-shrink: 0;
     }
-    .formula-btn:hover { background: #1e293b; color: #f8fafc; }
-    .formula-btn-cancel:hover { color: #ef4444; border-color: #ef4444; background: rgba(239, 68, 68, 0.15); }
-    .formula-btn-accept { color: #10b981; }
-    .formula-btn-accept:hover { background: rgba(16, 185, 129, 0.2); border-color: #10b981; }
-    .formula-btn-fx { color: #818cf8; font-style: italic; font-family: serif; font-size: 15px; }
-    .formula-btn-fx:hover { background: rgba(129, 140, 248, 0.2); border-color: #818cf8; }
-
+    .formula-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .formula-btn-cancel:hover { color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.08); }
+    .formula-btn-accept { color: var(--accent-green); }
+    .formula-btn-accept:hover { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); }
+    .formula-btn-fx { color: var(--accent-indigo); font-style: italic; font-family: serif; font-size: 14px; }
+    .formula-btn-fx:hover { background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); }
     .formula-input {
       flex: 1;
-      min-width: 280px;
-      background: #0b1329;
-      border: 1px solid #1e293b;
-      color: #f8fafc;
-      padding: 6px 12px;
-      border-radius: 4px;
+      min-width: 200px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      color: var(--text-primary);
+      padding: 4px 12px;
+      border-radius: var(--radius-sm);
       font-family: var(--font-mono);
-      font-size: 12.5px;
+      font-size: 12px;
       outline: none;
-      transition: all 0.15s ease;
+      transition: all 0.15s;
     }
     .formula-input:focus {
-      border-color: #10b981;
-      box-shadow: 0 0 0 1px #10b981;
-      background: #0a1426;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+      background: rgba(59, 130, 246, 0.04);
     }
+    .formula-input::placeholder { color: var(--text-dim); font-style: italic; }
 
-    /* Jspreadsheet Dark Bloomberg Styling */
+    /* ============================================================
+       JSPREADSHEET DARK THEME
+       ============================================================ */
     .jexcel_container {
-      font-family: var(--font-mono);
-      background: #060b18;
-      width: 100%;
+      font-family: var(--font-mono) !important;
+      background: var(--bg-card) !important;
+      width: 100% !important;
     }
     .jexcel {
-      background: #060b18;
-      border-collapse: separate;
-      color: #f8fafc;
-      width: 100%;
+      background: var(--bg-card) !important;
+      border-collapse: separate !important;
+      color: var(--text-primary) !important;
+      width: 100% !important;
     }
     .jexcel > thead > tr > td {
-      background: #091024 !important;
-      color: #38bdf8 !important;
+      background: var(--bg-elevated) !important;
+      color: var(--text-muted) !important;
       font-weight: 700;
-      border: 1px solid #1a2a4f !important;
-      padding: 7px 8px;
-      font-size: 11.5px;
-      text-align: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      border: 1px solid var(--border-dim) !important;
+      padding: 6px 8px !important;
+      font-size: 11px !important;
+      text-align: center !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 10 !important;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
     .jexcel > thead > tr > td.selected {
-      background: #1e293b !important;
-      color: #10b981 !important;
+      background: rgba(59, 130, 246, 0.15) !important;
+      color: var(--accent-blue-bright) !important;
     }
     .jexcel > tbody > tr > td {
-      background: #070d1a !important;
-      color: #f1f5f9 !important;
-      border: 1px solid #14203d !important;
-      padding: 6px 10px !important;
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+      border: 1px solid var(--border-dim) !important;
+      padding: 5px 10px !important;
       font-size: 12px !important;
       font-family: var(--font-mono) !important;
-      text-align: right;
+      text-align: right !important;
+      transition: background 0.1s;
     }
-    /* Align Strike columns center */
-    .jexcel > tbody > tr > td:nth-child(2),
+    .jexcel > tbody > tr:hover > td {
+      background: var(--bg-elevated) !important;
+    }
+    /* Col A (child 2): Type (CE/PE) */
+    .jexcel > tbody > tr > td:nth-child(2) {
+      text-align: center !important;
+      font-weight: 800 !important;
+      font-size: 11px !important;
+      letter-spacing: 0.5px !important;
+    }
+    /* Col B (child 3): Strike 1 (Far) */
     .jexcel > tbody > tr > td:nth-child(3) {
       text-align: center !important;
-      font-weight: 700;
-      color: #38bdf8 !important;
-      background: rgba(56, 189, 248, 0.04) !important;
+      font-weight: 800 !important;
+      color: var(--accent-blue-bright) !important;
+      background: rgba(59, 130, 246, 0.05) !important;
     }
-    /* Spread LTP highlight */
-    .jexcel > tbody > tr > td:nth-child(6) {
-      color: #10b981 !important;
-      font-weight: 800;
+    /* Col C (child 4): Strike 2 (Near) */
+    .jexcel > tbody > tr > td:nth-child(4) {
+      text-align: center !important;
+      font-weight: 800 !important;
+      color: var(--accent-cyan) !important;
+      background: rgba(6, 182, 212, 0.05) !important;
     }
+    /* Col F (child 7): LTP (Spread) */
+    .jexcel > tbody > tr > td:nth-child(7) {
+      color: var(--accent-green-bright) !important;
+      font-weight: 800 !important;
+      background: rgba(16, 185, 129, 0.06) !important;
+    }
+    /* Row number cells */
     .jexcel > tbody > tr > td.jexcel_row {
-      background: #091024 !important;
-      color: #64748b !important;
+      background: var(--bg-elevated) !important;
+      color: var(--text-dim) !important;
       font-weight: 700 !important;
       text-align: center !important;
-      border-right: 1px solid #1a2a4f !important;
-      width: 44px !important;
+      border-right: 1px solid var(--border-normal) !important;
+      border-left: 1px solid var(--border-dim) !important;
+      border-bottom: 1px solid var(--border-dim) !important;
+      width: 40px !important;
       user-select: none;
+      font-size: 10px !important;
     }
     .jexcel > tbody > tr > td.highlight {
-      background: rgba(16, 185, 129, 0.16) !important;
+      background: rgba(59, 130, 246, 0.1) !important;
     }
-    .jexcel > tbody > tr > td.highlight-top {
-      border-top: 2px solid #10b981 !important;
-    }
-    .jexcel > tbody > tr > td.highlight-left {
-      border-left: 2px solid #10b981 !important;
-    }
-    .jexcel > tbody > tr > td.highlight-right {
-      border-right: 2px solid #10b981 !important;
-    }
-    .jexcel > tbody > tr > td.highlight-bottom {
-      border-bottom: 2px solid #10b981 !important;
-    }
+    .jexcel > tbody > tr > td.highlight-top { border-top: 2px solid var(--accent-blue) !important; }
+    .jexcel > tbody > tr > td.highlight-left { border-left: 2px solid var(--accent-blue) !important; }
+    .jexcel > tbody > tr > td.highlight-right { border-right: 2px solid var(--accent-blue) !important; }
+    .jexcel > tbody > tr > td.highlight-bottom { border-bottom: 2px solid var(--accent-blue) !important; }
+
+    /* Fill handle */
     .jexcel_corner {
-      background: #10b981 !important;
-      border: 1px solid #ffffff !important;
-      width: 9px !important;
-      height: 9px !important;
+      background: var(--accent-blue) !important;
+      border: 1px solid var(--bg-base) !important;
+      width: 8px !important;
+      height: 8px !important;
       z-index: 50 !important;
       border-radius: 1px !important;
       cursor: crosshair !important;
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.8) !important;
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.7) !important;
       position: absolute !important;
     }
     .jexcel_corner::after {
       content: '';
       position: absolute;
-      top: -8px;
-      left: -8px;
-      right: -8px;
-      bottom: -8px;
+      top: -8px; left: -8px; right: -8px; bottom: -8px;
       cursor: crosshair;
       z-index: 60;
     }
-    .jexcel_corner:hover {
-      background: #ffffff !important;
-      border-color: #10b981 !important;
-      transform: scale(1.3);
-    }
+    .jexcel_corner:hover { background: var(--accent-blue-bright) !important; transform: scale(1.3); }
+
     .drag-fill-highlight {
-      background: rgba(16, 185, 129, 0.35) !important;
-      outline: 2px dashed #10b981 !important;
+      background: rgba(59, 130, 246, 0.18) !important;
+      outline: 2px dashed var(--accent-blue) !important;
       outline-offset: -2px !important;
     }
+
+    /* Context Menu */
     .jexcel_contextmenu {
-      background: #0b1329 !important;
-      border: 1px solid #38bdf8 !important;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.7) !important;
-      color: #f8fafc !important;
-      border-radius: 6px;
-      z-index: 999;
+      background: var(--bg-card) !important;
+      border: 1px solid var(--border-normal) !important;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+      color: var(--text-primary) !important;
+      border-radius: var(--radius-md) !important;
+      z-index: 999 !important;
     }
     .jexcel_contextmenu a {
-      color: #f8fafc !important;
-      font-size: 12px;
-      padding: 6px 14px;
+      color: var(--text-secondary) !important;
+      font-size: 12px !important;
+      padding: 6px 14px !important;
     }
     .jexcel_contextmenu a:hover {
-      background: #1e293b !important;
-      color: #38bdf8 !important;
+      background: var(--bg-hover) !important;
+      color: var(--accent-blue-bright) !important;
     }
 
-    /* Uptick / Downtick animations */
-    .cell-uptick { animation: flashGreen 0.7s ease-out; }
-    .cell-downtick { animation: flashRed 0.7s ease-out; }
+    /* Strategy Section Headers */
+    .jexcel td[colspan="17"],
+    .jexcel td[colspan="18"],
+    .jexcel td[colspan="16"],
+    .jexcel td.strategy-section-header {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%) !important;
+      color: var(--accent-blue-bright) !important;
+      font-weight: 800 !important;
+      font-size: 12.5px !important;
+      letter-spacing: 0.5px !important;
+      text-align: left !important;
+      padding-left: 14px !important;
+      border-top: 1.5px solid rgba(59, 130, 246, 0.3) !important;
+      border-bottom: 1.5px solid rgba(59, 130, 246, 0.3) !important;
+      user-select: text !important;
+    }
 
+    /* Tick animations */
+    .cell-uptick { animation: flashGreen 0.8s ease-out; }
+    .cell-downtick { animation: flashRed 0.8s ease-out; }
     @keyframes flashGreen {
-      0% { background: rgba(16, 185, 129, 0.5) !important; }
-      100% { background: #070d1a !important; }
+      0% { background: rgba(16, 185, 129, 0.25) !important; }
+      100% { background: var(--bg-card) !important; }
     }
     @keyframes flashRed {
-      0% { background: rgba(239, 68, 68, 0.5) !important; }
-      100% { background: #070d1a !important; }
+      0% { background: rgba(239, 68, 68, 0.2) !important; }
+      100% { background: var(--bg-card) !important; }
     }
 
-    .sheet-footer {
-      padding: 8px 16px;
-      background: #070d1a;
-      border-top: 1px solid var(--border-subtle);
+    /* Sheet Grid container */
+    .cs-grid-wrap {
+      flex: 1;
+      overflow: hidden;
+      background: var(--bg-base);
+      position: relative;
+    }
+    #spreadsheetGrid {
+      width: 100%;
+      height: 100%;
+    }
+    .jexcel_content {
+      overflow-y: auto !important;
+      overflow-x: auto !important;
+    }
+    .jexcel_content::-webkit-scrollbar { width: 6px; height: 6px; }
+    .jexcel_content::-webkit-scrollbar-track { background: var(--bg-panel); }
+    .jexcel_content::-webkit-scrollbar-thumb { background: #2d3f5c; border-radius: 3px; }
+    .jexcel_content::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+
+    /* Sheet Footer */
+    .cs-sheet-footer {
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border-dim);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 5px 16px;
       font-size: 11px;
       color: var(--text-muted);
       font-family: var(--font-mono);
+      flex-shrink: 0;
+      height: 28px;
     }
+    .cs-sheet-footer strong { color: var(--text-secondary); }
 
-    /* Modal Overlays */
+    /* ============================================================
+       MODALS
+       ============================================================ */
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(3, 7, 18, 0.85);
-      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
       z-index: 1000;
       align-items: center;
       justify-content: center;
+    }
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-normal);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      width: 92%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), var(--glow-blue);
+    }
+    .modal-box.lg { max-width: 680px; max-height: 85vh; overflow-y: auto; }
+    .modal-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-close {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 18px;
+      line-height: 1;
+      padding: 2px 5px;
+      border-radius: 4px;
+      transition: all 0.12s;
+    }
+    .modal-close:hover { color: var(--accent-red); background: rgba(239, 68, 68, 0.1); }
+    .modal-info-grid {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .modal-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-info-label { color: var(--text-muted); }
+    .modal-info-val { color: var(--text-primary); font-weight: 600; font-family: var(--font-mono); }
+    .modal-p { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+    .modal-input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-normal);
+      color: var(--text-primary);
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: var(--font-sans);
+      outline: none;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+    .modal-input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15); }
+    .modal-input::placeholder { color: var(--text-dim); }
+    .modal-input-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--accent-blue);
+      color: white;
+      border-color: var(--accent-blue);
+      box-shadow: 0 1px 8px rgba(59, 130, 246, 0.25);
+    }
+    .btn-primary:hover { background: #2563eb; border-color: #2563eb; }
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      border-color: var(--border-normal);
+    }
+    .btn-secondary:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .btn-green {
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--accent-green-bright);
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+    .btn-green:hover { background: rgba(16, 185, 129, 0.2); }
+    .btn-indigo {
+      background: rgba(99, 102, 241, 0.12);
+      color: #a5b4fc;
+      border-color: rgba(99, 102, 241, 0.25);
+    }
+    .btn-indigo:hover { background: rgba(99, 102, 241, 0.2); }
+
+    /* Formula Help Grid */
+    .fhelp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      font-size: 11.5px;
+    }
+    .fhelp-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .fhelp-card-title { color: var(--accent-blue-bright); font-weight: 700; font-size: 11px; text-transform: uppercase; }
+    .fhelp-code { color: var(--accent-green-bright); font-weight: 600; font-family: var(--font-mono); }
+    .fhelp-note {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px dashed rgba(16, 185, 129, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: var(--text-secondary);
     }
 
     /* Toast */
     #toast {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: #10b981;
-      color: white;
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-size: 13px;
+      bottom: 20px;
+      right: 20px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-normal);
+      color: var(--text-primary);
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-size: 12.5px;
       font-weight: 600;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       display: none;
       align-items: center;
       gap: 8px;
-      z-index: 1000;
+      z-index: 2000;
+      font-family: var(--font-sans);
+      border-left: 3px solid var(--accent-blue);
+      backdrop-filter: blur(8px);
+      max-width: 340px;
     }
   </style>
 </head>
 <body>
 
-  <!-- Top Bar -->
-  <header class="top-bar">
-    <div class="brand-area">
-      <span class="brand-badge">CALENDAR DESK</span>
-      <h1 class="brand-title">Options Calendar &amp; Diagonal Spread Matrix</h1>
-      <span class="spot-chip" id="spotBadge">NIFTY Spot: --</span>
-      <span class="status-chip">
-        <span class="status-dot"></span>
-        <span id="syncLabel">Connecting...</span>
-      </span>
+  <!-- ========================================
+       TOP HEADER: BRAND + TICKERS + ACTIONS
+       ======================================== -->
+  <header class="cs-header">
+    <!-- Brand -->
+    <div class="cs-brand">
+      <div class="cs-brand-icon">⚡</div>
+      <div class="cs-brand-texts">
+        <div class="cs-brand-title">
+          OPTIONS CALENDAR STUDIO
+          <span class="cs-badge cs-badge-pro">PRO</span>
+        </div>
+        <div class="cs-brand-sub">Real-Time Spread Pricing · Black-Scholes Greeks</div>
+      </div>
     </div>
-    <div style="display:flex; align-items:center; gap:8px;">
-      <button id="btnLiveStream" class="btn btn-secondary" onclick="toggleLiveStream()" style="border-color:#10b981; color:#10b981;">
-        <span class="status-dot"></span>
-        <span>Live 1s: <strong id="streamStateTxt">ON</strong></span>
+
+    <!-- Live Ticker Cards -->
+    <div class="cs-ticker-row">
+      <div class="cs-ticker-card">
+        <div class="cs-ticker-label" id="cardSpotLabel">NIFTY 50</div>
+        <div class="cs-ticker-vals">
+          <div class="cs-ticker-price" id="cardSpotPrice">--</div>
+          <div class="cs-ticker-chg pos" id="cardSpotChange">--</div>
+        </div>
+      </div>
+      <div class="cs-ticker-card">
+        <div class="cs-ticker-label" id="cardFut1Label">FUT (CURR)</div>
+        <div class="cs-ticker-vals">
+          <div class="cs-ticker-price" id="cardFut1Price">--</div>
+          <div class="cs-ticker-chg pos" id="cardFut1Change">--</div>
+        </div>
+      </div>
+      <div class="cs-ticker-card">
+        <div class="cs-ticker-label" id="cardFut2Label">FUT (NEXT)</div>
+        <div class="cs-ticker-vals">
+          <div class="cs-ticker-price" id="cardFut2Price">--</div>
+          <div class="cs-ticker-chg pos" id="cardFut2Change">--</div>
+        </div>
+      </div>
+      <div class="cs-ticker-card">
+        <div class="cs-ticker-label" id="cardVixLabel">INDIA VIX</div>
+        <div class="cs-ticker-vals">
+          <div class="cs-ticker-price" id="cardVixPrice">--</div>
+          <div class="cs-ticker-chg neg" id="cardVixChange">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden compat elements -->
+    <span class="spot-chip" id="spotBadge" style="display:none;"></span>
+    <span id="syncLabel" style="display:none;">Connecting...</span>
+
+    <!-- Actions -->
+    <div class="cs-header-actions">
+      <button id="btnLiveStream" class="cs-hbtn live-on" onclick="toggleLiveStream()" title="Toggle 1s live refresh">
+        <span class="cs-live-dot"></span>
+        Live <strong id="streamStateTxt">ON</strong>
       </button>
-      <button id="btnUpstoxStatus" class="btn btn-secondary" onclick="openUpstoxModal()" style="border-color:#38bdf8; color:#38bdf8;">
-        ⚡ Upstox Connect
+      <button id="btnBrokerStatus" class="cs-hbtn api-btn" onclick="openBrokerModal()" title="Broker API Status">
+        <span class="cs-live-dot" id="brokerStatusDot"></span>
+        <span id="brokerStatusTxt">⚡ API Connected</span>
       </button>
-      <a href="/" class="btn btn-secondary" title="Back to Main Terminal">
-        ← Terminal
-      </a>
+      <a href="/" class="cs-hbtn" title="Back to Main Terminal">← Terminal</a>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="container">
-
-    <!-- 📑 Saved Combination Tabs Strip -->
-    <section class="saved-tabs-strip" id="savedTabsSection">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:12px; font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px;">
-            📑 Saved Combination Tabs (Click to Switch):
-          </span>
-          <span id="savedTabCountBadge" style="background:#1e293b; color:#94a3b8; font-size:11px; padding:1px 6px; border-radius:10px; font-family:var(--font-mono);">0 tabs</span>
-        </div>
-        <button class="btn btn-indigo" style="font-size:11px; padding:4px 12px;" onclick="promptSaveCurrentAsTab()">
-          ➕ Save Current Combination as Tab
-        </button>
-      </div>
-      <div class="tabs-scroll-container" id="tabsScrollContainer">
-        <!-- Rendered dynamically -->
-        <span style="font-size:11.5px; color:#64748b; font-style:italic;" id="emptyTabsNotice">
-          Koi combination tab abhi save nahi kiya hai. Niche Far aur Near Expiry select karein aur "Save as Tab" dabayein!
-        </span>
-      </div>
-    </section>
-
-    <!-- 1. Sleek Controls Strip -->
-    <section class="setup-strip">
-      <!-- Underlying -->
-      <div class="control-box" style="max-width:180px;">
-        <label class="control-label">📍 Underlying Index</label>
-        <select id="cfgUnderlying" class="control-select" onchange="onUnderlyingChange()">
+  <!-- ========================================
+       CONTROLS BAR
+       ======================================== -->
+  <div class="cs-controls">
+    <!-- Security -->
+    <div class="cs-ctrl-group">
+      <span class="cs-ctrl-label">Security</span>
+      <div class="cs-select-wrap">
+        <select id="cfgUnderlying" class="cs-select" onchange="onUnderlyingChange()">
           <option value="NIFTY" selected>NIFTY 50</option>
           <option value="BANKNIFTY">BANK NIFTY</option>
           <option value="FINNIFTY">FIN NIFTY</option>
           <option value="MIDCPNIFTY">MIDCAP NIFTY</option>
           <option value="SENSEX">SENSEX</option>
         </select>
+        <span class="cs-select-arrow">▾</span>
       </div>
+    </div>
 
-      <!-- Far Expiry (Buy Leg) -->
-      <div class="control-box">
-        <label class="control-label" style="color: #38bdf8;">📅 Far Expiry (Buy Leg)</label>
-        <select id="cfgFarExpiry" class="control-select" onchange="handleSelectExpiryChange('far')">
-          <!-- Populated dynamically via JS -->
+    <!-- Far Expiry -->
+    <div class="cs-ctrl-group">
+      <span class="cs-ctrl-label">EXP 1 (FAR)</span>
+      <div class="cs-select-wrap">
+        <select id="cfgFarExpiry" class="cs-select" onchange="handleSelectExpiryChange('far')">
+          <!-- Populated dynamically -->
         </select>
+        <span class="cs-select-arrow">▾</span>
       </div>
+    </div>
 
-      <!-- Near Expiry (Sell Leg) -->
-      <div class="control-box">
-        <label class="control-label" style="color: #f59e0b;">⏳ Near Expiry (Sell Leg)</label>
-        <select id="cfgNearExpiry" class="control-select" onchange="handleSelectExpiryChange('near')">
-          <!-- Populated dynamically via JS -->
+    <!-- Near Expiry -->
+    <div class="cs-ctrl-group">
+      <span class="cs-ctrl-label">EXP 2 (NEAR)</span>
+      <div class="cs-select-wrap">
+        <select id="cfgNearExpiry" class="cs-select" onchange="handleSelectExpiryChange('near')">
+          <!-- Populated dynamically -->
         </select>
+        <span class="cs-select-arrow">▾</span>
       </div>
+    </div>
 
-      <!-- Strike Range -->
-      <div class="control-box" style="max-width:140px;">
-        <label class="control-label">🎯 ATM Strike Range</label>
-        <select id="cfgStrikeRange" class="control-select" onchange="fetchLiveMarketData(true)">
-          <option value="5">±5 Strikes</option>
-          <option value="6" selected>±6 Strikes</option>
-          <option value="8">±8 Strikes</option>
-          <option value="10">±10 Strikes</option>
-          <option value="12">±12 Strikes</option>
-          <option value="15">±15 Strikes</option>
+    <!-- CE/PE -->
+    <div class="cs-ctrl-group">
+      <div class="cs-type-toggle">
+        <button id="tabCe" class="cs-type-btn active-ce" onclick="switchOptionType('CE')">● CE</button>
+        <button id="tabPe" class="cs-type-btn" onclick="switchOptionType('PE')">● PE</button>
+      </div>
+    </div>
+
+    <!-- Strike Range -->
+    <div class="cs-ctrl-group">
+      <span class="cs-ctrl-label">Range</span>
+      <div class="cs-select-wrap">
+        <select id="cfgStrikeRange" class="cs-select" onchange="fetchLiveMarketData(true)">
+          <option value="5">±5</option>
+          <option value="6" selected>±6</option>
+          <option value="8">±8</option>
+          <option value="10">±10</option>
+          <option value="12">±12</option>
+          <option value="15">±15</option>
         </select>
+        <span class="cs-select-arrow">▾</span>
       </div>
+    </div>
 
-      <!-- Save as Tab Button -->
-      <div class="control-box" style="flex: 0 0 auto;">
-        <button class="btn btn-indigo" style="height: 38px; font-size: 12px; padding: 0 16px;" onclick="promptSaveCurrentAsTab()">
-          💾 Save as Tab
-        </button>
+    <!-- Spread Rule -->
+    <div class="cs-ctrl-group">
+      <span class="cs-ctrl-label">Spread Rule</span>
+      <div class="cs-select-wrap">
+        <select id="spreadFormulaSelect" class="cs-select" onchange="onSpreadRuleChange()">
+          <option value="1:1" selected>1:1 (Far − Near)</option>
+          <option value="1:2">1:2 Ratio</option>
+          <option value="2:1">2:1 Ratio</option>
+        </select>
+        <span class="cs-select-arrow">▾</span>
       </div>
-    </section>
+    </div>
 
-    <!-- 2. Type Tabs: CE and PE ONLY -->
-    <section class="type-tabs-container">
-      <div id="tabCe" class="type-tab active-ce" onclick="switchOptionType('CE')">
-        🟢 CALLS (CE) CALENDAR SPREAD
-      </div>
-      <div id="tabPe" class="type-tab" onclick="switchOptionType('PE')">
-        🔴 PUTS (PE) CALENDAR SPREAD
-      </div>
-    </section>
+    <!-- Save -->
+    <div class="cs-ctrl-group">
+      <button class="cs-ctrl-btn green" onclick="promptSaveCurrentAsTab()">💾 Save Sheet</button>
+    </div>
 
-    <!-- 3. Authentic Excel Spreadsheet Matrix -->
-    <section class="sheet-card">
-      <div class="sheet-toolbar">
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <button class="btn btn-emerald" onclick="addNewStrikeRow()" title="Add a custom strike row at the bottom">
-            ➕ Add Row
-          </button>
-          <button class="btn btn-indigo" onclick="insertRowAboveSelection()" title="Insert row above active selected cell">
-            ⬆️ Insert Row Above
-          </button>
-          <button class="btn btn-secondary" onclick="deleteSelectedRow()" title="Delete active row">
-            🗑️ Delete Row
-          </button>
-          <button class="btn btn-secondary" onclick="resetToAtmStrikes()" title="Reset table back to default ATM strikes">
-            ↻ Reset to ATM Range
-          </button>
-          <button class="btn btn-secondary" onclick="exportCsv()" title="Export spreadsheet to CSV">
-            📥 Export CSV
-          </button>
+    <!-- Breadcrumb -->
+    <div class="cs-breadcrumb" id="breadcrumbPairDisplay">
+      NIFTY 50 — Loading...
+    </div>
+  </div>
 
-          <!-- Spread Rule Formula Selector -->
-          <div style="display:inline-flex; align-items:center; gap:5px; margin-left:6px; font-size:11.5px; color:#94a3b8; font-family:var(--font-mono);">
-            <span>Spread Rule:</span>
-            <select id="spreadFormulaSelect" class="control-select" style="padding:3px 8px; font-size:11.5px; height:30px; width:auto;" onchange="onSpreadRuleChange()">
-              <option value="1:1" selected>1:1 (Far - Near)</option>
-              <option value="1:2">1:2 Ratio (Far - 2×Near)</option>
-              <option value="2:1">2:1 Ratio (2×Far - Near)</option>
-            </select>
-          </div>
+  <!-- ========================================
+       STRATEGY WORKBOOK TABS BAR
+       ======================================== -->
+  <div class="cs-tabs-bar" id="savedTabsSection">
+    <div class="cs-tabs-label">
+      <span style="font-size:13px;">📑</span>
+      <span>SHEETS</span>
+      <span id="savedTabCountBadge" style="background:var(--bg-input);border:1px solid var(--border-dim);border-radius:4px;padding:1px 7px;font-size:9.5px;color:var(--text-muted);font-family:var(--font-mono);">0</span>
+    </div>
+    <div class="cs-tabs-scroll" id="tabsScrollContainer">
+      <span class="cs-tab-empty" id="emptyTabsNotice">No sheets saved yet — configure expiries and click 💾 Save Sheet</span>
+    </div>
+    <div class="cs-tabs-actions">
+      <button class="tbtn blue" onclick="createNewBlankSheet()">➕ New</button>
+      <button class="tbtn green" onclick="saveActiveSheetNow()">💾 Save</button>
+      <button class="tbtn purple" onclick="promptSaveCurrentAsTab()">📄 Save As</button>
+    </div>
+  </div>
 
-          <!-- Quick Diagonal Offset & Drop Down Tools -->
-          <div style="display:inline-flex; align-items:center; gap:6px; margin-left:8px; padding:2px 8px; background:#0f172a; border:1px solid #334155; border-radius:6px; font-size:11.5px; font-family:var(--font-mono);">
-            <span style="color:#38bdf8; font-weight:700;">📐 Col B Diagonal:</span>
-            <select id="quickDiagonalOffsetSelect" class="control-select" style="padding:2px 6px; font-size:11px; height:28px; width:auto;">
-              <option value="0">0 (Same Strike: S1 = S2)</option>
-              <option value="50">+50 (+1 OTM Step)</option>
-              <option value="100" selected>+100 (+2 OTM Steps)</option>
-              <option value="150">+150 (+3 OTM Steps)</option>
-              <option value="200">+200 (+4 OTM Steps)</option>
-              <option value="-50">-50 (-1 ITM Step)</option>
-              <option value="-100">-100 (-2 ITM Steps)</option>
-              <option value="-150">-150 (-3 ITM Steps)</option>
-              <option value="-200">-200 (-4 ITM Steps)</option>
-            </select>
-            <button class="btn btn-emerald" style="padding:3px 10px; font-size:11px; height:28px;" onclick="applyQuickDiagonalToAll()" title="Apply selected diagonal offset to Column B across all rows">
-              ⚡ Drop Down to All
-            </button>
-          </div>
+  <!-- ========================================
+       MAIN: TOOLBAR + FORMULA BAR + GRID
+       ======================================== -->
+  <main class="cs-main">
+
+    <!-- Sheet Toolbar -->
+    <div class="cs-sheet-toolbar">
+      <div class="cs-toolbar-left">
+        <button class="tbtn green" onclick="addNewStrikeRow()">➕ Add Row</button>
+        <button class="tbtn blue" onclick="insertRowAboveSelection()">⬆ Insert Above</button>
+        <button class="tbtn red" onclick="deleteSelectedRow()">🗑 Delete Row</button>
+        <button class="tbtn purple" onclick="insertMergedSectionHeader()">🏷 Strategy Header</button>
+        <button class="tbtn" onclick="mergeSelectedCells()">🔀 Merge</button>
+        <button class="tbtn" onclick="unmergeSelectedCells()">🔓 Unmerge</button>
+        <div class="tbtn-group">
+          <span class="tbtn-group-label">Type:</span>
+          <button class="tbtn green" style="height:22px;padding:0 7px;font-size:11px;" onclick="setAllRowsOptionType('CE')">All CE</button>
+          <button class="tbtn red" style="height:22px;padding:0 7px;font-size:11px;" onclick="setAllRowsOptionType('PE')">All PE</button>
         </div>
-
-        <div style="font-size:12px; font-family:var(--font-mono); color:#38bdf8; display:flex; align-items:center; gap:6px;">
-          <span>Active Spread: <strong id="activePairDisplay" style="color:#f8fafc;">--</strong></span>
-        </div>
+        <button class="tbtn" onclick="resetToAtmStrikes()">↻ Reset ATM</button>
+        <button class="tbtn" onclick="exportCsv()">📥 CSV</button>
       </div>
-
-      <!-- 📐 Authentic Excel Formula Bar -->
-      <div class="excel-formula-bar" id="excelFormulaBar">
-        <div class="cell-address-box" id="activeCellAddress" title="Active Cell Address (e.g. A1, B2)">A1</div>
-        <div style="display:flex; align-items:center; gap:3px;">
-          <button class="formula-btn formula-btn-cancel" onclick="cancelCellEdit()" title="Cancel edit (Esc)">✕</button>
-          <button class="formula-btn formula-btn-accept" onclick="applyFormulaFromBar()" title="Accept formula (Enter)">✓</button>
-          <button class="formula-btn formula-btn-fx" onclick="openFormulaHelpModal()" title="Excel Formula Guide (ƒx)">ƒx</button>
-        </div>
-        <input type="text" id="excelFormulaInput" class="formula-input" placeholder="Type Excel formula: e.g. =A1+100, =C1-D1, =SUM(A1:A5), =ROUND(A1*1.02, 0)... Enter dabayein" onkeydown="handleFormulaInputKey(event)" />
-        <button class="btn btn-emerald" style="font-size:11.5px; padding:4px 10px; display:flex; align-items:center; gap:5px;" onclick="executeDropDownForActiveCol()" title="Drop down active cell / column to the bottom row">
-          <span>⬇️ Drop Down Column</span>
-        </button>
-        <button class="btn btn-indigo" style="font-size:11.5px; padding:4px 12px; background:#312e81; border-color:#4f46e5; color:#e0e7ff; display:flex; align-items:center; gap:5px;" onclick="fillDownColumnFormula()" title="Fill Down formula / value to all rows below (Ctrl+D)">
-          <span>⬇️ Fill Down (Ctrl+D)</span>
-        </button>
+      <div class="cs-toolbar-right">
+        <div class="spot-display">Spot: <strong id="toolbarSpotDisplay">--</strong></div>
+        <div class="active-pair-display">Spread: <strong id="activePairDisplay">--</strong></div>
       </div>
+    </div>
 
-      <!-- Real Jspreadsheet Grid Container -->
-      <div style="width:100%; overflow:auto;">
-        <div id="spreadsheetGrid" style="width:100%; min-height:480px;"></div>
+    <!-- Formula Bar -->
+    <div class="cs-formula-bar" id="excelFormulaBar">
+      <div class="cell-address-box" id="activeCellAddress" title="Active Cell">A1</div>
+      <div style="display:flex;align-items:center;gap:3px;">
+        <button class="formula-btn formula-btn-cancel" onclick="cancelCellEdit()" title="Cancel (Esc)">✕</button>
+        <button class="formula-btn formula-btn-accept" onclick="applyFormulaFromBar()" title="Accept (Enter)">✓</button>
+        <button class="formula-btn formula-btn-fx" onclick="openFormulaHelpModal()" title="Formula Guide">ƒx</button>
       </div>
+      <input type="text" id="excelFormulaInput" class="formula-input"
+        placeholder="Type formula: =B1+100, =D1-E1, =SUM(B1:B5), +50 for diagonal offset... Enter to apply"
+        onkeydown="handleFormulaInputKey(event)" />
+      <button class="tbtn blue" style="height:28px;font-size:11.5px;" onclick="executeDropDownForActiveCol()" title="Drop Down Column">⬇ Drop Down</button>
+      <button class="tbtn purple" style="height:28px;font-size:11.5px;" onclick="fillDownColumnFormula()" title="Fill Down (Ctrl+D)">⬇ Fill Down</button>
+    </div>
 
-      <div class="sheet-footer">
-        <span>Rows: <strong id="rowCountBadge" style="color:#f8fafc;">0</strong> | Drag green corner handle down or right to drop-down / autofill formulas! Right-click for Excel context menu.</span>
-        <span>Last Tick: <strong id="lastTickTime" style="color:#f8fafc;">--:--:--</strong></span>
-      </div>
-    </section>
+    <!-- Grid Container -->
+    <div class="cs-grid-wrap">
+      <div id="spreadsheetGrid" style="width:100%;min-height:400px;"></div>
+    </div>
+
+    <!-- Sheet Footer -->
+    <div class="cs-sheet-footer">
+      <span>Rows: <strong id="rowCountBadge">0</strong> &nbsp;·&nbsp; Drag blue corner handle to fill down &nbsp;·&nbsp; Right-click for context menu</span>
+      <span>Last Tick: <strong id="lastTickTime">--:--:--</strong></span>
+    </div>
 
   </main>
 
-  <!-- Upstox Token Connect Modal -->
-  <div class="modal-overlay" id="upstoxModal">
-    <div style="background:#0b1329; border:1px solid #38bdf8; border-radius:12px; padding:22px; max-width:520px; width:90%; display:flex; flex-direction:column; gap:16px;">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="color:#f8fafc; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px;">
-          <span>⚡ Connect Upstox Live Feed</span>
-        </h3>
-        <span style="cursor:pointer; color:#94a3b8; font-size:18px;" onclick="closeUpstoxModal()">✕</span>
+  <!-- ========================================
+       MODALS
+       ======================================== -->
+
+  <!-- Broker Modal -->
+  <div class="modal-overlay" id="brokerModal">
+    <div class="modal-box" style="border-color: rgba(16, 185, 129, 0.3); box-shadow: 0 30px 60px rgba(0,0,0,0.6), 0 0 40px rgba(16,185,129,0.08);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="modal-title">⚡ Live Broker API Status</div>
+        <span class="modal-close" onclick="closeBrokerModal()">✕</span>
       </div>
-      <p style="font-size:12px; color:#94a3b8; line-height:1.5;">
-        Upstox Developer Console se apna daily <strong>Access Token</strong> yahan paste karein. Isse real-time exchange order book quotes direct stream hone lagenge.
-      </p>
-      <div style="display:flex; flex-direction:column; gap:6px;">
-        <label style="font-size:11px; font-weight:700; color:#38bdf8;">UPSTOX ACCESS TOKEN:</label>
-        <input type="password" id="inputUpstoxToken" placeholder="Paste your Bearer token here..." class="control-input" style="font-size:12px; width:100%;" />
+      <p class="modal-p">Calendar Studio connects via your <strong style="color:var(--accent-blue-bright)">Admin Panel</strong> master credentials. No separate API key needed here.</p>
+      <div class="modal-info-grid">
+        <div class="modal-info-row">
+          <span class="modal-info-label">Active Broker:</span>
+          <span class="modal-info-val" id="modalActiveBrokerName" style="color:var(--accent-blue-bright)">Angel One / Upstox</span>
+        </div>
+        <div class="modal-info-row">
+          <span class="modal-info-label">Feed Status:</span>
+          <span class="modal-info-val" id="modalBrokerStatusTag" style="color:var(--accent-green)">🟢 Live Exchange Connected</span>
+        </div>
+        <div class="modal-info-row">
+          <span class="modal-info-label">Credentials:</span>
+          <span class="modal-info-val" style="font-size:10.5px;">Admin Panel (.env Secure)</span>
+        </div>
       </div>
-      <div id="tokenStatusMsg" style="font-size:11.5px; font-family:var(--font-mono); min-height:16px;"></div>
-      <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button class="btn btn-secondary" onclick="closeUpstoxModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="submitUpstoxToken()">Validate &amp; Connect</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <a href="/admin.html#brokers" target="_blank" class="btn btn-primary" style="font-size:12px;">⚙️ Admin Panel ↗</a>
+        <button class="btn btn-secondary" onclick="closeBrokerModal()">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- Custom Expiry Prompt Modal -->
+  <!-- Add Custom Expiry Modal -->
   <div class="modal-overlay" id="expiryModal">
-    <div style="background:#0b1329; border:1px solid #38bdf8; border-radius:12px; padding:20px; max-width:440px; width:90%; display:flex; flex-direction:column; gap:14px;">
-      <h3 style="color:#f8fafc; font-size:15px; font-weight:700;">📅 Add Custom Expiry Date</h3>
-      <p style="font-size:12px; color:#94a3b8;">
-        Nayi expiry date enter karein (Format: <code>DD-Mon-YYYY</code>, jaise <code>15-Oct-2026</code>):
-      </p>
-      <input type="text" id="customExpiryInput" class="control-input" placeholder="e.g. 15-Oct-2026" style="width:100%;" />
-      <div style="display:flex; justify-content:flex-end; gap:8px;">
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="modal-title">📅 Add Custom Expiry</div>
+        <span class="modal-close" onclick="closeExpiryModal()">✕</span>
+      </div>
+      <p class="modal-p">Enter expiry date (Format: <code style="color:var(--accent-green);font-family:var(--font-mono);">DD-Mon-YYYY</code> e.g. <code style="color:var(--accent-green);font-family:var(--font-mono);">15-Oct-2026</code>):</p>
+      <input type="text" id="customExpiryInput" class="modal-input" placeholder="e.g. 15-Oct-2026" />
+      <div class="modal-actions">
         <button class="btn btn-secondary" onclick="closeExpiryModal()">Cancel</button>
         <button class="btn btn-primary" onclick="confirmAddExpiryModal()">Add Expiry</button>
       </div>
     </div>
   </div>
 
-  <!-- Save Combination Tab Modal -->
+  <!-- Save Sheet Modal -->
   <div class="modal-overlay" id="saveTabModal">
-    <div style="background:#0b1329; border:1px solid #6366f1; border-radius:12px; padding:22px; max-width:480px; width:90%; display:flex; flex-direction:column; gap:16px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.6);">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="color:#f8fafc; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px;">
-          <span>💾 Save Combination as Tab</span>
-        </h3>
-        <span style="cursor:pointer; color:#94a3b8; font-size:18px;" onclick="closeSaveTabModal()">✕</span>
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="modal-title">💾 Save Strategy Sheet</div>
+        <span class="modal-close" onclick="closeSaveTabModal()">✕</span>
       </div>
-      <p style="font-size:12px; color:#94a3b8; line-height:1.5; margin:0;">
-        Is real expiry combination aur spreadsheet configuration ko apne custom tab me save karein:
-      </p>
-      <div style="background:#131c38; border:1px solid #1e293b; border-radius:8px; padding:12px; font-size:12px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-        <div><span style="color:#64748b;">Underlying:</span> <strong id="modalUnderlyingLabel" style="color:#f8fafc;">NIFTY</strong></div>
-        <div><span style="color:#64748b;">Leg Type:</span> <strong id="modalTypeLabel" style="color:#10b981;">CE</strong></div>
-        <div><span style="color:#64748b;">Far Expiry:</span> <strong id="modalFarLabel" style="color:#38bdf8;">--</strong></div>
-        <div><span style="color:#64748b;">Near Expiry:</span> <strong id="modalNearLabel" style="color:#f59e0b;">--</strong></div>
+      <p class="modal-p">Save current expiry combination and strikes as an independent workbook sheet:</p>
+      <div class="modal-info-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><span style="color:var(--text-muted);font-size:12px;">Underlying:</span> <strong id="modalUnderlyingLabel" style="color:var(--text-primary);font-size:12px;">NIFTY</strong></div>
+        <div><span style="color:var(--text-muted);font-size:12px;">Type:</span> <strong id="modalTypeLabel" style="color:var(--accent-green);font-size:12px;">CE</strong></div>
+        <div><span style="color:var(--text-muted);font-size:12px;">Far Expiry:</span> <strong id="modalFarLabel" style="color:var(--accent-blue-bright);font-size:12px;">--</strong></div>
+        <div><span style="color:var(--text-muted);font-size:12px;">Near Expiry:</span> <strong id="modalNearLabel" style="color:var(--accent-amber);font-size:12px;">--</strong></div>
       </div>
-      <div style="display:flex; flex-direction:column; gap:6px;">
-        <label style="font-size:11px; font-weight:700; color:#cbd5e1;">TAB NAME (Aap apne hisaab se customize kar sakte hain):</label>
-        <input type="text" id="tabNameInput" class="control-input" style="width:100%; font-size:13px;" onkeydown="if(event.key==='Enter') confirmSaveTabModal(); else if(event.key==='Escape') closeSaveTabModal();" />
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label class="modal-input-label">Sheet Name:</label>
+        <input type="text" id="tabNameInput" class="modal-input" style="font-size:13px;"
+          onkeydown="if(event.key==='Enter') confirmSaveTabModal(); else if(event.key==='Escape') closeSaveTabModal();" />
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:4px;">
+      <div class="modal-actions">
         <button class="btn btn-secondary" onclick="closeSaveTabModal()">Cancel</button>
-        <button class="btn btn-indigo" onclick="confirmSaveTabModal()">💾 Save Tab</button>
+        <button class="btn btn-indigo" onclick="confirmSaveTabModal()">💾 Save Sheet</button>
       </div>
     </div>
   </div>
 
-  <!-- Excel Mathematical & Financial Formula Guide Modal -->
+  <!-- Formula Help Modal -->
   <div class="modal-overlay" id="formulaHelpModal">
-    <div style="background:#0b1329; border:1px solid #38bdf8; border-radius:12px; padding:22px; max-width:680px; width:92%; display:flex; flex-direction:column; gap:14px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.6); max-height:85vh; overflow-y:auto;">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="color:#f8fafc; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px;">
-          <span>📐 Authentic Excel Formulas &amp; Drop-Down Guide</span>
-        </h3>
-        <span style="cursor:pointer; color:#94a3b8; font-size:18px;" onclick="closeFormulaHelpModal()">✕</span>
+    <div class="modal-box lg">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="modal-title">📐 Excel Formula & Autofill Guide</div>
+        <span class="modal-close" onclick="closeFormulaHelpModal()">✕</span>
       </div>
-      <p style="font-size:12px; color:#94a3b8; line-height:1.5; margin:0;">
-        Ye real Excel spreadsheet component hai. Formula row aur column dono me lagta hai aur Excel ki tarah drop down / autofill hota hai:
-      </p>
-
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;">
-        <div style="background:#131c38; border:1px solid #1e293b; border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:6px;">
-          <div style="color:#38bdf8; font-weight:700;">📊 Row &amp; Column Formulas:</div>
-          <div><code style="color:#10b981;">=A1 + 100</code> : Cell A1 me 100 jod kar Strike 2 banana</div>
-          <div><code style="color:#10b981;">=C1 - D1</code> : Far Bid (Col C) - Near Ask (Col D)</div>
-          <div><code style="color:#10b981;">=C1 - 2*D1</code> : 1:2 Ratio spread formula</div>
-          <div><code style="color:#10b981;">=SUM(A1:A5)</code> : 5 strikes ka sum</div>
+      <p class="modal-p">This is a real Excel-compatible spreadsheet. Formulas work with relative references and autofill (drag handle):</p>
+      <div class="fhelp-grid">
+        <div class="fhelp-card">
+          <div class="fhelp-card-title">📊 Row & Column Formulas</div>
+          <div><span class="fhelp-code">=B1 + 100</span> — Strike 2 (Col C) from Strike 1 (Col B) + 100</div>
+          <div><span class="fhelp-code">=D1 - E1</span> — Far Bid (Col D) − Near Ask (Col E)</div>
+          <div><span class="fhelp-code">=D1 - 2*E1</span> — 1:2 Ratio spread</div>
+          <div><span class="fhelp-code">=SUM(B1:B5)</span> — Sum of 5 strikes</div>
         </div>
-
-        <div style="background:#131c38; border:1px solid #1e293b; border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:6px;">
-          <div style="color:#f59e0b; font-weight:700;">🧮 Mathematical Functions:</div>
-          <div><code style="color:#e0e7ff;">=ROUND(A1 * 1.01, 0)</code> : 1% OTM rounded</div>
-          <div><code style="color:#e0e7ff;">=INT(A1 / 100) * 100</code> : Round to nearest hundred</div>
-          <div><code style="color:#e0e7ff;">=ABS(A1 - 23000)</code> : Absolute distance</div>
-          <div><code style="color:#e0e7ff;">=AVERAGE(C1, D1)</code> : Bid-Ask average</div>
-          <div><code style="color:#e0e7ff;">=IF(A1 > 23000, A1+100, A1+50)</code> : Conditional strike</div>
+        <div class="fhelp-card">
+          <div class="fhelp-card-title">🧮 Math Functions</div>
+          <div><span class="fhelp-code">=ROUND(B1*1.01, 0)</span> — 1% OTM rounded</div>
+          <div><span class="fhelp-code">=INT(B1/100)*100</span> — Nearest hundred</div>
+          <div><span class="fhelp-code">=ABS(B1-23000)</span> — Absolute distance</div>
+          <div><span class="fhelp-code">=IF(B1>23000, B1+100, B1+50)</span> — Conditional</div>
         </div>
       </div>
-
-      <div style="background:#081024; border:1px dashed #10b981; border-radius:8px; padding:12px; font-size:12px; line-height:1.5;">
-        <strong style="color:#10b981;">🟩 Excel Drop-Down / Autofill Handle (.jexcel_corner):</strong>
-        <p style="margin:4px 0 0; color:#94a3b8;">
-          Selected cell ke bottom-right corner par jo <strong>Green Dot</strong> hota hai, usko mouse se pakad kar niche (vertical) ya daayein (horizontal) drag karein — formula relative references (e.g. <code>A1</code> ➜ <code>A2</code>, <code>A3</code>) ke sath automatic drop down / copy ho jayega! Sath hi aap <code>Ctrl+C</code> aur <code>Ctrl+V</code> se Microsoft Excel ya Google Sheets se direct copy-paste kar sakte hain.
+      <div class="fhelp-note">
+        <strong style="color:var(--accent-green-bright);">🟩 Fill Handle (Blue Corner):</strong>
+        <p style="margin-top:4px;">
+          Grab the <strong>blue corner</strong> at the selected cell's bottom-right and drag down/right — formulas auto-adjust relative references (<code style="font-family:var(--font-mono);">A1→A2→A3</code>). Double-click corner to instantly fill to the last row. <code style="font-family:var(--font-mono);">Ctrl+C/V</code> works with Excel and Google Sheets.
         </p>
       </div>
-
-      <div style="display:flex; justify-content:flex-end;">
-        <button class="btn btn-primary" onclick="closeFormulaHelpModal()">Samajh Gaya (Close)</button>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="closeFormulaHelpModal()">Got it!</button>
       </div>
     </div>
   </div>
 
-  <div id="toast">✅ Saved!</div>
+  <!-- Toast -->
+  <div id="toast"></div>
 
+  <!-- ========================================
+       ALL JAVASCRIPT (Unchanged Logic)
+       ======================================== -->
   <script>
-    let currentType = 'CE'; // CE or PE only
+    let currentType = 'CE';
     let currentUnderlying = 'NIFTY';
     let isLiveStreaming = true;
     let streamInterval = null;
     let isFetching = false;
     let currentPendingExpiryTarget = 'far';
 
-    // Saved Tabs & Matrix Store (Persistent via localStorage)
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function updateHeaderTickerCards(hq) {
+      if (!hq) return;
+
+      function renderCard(lblId, valId, chgId, qData, defaultLbl) {
+        if (!qData) return;
+        const elLbl = document.getElementById(lblId);
+        const elVal = document.getElementById(valId);
+        const elChg = document.getElementById(chgId);
+
+        if (elLbl && qData.label) elLbl.textContent = qData.label;
+        else if (elLbl && defaultLbl) elLbl.textContent = defaultLbl;
+
+        if (elVal && qData.price !== undefined) {
+          elVal.textContent = Number(qData.price).toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+        }
+
+        if (elChg) {
+          const chg = Number(qData.change) || 0;
+          const pct = Number(qData.changePct) || 0;
+          const isPos = chg >= 0;
+          elChg.className = 'cs-ticker-chg ' + (isPos ? 'pos' : 'neg');
+          elChg.textContent = `${isPos ? '+' : ''}${chg.toFixed(2)} ${isPos ? '+' : ''}${pct.toFixed(2)}%`;
+        }
+      }
+
+      renderCard('cardSpotLabel', 'cardSpotPrice', 'cardSpotChange', hq.spot, 'SPOT');
+      renderCard('cardFut1Label', 'cardFut1Price', 'cardFut1Change', hq.fut1, 'FUT 1');
+      renderCard('cardFut2Label', 'cardFut2Price', 'cardFut2Change', hq.fut2, 'FUT 2');
+      renderCard('cardVixLabel', 'cardVixPrice', 'cardVixChange', hq.vix, 'INDIA VIX');
+
+      const tbSpot = document.getElementById('toolbarSpotDisplay');
+      if (tbSpot && hq.spot && hq.spot.price !== undefined) {
+        tbSpot.textContent = Number(hq.spot.price).toLocaleString('en-IN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      }
+
+      if (hq.spot && hq.spot.price) {
+        currentSpotPrice = hq.spot.price;
+        const step = getIndexStep(currentUnderlying);
+        currentAtmStrike = Math.round(currentSpotPrice / step) * step;
+      }
+    }
+
     let customMatrixStore = {};
     let savedTabsStore = [];
     let activeTabId = null;
@@ -938,38 +1441,45 @@
     let currentSpotPrice = 23063.1;
     let currentAtmStrike = 23050;
 
-    // Jspreadsheet Instance & Selection Coordinates
     let sheet = null;
     let selectedCoords = { x1: 0, y1: 0, x2: 0, y2: 0 };
     let ignoreChangeEvents = false;
 
-    // Spreadsheet Column Definitions (A through P)
-    // Only Strike 1 (A) and Strike 2 (B) are user-editable; C through P are read-only static market displays
     const gridColumns = [
-      { type: 'numeric', title: 'A: Strike 1 (Far)', width: 130 },
-      { type: 'numeric', title: 'B: Strike 2 (Near)', width: 130 },
-      { type: 'numeric', title: 'C: Far Bid', width: 95, mask: '#,##0.00', readOnly: true },
-      { type: 'numeric', title: 'D: Near Ask', width: 95, mask: '#,##0.00', readOnly: true },
-      { type: 'text', title: 'E: LTP (Spread)', width: 110, readOnly: true },
-      { type: 'text', title: 'F: Delta Spread', width: 95, readOnly: true },
-      { type: 'text', title: 'G: IV Spread', width: 85, readOnly: true },
-      { type: 'text', title: 'H: Vega Spread', width: 95, readOnly: true },
-      { type: 'text', title: 'I: Far Delta', width: 85, readOnly: true },
-      { type: 'text', title: 'J: Near Delta', width: 85, readOnly: true },
-      { type: 'text', title: 'K: Far IV', width: 80, readOnly: true },
-      { type: 'text', title: 'L: Near IV', width: 80, readOnly: true },
-      { type: 'text', title: 'M: Far Vega', width: 80, readOnly: true },
-      { type: 'text', title: 'N: Near Vega', width: 80, readOnly: true },
-      { type: 'text', title: 'O: Far Vol', width: 85, readOnly: true },
-      { type: 'text', title: 'P: Near Vol', width: 85, readOnly: true }
+      { type: 'dropdown', source: ['CE', 'PE'], title: 'A: Type', width: 75 },
+      { type: 'text', title: 'B: Strike 1 (Far)', width: 125 },
+      { type: 'text', title: 'C: Strike 2 (Near)', width: 125 },
+      { type: 'numeric', title: 'D: Far Bid', width: 90, mask: '#,##0.00', readOnly: true },
+      { type: 'numeric', title: 'E: Near Ask', width: 90, mask: '#,##0.00', readOnly: true },
+      { type: 'text', title: 'F: LTP (Spread)', width: 105 },
+      { type: 'text', title: 'G: Delta Spread', width: 90, readOnly: true },
+      { type: 'text', title: 'H: IV Spread', width: 80, readOnly: true },
+      { type: 'text', title: 'I: Vega Spread', width: 85, readOnly: true },
+      { type: 'text', title: 'J: Far Delta', width: 80, readOnly: true },
+      { type: 'text', title: 'K: Near Delta', width: 80, readOnly: true },
+      { type: 'text', title: 'L: Far IV', width: 75, readOnly: true },
+      { type: 'text', title: 'M: Near IV', width: 75, readOnly: true },
+      { type: 'text', title: 'N: Far Vega', width: 75, readOnly: true },
+      { type: 'text', title: 'O: Near Vega', width: 75, readOnly: true },
+      { type: 'text', title: 'P: Far Vol', width: 85, readOnly: true },
+      { type: 'text', title: 'Q: Near Vol', width: 85, readOnly: true }
     ];
 
     function initStoresFromStorage() {
       try {
         const sTabs = localStorage.getItem('calendar_saved_tabs');
-        if (sTabs) savedTabsStore = JSON.parse(sTabs);
+        if (sTabs) {
+          savedTabsStore = JSON.parse(sTabs);
+          if (!Array.isArray(savedTabsStore)) savedTabsStore = [];
+        }
         const sMatrix = localStorage.getItem('calendar_matrix_store');
         if (sMatrix) customMatrixStore = JSON.parse(sMatrix);
+
+        if (savedTabsStore.length > 0) {
+          activeTabId = savedTabsStore[0].id;
+        } else {
+          activeTabId = null;
+        }
       } catch (e) {
         console.warn("Storage load notice:", e);
       }
@@ -980,7 +1490,34 @@
       const s = (sym || currentUnderlying || 'NIFTY').toUpperCase();
       if (s === 'BANKNIFTY' || s === 'SENSEX') return 100;
       if (s === 'MIDCPNIFTY') return 25;
-      return 50; // NIFTY, FINNIFTY
+      return 50;
+    }
+
+    function getGridData() {
+      if (!sheet) return [];
+      if (sheet.options && Array.isArray(sheet.options.data)) return sheet.options.data;
+      if (typeof sheet.getData === 'function') return sheet.getData();
+      return [];
+    }
+
+    function getGridRowCount() {
+      if (!sheet) return 0;
+      if (sheet.options && Array.isArray(sheet.options.data)) return sheet.options.data.length;
+      if (sheet.rows && Array.isArray(sheet.rows)) return sheet.rows.length;
+      return 0;
+    }
+
+    function isUserEditing() {
+      if (isUserDragging) return true;
+      if (!sheet) return false;
+      if (sheet.edition) return true;
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+        if (activeEl.id === 'excelFormulaInput' || activeEl.closest('#spreadsheetGrid') || activeEl.closest('.jexcel')) {
+          return true;
+        }
+      }
+      return false;
     }
 
     function evaluateCellExpression(rawStr, colIndex, rowIndex) {
@@ -988,30 +1525,30 @@
       let str = String(rawStr).trim();
       if (!str) return '';
 
-      // Col B diagonal shortcuts: "+100", "-50", or small number (<= 1000) representing diagonal offset
-      if (colIndex === 1) {
+      if (colIndex === 0) {
+        const up = str.toUpperCase();
+        return (up === 'PE' || up === 'P' || up === 'PUT') ? 'PE' : 'CE';
+      }
+
+      if (colIndex === 2) {
         if (str.startsWith('+') || str.startsWith('-')) {
-          str = 'A ' + str;
+          str = 'B ' + str;
         } else if (/^-?\d+(\.\d+)?$/.test(str)) {
           const num = parseFloat(str);
           if (Math.abs(num) <= 1000) {
-            // Diagonal offset (e.g. 100, 50, -50), not an absolute strike like 23000
-            str = num >= 0 ? `A + ${num}` : `A - ${Math.abs(num)}`;
+            str = num >= 0 ? `B + ${num}` : `B - ${Math.abs(num)}`;
           } else {
             return num;
           }
         }
       } else {
-        // Pure number for other columns
         if (/^-?\d+(\.\d+)?$/.test(str)) {
           return parseFloat(str);
         }
       }
 
-      // Remove leading '='
       let expr = str.startsWith('=') ? str.substring(1).trim() : str;
 
-      // Trading tokens
       const sym = document.getElementById('cfgUnderlying').value;
       const step = getIndexStep(sym);
       const spot = currentSpotPrice || 23063;
@@ -1021,30 +1558,29 @@
       expr = expr.replace(/\bSPOT\b/gi, spot);
       expr = expr.replace(/\bSTEP\b/gi, step);
 
-      // Specific cell references: A1, B2, C3, etc.
-      expr = expr.replace(/\b([A-P])\$?(\d+)\b/gi, (m, colLetter, rowNum) => {
+      const gridData = getGridData();
+
+      expr = expr.replace(/\b([A-R])\$?(\d+)\b/gi, (m, colLetter, rowNum) => {
         const cIdx = colLetter.toUpperCase().charCodeAt(0) - 65;
         const rIdx = parseInt(rowNum, 10) - 1;
         let val = 0;
-        if (sheet && sheet.data && sheet.data[rIdx] && sheet.data[rIdx][cIdx] !== undefined) {
+        if (gridData && gridData[rIdx] && gridData[rIdx][cIdx] !== undefined) {
           val = parseFloat(String(sheet.getValueFromCoords(cIdx, rIdx)).replace(/[^0-9.-]/g, '')) || 0;
         }
         return val;
       });
 
-      // Relative column references for current row: A, B, C, D, E...
-      'ABCDEFGHIJKLMNOP'.split('').forEach((ch, idx) => {
+      'ABCDEFGHIJKLMNOPQR'.split('').forEach((ch, idx) => {
         const regex = new RegExp(`\\b${ch}\\b`, 'gi');
         if (regex.test(expr)) {
           let val = 0;
-          if (sheet && sheet.data && sheet.data[rowIndex] && sheet.data[rowIndex][idx] !== undefined) {
+          if (rowIndex !== undefined && rowIndex !== null && gridData && gridData[rowIndex] && gridData[rowIndex][idx] !== undefined) {
             val = parseFloat(String(sheet.getValueFromCoords(idx, rowIndex)).replace(/[^0-9.-]/g, '')) || 0;
           }
           expr = expr.replace(regex, val);
         }
       });
 
-      // Math functions (case-insensitive)
       expr = expr.replace(/\bSUM\s*\(/gi, 'Math_sum(');
       expr = expr.replace(/\bAVERAGE\s*\(/gi, 'Math_avg(');
       expr = expr.replace(/\bAVG\s*\(/gi, 'Math_avg(');
@@ -1054,16 +1590,18 @@
       expr = expr.replace(/\bMIN\s*\(/gi, 'Math.min(');
       expr = expr.replace(/\bMAX\s*\(/gi, 'Math.max(');
       expr = expr.replace(/\bPOWER\s*\(/gi, 'Math.pow(');
+      expr = expr.replace(/\bIF\s*\(/gi, 'Math_if(');
       expr = expr.replace(/\^/g, '**');
 
       const Math_sum = (...args) => args.flat().reduce((a, b) => a + (parseFloat(b) || 0), 0);
       const Math_avg = (...args) => args.flat().reduce((a, b) => a + (parseFloat(b) || 0), 0) / (args.flat().length || 1);
       const Math_round = (v, d = 0) => Math.round(Number(v) * Math.pow(10, d)) / Math.pow(10, d);
+      const Math_if = (cond, ifTrue, ifFalse) => cond ? ifTrue : ifFalse;
 
       try {
-        if (/^[0-9+\-*/().\s,><=!%_a-zA-Z]+$/.test(expr)) {
-          const evalFn = new Function('Math_sum', 'Math_avg', 'Math_round', 'Math', '"use strict"; return (' + expr + ');');
-          const res = evalFn(Math_sum, Math_avg, Math_round, Math);
+        if (/^[0-9+\-*/().\s,><=%!_a-zA-Z]+$/.test(expr)) {
+          const evalFn = new Function('Math_sum', 'Math_avg', 'Math_round', 'Math_if', 'Math', '"use strict"; return (' + expr + ');');
+          const res = evalFn(Math_sum, Math_avg, Math_round, Math_if, Math);
           if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
             return Math.round(res * 100) / 100;
           }
@@ -1076,17 +1614,54 @@
       return !isNaN(fallbackNum) ? fallbackNum : str;
     }
 
-    // --- Initialize Jspreadsheet CE v4 Grid ---
-    function initSpreadsheetGrid(initialData) {
+    function getNumericStrike(colIdx, rowIdx) {
+      if (!sheet) return 0;
+      let raw = sheet.getValueFromCoords(colIdx, rowIdx);
+      if (raw === null || raw === undefined || raw === '') return 0;
+      let str = String(raw).trim();
+
+      let pureNum = parseFloat(str.replace(/[^0-9.-]/g, ''));
+      if (!str.startsWith('=') && !str.startsWith('+') && !str.startsWith('-') && !isNaN(pureNum) && pureNum > 500) {
+        return pureNum;
+      }
+
+      if (str.startsWith('=') || str.startsWith('+') || str.startsWith('-')) {
+        let evalVal = evaluateCellExpression(str, colIdx, rowIdx);
+        let num = parseFloat(String(evalVal).replace(/[^0-9.-]/g, ''));
+        if (!isNaN(num) && num > 500) return num;
+      }
+
+      if (sheet.records && sheet.records[rowIdx] && sheet.records[rowIdx][colIdx]) {
+        let domText = sheet.records[rowIdx][colIdx].innerText || sheet.records[rowIdx][colIdx].innerHTML;
+        let domNum = parseFloat(String(domText).replace(/[^0-9.-]/g, ''));
+        if (!isNaN(domNum) && domNum > 500) return domNum;
+      }
+
+      return !isNaN(pureNum) ? pureNum : 0;
+    }
+
+    function initSpreadsheetGrid(initialData, mergeCells) {
       const container = document.getElementById('spreadsheetGrid');
       container.innerHTML = '';
 
+      const normalizedData = (initialData || []).map(row => {
+        if (!Array.isArray(row)) return row;
+        if (row.length === 18) {
+          return [row[0], row[1], row[3], ...row.slice(4)];
+        }
+        if (row.length === 16 && (typeof row[0] === 'number' || (!isNaN(parseFloat(row[0])) && parseFloat(row[0]) > 500))) {
+          return [currentType, row[0], row[1], ...row.slice(2)];
+        }
+        return row;
+      });
+
       sheet = jspreadsheet(container, {
-        data: initialData || [],
+        data: normalizedData,
         columns: gridColumns,
-        minDimensions: [16, 12],
+        mergeCells: mergeCells || {},
+        minDimensions: [17, 12],
         tableOverflow: true,
-        tableHeight: 'calc(100vh - 280px)',
+        tableHeight: 'calc(100vh - 248px)',
         allowInsertRow: true,
         allowManualInsertRow: true,
         allowInsertColumn: true,
@@ -1098,12 +1673,59 @@
         onbeforechange: function(instance, cell, x, y, value) {
           const colIdx = parseInt(x, 10);
           const rowIdx = parseInt(y, 10);
-          if (colIdx === 0 || colIdx === 1 || colIdx === 4) {
+
+          if (colIdx === 0) {
+            const rawVal = String(value || '').trim();
+            const cellCoord = 'A' + (rowIdx + 1);
+            const isMerged = sheet && sheet.options && sheet.options.mergeCells && (sheet.options.mergeCells[cellCoord] || sheet.options.mergeCells[cellCoord.toLowerCase()]);
+            if (isMerged || rawVal.length > 4 || rawVal.includes(' ') || rawVal.startsWith('📌')) {
+              return value;
+            }
+            const up = rawVal.toUpperCase();
+            if (up === 'PE' || up === 'P' || up === 'PUT') return 'PE';
+            return 'CE';
+          }
+
+          if (colIdx === 2) {
+            let str = String(value || '').trim();
+            if (!str) return '';
+            if (/^[+-]\d+(\.\d+)?$/.test(str)) {
+              return `=B${rowIdx + 1} ${str.charAt(0)} ${str.slice(1).trim()}`;
+            }
+            if (/^-?\d+(\.\d+)?$/.test(str)) {
+              const num = parseFloat(str);
+              if (Math.abs(num) <= 1000) {
+                return num >= 0 ? `=B${rowIdx + 1} + ${num}` : `=B${rowIdx + 1} - ${Math.abs(num)}`;
+              }
+              return num;
+            }
+            if (/^=\s*B\s*([+-])\s*(\d+(\.\d+)?)$/i.test(str)) {
+              const m = str.match(/^=\s*B\s*([+-])\s*(\d+(\.\d+)?)$/i);
+              return `=B${rowIdx + 1} ${m[1]} ${m[2]}`;
+            }
+            if (str.startsWith('=')) return str;
+            return str;
+          }
+
+          if (colIdx === 1) {
+            let str = String(value || '').trim();
+            if (!str) return '';
+            if (str.startsWith('=')) {
+              const evaluated = evaluateCellExpression(str, colIdx, rowIdx);
+              if (typeof evaluated === 'number' && !isNaN(evaluated)) return evaluated;
+              return str;
+            }
+            if (/^-?\d+(\.\d+)?$/.test(str)) return parseFloat(str);
+            return str;
+          }
+
+          if (colIdx === 5) {
             const evaluated = evaluateCellExpression(value, colIdx, rowIdx);
             if (evaluated !== null && evaluated !== undefined && !isNaN(evaluated)) {
               return evaluated;
             }
           }
+
           return value;
         },
         onselection: function(instance, x1, y1, x2, y2, origin) {
@@ -1112,49 +1734,98 @@
           const rowNum = y1 + 1;
           document.getElementById('activeCellAddress').textContent = colLetter + rowNum;
 
-          // Retrieve formula if present, else cell value
           let rawVal = '';
-          if (sheet.data && sheet.data[y1] && sheet.data[y1][x1] !== undefined) {
-            rawVal = sheet.data[y1][x1];
+          const gridData = getGridData();
+          if (gridData && gridData[y1] && gridData[y1][x1] !== undefined) {
+            rawVal = gridData[y1][x1];
           } else {
             rawVal = sheet.getValueFromCoords(x1, y1);
           }
           document.getElementById('excelFormulaInput').value = rawVal !== null && rawVal !== undefined ? rawVal : '';
           setupDragDropAutofill(sheet);
         },
+        onchange: function(instance, cell, x, y, value) {
+          if (ignoreChangeEvents) return;
+          const colIdx = parseInt(x, 10);
+          const rowIdx = parseInt(y, 10);
+          if (colIdx === 0 || colIdx === 1 || colIdx === 2) {
+            if (colIdx === 1) {
+              const cVal = String(sheet.getValueFromCoords(2, rowIdx) || '').trim();
+              if (cVal.startsWith('=')) {
+                sheet.setValueFromCoords(2, rowIdx, cVal, true);
+              }
+            }
+            syncChangedStrikes();
+          } else if (colIdx === 3 || colIdx === 4) {
+            const fBid = parseFloat(sheet.getValueFromCoords(3, rowIdx)) || 0;
+            const nAsk = parseFloat(sheet.getValueFromCoords(4, rowIdx)) || 0;
+            const sp = computeSpreadWithRule(fBid, nAsk, rowIdx);
+            sheet.setValueFromCoords(5, rowIdx, sp, true);
+          }
+          saveCurrentToStore();
+        },
         onafterchanges: function(instance, records) {
           if (ignoreChangeEvents) return;
           if (!records || records.length === 0) return;
 
-          // Check if any strike cells (Column A or B) were changed (via typing, paste, or drop-down drag)
           let strikesChanged = false;
           for (let r of records) {
             const colIdx = parseInt(r.x, 10);
-            if (colIdx === 0 || colIdx === 1) {
+            if (colIdx === 0 || colIdx === 1 || colIdx === 2) {
               strikesChanged = true;
               break;
             }
           }
 
-          if (strikesChanged) {
-            syncChangedStrikes();
-          }
+          if (strikesChanged) syncChangedStrikes();
           saveCurrentToStore();
         }
       });
 
+      try {
+        let _clipData = null;
+        Object.defineProperty(sheet, 'data', {
+          get: function() {
+            if (_clipData !== null) return _clipData;
+            return (this.options && Array.isArray(this.options.data)) ? this.options.data : [];
+          },
+          set: function(val) { _clipData = val; },
+          configurable: true
+        });
+      } catch (e) {
+        console.warn("Property def error:", e);
+      }
+
       updateRowCountBadge();
       setupDragDropAutofill(sheet);
+      applySectionHeaderStyles();
+
+      container.addEventListener('dblclick', function(e) {
+        const td = e.target.closest('td[colspan]');
+        if (td && sheet) {
+          e.stopPropagation();
+          const x = parseInt(td.getAttribute('data-x') || '0', 10);
+          const y = parseInt(td.getAttribute('data-y') || '0', 10);
+          const curVal = sheet.getValueFromCoords(x, y) || '';
+          const newVal = prompt("Edit Strategy Header:", curVal);
+          if (newVal !== null) {
+            ignoreChangeEvents = true;
+            sheet.setValueFromCoords(x, y, newVal.trim(), true);
+            ignoreChangeEvents = false;
+            const fInput = document.getElementById('excelFormulaInput');
+            if (fInput) fInput.value = newVal.trim();
+            saveFullWorkspaceState();
+            showToast("Strategy header updated!");
+          }
+        }
+      });
     }
 
     function updateRowCountBadge() {
       const badge = document.getElementById('rowCountBadge');
-      if (badge && sheet && sheet.data) {
-        badge.textContent = sheet.data.length;
-      }
+      if (badge && sheet) badge.textContent = getGridRowCount();
     }
 
-    // --- Guaranteed Drag-and-Drop / Fill Down Engine ---
     let isUserDragging = false;
     let dragSource = null;
     let dragCurrentTarget = null;
@@ -1170,36 +1841,29 @@
       const corner = sheetInstance.corner || document.querySelector('.jexcel_corner');
       if (!corner) return;
 
-      corner.setAttribute('title', 'Excel Fill Handle: Drag down to drop down strikes/diagonal, or Double-click to drop down all rows!');
-
+      corner.setAttribute('title', 'Fill Handle: Drag to fill down / Double-click to fill all rows');
       if (corner._dragWired) return;
       corner._dragWired = true;
 
-      // Double-click: Instant Fill Down all the way to bottom row
       corner.ondblclick = function(e) {
         e.stopPropagation();
         e.preventDefault();
         const { x1, y1 } = selectedCoords;
-        const totalRows = (sheet && sheet.data) ? sheet.data.length : 0;
-        if (totalRows > y1 + 1) {
-          executeDropDown(x1, y1, totalRows - 1);
-        }
+        const totalRows = getGridRowCount();
+        if (totalRows > y1 + 1) executeDropDown(x1, y1, totalRows - 1);
       };
 
-      // Mousedown: Start dragging to drop down formula or values
       corner.onmousedown = function(e) {
         e.stopPropagation();
         e.preventDefault();
-
         const { x1, y1 } = selectedCoords;
         isUserDragging = true;
         dragSource = { x: x1, y: y1 };
         dragCurrentTarget = { x: x1, y: y1 };
-
         clearDragHighlights();
         document.body.style.userSelect = 'none';
         document.body.style.cursor = 'crosshair';
-
+        corner.style.pointerEvents = 'none';
         window.addEventListener('mousemove', onDragAutofillMove);
         window.addEventListener('mouseup', onDragAutofillUp);
       };
@@ -1207,24 +1871,29 @@
 
     function onDragAutofillMove(e) {
       if (!isUserDragging || !dragSource || !sheet) return;
-
       const elem = document.elementFromPoint(e.clientX, e.clientY);
+      let foundTd = false;
       if (elem) {
         const td = elem.closest('td[data-x][data-y]');
         if (td) {
-          const targetX = parseInt(td.getAttribute('data-x'), 10);
-          const targetY = parseInt(td.getAttribute('data-y'), 10);
-          dragCurrentTarget = { x: targetX, y: targetY };
+          dragCurrentTarget = { x: parseInt(td.getAttribute('data-x'), 10), y: parseInt(td.getAttribute('data-y'), 10) };
+          foundTd = true;
         }
       }
-
+      if (!foundTd && sheet.table) {
+        const rows = sheet.table.querySelectorAll('tbody tr');
+        for (let idx = 0; idx < rows.length; idx++) {
+          const rect = rows[idx].getBoundingClientRect();
+          if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            dragCurrentTarget.y = idx;
+            break;
+          }
+        }
+      }
       clearDragHighlights();
-
       const deltaX = Math.abs(dragCurrentTarget.x - dragSource.x);
       const deltaY = Math.abs(dragCurrentTarget.y - dragSource.y);
-
       if (deltaY >= deltaX) {
-        // Vertical drag across rows
         const minY = Math.min(dragSource.y, dragCurrentTarget.y);
         const maxY = Math.max(dragSource.y, dragCurrentTarget.y);
         for (let r = minY; r <= maxY; r++) {
@@ -1242,37 +1911,41 @@
       isUserDragging = false;
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
-
+      const corner = (sheet && sheet.corner) || document.querySelector('.jexcel_corner');
+      if (corner) corner.style.pointerEvents = '';
       window.removeEventListener('mousemove', onDragAutofillMove);
       window.removeEventListener('mouseup', onDragAutofillUp);
-
       clearDragHighlights();
 
       const elem = document.elementFromPoint(e.clientX, e.clientY);
+      let foundTd = false;
       if (elem) {
         const td = elem.closest('td[data-x][data-y]');
         if (td) {
           dragCurrentTarget.x = parseInt(td.getAttribute('data-x'), 10);
           dragCurrentTarget.y = parseInt(td.getAttribute('data-y'), 10);
+          foundTd = true;
+        }
+      }
+      if (!foundTd && sheet.table) {
+        const rows = sheet.table.querySelectorAll('tbody tr');
+        for (let idx = 0; idx < rows.length; idx++) {
+          const rect = rows[idx].getBoundingClientRect();
+          if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            dragCurrentTarget.y = idx;
+            break;
+          }
         }
       }
 
-      const startX = dragSource.x;
-      const startY = dragSource.y;
-      const targetY = dragCurrentTarget.y;
-
-      if (targetY !== startY) {
-        executeDropDown(startX, startY, targetY);
-      }
+      const startX = dragSource.x, startY = dragSource.y, targetY = dragCurrentTarget.y;
+      if (targetY !== startY) executeDropDown(startX, startY, targetY);
     }
 
-    // Core Drop Down & Diagonal Offset Engine
     function executeDropDown(startX, startY, targetY) {
-      if (!sheet || !sheet.data || sheet.data.length === 0) return;
-      const totalRows = sheet.data.length;
-      if (targetY === undefined || targetY === null) {
-        targetY = totalRows - 1;
-      }
+      const totalRows = getGridRowCount();
+      if (!sheet || totalRows === 0) return;
+      if (targetY === undefined || targetY === null) targetY = totalRows - 1;
       targetY = Math.max(0, Math.min(totalRows - 1, targetY));
       if (targetY === startY) return;
 
@@ -1281,165 +1954,156 @@
 
       ignoreChangeEvents = true;
 
-      if (startX === 1) {
-        // === COLUMN B: DIAGONAL SPREAD PROPAGATION ===
-        // Determine diagonal offset (Strike 2 - Strike 1) of the starting row
-        const rawS1 = sheet.getValueFromCoords(0, startY);
-        const rawS2 = sheet.getValueFromCoords(1, startY);
-        const s1Start = parseFloat(String(rawS1).replace(/[^0-9.-]/g, '')) || 0;
-        let s2Start = parseFloat(String(rawS2).replace(/[^0-9.-]/g, '')) || s1Start;
-
-        const offset = s2Start - s1Start;
-
+      if (startX === 0) {
+        const typeVal = String(sheet.getValueFromCoords(startX, startY) || 'CE').trim().toUpperCase() === 'PE' ? 'PE' : 'CE';
         for (let r = startY + step; step > 0 ? (r <= targetY) : (r >= targetY); r += step) {
-          const curS1 = parseFloat(String(sheet.getValueFromCoords(0, r)).replace(/[^0-9.-]/g, '')) || 0;
-          if (curS1 > 500) {
-            const newS2 = Math.round(curS1 + offset);
-            sheet.setValueFromCoords(1, r, newS2, true);
+          sheet.setValueFromCoords(startX, r, typeVal, true);
+        }
+      } else if (startX === 2) {
+        const rawC = String(sheet.getValueFromCoords(2, startY) || '').trim();
+        let offset = 0;
+        const fMatch = rawC.match(/^=\s*B(?:\$?\d+)?\s*([+-])\s*(\d+(\.\d+)?)$/i);
+        if (fMatch) {
+          const sign = fMatch[1] === '-' ? -1 : 1;
+          offset = sign * parseFloat(fMatch[2]);
+        } else if (/^[+-]\d+(\.\d+)?$/.test(rawC)) {
+          offset = parseFloat(rawC);
+        } else {
+          const curS1 = getNumericStrike(1, startY);
+          const curS2 = getNumericStrike(2, startY);
+          if (curS1 > 500 && curS2 > 500) offset = curS2 - curS1;
+        }
+        for (let r = startY + step; step > 0 ? (r <= targetY) : (r >= targetY); r += step) {
+          const formStr = offset >= 0 ? `=B${r + 1} + ${offset}` : `=B${r + 1} - ${Math.abs(offset)}`;
+          sheet.setValueFromCoords(2, r, formStr, true);
+        }
+      } else if (startX === 1) {
+        const s1Start = getNumericStrike(1, startY) || currentAtmStrike;
+        const rawC = String(sheet.getValueFromCoords(2, startY) || '').trim();
+        let cOffset = 0, hasColCOffset = false;
+        const cMatch = rawC.match(/^=\s*B(?:\$?\d+)?\s*([+-])\s*(\d+(\.\d+)?)$/i);
+        if (cMatch) {
+          hasColCOffset = true;
+          cOffset = (cMatch[1] === '-' ? -1 : 1) * parseFloat(cMatch[2]);
+        } else {
+          const s2Start = getNumericStrike(2, startY);
+          if (s2Start > 500 && s2Start !== s1Start) {
+            hasColCOffset = true;
+            cOffset = s2Start - s1Start;
           }
         }
-      } else if (startX === 0) {
-        // === COLUMN A: STRIKE 1 PROPAGATION (+INDEX STEP) ===
-        const rawS1 = sheet.getValueFromCoords(0, startY);
-        const s1Start = parseFloat(String(rawS1).replace(/[^0-9.-]/g, '')) || currentAtmStrike;
-
-        // Check if start row had a diagonal offset on Column B
-        const rawS2 = sheet.getValueFromCoords(1, startY);
-        const s2Start = parseFloat(String(rawS2).replace(/[^0-9.-]/g, ''));
-        const hasColBOffset = !isNaN(s2Start) && s2Start > 500 && (s2Start !== s1Start);
-        const colBOffset = hasColBOffset ? (s2Start - s1Start) : 0;
-
         for (let r = startY + step; step > 0 ? (r <= targetY) : (r >= targetY); r += step) {
           const rowDiff = r - startY;
           const newS1 = Math.round(s1Start + rowDiff * indexStep);
-          sheet.setValueFromCoords(0, r, newS1, true);
-
-          // If user had a diagonal set on Col B, propagate diagonal to Col B as well
-          if (hasColBOffset) {
-            sheet.setValueFromCoords(1, r, Math.round(newS1 + colBOffset), true);
+          sheet.setValueFromCoords(1, r, newS1, true);
+          if (hasColCOffset) {
+            const formC = cOffset >= 0 ? `=B${r + 1} + ${cOffset}` : `=B${r + 1} - ${Math.abs(cOffset)}`;
+            sheet.setValueFromCoords(2, r, formC, true);
+          }
+        }
+      } else {
+        const rawVal = String(sheet.getValueFromCoords(startX, startY) || '').trim();
+        if (rawVal.startsWith('=')) {
+          for (let r = startY + step; step > 0 ? (r <= targetY) : (r >= targetY); r += step) {
+            const rowDelta = r - startY;
+            const updatedFormula = rawVal.replace(/\b([A-R])(\d+)\b/g, (m, colLetter, rowNum) => {
+              const origRow = parseInt(rowNum, 10);
+              return `${colLetter}${origRow + rowDelta}`;
+            });
+            sheet.setValueFromCoords(startX, r, updatedFormula, true);
+          }
+        } else {
+          for (let r = startY + step; step > 0 ? (r <= targetY) : (r >= targetY); r += step) {
+            sheet.setValueFromCoords(startX, r, rawVal, true);
           }
         }
       }
 
       ignoreChangeEvents = false;
-
-      // Immediately fetch live market quotes for the new strike pairs
       syncChangedStrikes();
       saveCurrentToStore();
-      showToast(`⬇️ Dropped down strikes from row ${startY + 1} to row ${targetY + 1}!`);
+      showToast(`⬇ Filled from row ${startY + 1} → ${targetY + 1}`);
     }
 
-    // Drop down for active column button in formula bar
     function executeDropDownForActiveCol() {
-      if (!sheet || !sheet.data || sheet.data.length === 0) return;
+      const totalRows = getGridRowCount();
+      if (!sheet || totalRows === 0) return;
       const { x1, y1 } = selectedCoords;
-      const totalRows = sheet.data.length;
-      if (y1 >= totalRows - 1) {
-        showToast("Selected row is already at the bottom!");
-        return;
-      }
+      if (y1 >= totalRows - 1) { showToast("Already at the last row!"); return; }
       executeDropDown(x1, y1, totalRows - 1);
     }
 
-    // Apply quick diagonal offset across all rows
-    function applyQuickDiagonalToAll() {
-      if (!sheet || !sheet.data || sheet.data.length === 0) return;
-      const sel = document.getElementById('quickDiagonalOffsetSelect');
-      const offsetVal = sel ? parseFloat(sel.value) || 0 : 100;
-      const totalRows = sheet.data.length;
-
-      ignoreChangeEvents = true;
-      for (let r = 0; r < totalRows; r++) {
-        const rawS1 = sheet.getValueFromCoords(0, r);
-        const s1 = parseFloat(String(rawS1).replace(/[^0-9.-]/g, '')) || 0;
-        if (s1 > 500) {
-          const newS2 = Math.round(s1 + offsetVal);
-          sheet.setValueFromCoords(1, r, newS2, true);
-        }
-      }
-      ignoreChangeEvents = false;
-
-      syncChangedStrikes();
-      saveCurrentToStore();
-      showToast(`⚡ Applied ${offsetVal >= 0 ? '+' : ''}${offsetVal} diagonal offset to Column B across all ${totalRows} rows!`);
-    }
-
-    // --- Formula Bar Controls ---
     function handleFormulaInputKey(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        applyFormulaFromBar();
-      } else if (e.key === 'Escape') {
-        cancelCellEdit();
-      }
+      if (e.key === 'Enter') { e.preventDefault(); applyFormulaFromBar(); }
+      else if (e.key === 'Escape') { cancelCellEdit(); }
     }
 
     function applyFormulaFromBar() {
       if (!sheet) return;
       const { x1, y1 } = selectedCoords;
-      const val = document.getElementById('excelFormulaInput').value.trim();
-      const evaluated = evaluateCellExpression(val, x1, y1);
-      const valToSet = (evaluated !== null && evaluated !== undefined && !isNaN(evaluated)) ? evaluated : val;
-      sheet.setValueFromCoords(x1, y1, valToSet);
-      if (x1 === 0 || x1 === 1) {
-        syncChangedStrikes();
+      let val = document.getElementById('excelFormulaInput').value.trim();
+      if (!val) return;
+
+      if (x1 === 2) {
+        if (/^[+-]\d+(\.\d+)?$/.test(val)) {
+          val = `=B${y1 + 1} ${val.charAt(0)} ${val.slice(1).trim()}`;
+        } else if (/^=\s*B\s*([+-])\s*(\d+(\.\d+)?)$/i.test(val)) {
+          const m = val.match(/^=\s*B\s*([+-])\s*(\d+(\.\d+)?)$/i);
+          val = `=B${y1 + 1} ${m[1]} ${m[2]}`;
+        } else if (/^-?\d+(\.\d+)?$/.test(val)) {
+          const num = parseFloat(val);
+          if (Math.abs(num) <= 1000) {
+            val = num >= 0 ? `=B${y1 + 1} + ${num}` : `=B${y1 + 1} - ${Math.abs(num)}`;
+          }
+        }
       }
-      showToast(`Applied ${val} ➜ ${valToSet} at ${String.fromCharCode(65 + x1)}${y1 + 1}`);
+
+      sheet.setValueFromCoords(x1, y1, val, true);
+      if (x1 === 0 || x1 === 1 || x1 === 2) syncChangedStrikes();
+      showToast(`Applied ${val} → ${String.fromCharCode(65 + x1)}${y1 + 1}`);
     }
 
     function cancelCellEdit() {
       if (!sheet) return;
       const { x1, y1 } = selectedCoords;
-      let rawVal = (sheet.data && sheet.data[y1] && sheet.data[y1][x1] !== undefined) ? sheet.data[y1][x1] : sheet.getValueFromCoords(x1, y1);
+      const gridData = getGridData();
+      let rawVal = (gridData && gridData[y1] && gridData[y1][x1] !== undefined) ? gridData[y1][x1] : sheet.getValueFromCoords(x1, y1);
       document.getElementById('excelFormulaInput').value = rawVal || '';
     }
 
-    // Fill Down (Ctrl+D): Drops down from active row to bottom
     function fillDownColumnFormula() {
-      if (!sheet || !sheet.data || sheet.data.length === 0) return;
+      const totalRows = getGridRowCount();
+      if (!sheet || totalRows === 0) return;
       const { x1, y1 } = selectedCoords;
-      const totalRows = sheet.data.length;
-      if (y1 >= totalRows - 1) {
-        showToast("Selected cell is already at the bottom row!");
-        return;
-      }
+      if (y1 >= totalRows - 1) { showToast("Already at the last row!"); return; }
       executeDropDown(x1, y1, totalRows - 1);
     }
 
-    // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
         fillDownColumnFormula();
+      } else if (e.key === 'F2') {
+        const input = document.getElementById('excelFormulaInput');
+        if (input) { input.focus(); input.select(); }
       }
     });
 
-    // --- Strike Change Synchronizer ---
     let strikeDebounceTimer = null;
     function syncChangedStrikes() {
       clearTimeout(strikeDebounceTimer);
       strikeDebounceTimer = setTimeout(async () => {
-        if (!sheet || !sheet.data) return;
+        const totalRows = getGridRowCount();
+        if (!sheet || totalRows === 0) return;
         const strikePairs = [];
-        const totalRows = sheet.data.length;
 
-        ignoreChangeEvents = true;
         for (let r = 0; r < totalRows; r++) {
-          const rawS1 = sheet.getValueFromCoords(0, r);
-          const rawS2 = sheet.getValueFromCoords(1, r);
-          let s1 = evaluateCellExpression(rawS1, 0, r);
-          let s2 = evaluateCellExpression(rawS2, 1, r);
-          s1 = parseFloat(s1) || 0;
-          s2 = parseFloat(s2) || s1;
-
-          if (s1 > 500) {
-            strikePairs.push({ s1: s1, s2: s2, rowIdx: r });
-            // Ensure table displays clean evaluated numbers
-            sheet.setValueFromCoords(0, r, s1, true);
-            sheet.setValueFromCoords(1, r, s2, true);
-          }
+          const rawT = String(sheet.getValueFromCoords(0, r) || 'CE').trim().toUpperCase();
+          const t = (rawT === 'PE' || rawT === 'P' || rawT === 'PUT') ? 'PE' : 'CE';
+          const s1 = getNumericStrike(1, r);
+          const s2 = getNumericStrike(2, r) || s1;
+          if (s1 > 500) strikePairs.push({ t1: t, s1, t2: t, s2, rowIdx: r });
         }
-        ignoreChangeEvents = false;
 
         if (strikePairs.length === 0) return;
 
@@ -1456,10 +2120,9 @@
               farExpiry: fExp,
               nearExpiry: nExp,
               optionType: currentType,
-              customStrikes: strikePairs.map(p => ({ s1: p.s1, s2: p.s2 }))
+              customStrikes: strikePairs.map(p => ({ t1: p.t1, s1: p.s1, t2: p.t2, s2: p.s2 }))
             })
           });
-
           if (res.ok) {
             const data = await res.json();
             if (data && data.ok && data.rows) {
@@ -1470,63 +2133,83 @@
         } catch (e) {
           console.warn("Sync strikes error:", e);
         }
-      }, 350);
+      }, 40);
     }
 
-    // Update Quotes in Jspreadsheet (Preserving User Formulas in Col A/B/E)
+    function setCellFast(col, row, val, formattedVal) {
+      if (sheet && sheet.options && sheet.options.data && sheet.options.data[row]) {
+        sheet.options.data[row][col] = val;
+      }
+      let td = null;
+      if (sheet && sheet.records && sheet.records[row] && sheet.records[row][col]) {
+        td = sheet.records[row][col];
+      } else if (sheet && typeof sheet.getCellFromCoords === 'function') {
+        td = sheet.getCellFromCoords(col, row);
+      }
+      if (!td) {
+        td = document.querySelector(`#spreadsheetGrid tbody tr[data-y="${row}"] td[data-x="${col}"]`) ||
+             document.querySelector(`#spreadsheetGrid td[data-x="${col}"][data-y="${row}"]`);
+      }
+      if (td) {
+        const txt = formattedVal !== undefined ? formattedVal : (val !== null && val !== undefined ? String(val) : '');
+        td.textContent = txt;
+      }
+    }
+
     function updateQuotesFromResponse(freshRows) {
-      if (!sheet || !sheet.data || !freshRows) return;
+      if (!sheet || !freshRows || freshRows.length === 0) return;
+      const totalRows = getGridRowCount();
+      if (totalRows === 0) return;
+
       const rowMap = {};
-      freshRows.forEach(r => {
+      freshRows.forEach((r) => {
+        const t1 = (r.t1 || 'CE').toUpperCase();
+        const t2 = (r.t2 || 'CE').toUpperCase();
         const k1 = Math.round(parseFloat(r.s1) || 0);
         const k2 = Math.round(parseFloat(r.s2) || 0);
-        rowMap[k1 + '_' + k2] = r;
+        rowMap[`${t1}_${k1}_${t2}_${k2}`] = r;
+        if (!rowMap[`${k1}_${k2}`]) rowMap[`${k1}_${k2}`] = r;
         if (!rowMap[k1]) rowMap[k1] = r;
       });
 
-      const totalRows = sheet.data.length;
       ignoreChangeEvents = true;
 
       for (let r = 0; r < totalRows; r++) {
-        const rawS1 = sheet.getValueFromCoords(0, r);
-        const rawS2 = sheet.getValueFromCoords(1, r);
-        const s1Num = Math.round(parseFloat(String(rawS1).replace(/[^0-9.-]/g, '')) || 0);
-        const s2Num = Math.round(parseFloat(String(rawS2).replace(/[^0-9.-]/g, '')) || s1Num);
-        const fresh = rowMap[s1Num + '_' + s2Num] || rowMap[s1Num];
+        const rawT = String(sheet.getValueFromCoords(0, r) || 'CE').trim().toUpperCase();
+        const s1Num = Math.round(getNumericStrike(1, r));
+        const s2Num = Math.round(getNumericStrike(2, r)) || s1Num;
+        if (s1Num < 500) continue;
+
+        const exactKey = `${rawT}_${s1Num}_${rawT}_${s2Num}`;
+        let fresh = rowMap[exactKey] || rowMap[`${s1Num}_${s2Num}`] || rowMap[s1Num];
+        if (!fresh && r < freshRows.length) fresh = freshRows[r];
         if (!fresh) continue;
 
         const fBid = parseFloat(fresh.farBid) || 0;
         const nAsk = parseFloat(fresh.nearAsk) || 0;
         const sp = computeSpreadWithRule(fBid, nAsk, r);
 
-        // Update Col C (Far Bid), Col D (Near Ask)
-        sheet.setValueFromCoords(2, r, fBid, true);
-        sheet.setValueFromCoords(3, r, nAsk, true);
-
-        // Col E: If user didn't write an explicit custom formula, set calculated spread LTP
-        const currentE = sheet.data[r][4];
-        if (!currentE || !String(currentE).startsWith('=')) {
-          sheet.setValueFromCoords(4, r, sp, true);
-        }
-
-        // Columns F through P: Greeks & Volumes
-        sheet.setValueFromCoords(5, r, fresh.deltaSpread, true);
-        sheet.setValueFromCoords(6, r, fresh.volSpread, true);
-        sheet.setValueFromCoords(7, r, fresh.vegaSpread, true);
-        sheet.setValueFromCoords(8, r, fresh.farDelta, true);
-        sheet.setValueFromCoords(9, r, fresh.nearDelta, true);
-        sheet.setValueFromCoords(10, r, fresh.farVolIv, true);
-        sheet.setValueFromCoords(11, r, fresh.nearVolIv, true);
-        sheet.setValueFromCoords(12, r, fresh.farVega, true);
-        sheet.setValueFromCoords(13, r, fresh.nearVega, true);
-        sheet.setValueFromCoords(14, r, fresh.farVol, true);
-        sheet.setValueFromCoords(15, r, fresh.nearVol, true);
+        // Fast ultra-lightweight direct DOM cell updates (no full table re-render)
+        setCellFast(3, r, fBid, fBid.toFixed(2));
+        setCellFast(4, r, nAsk, nAsk.toFixed(2));
+        setCellFast(5, r, sp, String(sp));
+        setCellFast(6, r, fresh.deltaSpread !== undefined ? fresh.deltaSpread : '--');
+        setCellFast(7, r, fresh.volSpread !== undefined ? fresh.volSpread : '--');
+        setCellFast(8, r, fresh.vegaSpread !== undefined ? fresh.vegaSpread : '--');
+        setCellFast(9, r, fresh.farDelta !== undefined ? fresh.farDelta : '--');
+        setCellFast(10, r, fresh.nearDelta !== undefined ? fresh.nearDelta : '--');
+        setCellFast(11, r, fresh.farVolIv !== undefined ? fresh.farVolIv : '--');
+        setCellFast(12, r, fresh.nearVolIv !== undefined ? fresh.nearVolIv : '--');
+        setCellFast(13, r, fresh.farVega !== undefined ? fresh.farVega : '--');
+        setCellFast(14, r, fresh.nearVega !== undefined ? fresh.nearVega : '--');
+        setCellFast(15, r, fresh.farVol !== undefined ? fresh.farVol : 0);
+        setCellFast(16, r, fresh.nearVol !== undefined ? fresh.nearVol : 0);
       }
 
       ignoreChangeEvents = false;
+      applySectionHeaderStyles();
     }
 
-    // Spread Rule Helper
     function computeSpreadWithRule(farBid, nearAsk, rowIndex) {
       const sel = document.getElementById('spreadFormulaSelect');
       const rule = sel ? sel.value : '1:1';
@@ -1536,41 +2219,45 @@
     }
 
     function onSpreadRuleChange() {
-      if (!sheet || !sheet.data) return;
-      const totalRows = sheet.data.length;
+      const totalRows = getGridRowCount();
+      if (!sheet || totalRows === 0) return;
       ignoreChangeEvents = true;
       for (let r = 0; r < totalRows; r++) {
-        const fBid = parseFloat(sheet.getValueFromCoords(2, r)) || 0;
-        const nAsk = parseFloat(sheet.getValueFromCoords(3, r)) || 0;
-        const sp = computeSpreadWithRule(fBid, nAsk, r);
-        sheet.setValueFromCoords(4, r, sp, true);
+        const s1 = parseFloat(String(sheet.getValueFromCoords(1, r)).replace(/[^0-9.-]/g, '')) || 0;
+        if (s1 > 500) {
+          const fBid = parseFloat(sheet.getValueFromCoords(3, r)) || 0;
+          const nAsk = parseFloat(sheet.getValueFromCoords(4, r)) || 0;
+          sheet.setValueFromCoords(5, r, computeSpreadWithRule(fBid, nAsk, r), true);
+        }
       }
       ignoreChangeEvents = false;
       saveCurrentToStore();
-      showToast("Spread formula rule applied");
+      showToast("Spread rule applied");
     }
 
-    // --- Toolbar Actions ---
     function addNewStrikeRow() {
       if (!sheet) return;
-      const totalRows = sheet.data.length;
-      const lastS1 = totalRows > 0 ? parseFloat(sheet.getValueFromCoords(0, totalRows - 1)) || currentAtmStrike : currentAtmStrike;
+      const totalRows = getGridRowCount();
+      let lastS1 = currentAtmStrike;
+      for (let r = totalRows - 1; r >= 0; r--) {
+        const val = parseFloat(sheet.getValueFromCoords(1, r)) || 0;
+        if (val > 500) { lastS1 = val; break; }
+      }
       const step = getIndexStep(currentUnderlying);
       const nextS1 = lastS1 + step;
-      const nextS2 = nextS1;
-      const rowNum = totalRows + 1;
-
-      sheet.insertRow([nextS1, nextS2, 0, 0, `=C${rowNum}-D${rowNum}`, '--', '--', '--', '--', '--', '--', '--', '--', '--', '--', '--']);
+      sheet.insertRow([currentType, nextS1, nextS1, 0, 0, 0, '--', '--', '--', '--', '--', '--', '--', '--', '--', '--', '--']);
       updateRowCountBadge();
       syncChangedStrikes();
+      saveCurrentToStore();
     }
 
     function insertRowAboveSelection() {
       if (!sheet) return;
       const { y1 } = selectedCoords;
-      sheet.insertRow(null, y1, true);
+      sheet.insertRow([currentType, 0, 0, 0, 0, 0, '--', '--', '--', '--', '--', '--', '--', '--', '--', '--', '--'], y1, true);
       updateRowCountBadge();
       syncChangedStrikes();
+      saveCurrentToStore();
     }
 
     function deleteSelectedRow() {
@@ -1579,14 +2266,95 @@
       sheet.deleteRow(y1, 1);
       updateRowCountBadge();
       syncChangedStrikes();
+      saveCurrentToStore();
+    }
+
+    function getMergedHeaderCount() {
+      if (!sheet) return 0;
+      let count = 0;
+      const totalRows = getGridRowCount();
+      for (let r = 0; r < totalRows; r++) {
+        const val = String(sheet.getValueFromCoords(0, r) || '');
+        if (val.startsWith('📌') || val.toLowerCase().includes('strategy') || val.toLowerCase().includes('diagonal')) count++;
+      }
+      return count;
+    }
+
+    function insertMergedSectionHeader() {
+      if (!sheet) return;
+      const { y1 } = selectedCoords;
+      const totalRows = getGridRowCount();
+      const insertIndex = (y1 !== undefined && y1 !== null && y1 >= 0) ? y1 : totalRows;
+      const defaultText = `📌 DIAGONAL STRATEGY #${getMergedHeaderCount() + 1}`;
+      const stratName = prompt("Strategy section name:", defaultText);
+      if (stratName === null) return;
+      const title = (stratName && stratName.trim()) ? stratName.trim() : defaultText;
+      const emptyRow = new Array(17).fill('');
+      emptyRow[0] = title;
+      sheet.insertRow(emptyRow, insertIndex, true);
+      const cellCoord = 'A' + (insertIndex + 1);
+      if (typeof sheet.setMerge === 'function') sheet.setMerge(cellCoord, 17, 1);
+      setTimeout(() => { applySectionHeaderStyles(); }, 50);
+      updateRowCountBadge();
+      saveCurrentToStore();
+      showToast(`Strategy header inserted!`);
+    }
+
+    function mergeSelectedCells() {
+      if (!sheet) return;
+      const { x1, y1, x2, y2 } = selectedCoords;
+      const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+      const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+      const colspan = maxX - minX + 1, rowspan = maxY - minY + 1;
+      if (colspan === 1 && rowspan === 1) { showToast("Select 2+ cells to merge!"); return; }
+      const cellCoord = String.fromCharCode(65 + minX) + (minY + 1);
+      if (typeof sheet.setMerge === 'function') {
+        sheet.setMerge(cellCoord, colspan, rowspan);
+        saveCurrentToStore();
+        showToast(`Merged (${colspan}×${rowspan})!`);
+      }
+    }
+
+    function unmergeSelectedCells() {
+      if (!sheet) return;
+      const { x1, y1 } = selectedCoords;
+      const cellCoord = String.fromCharCode(65 + x1) + (y1 + 1);
+      if (typeof sheet.removeMerge === 'function') {
+        sheet.removeMerge(cellCoord);
+        saveCurrentToStore();
+        showToast("Cell unmerged!");
+      }
+    }
+
+    function setAllRowsOptionType(type) {
+      if (!sheet) return;
+      const targetType = type === 'PE' ? 'PE' : 'CE';
+      const totalRows = getGridRowCount();
+      ignoreChangeEvents = true;
+      for (let r = 0; r < totalRows; r++) {
+        const s1 = parseFloat(String(sheet.getValueFromCoords(1, r)).replace(/[^0-9.-]/g, '')) || 0;
+        if (s1 > 500) {
+          sheet.setValueFromCoords(0, r, targetType, true);
+        }
+      }
+      ignoreChangeEvents = false;
+      syncChangedStrikes();
+      saveCurrentToStore();
+      showToast(`Set all rows to ${targetType}!`);
+    }
+
+    function applySectionHeaderStyles() {
+      const mergedTds = document.querySelectorAll('#spreadsheetGrid td[colspan="17"], #spreadsheetGrid td[colspan="18"], #spreadsheetGrid td[colspan]');
+      mergedTds.forEach(td => {
+        const span = parseInt(td.getAttribute('colspan') || '1', 10);
+        if (span >= 10) td.classList.add('strategy-section-header');
+      });
     }
 
     function resetToAtmStrikes() {
       const pairKey = getPairKey();
       delete customMatrixStore[pairKey];
-      try {
-        localStorage.setItem('calendar_matrix_store', JSON.stringify(customMatrixStore));
-      } catch (e) {}
+      try { localStorage.setItem('calendar_matrix_store', JSON.stringify(customMatrixStore)); } catch (e) {}
       fetchLiveMarketData(true);
       showToast("Reset to ATM range");
     }
@@ -1596,7 +2364,6 @@
       sheet.download(true);
     }
 
-    // --- Saved Tabs Management ---
     function getPairKey() {
       const u = document.getElementById('cfgUnderlying').value;
       const f = document.getElementById('cfgFarExpiry').value;
@@ -1605,69 +2372,186 @@
     }
 
     function updateActivePairLabel(farDte, nearDte) {
+      const sym = document.getElementById('cfgUnderlying').value;
       const f = document.getElementById('cfgFarExpiry').value;
       const n = document.getElementById('cfgNearExpiry').value;
       const el = document.getElementById('activePairDisplay');
+      const breadcrumbEl = document.getElementById('breadcrumbPairDisplay');
+
+      const symDisplay = (
+        sym === 'NIFTY' ? 'NIFTY 50' :
+        sym === 'BANKNIFTY' ? 'BANK NIFTY' :
+        sym === 'FINNIFTY' ? 'FIN NIFTY' :
+        sym === 'MIDCPNIFTY' ? 'MIDCAP NIFTY' :
+        sym === 'SENSEX' ? 'SENSEX' : sym
+      );
+
+      function formatExpStr(expStr) {
+        if (!expStr) return '--';
+        const clean = expStr.replace(/\s*\(.*\)/, '').trim();
+        const d = new Date(clean);
+        if (!isNaN(d.getTime())) {
+          const day = String(d.getDate()).padStart(2, '0');
+          const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+          const yr = String(d.getFullYear()).slice(-2);
+          return `${day} ${month} ${yr}`;
+        }
+        return clean.toUpperCase();
+      }
+
+      function calcDte(expStr) {
+        if (!expStr) return 0;
+        const clean = expStr.replace(/\s*\(.*\)/, '').trim();
+        const d = new Date(clean);
+        if (!isNaN(d.getTime())) {
+          const now = new Date();
+          return Math.max(0, Math.ceil((d - now) / (1000 * 60 * 60 * 24)));
+        }
+        return 0;
+      }
+
+      const fDisp = formatExpStr(f), nDisp = formatExpStr(n);
+      const fD = (farDte !== undefined && farDte !== null) ? farDte : calcDte(f);
+      const nD = (nearDte !== undefined && nearDte !== null) ? nearDte : calcDte(n);
+      const summaryText = `${symDisplay} — ${fDisp} (${fD}D) / ${nDisp} (${nD}D) • ${currentType}`;
+
+      if (breadcrumbEl) breadcrumbEl.textContent = summaryText;
       if (el) {
-        let fDteStr = farDte !== undefined ? ` <span style="color:#38bdf8; font-size:10px;">(${farDte}d DTE)</span>` : '';
-        let nDteStr = nearDte !== undefined ? ` <span style="color:#f59e0b; font-size:10px;">(${nearDte}d DTE)</span>` : '';
-        el.innerHTML = `${f}${fDteStr} <span style="color:#64748b;">vs</span> ${n}${nDteStr}`;
+        el.innerHTML = `<span style="color:var(--accent-blue-bright)">${fDisp}</span><span style="color:var(--text-dim);margin:0 4px;">vs</span><span style="color:var(--accent-amber)">${nDisp}</span>`;
       }
     }
 
+    function createNewBlankSheet() {
+      if (activeTabId) saveCurrentToStore();
+      const sym = document.getElementById('cfgUnderlying').value || 'NIFTY';
+      const f = document.getElementById('cfgFarExpiry').value;
+      const n = document.getElementById('cfgNearExpiry').value;
+      const count = savedTabsStore.length + 1;
+      const defaultName = `${sym} Strategy #${count}`;
+      const name = prompt("New Strategy Sheet name:", defaultName);
+      if (name === null) return;
+      const sheetName = name.trim() || defaultName;
+      const newSheet = {
+        id: 'sheet_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        name: sheetName, underlying: sym, farExpiry: f, nearExpiry: n,
+        optionType: currentType, spreadRule: '1:1', data: [], mergeCells: {},
+        committedData: [], committedMergeCells: {}
+      };
+      savedTabsStore.push(newSheet);
+      activeTabId = newSheet.id;
+      try { localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore)); } catch (e) {}
+      renderTabsBar();
+      fetchLiveMarketData(true);
+      showToast(`New sheet "${sheetName}" created!`);
+    }
+
     function promptSaveCurrentAsTab() {
-      saveCurrentToStore();
       const u = document.getElementById('cfgUnderlying').value;
       const f = document.getElementById('cfgFarExpiry').value;
       const n = document.getElementById('cfgNearExpiry').value;
 
-      document.getElementById('modalUnderlyingLabel').textContent = u;
-      document.getElementById('modalTypeLabel').textContent = currentType;
-      document.getElementById('modalTypeLabel').style.color = currentType === 'CE' ? '#10b981' : '#f43f5e';
-      document.getElementById('modalFarLabel').textContent = f;
-      document.getElementById('modalNearLabel').textContent = n;
+      const mU = document.getElementById('modalUnderlyingLabel');
+      const mT = document.getElementById('modalTypeLabel');
+      const mF = document.getElementById('modalFarLabel');
+      const mN = document.getElementById('modalNearLabel');
 
-      const fShort = f.split(' ')[0] + ' ' + (f.split(' ')[1] || '');
-      const nShort = n.split(' ')[0] + ' ' + (n.split(' ')[1] || '');
-      document.getElementById('tabNameInput').value = `${u} ${fShort}/${nShort} (${currentType})`;
+      if (mU) mU.textContent = u;
+      if (mT) { mT.textContent = currentType; mT.style.color = currentType === 'CE' ? 'var(--accent-green)' : 'var(--accent-red)'; }
+      if (mF) mF.textContent = f;
+      if (mN) mN.textContent = n;
 
-      document.getElementById('saveTabModal').style.display = 'flex';
-      setTimeout(() => document.getElementById('tabNameInput').focus(), 50);
+      const fShort = f ? (f.split(' ')[0] + ' ' + (f.split(' ')[1] || '')).trim() : '';
+      const nShort = n ? (n.split(' ')[0] + ' ' + (n.split(' ')[1] || '')).trim() : '';
+      let baseName = `${u} ${fShort}/${nShort} (${currentType})`;
+      let suggestedName = baseName, counter = 1;
+      while (savedTabsStore.some(t => t.name === suggestedName)) {
+        counter++;
+        suggestedName = `${baseName} #${counter}`;
+      }
+
+      const input = document.getElementById('tabNameInput');
+      if (input) input.value = suggestedName;
+      const modal = document.getElementById('saveTabModal');
+      if (modal) modal.style.display = 'flex';
+      setTimeout(() => { if (input) input.focus(); }, 50);
     }
 
     function closeSaveTabModal() {
-      document.getElementById('saveTabModal').style.display = 'none';
+      const modal = document.getElementById('saveTabModal');
+      if (modal) modal.style.display = 'none';
     }
 
     function confirmSaveTabModal() {
-      const name = document.getElementById('tabNameInput').value.trim();
+      const input = document.getElementById('tabNameInput');
+      const name = input ? input.value.trim() : '';
       if (!name) return;
 
       const u = document.getElementById('cfgUnderlying').value;
       const f = document.getElementById('cfgFarExpiry').value;
       const n = document.getElementById('cfgNearExpiry').value;
-      const gridData = sheet ? sheet.getData() : [];
+      const gridData = getGridData();
+      const ruleSel = document.getElementById('spreadFormulaSelect');
+      const rule = ruleSel ? ruleSel.value : '1:1';
+      const clonedData = JSON.parse(JSON.stringify(gridData || []));
+      const currentMerges = (sheet && typeof sheet.getMerge === 'function') ? JSON.parse(JSON.stringify(sheet.getMerge() || {})) : {};
 
-      const newTab = {
-        id: 'tab_' + Date.now(),
-        name: name,
-        underlying: u,
-        farExpiry: f,
-        nearExpiry: n,
-        optionType: currentType,
-        data: gridData
+      if (activeTabId) {
+        const oldTab = savedTabsStore.find(t => t.id === activeTabId);
+        if (oldTab && oldTab.committedData && oldTab.committedData.length > 0) {
+          oldTab.data = JSON.parse(JSON.stringify(oldTab.committedData));
+          oldTab.mergeCells = JSON.parse(JSON.stringify(oldTab.committedMergeCells || {}));
+        }
+      }
+
+      const newSheet = {
+        id: 'sheet_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        name, underlying: u, farExpiry: f, nearExpiry: n,
+        optionType: currentType, spreadRule: rule,
+        data: clonedData, mergeCells: currentMerges,
+        committedData: JSON.parse(JSON.stringify(clonedData)),
+        committedMergeCells: JSON.parse(JSON.stringify(currentMerges))
       };
 
-      savedTabsStore.push(newTab);
-      activeTabId = newTab.id;
-
-      try {
-        localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore));
-      } catch (e) {}
-
+      savedTabsStore.push(newSheet);
+      activeTabId = newSheet.id;
+      try { localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore)); } catch (e) {}
       closeSaveTabModal();
       renderTabsBar();
-      showToast(`✅ Tab "${newTab.name}" saved!`);
+      showToast(`Sheet "${newSheet.name}" saved!`);
+    }
+
+    function saveActiveSheetNow() {
+      if (!activeTabId) { promptSaveCurrentAsTab(); return; }
+      saveCurrentToStore();
+      const tab = savedTabsStore.find(t => t.id === activeTabId);
+      if (tab) {
+        tab.committedData = JSON.parse(JSON.stringify(tab.data || []));
+        tab.committedMergeCells = JSON.parse(JSON.stringify(tab.mergeCells || {}));
+        try { localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore)); } catch (e) {}
+        showToast(`Sheet "${tab.name}" saved!`);
+      }
+    }
+
+    function duplicateSavedTab(e, tabId) {
+      if (e) e.stopPropagation();
+      saveCurrentToStore();
+      const tab = savedTabsStore.find(t => t.id === tabId);
+      if (!tab) return;
+      const newSheet = {
+        id: 'sheet_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        name: `${tab.name} (Copy)`,
+        underlying: tab.underlying, farExpiry: tab.farExpiry, nearExpiry: tab.nearExpiry,
+        optionType: tab.optionType, spreadRule: tab.spreadRule,
+        data: JSON.parse(JSON.stringify(tab.data || [])),
+        mergeCells: JSON.parse(JSON.stringify(tab.mergeCells || {})),
+        committedData: JSON.parse(JSON.stringify(tab.data || [])),
+        committedMergeCells: JSON.parse(JSON.stringify(tab.mergeCells || {}))
+      };
+      savedTabsStore.push(newSheet);
+      try { localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore)); } catch (e) {}
+      renderTabsBar();
+      switchSavedTab(newSheet.id);
+      showToast(`Sheet duplicated as "${newSheet.name}"`);
     }
 
     function renderTabsBar() {
@@ -1675,101 +2559,192 @@
       const countBadge = document.getElementById('savedTabCountBadge');
 
       if (!savedTabsStore || savedTabsStore.length === 0) {
-        container.innerHTML = '<span style="font-size:11.5px; color:#64748b; font-style:italic;" id="emptyTabsNotice">Koi combination tab abhi save nahi kiya hai. Niche Far aur Near Expiry select karein aur "Save as Tab" dabayein!</span>';
-        countBadge.textContent = '0 tabs';
+        if (container) container.innerHTML = '<span class="cs-tab-empty" id="emptyTabsNotice">No sheets saved — configure and click 💾 Save Sheet</span>';
+        if (countBadge) countBadge.textContent = '0';
         return;
       }
 
-      countBadge.textContent = `${savedTabsStore.length} tab${savedTabsStore.length > 1 ? 's' : ''}`;
+      if (countBadge) countBadge.textContent = savedTabsStore.length;
+      if (!container) return;
       container.innerHTML = '';
 
       savedTabsStore.forEach(tab => {
         const tabEl = document.createElement('div');
-        tabEl.className = 'combo-tab' + (tab.id === activeTabId ? ' active-combo' : '');
+        const isActive = (tab.id === activeTabId);
+        tabEl.className = 'sheet-tab' + (isActive ? ' active-sheet-tab' : '');
+
+        const fDate = (tab.farExpiry || '').split(' ')[0] || '--';
+        const nDate = (tab.nearExpiry || '').split(' ')[0] || '--';
+        const isCe = (tab.optionType === 'CE');
+
         tabEl.innerHTML = `
-          <span>${tab.name}</span>
-          <span class="tab-badge">${tab.farExpiry.split(' ')[0]} / ${tab.nearExpiry.split(' ')[0]}</span>
-          <span class="tab-badge" style="color:${tab.optionType === 'CE' ? '#10b981' : '#f43f5e'}">${tab.optionType}</span>
-          <span class="tab-close" onclick="deleteSavedTab(event, '${tab.id}')" title="Delete Tab">✕</span>
+          <span style="font-weight:700;">${escapeHtml(tab.name)}</span>
+          <span class="sheet-pill">${escapeHtml(tab.underlying || 'NIFTY')}</span>
+          <span class="sheet-pill">${escapeHtml(fDate)}/${escapeHtml(nDate)}</span>
+          <span class="sheet-pill ${isCe ? 'ce-pill' : 'pe-pill'}">${tab.optionType || 'CE'}</span>
+          <span class="sheet-tab-btn" onclick="promptRenameTab(event, '${tab.id}')" title="Rename">✏</span>
+          <span class="sheet-tab-btn" onclick="duplicateSavedTab(event, '${tab.id}')" title="Duplicate">📋</span>
+          <span class="sheet-tab-btn sheet-tab-close" onclick="deleteSavedTab(event, '${tab.id}')" title="Delete">✕</span>
         `;
         tabEl.onclick = (e) => {
-          if (e.target.classList.contains('tab-close')) return;
+          if (e.target.closest('.sheet-tab-btn')) return;
           switchSavedTab(tab.id);
         };
         container.appendChild(tabEl);
       });
     }
 
-    function switchSavedTab(tabId) {
-      saveCurrentToStore();
+    async function switchSavedTab(tabId) {
+      if (activeTabId && sheet) {
+        const curTab = savedTabsStore.find(t => t.id === activeTabId);
+        if (curTab) {
+          const gData = getGridData();
+          if (gData && gData.length > 0) {
+            curTab.data = JSON.parse(JSON.stringify(gData));
+            curTab.committedData = JSON.parse(JSON.stringify(gData));
+            if (sheet && typeof sheet.getMerge === 'function') {
+              curTab.mergeCells = sheet.getMerge();
+              curTab.committedMergeCells = JSON.parse(JSON.stringify(curTab.mergeCells));
+            }
+          }
+        }
+        try { localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore)); } catch (e) {}
+      }
+
       const tab = savedTabsStore.find(t => t.id === tabId);
       if (!tab) return;
-
       activeTabId = tab.id;
 
-      document.getElementById('cfgUnderlying').value = tab.underlying;
-      currentUnderlying = tab.underlying;
+      currentUnderlying = tab.underlying || 'NIFTY';
+      const selUnderlying = document.getElementById('cfgUnderlying');
+      if (selUnderlying) selUnderlying.value = currentUnderlying;
 
-      addExpiryOptionToDropdowns(tab.farExpiry, 'far');
-      addExpiryOptionToDropdowns(tab.nearExpiry, 'near');
+      try {
+        const r = await fetch(`/api/calendar/expiries?symbol=${encodeURIComponent(currentUnderlying)}`);
+        if (r.ok) {
+          const d = await r.json();
+          if (d && d.ok && d.expiries) populateAvailableExpiries(d.expiries, false);
+        }
+      } catch (e) {}
 
-      currentType = tab.optionType;
-      document.getElementById('tabCe').className = 'type-tab ' + (currentType === 'CE' ? 'active-ce' : '');
-      document.getElementById('tabPe').className = 'type-tab ' + (currentType === 'PE' ? 'active-pe' : '');
+      if (tab.farExpiry) addExpiryOptionToDropdowns(tab.farExpiry, 'far');
+      if (tab.nearExpiry) addExpiryOptionToDropdowns(tab.nearExpiry, 'near');
+      const fSel = document.getElementById('cfgFarExpiry');
+      const nSel = document.getElementById('cfgNearExpiry');
+      if (fSel && tab.farExpiry) fSel.value = tab.farExpiry;
+      if (nSel && tab.nearExpiry) nSel.value = tab.nearExpiry;
+
+      currentType = tab.optionType || 'CE';
+      document.getElementById('tabCe').className = 'cs-type-btn ' + (currentType === 'CE' ? 'active-ce' : '');
+      document.getElementById('tabPe').className = 'cs-type-btn ' + (currentType === 'PE' ? 'active-pe' : '');
+
+      const ruleSel = document.getElementById('spreadFormulaSelect');
+      if (ruleSel && tab.spreadRule) ruleSel.value = tab.spreadRule;
 
       updateActivePairLabel();
       renderTabsBar();
 
-      if (tab.data && tab.data.length > 0) {
-        initSpreadsheetGrid(tab.data);
+      if (tab.data && Array.isArray(tab.data) && tab.data.length > 0) {
+        const clonedData = JSON.parse(JSON.stringify(tab.data));
+        tab.committedData = JSON.parse(JSON.stringify(clonedData));
+        tab.committedMergeCells = JSON.parse(JSON.stringify(tab.mergeCells || {}));
+        initSpreadsheetGrid(clonedData, tab.mergeCells || {});
+        setTimeout(() => { applySectionHeaderStyles(); }, 50);
         syncChangedStrikes();
       } else {
         fetchLiveMarketData(true);
       }
 
+      try {
+        const rHq = await fetch(`/api/calendar/header-quotes?symbol=${encodeURIComponent(currentUnderlying)}`);
+        if (rHq.ok) {
+          const dHq = await rHq.json();
+          if (dHq && dHq.ok && dHq.headerQuotes) updateHeaderTickerCards(dHq.headerQuotes);
+        }
+      } catch (e) {}
+
       showToast(`Switched to: ${tab.name}`);
+    }
+
+    function promptRenameTab(e, tabId) {
+      e.stopPropagation();
+      const tab = savedTabsStore.find(t => t.id === tabId);
+      if (!tab) return;
+      const newName = prompt("Rename sheet:", tab.name);
+      if (newName && newName.trim() && newName.trim() !== tab.name) {
+        tab.name = newName.trim();
+        try { localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore)); } catch (e) {}
+        renderTabsBar();
+        showToast(`Renamed to "${tab.name}"`);
+      }
     }
 
     function deleteSavedTab(e, tabId) {
       e.stopPropagation();
       const tab = savedTabsStore.find(t => t.id === tabId);
-      if (!confirm(`Kya aap tab "${tab ? tab.name : 'Combination'}" ko delete karna chahte hain?`)) return;
-
+      const tabName = tab ? tab.name : 'Sheet';
+      if (!confirm(`Delete sheet "${tabName}"?`)) return;
       savedTabsStore = savedTabsStore.filter(t => t.id !== tabId);
       if (activeTabId === tabId) {
-        activeTabId = savedTabsStore.length > 0 ? savedTabsStore[0].id : null;
-      }
-      try {
-        localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore));
-      } catch (e) {}
-      renderTabsBar();
-      showToast("Tab removed");
-    }
-
-    function saveCurrentToStore() {
-      if (!sheet) return;
-      const currentKey = getPairKey();
-      const gridData = sheet.getData();
-      if (gridData && gridData.length > 0) {
-        customMatrixStore[currentKey] = gridData;
-        if (activeTabId) {
-          const curTab = savedTabsStore.find(t => t.id === activeTabId);
-          if (curTab) {
-            curTab.data = gridData;
-            curTab.underlying = document.getElementById('cfgUnderlying').value;
-            curTab.farExpiry = document.getElementById('cfgFarExpiry').value;
-            curTab.nearExpiry = document.getElementById('cfgNearExpiry').value;
-            curTab.optionType = currentType;
-          }
+        if (savedTabsStore.length > 0) {
+          activeTabId = savedTabsStore[0].id;
+          switchSavedTab(activeTabId);
+        } else {
+          activeTabId = null;
+          renderTabsBar();
+          fetchLiveMarketData(true);
         }
-        try {
-          localStorage.setItem('calendar_matrix_store', JSON.stringify(customMatrixStore));
-          localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore));
-        } catch (e) {}
+      } else {
+        renderTabsBar();
+      }
+      try { localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore)); } catch (e) {}
+      showToast(`Sheet "${tabName}" deleted`);
+    }
+
+    function saveFullWorkspaceState() {
+      if (!sheet) return;
+      const gridData = getGridData();
+      if (!gridData || gridData.length === 0) return;
+      const currentKey = getPairKey();
+      const currentMerges = (sheet && typeof sheet.getMerge === 'function') ? (sheet.getMerge() || {}) : {};
+      try {
+        customMatrixStore[currentKey] = JSON.parse(JSON.stringify(gridData));
+        localStorage.setItem('calendar_matrix_store', JSON.stringify(customMatrixStore));
+      } catch (e) {}
+
+      const sym = document.getElementById('cfgUnderlying').value || 'NIFTY';
+      const fExp = document.getElementById('cfgFarExpiry').value || '';
+      const nExp = document.getElementById('cfgNearExpiry').value || '';
+      const sRange = document.getElementById('cfgStrikeRange').value || '6';
+      const rule = document.getElementById('spreadFormulaSelect').value || '1:1';
+
+      const fullState = {
+        underlying: sym, farExpiry: fExp, nearExpiry: nExp,
+        optionType: currentType, strikeRange: sRange, spreadRule: rule,
+        activeTabId, gridData: JSON.parse(JSON.stringify(gridData)),
+        mergeCells: JSON.parse(JSON.stringify(currentMerges)),
+        updatedAt: Date.now()
+      };
+
+      try { localStorage.setItem('calendar_workspace_state', JSON.stringify(fullState)); } catch (e) {}
+
+      if (activeTabId && savedTabsStore && savedTabsStore.length > 0) {
+        const curTab = savedTabsStore.find(t => t.id === activeTabId);
+        if (curTab) {
+          curTab.data = JSON.parse(JSON.stringify(gridData));
+          curTab.committedData = JSON.parse(JSON.stringify(gridData));
+          curTab.mergeCells = JSON.parse(JSON.stringify(currentMerges));
+          curTab.committedMergeCells = JSON.parse(JSON.stringify(currentMerges));
+          curTab.spreadRule = rule; curTab.underlying = sym;
+          curTab.farExpiry = fExp; curTab.nearExpiry = nExp;
+          curTab.optionType = currentType;
+          try { localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore)); } catch (e) {}
+        }
       }
     }
 
-    // --- Expiry Dropdown Handling ---
+    function saveCurrentToStore() { saveFullWorkspaceState(); }
+
     function handleSelectExpiryChange(target) {
       const sel = document.getElementById(target === 'far' ? 'cfgFarExpiry' : 'cfgNearExpiry');
       if (sel.value === '__ADD_CUSTOM__') {
@@ -1788,9 +2763,7 @@
     function closeExpiryModal() {
       document.getElementById('expiryModal').style.display = 'none';
       const sel = document.getElementById(currentPendingExpiryTarget === 'far' ? 'cfgFarExpiry' : 'cfgNearExpiry');
-      if (sel.value === '__ADD_CUSTOM__') {
-        sel.selectedIndex = 0;
-      }
+      if (sel.value === '__ADD_CUSTOM__') sel.selectedIndex = 0;
     }
 
     function confirmAddExpiryModal() {
@@ -1800,7 +2773,7 @@
       document.getElementById('customExpiryInput').value = '';
       closeExpiryModal();
       onExpiryChange();
-      showToast(`Custom Expiry "${val}" Added`);
+      showToast(`Custom Expiry "${val}" added`);
     }
 
     function addExpiryOptionToDropdowns(newExp, selectTarget = 'far') {
@@ -1808,15 +2781,12 @@
         const sel = document.getElementById(id);
         let exists = false;
         for (let i = 0; i < sel.options.length; i++) {
-          if (sel.options[i].value === newExp) {
-            exists = true;
-            break;
-          }
+          if (sel.options[i].value === newExp) { exists = true; break; }
         }
         if (!exists) {
           const opt = document.createElement('option');
           opt.value = newExp;
-          opt.textContent = `${newExp} (Custom Expiry)`;
+          opt.textContent = `${newExp} (Custom)`;
           const addOpt = sel.querySelector('option[value="__ADD_CUSTOM__"]');
           if (addOpt) sel.insertBefore(opt, addOpt);
           else sel.appendChild(opt);
@@ -1827,52 +2797,77 @@
     }
 
     function onExpiryChange() {
-      saveCurrentToStore();
+      if (activeTabId) { saveCurrentToStore(); activeTabId = null; renderTabsBar(); }
       updateActivePairLabel();
       fetchLiveMarketData(true);
+      saveFullWorkspaceState();
     }
 
     function switchOptionType(type) {
-      saveCurrentToStore();
+      if (activeTabId) { saveCurrentToStore(); activeTabId = null; renderTabsBar(); }
       currentType = type;
-      document.getElementById('tabCe').className = 'type-tab ' + (type === 'CE' ? 'active-ce' : '');
-      document.getElementById('tabPe').className = 'type-tab ' + (type === 'PE' ? 'active-pe' : '');
+      document.getElementById('tabCe').className = 'cs-type-btn ' + (type === 'CE' ? 'active-ce' : '');
+      document.getElementById('tabPe').className = 'cs-type-btn ' + (type === 'PE' ? 'active-pe' : '');
+      updateActivePairLabel();
       fetchLiveMarketData(true);
+      saveFullWorkspaceState();
     }
 
     async function onUnderlyingChange() {
-      saveCurrentToStore();
+      if (activeTabId) { saveCurrentToStore(); activeTabId = null; renderTabsBar(); }
       currentUnderlying = document.getElementById('cfgUnderlying').value;
       try {
         const r = await fetch(`/api/calendar/expiries?symbol=${encodeURIComponent(currentUnderlying)}`);
         const d = await r.json();
-        if (d && d.ok && d.expiries) {
-          populateAvailableExpiries(d.expiries, true);
+        if (d && d.ok && d.expiries) populateAvailableExpiries(d.expiries, true);
+      } catch (e) { console.warn("Expiries fetch error:", e); }
+      try {
+        const rHq = await fetch(`/api/calendar/header-quotes?symbol=${encodeURIComponent(currentUnderlying)}`);
+        if (rHq.ok) {
+          const dHq = await rHq.json();
+          if (dHq && dHq.ok && dHq.headerQuotes) updateHeaderTickerCards(dHq.headerQuotes);
         }
-      } catch (e) {
-        console.warn("Expiries fetch error:", e);
-      }
-      fetchLiveMarketData(true, true);
+      } catch (e) {}
+      await fetchLiveMarketData(true, true);
+      saveFullWorkspaceState();
     }
+
+    let lastLoadedExpiriesKey = '';
 
     function populateAvailableExpiries(expList, isUnderlyingChange = false) {
       if (!expList || expList.length === 0) return;
+      const fSel = document.getElementById('cfgFarExpiry');
+      const nSel = document.getElementById('cfgNearExpiry');
+      const expKey = (currentUnderlying || '') + '_' + expList.join(',');
+
+      if (!isUnderlyingChange && expKey === lastLoadedExpiriesKey && fSel && fSel.options.length > 1 && nSel && nSel.options.length > 1) return;
+      lastLoadedExpiriesKey = expKey;
+
       ['cfgFarExpiry', 'cfgNearExpiry'].forEach((id) => {
         const sel = document.getElementById(id);
+        if (!sel) return;
         const cur = isUnderlyingChange ? null : sel.value;
         sel.innerHTML = '';
-        expList.forEach((eStr, i) => {
+        expList.forEach((eStr) => {
           const opt = document.createElement('option');
           opt.value = eStr;
-          const tag = i === 0 ? ' (Near)' : (i === 1 ? ' (Next)' : (i === 2 ? ' (Far)' : ' (Monthly)'));
-          opt.textContent = `${eStr}${tag}`;
+          const clean = eStr.replace(/\s*\(.*\)/, '').trim();
+          const d = new Date(clean);
+          let cleanLabel = clean;
+          if (!isNaN(d.getTime())) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+            const yr = String(d.getFullYear()).slice(-2);
+            cleanLabel = `${day} ${month} ${yr}`;
+          }
+          opt.textContent = cleanLabel;
           sel.appendChild(opt);
         });
 
         const customOpt = document.createElement('option');
         customOpt.value = '__ADD_CUSTOM__';
         customOpt.textContent = '➕ Add Custom Date...';
-        customOpt.style.color = '#38bdf8';
+        customOpt.style.color = 'var(--accent-blue-bright)';
         customOpt.style.fontWeight = '700';
         sel.appendChild(customOpt);
 
@@ -1886,9 +2881,9 @@
       updateActivePairLabel();
     }
 
-    // --- Live Data Engine ---
     async function fetchLiveMarketData(forceFullRender = false, isUnderlyingChange = false) {
       if (isFetching) return;
+      if (!forceFullRender && isUserEditing()) return;
       isFetching = true;
 
       const sym = document.getElementById('cfgUnderlying').value;
@@ -1896,15 +2891,15 @@
       const nExp = document.getElementById('cfgNearExpiry').value;
       const sRange = parseInt(document.getElementById('cfgStrikeRange').value) || 6;
 
-      // Collect custom strikes if already in sheet
       const currentStrikes = [];
-      if (!forceFullRender && sheet && sheet.data) {
-        for (let r = 0; r < sheet.data.length; r++) {
-          const s1 = parseFloat(String(sheet.getValueFromCoords(0, r)).replace(/[^0-9.-]/g, '')) || 0;
-          const s2 = parseFloat(String(sheet.getValueFromCoords(1, r)).replace(/[^0-9.-]/g, '')) || s1;
-          if (s1 > 500) {
-            currentStrikes.push({ s1, s2 });
-          }
+      if (!forceFullRender && sheet) {
+        const totalRows = getGridRowCount();
+        for (let r = 0; r < totalRows; r++) {
+          const rawT = String(sheet.getValueFromCoords(0, r) || currentType || 'CE').trim().toUpperCase();
+          const t = (rawT === 'PE' || rawT === 'P' || rawT === 'PUT') ? 'PE' : 'CE';
+          const s1 = getNumericStrike(1, r);
+          const s2 = getNumericStrike(2, r) || s1;
+          if (s1 > 500) currentStrikes.push({ t1: t, s1, t2: t, s2 });
         }
       }
 
@@ -1913,11 +2908,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            symbol: sym,
-            farExpiry: fExp,
-            nearExpiry: nExp,
-            optionType: currentType,
-            strikeRange: sRange,
+            symbol: sym, farExpiry: fExp, nearExpiry: nExp,
+            optionType: currentType, strikeRange: sRange,
             customStrikes: currentStrikes.length > 0 ? currentStrikes : null
           })
         });
@@ -1929,55 +2921,56 @@
             if (data.atmStrike) currentAtmStrike = data.atmStrike;
             else currentAtmStrike = Math.round(currentSpotPrice / getIndexStep(sym)) * getIndexStep(sym);
 
-            document.getElementById('spotBadge').textContent = `${sym} Spot: ₹${data.spotPrice.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-            document.getElementById('syncLabel').textContent = data.isLive ? "Upstox Live Feed" : "Live Greeks Engine";
+            const spotEl = document.getElementById('spotBadge');
+            if (spotEl) spotEl.textContent = `${sym} Spot: ₹${data.spotPrice.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            const syncEl = document.getElementById('syncLabel');
+            if (syncEl) syncEl.textContent = data.isLive ? "Upstox Live Feed" : "Live Greeks Engine";
+
+            if (data.headerQuotes) updateHeaderTickerCards(data.headerQuotes);
 
             populateAvailableExpiries(data.availableExpiries, isUnderlyingChange);
             updateActivePairLabel(data.farDte, data.nearDte);
 
             const pairKey = getPairKey();
-            const existingSavedData = customMatrixStore[pairKey];
+            const curTab = activeTabId ? savedTabsStore.find(t => t.id === activeTabId) : null;
+            const existingSavedData = (curTab && curTab.data && curTab.data.length > 0) ? curTab.data : customMatrixStore[pairKey];
+            const savedMerges = (curTab && curTab.mergeCells) ? curTab.mergeCells : {};
 
             if (forceFullRender || !sheet) {
               if (existingSavedData && existingSavedData.length > 0) {
-                initSpreadsheetGrid(existingSavedData);
+                initSpreadsheetGrid(existingSavedData, savedMerges);
                 updateQuotesFromResponse(data.rows);
               } else {
-                // Convert server rows to Jspreadsheet 2D array
                 const initialArray = (data.rows || []).map((r, i) => {
-                  const rowNum = i + 1;
                   const fBid = parseFloat(r.farBid) || 0;
                   const nAsk = parseFloat(r.nearAsk) || 0;
                   const sp = computeSpreadWithRule(fBid, nAsk, i);
                   return [
+                    r.t1 || currentType || 'CE',
                     parseFloat(r.s1) || 0,
                     parseFloat(r.s2 || r.s1) || 0,
-                    fBid,
-                    nAsk,
-                    `=C${rowNum}-D${rowNum}`,
-                    r.deltaSpread,
-                    r.volSpread,
-                    r.vegaSpread,
-                    r.farDelta,
-                    r.nearDelta,
-                    r.farVolIv,
-                    r.nearVolIv,
-                    r.farVega,
-                    r.nearVega,
-                    r.farVol,
-                    r.nearVol
+                    fBid, nAsk, sp,
+                    r.deltaSpread !== undefined ? r.deltaSpread : '--',
+                    r.volSpread !== undefined ? r.volSpread : '--',
+                    r.vegaSpread !== undefined ? r.vegaSpread : '--',
+                    r.farDelta !== undefined ? r.farDelta : '--',
+                    r.nearDelta !== undefined ? r.nearDelta : '--',
+                    r.farVolIv !== undefined ? r.farVolIv : '--',
+                    r.nearVolIv !== undefined ? r.nearVolIv : '--',
+                    r.farVega !== undefined ? r.farVega : '--',
+                    r.nearVega !== undefined ? r.nearVega : '--',
+                    r.farVol !== undefined ? r.farVol : 0,
+                    r.nearVol !== undefined ? r.nearVol : 0
                   ];
                 });
                 initSpreadsheetGrid(initialArray);
               }
             } else {
-              // Pause quote updates if user is currently dragging or selecting
-              if (!isUserDragging) {
-                updateQuotesFromResponse(data.rows);
-              }
+              if (!isUserDragging) updateQuotesFromResponse(data.rows);
             }
 
-            document.getElementById('lastTickTime').textContent = data.timestamp;
+            const tickEl = document.getElementById('lastTickTime');
+            if (tickEl) tickEl.textContent = data.timestamp;
           }
         }
       } catch (e) {
@@ -1987,73 +2980,72 @@
       }
     }
 
-    // --- Live Stream Ticking ---
     function toggleLiveStream() {
       isLiveStreaming = !isLiveStreaming;
       const btn = document.getElementById('btnLiveStream');
       const txt = document.getElementById('streamStateTxt');
       if (isLiveStreaming) {
         txt.textContent = 'ON';
-        btn.style.borderColor = '#10b981';
-        btn.style.color = '#10b981';
+        btn.classList.add('live-on');
         startStreaming();
       } else {
         txt.textContent = 'OFF';
-        btn.style.borderColor = '#64748b';
-        btn.style.color = '#94a3b8';
+        btn.classList.remove('live-on');
         clearInterval(streamInterval);
         streamInterval = null;
       }
     }
 
+    let streamTickCount = 0;
     function startStreaming() {
       if (streamInterval) clearInterval(streamInterval);
-      streamInterval = setInterval(() => {
-        if (isLiveStreaming) {
-          fetchLiveMarketData(false);
-        }
+      streamInterval = setInterval(async () => {
+        if (!isLiveStreaming) return;
+        streamTickCount++;
+        if (streamTickCount % 15 === 0) checkAdminBrokerStatus();
+        if (!isUserEditing()) fetchLiveMarketData(false);
       }, 1000);
     }
 
-    // --- Upstox Modal ---
-    function openUpstoxModal() {
-      document.getElementById('upstoxModal').style.display = 'flex';
+    function openBrokerModal() {
+      const modal = document.getElementById('brokerModal');
+      if (modal) modal.style.display = 'flex';
+      checkAdminBrokerStatus();
     }
 
-    function closeUpstoxModal() {
-      document.getElementById('upstoxModal').style.display = 'none';
+    function closeBrokerModal() {
+      const modal = document.getElementById('brokerModal');
+      if (modal) modal.style.display = 'none';
     }
 
-    async function submitUpstoxToken() {
-      const tok = document.getElementById('inputUpstoxToken').value.trim();
-      const statusEl = document.getElementById('tokenStatusMsg');
-      if (!tok) {
-        statusEl.innerHTML = '<span style="color:#ef4444;">Please enter token</span>';
-        return;
-      }
-      statusEl.innerHTML = '<span style="color:#38bdf8;">Validating token...</span>';
+    function openUpstoxModal() { openBrokerModal(); }
+    function closeUpstoxModal() { closeBrokerModal(); }
+
+    async function checkAdminBrokerStatus() {
       try {
-        const res = await fetch('/api/upstox/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: tok })
-        });
-        const d = await res.json();
-        if (d.ok) {
-          statusEl.innerHTML = `<span style="color:#10b981;">✅ ${d.message}</span>`;
-          document.getElementById('btnUpstoxStatus').style.borderColor = '#10b981';
-          document.getElementById('btnUpstoxStatus').style.color = '#10b981';
-          document.getElementById('btnUpstoxStatus').textContent = '🟢 Upstox Active';
-          setTimeout(() => {
-            closeUpstoxModal();
-            fetchLiveMarketData(true);
-          }, 1000);
-        } else {
-          statusEl.innerHTML = `<span style="color:#ef4444;">❌ ${d.message}</span>`;
+        const res = await fetch('/api/calendar/broker-status');
+        if (res.ok) {
+          const d = await res.json();
+          const btn = document.getElementById('btnBrokerStatus');
+          const dot = document.getElementById('brokerStatusDot');
+          const txt = document.getElementById('brokerStatusTxt');
+          const modalBroker = document.getElementById('modalActiveBrokerName');
+          const modalStatus = document.getElementById('modalBrokerStatusTag');
+
+          if (modalBroker) modalBroker.textContent = d.brokerName || (d.upstoxConfigured ? 'Upstox API v2' : (d.angelConfigured ? 'Angel One SmartAPI' : 'Math Greeks Engine'));
+
+          if (d.isLive) {
+            if (btn) { btn.className = 'cs-hbtn api-btn'; }
+            if (dot) { dot.style.background = 'var(--accent-green)'; dot.style.boxShadow = '0 0 8px var(--accent-green)'; }
+            if (txt) txt.innerHTML = `🟢 <strong>${d.upstoxConfigured ? 'Upstox' : 'Angel One'}</strong>`;
+            if (modalStatus) modalStatus.innerHTML = `<span style="color:var(--accent-green)">🟢 Live Exchange Connected (${d.brokerName})</span>`;
+          } else {
+            if (dot) { dot.style.background = 'var(--accent-amber)'; dot.style.boxShadow = 'none'; }
+            if (txt) txt.innerHTML = `⚙️ Configure in Admin`;
+            if (modalStatus) modalStatus.innerHTML = `<span style="color:var(--accent-amber)">⚙️ Pending Configuration</span>`;
+          }
         }
-      } catch (e) {
-        statusEl.innerHTML = `<span style="color:#ef4444;">Connection error: ${e.message}</span>`;
-      }
+      } catch (e) {}
     }
 
     function openFormulaHelpModal() {
@@ -2071,10 +3063,81 @@
       setTimeout(() => { t.style.display = 'none'; }, 2200);
     }
 
-    // --- On DOM Ready ---
+    // Close modals on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.style.display = 'none';
+      });
+    });
+
+    // DOMContentLoaded: Instant state restore + live feeds
     window.addEventListener('DOMContentLoaded', async () => {
       initStoresFromStorage();
-      await fetchLiveMarketData(true);
+      checkAdminBrokerStatus();
+
+      let restored = false;
+      try {
+        const savedRaw = localStorage.getItem('calendar_workspace_state');
+        if (savedRaw) {
+          const st = JSON.parse(savedRaw);
+          if (st && st.gridData && Array.isArray(st.gridData) && st.gridData.length > 0) {
+            if (st.underlying) {
+              currentUnderlying = st.underlying;
+              const uEl = document.getElementById('cfgUnderlying');
+              if (uEl) uEl.value = st.underlying;
+            }
+            if (st.optionType) {
+              currentType = st.optionType;
+              document.getElementById('tabCe').className = 'cs-type-btn ' + (currentType === 'CE' ? 'active-ce' : '');
+              document.getElementById('tabPe').className = 'cs-type-btn ' + (currentType === 'PE' ? 'active-pe' : '');
+            }
+            if (st.strikeRange) {
+              const srEl = document.getElementById('cfgStrikeRange');
+              if (srEl) srEl.value = st.strikeRange;
+            }
+            if (st.spreadRule) {
+              const spEl = document.getElementById('spreadFormulaSelect');
+              if (spEl) spEl.value = st.spreadRule;
+            }
+            if (st.farExpiry) addExpiryOptionToDropdowns(st.farExpiry, 'far');
+            if (st.nearExpiry) addExpiryOptionToDropdowns(st.nearExpiry, 'near');
+            if (st.farExpiry && document.getElementById('cfgFarExpiry')) document.getElementById('cfgFarExpiry').value = st.farExpiry;
+            if (st.nearExpiry && document.getElementById('cfgNearExpiry')) document.getElementById('cfgNearExpiry').value = st.nearExpiry;
+
+            if (st.activeTabId && savedTabsStore.some(t => t.id === st.activeTabId)) {
+              activeTabId = st.activeTabId;
+              renderTabsBar();
+            }
+
+            updateActivePairLabel();
+            initSpreadsheetGrid(st.gridData, st.mergeCells || {});
+            setTimeout(() => { applySectionHeaderStyles(); }, 50);
+            restored = true;
+          }
+        }
+      } catch (e) {
+        console.warn("Restore state error:", e);
+      }
+
+      if (!restored) {
+        if (savedTabsStore && savedTabsStore.length > 0 && activeTabId) {
+          await switchSavedTab(activeTabId);
+        } else {
+          await fetchLiveMarketData(true);
+        }
+      } else {
+        syncChangedStrikes();
+      }
+
+      try {
+        const sym = document.getElementById('cfgUnderlying').value || 'NIFTY';
+        const rHq = await fetch(`/api/calendar/header-quotes?symbol=${encodeURIComponent(sym)}`);
+        if (rHq.ok) {
+          const dHq = await rHq.json();
+          if (dHq && dHq.ok && dHq.headerQuotes) updateHeaderTickerCards(dHq.headerQuotes);
+        }
+      } catch (e) {}
+
       startStreaming();
     });
   </script>

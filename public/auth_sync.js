@@ -304,25 +304,8 @@
         `;
         document.getElementById('btnOpenUserProfile')?.addEventListener('click', () => this.openAuthModal());
       } else {
-        // TWO DISTINCT BUTTONS: Sign In and Sign Up
-        container.innerHTML = `
-          <div class="auth-btn-group">
-            <button type="button" class="auth-signin-btn" id="btnOpenSignInModal">
-              🔑 Sign In
-            </button>
-            <button type="button" class="auth-signup-btn" id="btnOpenSignUpModal">
-              ✨ Sign Up
-            </button>
-          </div>
-        `;
-        document.getElementById('btnOpenSignInModal')?.addEventListener('click', () => {
-          this.currentTab = 'signin';
-          this.openAuthModal();
-        });
-        document.getElementById('btnOpenSignUpModal')?.addEventListener('click', () => {
-          this.currentTab = 'signup';
-          this.openAuthModal();
-        });
+        // Sign in / Sign up removed per launch requirement: guest workspace mode active
+        container.innerHTML = '';
       }
     },
 
