@@ -7,10 +7,12 @@ echo "=========================================================="
 
 SERVICE_NAME="tradersdesk"
 REGION="asia-south1"
+PROJECT_ID="trading-509214"
 
-echo "Building and deploying to region: ${REGION}..."
+echo "Building and deploying to project: ${PROJECT_ID}, region: ${REGION}..."
 
 gcloud run deploy ${SERVICE_NAME} \
+  --project ${PROJECT_ID} \
   --source . \
   --region ${REGION} \
   --allow-unauthenticated \
