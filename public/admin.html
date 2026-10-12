@@ -862,11 +862,12 @@
 
             <div class="adm-form-group" style="margin-top:8px; background:rgba(16,185,129,0.08); padding:14px; border-radius:8px; border:1px solid rgba(16,185,129,0.25);">
               <label style="color:#34d399; font-weight:700;">⚡ Current 6-Digit Live TOTP Code (From Authenticator App)</label>
-              <div style="display:flex; gap:12px; align-items:center; margin-top:6px;">
+              <div style="display:flex; gap:12px; align-items:center; margin-top:6px; flex-wrap:wrap;">
                 <input type="text" id="admAngelTotpCode" class="adm-input" placeholder="e.g. 123456" maxlength="6" style="letter-spacing:6px; font-weight:800; font-size:18px; color:#10b981; max-width:200px; text-align:center;" />
-                <button type="button" class="btn-adm-danger" onclick="testActiveBroker()" style="padding:10px 18px;">🧪 Authorize & Test Angel One</button>
+                <button type="button" class="btn-adm-danger" onclick="testActiveBroker()" style="padding:10px 18px;">🧪 Authorize &amp; Test Angel One</button>
+                <button type="button" class="btn-adm-primary" onclick="saveMasterBrokers()" style="padding:10px 18px;">💾 Save Angel Keys</button>
               </div>
-              <small style="color:var(--adm-muted); font-size:11px; margin-top:4px; display:block;">Enter your live 6-digit TOTP code here for instant session authentication.</small>
+              <small style="color:var(--adm-muted); font-size:11px; margin-top:4px; display:block;">Enter your live 6-digit TOTP code here for instant session authentication, or save API credentials above.</small>
             </div>
           </div>
 
@@ -934,7 +935,7 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
               <div class="adm-form-group">
                 <label>Registered Mobile Number</label>
-                <input type="text" id="admKotakMobileNo" class="adm-input" placeholder="e.g. 9905665704" />
+                <input type="text" id="admKotakMobileNo" class="adm-input" placeholder="e.g. 9905665704 (or +919905665704)" />
               </div>
               <div class="adm-form-group">
                 <label>Account MPIN (6-Digit)</label>
@@ -1548,6 +1549,7 @@
       // 2. Master Brokers
       // 2. Master Brokers (Angel One Primary)
       // 2. Master Brokers (Angel One & Upstox Option Chain)
+      // 2. Master Brokers (Angel One & Upstox Option Chain & Kotak Neo)
       async function loadMasterBrokers() {
         try {
           const res = await fetch('/api/admin/broker-config', { headers: getAuthHeaders() });
@@ -1557,25 +1559,37 @@
 
           // Angel One
           if (data.angel) {
-            document.getElementById('admAngelKey').value = data.angel.apiKey || '';
-            document.getElementById('admAngelClient').value = data.angel.clientCode || '';
-            document.getElementById('admAngelPin').value = data.angel.pin || '';
-            document.getElementById('admAngelTotp').value = data.angel.totpSecret || '';
-            if (document.getElementById('admAngelTotpCode')) {
-              document.getElementById('admAngelTotpCode').value = data.angel.totpCode || '';
+            const elKey = document.getElementById('admAngelKey');
+            const elClient = document.getElementById('admAngelClient');
+            const elPin = document.getElementById('admAngelPin');
+            const elTotp = document.getElementById('admAngelTotp');
+            const elTotpCode = document.getElementById('admAngelTotpCode');
+
+            if (elKey && !elKey.value) elKey.value = data.angel.apiKey || '';
+            if (elClient && !elClient.value) elClient.value = data.angel.clientCode || '';
+            if (elPin && data.angel.hasPin) {
+              elPin.placeholder = '•••••••• (Saved on server)';
+            }
+            if (elTotp && data.angel.hasTotpSecret) {
+              elTotp.placeholder = `•••••••• (Saved on server: ${data.angel.totpSecretMasked || 'Active'})`;
+            }
+            if (elTotpCode && !elTotpCode.value && data.angel.totpCode) {
+              elTotpCode.value = data.angel.totpCode;
             }
           }
 
           // Upstox Option Chain
           if (data.upstox) {
-            if (document.getElementById('admUpstoxKey')) {
-              document.getElementById('admUpstoxKey').value = data.upstox.apiKey || '';
+            const elUKey = document.getElementById('admUpstoxKey');
+            const elUSec = document.getElementById('admUpstoxSecret');
+            const elUTok = document.getElementById('admUpstoxToken');
+
+            if (elUKey && !elUKey.value) elUKey.value = data.upstox.apiKey || '';
+            if (elUSec && data.upstox.hasApiSecret) {
+              elUSec.placeholder = '•••••••• (Saved on server)';
             }
-            if (document.getElementById('admUpstoxSecret')) {
-              document.getElementById('admUpstoxSecret').value = data.upstox.apiSecret || '';
-            }
-            if (document.getElementById('admUpstoxToken')) {
-              document.getElementById('admUpstoxToken').value = data.upstox.accessToken || '';
+            if (elUTok && !elUTok.value) {
+              elUTok.value = data.upstox.accessToken || '';
             }
             const b = document.getElementById('admUpstoxBadge');
             if (b) {
@@ -1593,23 +1607,24 @@
 
           // Kotak Neo Derivatives Engine
           if (data.kotak) {
-            if (document.getElementById('admKotakConsumerKey')) {
-              document.getElementById('admKotakConsumerKey').value = data.kotak.consumerKey || '';
+            const elKCKey = document.getElementById('admKotakConsumerKey');
+            const elKUcc = document.getElementById('admKotakUcc');
+            const elKMob = document.getElementById('admKotakMobileNo');
+            const elKMpin = document.getElementById('admKotakMpin');
+            const elKTotp = document.getElementById('admKotakTotpSecret');
+            const elKTok = document.getElementById('admKotakToken');
+
+            if (elKCKey && !elKCKey.value) elKCKey.value = data.kotak.consumerKey || '';
+            if (elKUcc && !elKUcc.value) elKUcc.value = data.kotak.ucc || '';
+            if (elKMob && !elKMob.value) elKMob.value = data.kotak.mobileNo || '';
+            if (elKMpin && data.kotak.hasMpin) {
+              elKMpin.placeholder = '•••••••• (Saved on server)';
             }
-            if (document.getElementById('admKotakUcc')) {
-              document.getElementById('admKotakUcc').value = data.kotak.ucc || '';
+            if (elKTotp && data.kotak.hasTotpSecret) {
+              elKTotp.placeholder = `•••••••• (Saved on server: ${data.kotak.totpSecretMasked || 'Active'})`;
             }
-            if (document.getElementById('admKotakMobileNo')) {
-              document.getElementById('admKotakMobileNo').value = data.kotak.mobileNo || '';
-            }
-            if (document.getElementById('admKotakMpin')) {
-              document.getElementById('admKotakMpin').value = data.kotak.mpin || '';
-            }
-            if (document.getElementById('admKotakTotpSecret')) {
-              document.getElementById('admKotakTotpSecret').value = data.kotak.totpSecret || '';
-            }
-            if (document.getElementById('admKotakToken')) {
-              document.getElementById('admKotakToken').value = data.kotak.accessToken || '';
+            if (elKTok && !elKTok.value) {
+              elKTok.value = data.kotak.accessToken || '';
             }
             const kb = document.getElementById('admKotakBadge');
             if (kb) {
@@ -1670,8 +1685,24 @@
           const result = await res.json();
           if (res.ok && result.ok) {
             showAdmAlert('✓ ' + (result.message || 'Broker configuration saved successfully!'), 'success');
+
+            // Update placeholders for typed secrets and clear them so they are not left as plaintext
+            const pinEl = document.getElementById('admAngelPin');
+            if (pinEl && pinEl.value) { pinEl.placeholder = '•••••••• (Saved on server)'; pinEl.value = ''; }
+            const totpEl = document.getElementById('admAngelTotp');
+            if (totpEl && totpEl.value) { totpEl.placeholder = '•••••••• (Saved on server)'; totpEl.value = ''; }
+            const mpinEl = document.getElementById('admKotakMpin');
+            if (mpinEl && mpinEl.value) { mpinEl.placeholder = '•••••••• (Saved on server)'; mpinEl.value = ''; }
+            const kTotpEl = document.getElementById('admKotakTotpSecret');
+            if (kTotpEl && kTotpEl.value) { kTotpEl.placeholder = '•••••••• (Saved on server)'; kTotpEl.value = ''; }
+
+            const kBadge = document.getElementById('admKotakBadge');
+            if (kBadge && (payload.kotak.consumerKey || payload.kotak.mobileNo || payload.kotak.ucc)) {
+              kBadge.textContent = 'SAVED / READY';
+              kBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+              kBadge.style.color = '#34d399';
+            }
             loadTelemetry();
-            loadMasterBrokers();
           } else if (res.status === 401) {
             showAdmAlert('🔒 Admin session expired or PIN required. Enter your Admin PIN to unlock.', 'error');
             document.getElementById('adminLockOverlay').style.display = 'flex';
@@ -1691,7 +1722,7 @@
         const totpSecret = cleanAdmInput('admAngelTotp');
         const liveTotp = (document.getElementById('admAngelTotpCode')?.value || '').trim();
 
-        if (apiKey || clientCode || pin) {
+        if (apiKey || clientCode || pin || totpSecret) {
           try {
             await saveMasterBrokers();
           } catch(e) {}
@@ -1702,7 +1733,7 @@
         try {
           const res = await fetch('/api/settings/test', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
               broker: 'ANGEL',
               manualTotp: liveTotp,
@@ -1741,7 +1772,7 @@
         try {
           const res = await fetch('/api/upstox/test-connection', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ token, apiKey, apiSecret })
           });
           const data = await res.json();
@@ -1793,6 +1824,13 @@
         const resBox = document.getElementById('kotakTestResultBox');
         const badge = document.getElementById('admKotakBadge');
 
+        // Auto-save any typed keys first so nothing is lost
+        if (consumerKey || mobileNo || ucc || mpin || totpSecret) {
+          try {
+            await saveMasterBrokers();
+          } catch(e) {}
+        }
+
         if (resBox) {
           resBox.style.display = 'block';
           resBox.style.background = 'rgba(59, 130, 246, 0.15)';
@@ -1804,7 +1842,7 @@
         try {
           const res = await fetch('/api/kotak/test-connection', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ token, consumerKey, ucc, mobileNo, mpin, totpSecret, liveTotp })
           });
           const data = await res.json();
@@ -1841,7 +1879,7 @@
             resBox.style.color = '#f87171';
             resBox.textContent = '❌ Connection error: ' + e.message;
           }
-          showAdmAlert('Error testing Kotak Neo: ' + e.message, 'error');
+          showAdmAlert('Error testing Kotak: ' + e.message, 'error');
         }
       }
 

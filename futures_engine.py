@@ -289,7 +289,7 @@ def _safe_parse_kotak_response(raw_bytes: bytes) -> tuple[Optional[Any], Optiona
         return None, f"JSON parse error: {str(err)}"
 
 
-def _persist_kotak_tokens_to_env(trade_tok: str = "", view_tok: str = "", sid: str = "") -> None:
+def _persist_kotak_tokens_to_env(trade_tok: str = "", view_tok: str = "", sid: str = "", **extra_keys) -> None:
     updates = {}
     if trade_tok:
         updates["KOTAK_ACCESS_TOKEN"] = trade_tok
@@ -297,6 +297,10 @@ def _persist_kotak_tokens_to_env(trade_tok: str = "", view_tok: str = "", sid: s
         updates["KOTAK_VIEW_TOKEN"] = view_tok
     if sid:
         updates["KOTAK_SID"] = sid
+    for k, v in extra_keys.items():
+        v_str = str(v or "").strip()
+        if v_str and not ("*" in v_str or "..." in v_str or "••••" in v_str):
+            updates[k] = v_str
     if updates:
         for k, v in updates.items():
             os.environ[k] = v
@@ -325,6 +329,21 @@ def _persist_kotak_tokens_to_env(trade_tok: str = "", view_tok: str = "", sid: s
             env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
         except Exception as e:
             logger.error(f"Failed to persist tokens to .env: {e}")
+
+        # Also write to persistent broker cache so container restarts keep credentials
+        try:
+            cache_file = Path(".cache/broker_config.json")
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            b_data = {}
+            if cache_file.exists():
+                try:
+                    b_data = json.loads(cache_file.read_text(encoding="utf-8"))
+                except Exception:
+                    b_data = {}
+            b_data.update(updates)
+            cache_file.write_text(json.dumps(b_data, indent=2), encoding="utf-8")
+        except Exception:
+            pass
 
 
 def test_kotak_connection(
@@ -496,10 +515,11 @@ def test_kotak_connection(
             "User-Agent": "neo-api-client/2.0.0",
         }
 
-        # Try clean 10-digit mobile first, fallback to +91 format if Kotak requires international prefix
-        mobile_candidates = [mob_10] if mob_10 else []
-        if mob_10 and f"+91{mob_10}" not in mobile_candidates:
+        # Kotak Neo Trade API v2 requires international prefix +91 (e.g. +919905665704)
+        mobile_candidates = []
+        if mob_10:
             mobile_candidates.append(f"+91{mob_10}")
+            mobile_candidates.append(mob_10)
 
         l_data = None
         parse_err = None
@@ -612,7 +632,13 @@ def test_kotak_connection(
                         os.environ["KOTAK_ACCESS_TOKEN"] = trade_tok
                         _FUTURES_CACHE["kotak_token"] = trade_tok
                         _FUTURES_CACHE["kotak_base_url"] = base_url
-                        _persist_kotak_tokens_to_env(trade_tok=trade_tok, view_tok=view_token or "", sid=sid or "")
+                        extra = {}
+                        if ckey and not _is_masked(ckey): extra["KOTAK_CONSUMER_KEY"] = ckey
+                        if u_code and not _is_masked(u_code): extra["KOTAK_UCC"] = u_code
+                        if mob_10 and not _is_masked(mob_10): extra["KOTAK_MOBILE_NO"] = mob_10
+                        if mp and not _is_masked(mp): extra["KOTAK_MPIN"] = mp
+                        if t_sec and not _is_masked(t_sec): extra["KOTAK_TOTP_SECRET"] = t_sec
+                        _persist_kotak_tokens_to_env(trade_tok=trade_tok, view_tok=view_token or "", sid=sid or "", **extra)
                         return {
                             "ok": True,
                             "message": f"[OK] Kotak Neo Session Active! Connected to {id_display}. Real-time F&O feeds operational.",
@@ -628,7 +654,12 @@ def test_kotak_connection(
                 }
 
         if view_token:
-            _persist_kotak_tokens_to_env(view_tok=view_token, sid=sid or "")
+            extra = {}
+            if ckey and not _is_masked(ckey): extra["KOTAK_CONSUMER_KEY"] = ckey
+            if u_code and not _is_masked(u_code): extra["KOTAK_UCC"] = u_code
+            if mob_10 and not _is_masked(mob_10): extra["KOTAK_MOBILE_NO"] = mob_10
+            if t_sec and not _is_masked(t_sec): extra["KOTAK_TOTP_SECRET"] = t_sec
+            _persist_kotak_tokens_to_env(view_tok=view_token, sid=sid or "", **extra)
         return {
             "ok": True,
             "message": f"[OK] Kotak Neo TOTP Verified! Step 1 complete for {id_display} (View token active).",

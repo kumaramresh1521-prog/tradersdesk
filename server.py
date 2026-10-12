@@ -9151,28 +9151,33 @@ class RequestHandler(BaseHTTPRequestHandler):
                 "ok": True,
                 "activeBroker": active_broker,
                 "angel": {
-                    "apiKey": mask(env("ANGEL_API_KEY")),
+                    "apiKey": env("ANGEL_API_KEY"),
                     "clientCode": env("ANGEL_CLIENT_CODE"),
-                    "pin": "******" if angel_pin else "",
-                    "totpSecret": f"...{angel_totp[-4:]}" if len(angel_totp) > 4 else ("******" if angel_totp else ""),
+                    "hasPin": bool(angel_pin),
+                    "pinMasked": "••••••" if angel_pin else "",
+                    "hasTotpSecret": bool(angel_totp),
+                    "totpSecretMasked": f"...{angel_totp[-4:]}" if len(angel_totp) > 4 else ("••••••" if angel_totp else ""),
                     "totpCode": env("ANGEL_TOTP_CODE"),
                     "baseUrl": env("ANGEL_BASE_URL", ANGEL_ROOT),
                     "configured": angel_configured(),
                 },
                 "upstox": {
-                    "apiKey": mask(env("UPSTOX_API_KEY")),
-                    "apiSecret": "******" if env("UPSTOX_API_SECRET") else "",
-                    "accessToken": f"...{upstox_tok[-6:]}" if len(upstox_tok) > 6 else ("******" if upstox_tok else ""),
+                    "apiKey": env("UPSTOX_API_KEY"),
+                    "hasApiSecret": bool(env("UPSTOX_API_SECRET")),
+                    "accessToken": upstox_tok,
+                    "accessTokenMasked": f"...{upstox_tok[-6:]}" if len(upstox_tok) > 6 else "",
                     "configured": bool(upstox_tok and len(upstox_tok) > 20),
                 },
                 "kotak": {
-                    "consumerKey": mask(kotak_ckey),
+                    "consumerKey": kotak_ckey,
                     "ucc": env("KOTAK_UCC", ""),
-                    "consumerSecret": "******" if kotak_csec else "",
                     "mobileNo": kotak_mob,
-                    "mpin": "******" if kotak_mpin else "",
-                    "totpSecret": f"...{kotak_totp[-4:]}" if len(kotak_totp) > 4 else ("******" if kotak_totp else ""),
-                    "accessToken": f"...{kotak_tok[-6:]}" if len(kotak_tok) > 6 else ("******" if kotak_tok else ""),
+                    "hasConsumerSecret": bool(kotak_csec),
+                    "hasMpin": bool(kotak_mpin),
+                    "mpinMasked": "••••••" if kotak_mpin else "",
+                    "hasTotpSecret": bool(kotak_totp),
+                    "totpSecretMasked": f"...{kotak_totp[-4:]}" if len(kotak_totp) > 4 else ("••••••" if kotak_totp else ""),
+                    "accessToken": kotak_tok,
                     "configured": bool(kotak_tok or (kotak_ckey and (kotak_mob or env("KOTAK_UCC")))),
                 },
                 "fyers": {"configured": False},
@@ -9743,6 +9748,15 @@ class RequestHandler(BaseHTTPRequestHandler):
                 res = futures_engine.test_kotak_connection(
                     tok, ckey, mob, mpin, ucc=ucc, totp_secret=totp_sec, live_totp=live_totp, consumer_secret=csec
                 )
+                if res.get("ok"):
+                    upd = {}
+                    if ckey and not is_masked_or_empty(ckey): upd["KOTAK_CONSUMER_KEY"] = ckey
+                    if ucc and not is_masked_or_empty(ucc): upd["KOTAK_UCC"] = ucc
+                    if mob and not is_masked_or_empty(mob): upd["KOTAK_MOBILE_NO"] = mob
+                    if mpin and not is_masked_or_empty(mpin): upd["KOTAK_MPIN"] = mpin
+                    if totp_sec and not is_masked_or_empty(totp_sec): upd["KOTAK_TOTP_SECRET"] = totp_sec
+                    if upd:
+                        save_dotenv(upd)
                 return self.send_json(200, res)
 
             # --- ADMIN PROTECTED POST ENDPOINTS ---
