@@ -6098,7 +6098,27 @@ def build_fii_dii_cash(payload: dict = None) -> dict:
     """Returns FII/DII Cash Market daily, monthly, and yearly net buy/sell flow metrics instantly from cache or auto-sync."""
     payload = payload or {}
     force_refresh = bool(payload.get("refresh") or payload.get("fastRefresh"))
-    return fii_dii_engine.get_fii_dii_data(force_refresh=force_refresh)
+
+    # Try to inject live Nifty 50 spot price so table shows real close values
+    nifty_close = None
+    nifty_change = None
+    nifty_pct = None
+    try:
+        idx_data = _LIVE_INDEX_CACHE.get("data", {})
+        nifty_q = idx_data.get("nifty50") or {}
+        if nifty_q.get("spot") and float(nifty_q["spot"]) > 5000:
+            nifty_close = float(nifty_q["spot"])
+            nifty_change = float(nifty_q.get("change") or 0.0)
+            nifty_pct = float(nifty_q.get("percentChange") or 0.0)
+    except Exception:
+        pass
+
+    return fii_dii_engine.get_fii_dii_data(
+        force_refresh=force_refresh,
+        nifty_close=nifty_close,
+        nifty_change=nifty_change,
+        nifty_pct=nifty_pct,
+    )
 
 
 
@@ -9281,6 +9301,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/smart-money",
             "/fii-dii",
             "/fii-dii-derivatives",
+            "/fii-dii/cash",
+            "/fii-dii/derivatives",
             "/mtf-analytics",
             "/mtf",
             "/mtf/overview",

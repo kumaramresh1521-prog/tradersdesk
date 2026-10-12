@@ -338,12 +338,35 @@
             </div>
           </div>
 
-          <!-- 5. FII / DII DESK (TOP-LEVEL MENU) -->
-          <div class="inst-nav-item">
+          <!-- 5. FII / DII DESK (DROPDOWN WITH 2 SUB-MENUS) -->
+          <div class="inst-nav-item has-dropdown">
             <a href="/fii-dii" class="inst-nav-btn" id="navFiiDii" onclick="return window.instNavClick(event, 'smartmoney')" title="Institutional Cash &amp; Derivatives Positioning">
               <span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII / DII Desk</span>
+              <span class="inst-nav-arrow">▾</span>
             </a>
+            <div class="inst-dropdown inst-dropdown-sm">
+              <div class="inst-dropdown-col">
+                <span class="inst-dropdown-header">Smart Money Flow</span>
+                <!-- Sub 1: FII DII Cash -->
+                <a href="/fii-dii/cash" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'cash')">
+                  <span class="dd-icon">💵</span>
+                  <div class="dd-text">
+                    <span class="dd-title">FII / DII Cash Market</span>
+                    <span class="dd-sub">Daily net buy/sell flow, monthly &amp; yearly trends</span>
+                  </div>
+                </a>
+                <!-- Sub 2: FII DII Derivatives -->
+                <a href="/fii-dii/derivatives" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'derivatives')">
+                  <span class="dd-icon">⚡</span>
+                  <div class="dd-text">
+                    <span class="dd-title">FII / DII Derivatives <span class="p2-badge p2-badge-teal" style="margin-left:4px;">F&amp;O</span></span>
+                    <span class="dd-sub">Index futures, options OI &amp; participant positioning</span>
+                  </div>
+                </a>
+              </div>
+            </div>
           </div>
+
 
           <!-- 6. DELIVERY DESK (TOP-LEVEL MENU) -->
           <div class="inst-nav-item">

@@ -11935,8 +11935,21 @@ const ROUTE_CONFIG = {
   },
   "/fii-dii-derivatives": {
     desk: "smartmoney",
+    subview: "derivatives",
     title: "FII / DII Smart Money Flow - Institutional Derivatives Positioning | TradersDesk",
     desc: "Track institutional smart money flows, FII/DII net daily purchases, Index Futures long/short positioning, and options activity."
+  },
+  "/fii-dii/cash": {
+    desk: "smartmoney",
+    subview: "cash",
+    title: "FII / DII Cash Market Flow - Daily Institutional Net Buy/Sell | TradersDesk",
+    desc: "FII and DII daily cash market net buy/sell figures from NSE. Nifty 50 benchmark correlation and monthly/yearly trend charts."
+  },
+  "/fii-dii/derivatives": {
+    desk: "smartmoney",
+    subview: "derivatives",
+    title: "FII / DII F&O Derivatives Positioning - Index Futures & Options OI | TradersDesk",
+    desc: "FII institutional F&O positioning: Index Futures long/short, Options OI, participant volume breakdown and derivatives flow."
   },
   "/mtf-analytics": {
     desk: "mtf",
@@ -12088,6 +12101,12 @@ function getUrlForDesk(key, subview) {
   if ((key === "smartMoney" || key === "smartmoney" || key === "fiidii") && subview === "oi") {
     return "/fii-dii#oi";
   }
+  if ((key === "smartMoney" || key === "smartmoney" || key === "fiidii") && subview === "cash") {
+    return "/fii-dii/cash";
+  }
+  if ((key === "smartMoney" || key === "smartmoney" || key === "fiidii") && subview === "derivatives") {
+    return "/fii-dii/derivatives";
+  }
   return DESK_TO_URL[key] || "/";
 }
 
@@ -12221,6 +12240,18 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
     if ((tabKey === "smartMoney" || key === "smartMoney" || key === "smartmoney") && subview === "oi") {
       setTimeout(() => {
         const b = document.getElementById("btnFiiSubtabOi");
+        if (b) b.click();
+      }, 120);
+    }
+    if ((tabKey === "smartMoney" || key === "smartMoney" || key === "smartmoney") && subview === "cash") {
+      setTimeout(() => {
+        const b = document.getElementById("btnFiiSubtabCash");
+        if (b) b.click();
+      }, 120);
+    }
+    if ((tabKey === "smartMoney" || key === "smartMoney" || key === "smartmoney") && subview === "derivatives") {
+      setTimeout(() => {
+        const b = document.getElementById("btnFiiSubtabDeriv");
         if (b) b.click();
       }, 120);
     }

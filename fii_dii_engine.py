@@ -222,7 +222,7 @@ def sync_fii_dii_history(
     return history
 
 
-def get_fii_dii_data(force_refresh: bool = False, nifty_close: Optional[float] = None) -> Dict[str, Any]:
+def get_fii_dii_data(force_refresh: bool = False, nifty_close: Optional[float] = None, nifty_change: Optional[float] = None, nifty_pct: Optional[float] = None) -> Dict[str, Any]:
     """Returns cached FII/DII data or triggers refresh if requested."""
     global _FII_DII_IN_MEMORY_CACHE
     now_ts = time.time()
@@ -232,7 +232,7 @@ def get_fii_dii_data(force_refresh: bool = False, nifty_close: Optional[float] =
             return cached
 
     # Check if we should sync
-    data = sync_fii_dii_history(force=force_refresh, nifty_close=nifty_close)
+    data = sync_fii_dii_history(force=force_refresh, nifty_close=nifty_close, nifty_change=nifty_change, nifty_pct=nifty_pct)
     _FII_DII_IN_MEMORY_CACHE["data"] = data
     _FII_DII_IN_MEMORY_CACHE["timestamp"] = now_ts
     return data
