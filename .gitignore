@@ -20,7 +20,9 @@ __pycache__/
 
 # Local cache & data caches
 .cache/
-cache/
+cache/*
+!cache/futures_rollover_official.json
+!cache/latest_fo_bhav_rollover.json
 data/cache/
 *.session
 *.token

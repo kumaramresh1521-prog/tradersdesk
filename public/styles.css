@@ -11811,9 +11811,23 @@ html, body {
     display: none !important; /* Hide long tagline on mobile to save space */
   }
 
+  .inst-brand-left {
+    order: 1 !important;
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .inst-terminal-tag {
+    display: none !important; /* Save space on small mobile screens */
+  }
+
   .inst-right-controls {
     order: 2 !important;
     gap: 6px !important;
+    display: flex !important;
+    align-items: center !important;
   }
 
   .inst-api-status {
@@ -11834,9 +11848,25 @@ html, body {
     font-size: 12px !important;
   }
 
+  .inst-global-search-trigger {
+    order: 3 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 4px 0 !important;
+    padding: 6px 12px !important;
+  }
+
+  .inst-market-clock-wrap {
+    order: 4 !important;
+    width: 100% !important;
+    justify-content: center !important;
+    margin: 2px 0 0 0 !important;
+    padding: 3px 10px !important;
+  }
+
   /* Sub-row: Pulse Strip centered with horizontal scroll */
   .inst-pulse-strip {
-    order: 3 !important;
+    order: 5 !important;
     width: 100% !important;
     margin: 0 !important;
     justify-content: center !important;
@@ -11851,29 +11881,62 @@ html, body {
 
   /* 3. Navigation Bar (Row 2) on Mobile */
   .inst-nav {
-    padding: 0 6px !important;
-    gap: 2px !important;
+    padding: 4px 8px !important;
+    gap: 4px !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
     white-space: nowrap !important;
   }
+  .inst-nav::-webkit-scrollbar { display: none !important; }
 
   .inst-nav-btn {
-    padding: 8px 11px !important;
+    padding: 7px 11px !important;
     font-size: 12px !important;
-    gap: 4px !important;
+    gap: 5px !important;
     flex-shrink: 0 !important;
   }
 
   .inst-nav-arrow {
-    display: none !important; /* Cleaner compact look on mobile tabs */
+    font-size: 9px !important;
+    opacity: 0.7 !important;
   }
 
-  /* Disable hover popover dropdown on touch devices so it doesn't clip offscreen */
-  .inst-nav-item.has-dropdown:hover .inst-dropdown,
-  .inst-nav-item.has-dropdown:focus-within .inst-dropdown {
-    display: none !important;
+  /* Mobile Dropdown Bottom Sheet when opened on touch */
+  .inst-nav-item.has-dropdown:focus-within .inst-dropdown,
+  .inst-nav-item.has-dropdown.mobile-open .inst-dropdown {
+    display: flex !important;
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100vw !important;
+    min-width: 100vw !important;
+    max-width: 100vw !important;
+    max-height: 75vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 20px 20px 0 0 !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    border-bottom: none !important;
+    flex-direction: column !important;
+    padding: 16px 16px 28px 16px !important;
+    gap: 12px !important;
+    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.85) !important;
+    z-index: 100000 !important;
+  }
+
+  .inst-nav-item.has-dropdown .inst-dropdown-col {
+    min-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  .inst-nav-item.has-dropdown .inst-dropdown-col + .inst-dropdown-col {
+    border-left: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding-left: 0 !important;
+    padding-top: 12px !important;
   }
 
   /* 4. Dashboard Panel on Mobile */

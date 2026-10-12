@@ -126,10 +126,10 @@
 
         <!-- 4. OPTIONS (MAIN MENU WITH SUBMENUS) -->
         <div class="inst-nav-item has-dropdown">
-          <button class="inst-nav-btn inst-nav-btn-highlight active" type="button">
+          <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight active">
             <span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span>
             <span class="inst-nav-arrow">▾</span>
-          </button>
+          </a>
           <div class="inst-dropdown inst-dropdown-md">
             <div class="inst-dropdown-col">
               <span class="inst-dropdown-header">Derivatives Suite</span>
@@ -142,7 +142,7 @@
                 </div>
               </a>
               <!-- Submenu 2: Straddle -->
-              <a href="/straddle" class="inst-dd-item" onclick="if(window.activateSuite){activateSuite('straddle'); return false;}">
+              <a href="/straddle" class="inst-dd-item" onclick="if(window.activateSuite){if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); activateSuite('straddle'); return false;}">
                 <span class="dd-icon">📉</span>
                 <div class="dd-text">
                   <span class="dd-title">Straddle <span class="p2-badge p2-badge-rose" style="margin-left:4px;">LIVE</span></span>
@@ -153,13 +153,13 @@
             <div class="inst-dropdown-col">
               <span class="inst-dropdown-header">Breadth Analytics</span>
               <!-- Submenu 3: Market Breadth and Contribution -->
-              <button class="inst-dd-item" onclick="if(window.activateSuite)activateSuite('contribution'); return false;">
+              <a href="/breadth-contribution" class="inst-dd-item" onclick="if(window.activateSuite){if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); activateSuite('contribution'); return false;}">
                 <span class="dd-icon">📊</span>
                 <div class="dd-text">
                   <span class="dd-title">Market Breadth and Contribution <span class="p2-badge p2-badge-cyan" style="margin-left:4px;">LIVE</span></span>
                   <span class="dd-sub">Intraday breadth advance/decline &amp; stock point impact</span>
                 </div>
-              </button>
+              </a>
               <!-- Submenu 4: Market Breadth with Advance Decline -->
               <a href="/market-breadth" class="inst-dd-item">
                 <span class="dd-icon">📉</span>
@@ -174,9 +174,9 @@
 
         <!-- 5. FII / DII DESK (TOP-LEVEL MENU) -->
         <div class="inst-nav-item">
-          <button class="inst-nav-btn" type="button" onclick="if(window.activateSuite)activateSuite('fiidii');" title="FII / DII Institutional Cash &amp; Derivatives Flow">
+          <a href="/fii-dii" class="inst-nav-btn" onclick="if(window.activateSuite){if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); activateSuite('fiidii'); return false;}" title="FII / DII Institutional Cash &amp; Derivatives Flow">
             <span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII / DII Desk</span>
-          </button>
+          </a>
         </div>
 
         <!-- 6. DELIVERY DESK (TOP-LEVEL MENU) -->

@@ -12246,6 +12246,9 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
 }
 
 function navigateDesk(targetKey, subview, explicitUrl, ev) {
+  if (ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button === 1)) {
+    return true; // Let browser natively open in new tab!
+  }
   if (ev) {
     try { ev.preventDefault(); } catch (_) {}
   }
@@ -12715,6 +12718,24 @@ function startLiveMarketClock() {
 // Expose instNav & dashboard loaders globally
 window._realInstNav = instNav;
 window.instNav = instNav;
+window.instNavClick = function(e, key, subview) {
+  if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
+    return true; // Let browser open in new tab!
+  }
+  if (e && e.preventDefault) e.preventDefault();
+  instNav(key, subview);
+  return false;
+};
+window.futuresDeskTabClick = function(e, subtab) {
+  if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
+    return true; // Let browser open in new tab!
+  }
+  if (e && e.preventDefault) e.preventDefault();
+  if (window.futuresDesk && typeof window.futuresDesk.switchSubTab === "function") {
+    window.futuresDesk.switchSubTab(subtab);
+  }
+  return false;
+};
 window.navigateDesk = navigateDesk;
 window.loadDashboardData = loadDashboardData;
 window.updateDashboardIndices = updateDashboardIndices;

@@ -738,8 +738,97 @@
       border-radius: 50%;
       animation: roSpin 0.7s linear infinite;
     }
-    @keyframes roSpin {
-      to { transform: rotate(360deg); }
+    /* ============================================================
+       MOBILE RESPONSIVENESS POLISH (<= 768px and <= 480px)
+       ============================================================ */
+    @media (max-width: 768px) {
+      .ro-main-container {
+        padding: 8px 10px 40px 10px !important;
+        gap: 10px !important;
+      }
+      .ro-hero-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        padding: 12px 14px !important;
+      }
+      .ro-hero-left {
+        min-width: 0 !important;
+        width: 100% !important;
+      }
+      .ro-kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        gap: 8px !important;
+      }
+      .ro-kpi-card {
+        padding: 8px 10px !important;
+      }
+      .ro-kpi-val {
+        font-size: 15px !important;
+      }
+      .ro-controls-panel {
+        padding: 10px 12px !important;
+      }
+      .ro-controls-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+      .ro-controls-left {
+        min-width: 0 !important;
+        width: 100% !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      .ro-search-box-wrap {
+        max-width: 100% !important;
+        min-width: 0 !important;
+        width: 100% !important;
+      }
+      .ro-select-ctrl {
+        width: 100% !important;
+      }
+      .ro-controls-right {
+        width: 100% !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+      }
+      .ro-controls-right .ro-action-btn {
+        flex: 1 1 auto !important;
+        justify-content: center !important;
+      }
+      .ro-pills-row {
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 6px !important;
+        scrollbar-width: none !important;
+      }
+      .ro-pills-row::-webkit-scrollbar {
+        display: none !important;
+      }
+      .ro-filter-pill {
+        flex-shrink: 0 !important;
+      }
+      .ro-table-wrapper {
+        max-height: calc(100vh - 330px) !important;
+      }
+      .ro-matrix-table th,
+      .ro-matrix-table td {
+        padding: 8px 10px !important;
+        font-size: 11px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ro-kpi-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+      .ro-title-row h1 {
+        font-size: 16px !important;
+      }
     }
   </style>
 </head>
@@ -748,165 +837,199 @@
   <!-- ====================================================================
        INSTITUTIONAL HEADER — BRAND BAR + THEME TOGGLE + DIGITAL CLOCK
        ==================================================================== -->
-  <header class="page2-header" id="instHeader">
-    <div class="inst-nav-row">
-      <nav class="inst-nav" aria-label="Main Navigation">
-        <!-- 1. DASHBOARD -->
-        <div class="inst-nav-item">
-          <a href="/" class="inst-nav-btn" title="Return to Main Terminal">
-            <span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span>
-          </a>
-        </div>
+  <header class="inst-header" id="instHeader">
 
-        <!-- 2. FUTURES DASHBOARD (ACTIVE) -->
-        <div class="inst-nav-item has-dropdown">
-          <a href="/futures" class="inst-nav-btn inst-nav-btn-highlight active" title="Futures Derivatives Suite">
-            <span class="inst-nav-icon">📈</span> <span class="nav-label">Futures Desk</span>
-            <span class="inst-nav-arrow">▾</span>
-          </a>
-          <div class="inst-dropdown inst-dropdown-md">
-            <div class="inst-dropdown-col">
-              <span class="inst-dropdown-header">Futures Market &amp; Structure</span>
-              <a href="/futures" class="inst-dd-item">
-                <span class="dd-icon">📊</span>
-                <div class="dd-text">
-                  <span class="dd-title">Future Marketwatch</span>
-                  <span class="dd-sub">Active contracts matrix, basis spread, LTP &amp; OI</span>
-                </div>
-              </a>
-              <a href="/futures/indices" class="inst-dd-item">
-                <span class="dd-icon">📈</span>
-                <div class="dd-text">
-                  <span class="dd-title">Index Term Structure</span>
-                  <span class="dd-sub">Cash-futures basis, cost of carry &amp; benchmark curve</span>
-                </div>
-              </a>
-              <a href="/futures/buildup" class="inst-dd-item">
-                <span class="dd-icon">⚡</span>
-                <div class="dd-text">
-                  <span class="dd-title">Future Buildup</span>
-                  <span class="dd-sub">Long/short buildup quadrants &amp; unwinding signals</span>
-                </div>
-              </a>
-            </div>
-            <div class="inst-dropdown-col">
-              <span class="inst-dropdown-header">F&amp;O Analytics &amp; Risk</span>
-              <a href="/futures/heatmap" class="inst-dd-item">
-                <span class="dd-icon">🗺️</span>
-                <div class="dd-text">
-                  <span class="dd-title">Future Heatmap</span>
-                  <span class="dd-sub">Visual sector heatmap &amp; momentum distribution</span>
-                </div>
-              </a>
-              <a href="/futures/mwpl" class="inst-dd-item">
-                <span class="dd-icon">🚫</span>
-                <div class="dd-text">
-                  <span class="dd-title">MWPL &amp; Ban Radar</span>
-                  <span class="dd-sub">Market-Wide Position Limit tracker &amp; pre-ban alert</span>
-                </div>
-              </a>
-              <!-- Dedicated Rollover Link (Active) -->
-              <a href="/futures/rollover" class="inst-dd-item active" style="background:rgba(37,99,235,0.08);">
-                <span class="dd-icon">🔄</span>
-                <div class="dd-text">
-                  <span class="dd-title" style="color:#2563eb; font-weight:700;">Futures Rollover Matrix <span class="p2-badge p2-badge-teal" style="margin-left:4px;">OFFICIAL</span></span>
-                  <span class="dd-sub">Historical monthly rollover %, 3M/6M averages &amp; velocity</span>
-                </div>
-              </a>
-            </div>
+    <!-- Row 1: Brand + Live Market Status + Ticking Clock + Right Utilities -->
+    <div class="inst-brand-bar">
+      <div class="inst-brand-left">
+        <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in — Institutional Quant &amp; Derivatives Terminal">
+          <img src="/tradersdesk_header.svg" alt="TradersDesk.in" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px; width:auto;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px; width:auto;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <div class="inst-brand-fallback-text" id="instBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
+            <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk<svg style="width:13px; height:13px; vertical-align:middle; transform:translateY(-2px); margin-left:-1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg></span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
           </div>
-        </div>
-
-        <!-- 3. GLOBAL MARKETS -->
-        <div class="inst-nav-item">
-          <a href="/global-markets" class="inst-nav-btn inst-nav-btn-blue" title="GIFT NIFTY &amp; Real-time World Indices">
-            <span class="inst-nav-icon">🌐</span> <span class="nav-label">Global Markets</span>
-            <span class="p2-badge p2-badge-blue">MACRO</span>
-          </a>
-        </div>
-
-        <!-- 4. OPTIONS -->
-        <div class="inst-nav-item has-dropdown">
-          <a href="/option-chain-pro" class="inst-nav-btn" title="Options Trading &amp; Greeks Desk">
-            <span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span>
-            <span class="inst-nav-arrow">▾</span>
-          </a>
-          <div class="inst-dropdown inst-dropdown-md">
-            <div class="inst-dropdown-col">
-              <span class="inst-dropdown-header">Derivatives Suite</span>
-              <a href="/option-chain-pro" class="inst-dd-item">
-                <span class="dd-icon">⚡</span>
-                <div class="dd-text">
-                  <span class="dd-title">Option Chain Pro <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
-                  <span class="dd-sub">Multi-broker live chain, Black-Scholes Greeks, PCR &amp; IV</span>
-                </div>
-              </a>
-              <a href="/straddle" class="inst-dd-item">
-                <span class="dd-icon">📉</span>
-                <div class="dd-text">
-                  <span class="dd-title">ATM Straddle Engine <span class="p2-badge p2-badge-rose" style="margin-left:4px;">LIVE</span></span>
-                  <span class="dd-sub">Live intraday straddle decay, spot &amp; synthetic curve</span>
-                </div>
-              </a>
-            </div>
-            <div class="inst-dropdown-col">
-              <span class="inst-dropdown-header">Breadth Analytics</span>
-              <a href="/contribution" class="inst-dd-item">
-                <span class="dd-icon">📊</span>
-                <div class="dd-text">
-                  <span class="dd-title">Breadth &amp; Contribution</span>
-                  <span class="dd-sub">Index point contribution by heavyweight constituents</span>
-                </div>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- 5. CALENDAR SPREAD STUDIO -->
-        <div class="inst-nav-item">
-          <a href="/calendar-studio" class="inst-nav-btn" title="Calendar &amp; Diagonal Spread Engine">
-            <span class="inst-nav-icon">📅</span> <span class="nav-label">Calendar Studio</span>
-          </a>
-        </div>
-
-        <!-- 6. FII / DII SMART MONEY -->
-        <div class="inst-nav-item">
-          <a href="/fii-dii" class="inst-nav-btn" title="Institutional Capital Flow &amp; Smart Money">
-            <span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII / DII Flow</span>
-          </a>
-        </div>
-
-        <!-- 7. CASH DELIVERY -->
-        <div class="inst-nav-item">
-          <a href="/delivery" class="inst-nav-btn" title="Cash Market Delivery Absorption">
-            <span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery</span>
-          </a>
-        </div>
-
-        <!-- 8. MTF ANALYTICS -->
-        <div class="inst-nav-item">
-          <a href="/mtf" class="inst-nav-btn" title="Margin Trading Facility Book Tracker">
-            <span class="inst-nav-icon">💼</span> <span class="nav-label">MTF Book</span>
-          </a>
-        </div>
-      </nav>
-
-      <!-- Right Header Utilities: Clock, Status, Theme Switcher & Main Link -->
-      <div class="page2-nav-right" style="margin-left:auto; display:flex; align-items:center; gap:10px;">
-        <div id="roLiveClock" class="inst-live-clock" style="font-family:var(--ro-font-mono); font-size:12px; font-weight:700; color:var(--ro-text-muted);">--:--:-- IST</div>
-        <div class="inst-status-badge" style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:12px; background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.3);">
-          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
-          <span>NSE DERIVATIVES EOD</span>
-        </div>
-        <!-- Theme Toggle Button -->
-        <button id="roThemeToggleBtn" type="button" class="ro-action-btn" title="Toggle Day (Light) / Night (Dark) Mode" style="font-size:12px; padding:5px 11px;">
-          <span id="roThemeIcon">☀️</span> <span id="roThemeText">Light Mode</span>
-        </button>
-        <a href="/" class="ro-action-btn" style="text-decoration:none;" title="Go to Main Institutional Terminal">
-          <span>⬅</span> <span>Terminal</span>
         </a>
+        <div class="inst-terminal-tag">
+          <span class="inst-tag-pulse"></span>
+          <span class="inst-tag-text">QUANT TERMINAL</span>
+        </div>
+      </div>
+
+      <!-- Center-Left: Global Search & Multi-Desk Jump Trigger (Ctrl+K or /) -->
+      <div class="inst-global-search-trigger" id="globalSearchTrigger" onclick="location.href='/?search=1'" title="Search any Stock or Index (Ctrl+K or /)">
+        <span class="gsearch-icon">🔍</span>
+        <span class="gsearch-text">Search any Stock or Index (e.g. RELIANCE, NIFTY 50)...</span>
+        <div class="gsearch-kbd"><kbd>Ctrl</kbd><kbd>K</kbd></div>
+      </div>
+
+      <!-- Center: Live Indian Market Clock & Session Status -->
+      <div class="inst-market-clock-wrap" id="topMarketClockWrap">
+        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE / BSE Regular Trading Session (09:15 - 15:30 IST)">
+          <span class="market-dot" id="marketDot"></span>
+          <span id="marketStatusText">NSE LIVE</span>
+        </div>
+        <div class="inst-clock-pill" title="Indian Standard Time (IST)">
+          <span class="clock-icon">🕒</span>
+          <span id="instLiveClock" class="clock-digits">--:--:-- IST</span>
+        </div>
+      </div>
+
+      <!-- Right: System Health, Refresh, Theme Toggle -->
+      <div class="inst-right-controls">
+        <div class="status inst-api-status" id="apiStatus" title="Broker Gateway Connection State">Connected</div>
+        <button id="btnTopRefresh" type="button" class="inst-util-btn" onclick="location.reload();" title="Refresh Live Market Data">
+          <span class="util-icon">🔄</span>
+          <span class="util-text">Refresh</span>
+        </button>
+        <button id="themeToggleBtn" type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark / Light Theme">
+          <span id="themeToggleIcon">🌙</span>
+          <span class="theme-btn-text" id="themeToggleText">Dark</span>
+        </button>
       </div>
     </div>
+
+    <!-- Row 2: Institutional Mega-Menu Navigation -->
+    <nav class="inst-nav" aria-label="Main Navigation" id="mainInstNav">
+
+      <!-- 1. DASHBOARD / HOMEPAGE -->
+      <div class="inst-nav-item">
+        <a href="/" class="inst-nav-btn" id="navDashboard">
+          <span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+
+      <!-- 2. FUTURES DASHBOARD (ACTIVE) -->
+      <div class="inst-nav-item has-dropdown">
+        <a href="/futures" class="inst-nav-btn active" id="navFutures">
+          <span class="inst-nav-icon">📈</span> <span class="nav-label">Futures Dashboard</span>
+          <span class="inst-nav-arrow">▾</span>
+        </a>
+        <div class="inst-dropdown inst-dropdown-md">
+          <div class="inst-dropdown-col">
+            <span class="inst-dropdown-header">Futures Market &amp; Structure</span>
+            <a href="/futures" class="inst-dd-item">
+              <span class="dd-icon">📊</span>
+              <div class="dd-text">
+                <span class="dd-title">Future Marketwatch</span>
+                <span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span>
+              </div>
+            </a>
+            <a href="/futures/indices" class="inst-dd-item">
+              <span class="dd-icon">📈</span>
+              <div class="dd-text">
+                <span class="dd-title">Future Index Term Structure</span>
+                <span class="dd-sub">Cash-futures basis, cost of carry &amp; index term structure</span>
+              </div>
+            </a>
+            <a href="/futures/buildup" class="inst-dd-item">
+              <span class="dd-icon">⚡</span>
+              <div class="dd-text">
+                <span class="dd-title">Future Buildup</span>
+                <span class="dd-sub">Long/short buildup quadrants &amp; unwinding signals</span>
+              </div>
+            </a>
+          </div>
+          <div class="inst-dropdown-col">
+            <span class="inst-dropdown-header">F&amp;O Analytics &amp; Risk</span>
+            <a href="/futures/heatmap" class="inst-dd-item">
+              <span class="dd-icon">🗺️</span>
+              <div class="dd-text">
+                <span class="dd-title">Future Heatmap</span>
+                <span class="dd-sub">Visual sector heatmap &amp; momentum distribution</span>
+              </div>
+            </a>
+            <a href="/futures/mwpl" class="inst-dd-item">
+              <span class="dd-icon">🚫</span>
+              <div class="dd-text">
+                <span class="dd-title">MWPL and Ban Radar</span>
+                <span class="dd-sub">Market-Wide Position Limit tracker &amp; ban alert zone</span>
+              </div>
+            </a>
+            <a href="/futures/rollover" class="inst-dd-item active" style="background:rgba(37,99,235,0.08);">
+              <span class="dd-icon">🔄</span>
+              <div class="dd-text">
+                <span class="dd-title" style="color:#2563eb; font-weight:700;">Futures Rollover Matrix <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
+                <span class="dd-sub">Expiry rollover %, 3M/6M averages &amp; historical velocity</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. GLOBAL MARKETS & MACRO (DIRECTLY AFTER FUTURES) -->
+      <div class="inst-nav-item">
+        <a href="/global-markets" class="inst-nav-btn inst-nav-btn-blue" id="navGlobalMarkets" title="GIFT NIFTY &amp; Real-time World Indices">
+          <span class="inst-nav-icon">🌐</span> <span class="nav-label">Global Markets</span>
+          <span class="p2-badge p2-badge-blue">MACRO</span>
+        </a>
+      </div>
+
+      <!-- 4. OPTIONS (MAIN MENU WITH SUBMENUS) -->
+      <div class="inst-nav-item has-dropdown">
+        <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight" id="navOptions">
+          <span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span>
+          <span class="inst-nav-arrow">▾</span>
+        </a>
+        <div class="inst-dropdown inst-dropdown-md">
+          <div class="inst-dropdown-col">
+            <span class="inst-dropdown-header">Derivatives Suite</span>
+            <a href="/option-chain-pro" class="inst-dd-item">
+              <span class="dd-icon">⚡</span>
+              <div class="dd-text">
+                <span class="dd-title">Option Chain Pro <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
+                <span class="dd-sub">Multi-broker live chain, Greeks, PCR &amp; IV skew</span>
+              </div>
+            </a>
+            <a href="/straddle" class="inst-dd-item" style="text-decoration:none; color:inherit;">
+              <span class="dd-icon">📉</span>
+              <div class="dd-text">
+                <span class="dd-title">Straddle <span class="p2-badge p2-badge-rose" id="navStraddleValueBadge" style="margin-left:4px;">₹--</span></span>
+                <span class="dd-sub">Live options straddle premium decay, spot &amp; synthetic curve</span>
+              </div>
+            </a>
+          </div>
+          <div class="inst-dropdown-col">
+            <span class="inst-dropdown-header">Breadth Analytics</span>
+            <a href="/breadth-contribution" class="inst-dd-item" style="text-decoration:none; color:inherit;">
+              <span class="dd-icon">📊</span>
+              <div class="dd-text">
+                <span class="dd-title">Market Breadth and Contribution <span class="p2-badge p2-badge-cyan" style="margin-left:4px;">LIVE</span></span>
+                <span class="dd-sub">Intraday breadth advance/decline &amp; stock point impact</span>
+              </div>
+            </a>
+            <a href="/market-breadth" class="inst-dd-item">
+              <span class="dd-icon">📉</span>
+              <div class="dd-text">
+                <span class="dd-title">Market Breadth with Advance Decline</span>
+                <span class="dd-sub">Point &amp; Figure breadth matrices &amp; distribution models</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. FII / DII DESK (TOP-LEVEL MENU) -->
+      <div class="inst-nav-item">
+        <a href="/fii-dii" class="inst-nav-btn" id="navFiiDii" title="Institutional Cash &amp; Derivatives Positioning">
+          <span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII / DII Desk</span>
+        </a>
+      </div>
+
+      <!-- 6. DELIVERY DESK (TOP-LEVEL MENU) -->
+      <div class="inst-nav-item">
+        <a href="/delivery" class="inst-nav-btn" id="navDelivery" title="High Conviction Delivery Volume &amp; Accumulation">
+          <span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery Desk</span>
+        </a>
+      </div>
+
+      <!-- 7. MTF DESK (TOP-LEVEL MENU) -->
+      <div class="inst-nav-item">
+        <a href="/mtf" class="inst-nav-btn" id="navMtf" title="Margin Trading Facility Broker Leverage">
+          <span class="inst-nav-icon">💳</span> <span class="nav-label">MTF Desk</span>
+        </a>
+      </div>
+
+    </nav>
   </header>
 
   <!-- ====================================================================
@@ -1065,32 +1188,51 @@
         refreshTimer: null
       };
 
-      // --- Digital IST Clock ---
+      // --- Digital IST Clock & Market Status ---
       function updateClock() {
-        const el = document.getElementById('roLiveClock');
-        if (!el) return;
         const now = new Date();
         const ist = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
         const h = String(ist.getHours()).padStart(2, '0');
         const m = String(ist.getMinutes()).padStart(2, '0');
         const s = String(ist.getSeconds()).padStart(2, '0');
-        el.textContent = `${h}:${m}:${s} IST`;
+        const timeStr = `${h}:${m}:${s} IST`;
+
+        const elClock = document.getElementById('instLiveClock') || document.getElementById('roLiveClock');
+        if (elClock) elClock.textContent = timeStr;
+
+        const day = ist.getDay();
+        const mins = ist.getHours() * 60 + ist.getMinutes();
+        const isMarketOpen = day >= 1 && day <= 5 && mins >= 555 && mins < 930;
+        const pill = document.getElementById('topMarketStatusPill');
+        const statusText = document.getElementById('marketStatusText');
+        if (pill && statusText) {
+          if (isMarketOpen) {
+            pill.className = "inst-market-pill open";
+            statusText.textContent = "NSE LIVE";
+          } else {
+            pill.className = "inst-market-pill closed";
+            statusText.textContent = "MARKET CLOSED";
+          }
+        }
       }
       setInterval(updateClock, 1000);
       updateClock();
 
       // --- Theme Controller ---
+      function toggleTheme() {
+        const cur = document.documentElement.getAttribute('data-theme') || 'light';
+        const next = cur === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+      }
+      window.toggleTheme = toggleTheme;
+
       function initTheme() {
         const saved = localStorage.getItem('breadth_theme') || 'light';
         applyTheme(saved);
 
-        const btn = document.getElementById('roThemeToggleBtn');
+        const btn = document.getElementById('themeToggleBtn') || document.getElementById('roThemeToggleBtn');
         if (btn) {
-          btn.addEventListener('click', () => {
-            const cur = document.documentElement.getAttribute('data-theme') || 'light';
-            const next = cur === 'dark' ? 'light' : 'dark';
-            applyTheme(next);
-          });
+          btn.addEventListener('click', toggleTheme);
         }
       }
 
@@ -1099,10 +1241,10 @@
         document.body.setAttribute('data-theme', theme);
         try { localStorage.setItem('breadth_theme', theme); } catch(e) {}
         
-        const icon = document.getElementById('roThemeIcon');
-        const text = document.getElementById('roThemeText');
+        const icon = document.getElementById('themeToggleIcon') || document.getElementById('roThemeIcon');
+        const text = document.getElementById('themeToggleText') || document.getElementById('roThemeText');
         if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
-        if (text) text.textContent = theme === 'dark' ? 'Day Mode' : 'Night Mode';
+        if (text) text.textContent = theme === 'dark' ? 'Day' : 'Dark';
       }
 
       // --- Fetch Data ---

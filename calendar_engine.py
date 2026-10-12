@@ -603,8 +603,10 @@ def get_calendar_matrix(
         vol_spread = round(f_iv - n_iv, 1)
         vega_spread = round(f_vega - n_vega, 1)
 
-        s1_str = str(int(s1)) if s1.is_integer() else f"{s1:.1f}"
-        s2_str = str(int(s2)) if s2.is_integer() else f"{s2:.1f}"
+        s1_f = float(s1)
+        s2_f = float(s2)
+        s1_str = str(int(s1_f)) if s1_f.is_integer() else f"{s1_f:.1f}"
+        s2_str = str(int(s2_f)) if s2_f.is_integer() else f"{s2_f:.1f}"
 
         rows.append({
             "t1": t1,

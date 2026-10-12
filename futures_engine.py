@@ -1553,11 +1553,15 @@ def _load_official_rollover_data() -> dict:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Error loading official rollover data: {e}")
-    return {"months": [], "records": {}}
+    return {
+        "months": ["SEP 2026", "AUG 2026", "JUL 2026", "JUN 2026", "MAY 2026", "APR 2026"],
+        "records": {}
+    }
 
 _OFFICIAL_ROLLOVER_DATA = _load_official_rollover_data()
 if _OFFICIAL_ROLLOVER_DATA.get("months"):
     ROLLOVER_MONTHS = _OFFICIAL_ROLLOVER_DATA["months"]
+
 
 
 _LIVE_ROLLOVER_MAP: dict[str, float] = {}
@@ -1678,6 +1682,10 @@ def get_active_fno_symbols() -> set[str]:
     if not active:
         bmap, _ = _load_latest_bhavcopy_data()
         active = set(bmap.keys())
+
+    # Fallback to authoritative FO_UNIVERSE if cache is empty
+    if not active:
+        active = {item["symbol"].upper() for item in FO_UNIVERSE}
 
     if active:
         _ACTIVE_FNO_SYMBOLS_CACHE["ts"] = now
@@ -1836,6 +1844,14 @@ def get_futures_rollover_matrix(
                     active_vals.append(v)
                     if m == latest_month:
                         all_latest_vals.append(v)
+
+            if curr_ro and curr_ro > 0:
+                if not isinstance(monthly_map.get(latest_month), (int, float)):
+                    monthly_map[latest_month] = curr_ro
+                    active_vals.insert(0, curr_ro)
+                    all_latest_vals.append(curr_ro)
+            elif isinstance(monthly_map.get(latest_month), (int, float)):
+                curr_ro = monthly_map[latest_month]
 
             # Calculate 3M Average
             m3_vals = [

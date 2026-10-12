@@ -1,0 +1,4800 @@
+{
+  "ok": true,
+  "date": "2026-10-09",
+  "dateDisplay": "09-Oct-2026",
+  "totalSymbols": 218,
+  "source": "NSE Official Bhavcopy (BhavCopy_NSE_FO_20261009.csv)",
+  "isExpiryDay": false,
+  "expiryMonth": "",
+  "updatedAt": "2026-10-12 06:08:37 IST",
+  "records": {
+    "ABCAPITAL": {
+      "symbol": "ABCAPITAL",
+      "rolloverPct": 1.9706,
+      "totalOi": 37913000.0,
+      "rollOi": 747100.0,
+      "nearOi": 37165900.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 37165900.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 703700.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 43400.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ADANIENSOL": {
+      "symbol": "ADANIENSOL",
+      "rolloverPct": 1.4024,
+      "totalOi": 24065775.0,
+      "rollOi": 337500.0,
+      "nearOi": 23728275.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 23728275.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 328725.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 8775.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "GODFRYPHLP": {
+      "symbol": "GODFRYPHLP",
+      "rolloverPct": 5.7461,
+      "totalOi": 1507550.0,
+      "rollOi": 86625.0,
+      "nearOi": 1420925.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 1420925.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 83600.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 3025.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "INDHOTEL": {
+      "symbol": "INDHOTEL",
+      "rolloverPct": 8.9581,
+      "totalOi": 35264000.0,
+      "rollOi": 3159000.0,
+      "nearOi": 32105000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 32105000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 3138000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 21000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "INDIANB": {
+      "symbol": "INDIANB",
+      "rolloverPct": 1.3238,
+      "totalOi": 10198000.0,
+      "rollOi": 135000.0,
+      "nearOi": 10063000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 10063000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 127000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 8000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "INOXWIND": {
+      "symbol": "INOXWIND",
+      "rolloverPct": 4.4658,
+      "totalOi": 117945600.0,
+      "rollOi": 5267200.0,
+      "nearOi": 112678400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 112678400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 4928000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 339200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "JINDALSTEL": {
+      "symbol": "JINDALSTEL",
+      "rolloverPct": 8.5708,
+      "totalOi": 17216875.0,
+      "rollOi": 1475625.0,
+      "nearOi": 15741250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 15741250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1454375.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 21250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MPHASIS": {
+      "symbol": "MPHASIS",
+      "rolloverPct": 0.6309,
+      "totalOi": 5666650.0,
+      "rollOi": 35750.0,
+      "nearOi": 5630900.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5630900.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 34925.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 825.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NESTLEIND": {
+      "symbol": "NESTLEIND",
+      "rolloverPct": 4.4678,
+      "totalOi": 11997000.0,
+      "rollOi": 536000.0,
+      "nearOi": 11461000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 11461000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 531000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 5000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NTPC": {
+      "symbol": "NTPC",
+      "rolloverPct": 4.0303,
+      "totalOi": 85416000.0,
+      "rollOi": 3442500.0,
+      "nearOi": 81973500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 81973500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 3357000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 85500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PRESTIGE": {
+      "symbol": "PRESTIGE",
+      "rolloverPct": 0.9952,
+      "totalOi": 5968800.0,
+      "rollOi": 59400.0,
+      "nearOi": 5909400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5909400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 43650.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 15750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "RBLBANK": {
+      "symbol": "RBLBANK",
+      "rolloverPct": 1.7026,
+      "totalOi": 41957625.0,
+      "rollOi": 714375.0,
+      "nearOi": 41243250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 41243250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 676275.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 38100.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SHREECEM": {
+      "symbol": "SHREECEM",
+      "rolloverPct": 3.5095,
+      "totalOi": 383250.0,
+      "rollOi": 13450.0,
+      "nearOi": 369800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 369800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 12950.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TATAELXSI": {
+      "symbol": "TATAELXSI",
+      "rolloverPct": 7.4207,
+      "totalOi": 2513250.0,
+      "rollOi": 186500.0,
+      "nearOi": 2326750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2326750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 177750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 8750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TATASTEEL": {
+      "symbol": "TATASTEEL",
+      "rolloverPct": 3.8537,
+      "totalOi": 322550250.0,
+      "rollOi": 12430000.0,
+      "nearOi": 310120250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 310120250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 9803750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 2626250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TCS": {
+      "symbol": "TCS",
+      "rolloverPct": 3.973,
+      "totalOi": 26600400.0,
+      "rollOi": 1056825.0,
+      "nearOi": 25543575.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 25543575.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 932175.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 124650.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ADANIPOWER": {
+      "symbol": "ADANIPOWER",
+      "rolloverPct": 4.5063,
+      "totalOi": 232869350.0,
+      "rollOi": 10493800.0,
+      "nearOi": 222375550.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 222375550.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 8157900.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 2335900.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "AMBUJACEM": {
+      "symbol": "AMBUJACEM",
+      "rolloverPct": 2.1803,
+      "totalOi": 95160000.0,
+      "rollOi": 2074800.0,
+      "nearOi": 93085200.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 93085200.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2038800.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 36000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "APLAPOLLO": {
+      "symbol": "APLAPOLLO",
+      "rolloverPct": 3.0851,
+      "totalOi": 16495500.0,
+      "rollOi": 508900.0,
+      "nearOi": 15986600.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 15986600.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 493500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 15400.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ATHERENERG": {
+      "symbol": "ATHERENERG",
+      "rolloverPct": 7.0337,
+      "totalOi": 6845625.0,
+      "rollOi": 481500.0,
+      "nearOi": 6364125.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6364125.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 453750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 27750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "AUROPHARMA": {
+      "symbol": "AUROPHARMA",
+      "rolloverPct": 0.6859,
+      "totalOi": 12668700.0,
+      "rollOi": 86900.0,
+      "nearOi": 12581800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 12581800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 77550.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 9350.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BANKNIFTY": {
+      "symbol": "BANKNIFTY",
+      "rolloverPct": 8.2188,
+      "totalOi": 2553660.0,
+      "rollOi": 209880.0,
+      "nearOi": 2343780.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2343780.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 172290.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 37590.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BSE": {
+      "symbol": "BSE",
+      "rolloverPct": 6.3017,
+      "totalOi": 13117000.0,
+      "rollOi": 826600.0,
+      "nearOi": 12290400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 12290400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 717000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 109600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "CDSL": {
+      "symbol": "CDSL",
+      "rolloverPct": 5.6767,
+      "totalOi": 12116300.0,
+      "rollOi": 687800.0,
+      "nearOi": 11428500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 11428500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 635075.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 52725.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "CONCOR": {
+      "symbol": "CONCOR",
+      "rolloverPct": 6.7813,
+      "totalOi": 25290000.0,
+      "rollOi": 1715000.0,
+      "nearOi": 23575000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 23575000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1645000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 70000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "EICHERMOT": {
+      "symbol": "EICHERMOT",
+      "rolloverPct": 2.0401,
+      "totalOi": 3372400.0,
+      "rollOi": 68800.0,
+      "nearOi": 3303600.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3303600.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 63800.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 5000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "INDIGO": {
+      "symbol": "INDIGO",
+      "rolloverPct": 1.8073,
+      "totalOi": 6257850.0,
+      "rollOi": 113100.0,
+      "nearOi": 6144750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6144750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 93900.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 19200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "JIOFIN": {
+      "symbol": "JIOFIN",
+      "rolloverPct": 11.3918,
+      "totalOi": 228732550.0,
+      "rollOi": 26056800.0,
+      "nearOi": 202675750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 202675750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 24369500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1687300.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "KAYNES": {
+      "symbol": "KAYNES",
+      "rolloverPct": 11.6529,
+      "totalOi": 4789800.0,
+      "rollOi": 558150.0,
+      "nearOi": 4231650.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 4231650.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 528300.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 29850.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "KEI": {
+      "symbol": "KEI",
+      "rolloverPct": 2.464,
+      "totalOi": 2237200.0,
+      "rollOi": 55125.0,
+      "nearOi": 2182075.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2182075.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 52850.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 2275.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MFSL": {
+      "symbol": "MFSL",
+      "rolloverPct": 0.7976,
+      "totalOi": 6570000.0,
+      "rollOi": 52400.0,
+      "nearOi": 6517600.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6517600.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 45200.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 7200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NYKAA": {
+      "symbol": "NYKAA",
+      "rolloverPct": 1.9372,
+      "totalOi": 34359375.0,
+      "rollOi": 665625.0,
+      "nearOi": 33693750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 33693750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 578125.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 87500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PAGEIND": {
+      "symbol": "PAGEIND",
+      "rolloverPct": 1.1494,
+      "totalOi": 238380.0,
+      "rollOi": 2740.0,
+      "nearOi": 235640.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 235640.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2640.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 100.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PERSISTENT": {
+      "symbol": "PERSISTENT",
+      "rolloverPct": 2.4777,
+      "totalOi": 3178375.0,
+      "rollOi": 78750.0,
+      "nearOi": 3099625.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3099625.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 70625.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 8125.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PNBHOUSING": {
+      "symbol": "PNBHOUSING",
+      "rolloverPct": 0.6714,
+      "totalOi": 10358400.0,
+      "rollOi": 69550.0,
+      "nearOi": 10288850.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 10288850.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 61750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 7800.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SBILIFE": {
+      "symbol": "SBILIFE",
+      "rolloverPct": 3.5801,
+      "totalOi": 7845375.0,
+      "rollOi": 280875.0,
+      "nearOi": 7564500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 7564500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 273750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 7125.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TIINDIA": {
+      "symbol": "TIINDIA",
+      "rolloverPct": 2.7148,
+      "totalOi": 3256200.0,
+      "rollOi": 88400.0,
+      "nearOi": 3167800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3167800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 77600.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 10800.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TITAN": {
+      "symbol": "TITAN",
+      "rolloverPct": 9.0836,
+      "totalOi": 6062875.0,
+      "rollOi": 550725.0,
+      "nearOi": 5512150.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5512150.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 501200.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 49525.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TRENT": {
+      "symbol": "TRENT",
+      "rolloverPct": 3.2669,
+      "totalOi": 8595225.0,
+      "rollOi": 280800.0,
+      "nearOi": 8314425.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 8314425.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 244575.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 36225.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "UNIONBANK": {
+      "symbol": "UNIONBANK",
+      "rolloverPct": 11.1485,
+      "totalOi": 102483000.0,
+      "rollOi": 11425350.0,
+      "nearOi": 91057650.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 91057650.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 11323575.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 101775.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "YESBANK": {
+      "symbol": "YESBANK",
+      "rolloverPct": 7.2808,
+      "totalOi": 1272487600.0,
+      "rollOi": 92646900.0,
+      "nearOi": 1179840700.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 1179840700.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 86333600.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 6313300.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ABB": {
+      "symbol": "ABB",
+      "rolloverPct": 2.8547,
+      "totalOi": 1620125.0,
+      "rollOi": 46250.0,
+      "nearOi": 1573875.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 1573875.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 41750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 4500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BDL": {
+      "symbol": "BDL",
+      "rolloverPct": 10.971,
+      "totalOi": 8022725.0,
+      "rollOi": 880175.0,
+      "nearOi": 7142550.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 7142550.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 829175.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 51000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BEL": {
+      "symbol": "BEL",
+      "rolloverPct": 15.4438,
+      "totalOi": 97750725.0,
+      "rollOi": 15096450.0,
+      "nearOi": 82654275.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 82654275.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 13831050.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1265400.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BHEL": {
+      "symbol": "BHEL",
+      "rolloverPct": 6.1446,
+      "totalOi": 82535250.0,
+      "rollOi": 5071500.0,
+      "nearOi": 77463750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 77463750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 4522875.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 548625.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "CGPOWER": {
+      "symbol": "CGPOWER",
+      "rolloverPct": 2.8157,
+      "totalOi": 18293700.0,
+      "rollOi": 515100.0,
+      "nearOi": 17778600.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 17778600.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 490450.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 24650.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "GMRAIRPORT": {
+      "symbol": "GMRAIRPORT",
+      "rolloverPct": 2.3059,
+      "totalOi": 154872900.0,
+      "rollOi": 3571200.0,
+      "nearOi": 151301700.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 151301700.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 3285225.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 285975.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HAL": {
+      "symbol": "HAL",
+      "rolloverPct": 8.3204,
+      "totalOi": 5502150.0,
+      "rollOi": 457800.0,
+      "nearOi": 5044350.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5044350.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 431100.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 26700.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HCLTECH": {
+      "symbol": "HCLTECH",
+      "rolloverPct": 1.4248,
+      "totalOi": 26081200.0,
+      "rollOi": 371600.0,
+      "nearOi": 25709600.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 25709600.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 338400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 33200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "JUBLFOOD": {
+      "symbol": "JUBLFOOD",
+      "rolloverPct": 5.3985,
+      "totalOi": 21140000.0,
+      "rollOi": 1141250.0,
+      "nearOi": 19998750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 19998750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 986250.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 155000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "OBEROIRLTY": {
+      "symbol": "OBEROIRLTY",
+      "rolloverPct": 1.0137,
+      "totalOi": 3867150.0,
+      "rollOi": 39200.0,
+      "nearOi": 3827950.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3827950.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 33600.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 5600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ONGC": {
+      "symbol": "ONGC",
+      "rolloverPct": 4.3219,
+      "totalOi": 62993250.0,
+      "rollOi": 2722500.0,
+      "nearOi": 60270750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 60270750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2416500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 306000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PNB": {
+      "symbol": "PNB",
+      "rolloverPct": 7.0136,
+      "totalOi": 268848000.0,
+      "rollOi": 18856000.0,
+      "nearOi": 249992000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 249992000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 18296000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 560000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "POWERGRID": {
+      "symbol": "POWERGRID",
+      "rolloverPct": 4.6257,
+      "totalOi": 68595700.0,
+      "rollOi": 3173000.0,
+      "nearOi": 65422700.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 65422700.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 3057100.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 115900.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SAGILITY": {
+      "symbol": "SAGILITY",
+      "rolloverPct": 2.4645,
+      "totalOi": 98844000.0,
+      "rollOi": 2436000.0,
+      "nearOi": 96408000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 96408000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2256000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 180000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SONACOMS": {
+      "symbol": "SONACOMS",
+      "rolloverPct": 3.4562,
+      "totalOi": 16091600.0,
+      "rollOi": 556150.0,
+      "nearOi": 15535450.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 15535450.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 526750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 29400.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "AXISBANK": {
+      "symbol": "AXISBANK",
+      "rolloverPct": 10.2612,
+      "totalOi": 96747500.0,
+      "rollOi": 9927500.0,
+      "nearOi": 86820000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 86820000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 6386875.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 3540625.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "COCHINSHIP": {
+      "symbol": "COCHINSHIP",
+      "rolloverPct": 4.7953,
+      "totalOi": 6448000.0,
+      "rollOi": 309200.0,
+      "nearOi": 6138800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6138800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 266800.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 42400.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ETERNAL": {
+      "symbol": "ETERNAL",
+      "rolloverPct": 3.2789,
+      "totalOi": 140742150.0,
+      "rollOi": 4614775.0,
+      "nearOi": 136127375.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 136127375.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 4074000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 540775.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "GVT&D": {
+      "symbol": "GVT&D",
+      "rolloverPct": 2.3249,
+      "totalOi": 3070000.0,
+      "rollOi": 71375.0,
+      "nearOi": 2998625.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2998625.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 68125.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 3250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HINDPETRO": {
+      "symbol": "HINDPETRO",
+      "rolloverPct": 3.9752,
+      "totalOi": 48648600.0,
+      "rollOi": 1933875.0,
+      "nearOi": 46714725.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 46714725.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1826550.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 107325.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "IDFCFIRSTB": {
+      "symbol": "IDFCFIRSTB",
+      "rolloverPct": 5.5178,
+      "totalOi": 415353050.0,
+      "rollOi": 22918525.0,
+      "nearOi": 392434525.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 392434525.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 21378875.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1539650.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "LODHA": {
+      "symbol": "LODHA",
+      "rolloverPct": 3.6164,
+      "totalOi": 7500625.0,
+      "rollOi": 271250.0,
+      "nearOi": 7229375.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 7229375.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 261250.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 10000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TVSMOTOR": {
+      "symbol": "TVSMOTOR",
+      "rolloverPct": 1.8125,
+      "totalOi": 7560000.0,
+      "rollOi": 137025.0,
+      "nearOi": 7422975.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 7422975.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 130025.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 7000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BAJAJ-AUTO": {
+      "symbol": "BAJAJ-AUTO",
+      "rolloverPct": 2.3373,
+      "totalOi": 2028000.0,
+      "rollOi": 47400.0,
+      "nearOi": 1980600.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 1980600.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 40875.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 6525.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BOSCHLTD": {
+      "symbol": "BOSCHLTD",
+      "rolloverPct": 2.6289,
+      "totalOi": 218725.0,
+      "rollOi": 5750.0,
+      "nearOi": 212975.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 212975.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 5400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 350.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "CIPLA": {
+      "symbol": "CIPLA",
+      "rolloverPct": 16.3716,
+      "totalOi": 10056775.0,
+      "rollOi": 1646450.0,
+      "nearOi": 8410325.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 8410325.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1640925.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 5525.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "DLF": {
+      "symbol": "DLF",
+      "rolloverPct": 1.3102,
+      "totalOi": 38500650.0,
+      "rollOi": 504450.0,
+      "nearOi": 37996200.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 37996200.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 471200.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 33250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "DRREDDY": {
+      "symbol": "DRREDDY",
+      "rolloverPct": 6.8658,
+      "totalOi": 22266250.0,
+      "rollOi": 1528750.0,
+      "nearOi": 20737500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 20737500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1510625.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 18125.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "GODREJPROP": {
+      "symbol": "GODREJPROP",
+      "rolloverPct": 3.3778,
+      "totalOi": 9881300.0,
+      "rollOi": 333775.0,
+      "nearOi": 9547525.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 9547525.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 315250.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 18525.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "KOTAKBANK": {
+      "symbol": "KOTAKBANK",
+      "rolloverPct": 9.804,
+      "totalOi": 175112000.0,
+      "rollOi": 17168000.0,
+      "nearOi": 157944000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 157944000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 16332000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 836000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "M&M": {
+      "symbol": "M&M",
+      "rolloverPct": 17.5224,
+      "totalOi": 14123600.0,
+      "rollOi": 2474800.0,
+      "nearOi": 11648800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 11648800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2239600.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 235200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NATIONALUM": {
+      "symbol": "NATIONALUM",
+      "rolloverPct": 4.3043,
+      "totalOi": 42123750.0,
+      "rollOi": 1813125.0,
+      "nearOi": 40310625.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 40310625.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1653750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 159375.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NHPC": {
+      "symbol": "NHPC",
+      "rolloverPct": 3.3054,
+      "totalOi": 125947900.0,
+      "rollOi": 4163050.0,
+      "nearOi": 121784850.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 121784850.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 3780800.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 382250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PAYTM": {
+      "symbol": "PAYTM",
+      "rolloverPct": 5.0446,
+      "totalOi": 15765850.0,
+      "rollOi": 795325.0,
+      "nearOi": 14970525.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 14970525.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 756900.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 38425.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PGEL": {
+      "symbol": "PGEL",
+      "rolloverPct": 1.5884,
+      "totalOi": 13157500.0,
+      "rollOi": 209000.0,
+      "nearOi": 12948500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 12948500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 191900.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 17100.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TECHM": {
+      "symbol": "TECHM",
+      "rolloverPct": 15.7398,
+      "totalOi": 17359800.0,
+      "rollOi": 2732400.0,
+      "nearOi": 14627400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 14627400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2722800.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 9600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ULTRACEMCO": {
+      "symbol": "ULTRACEMCO",
+      "rolloverPct": 7.3289,
+      "totalOi": 1984600.0,
+      "rollOi": 145450.0,
+      "nearOi": 1839150.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 1839150.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 144250.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BANKINDIA": {
+      "symbol": "BANKINDIA",
+      "rolloverPct": 3.7662,
+      "totalOi": 68068000.0,
+      "rollOi": 2563600.0,
+      "nearOi": 65504400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 65504400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2506400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 57200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BIOCON": {
+      "symbol": "BIOCON",
+      "rolloverPct": 2.7428,
+      "totalOi": 54415000.0,
+      "rollOi": 1492500.0,
+      "nearOi": 52922500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 52922500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1367500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 125000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "COALINDIA": {
+      "symbol": "COALINDIA",
+      "rolloverPct": 2.1859,
+      "totalOi": 88317000.0,
+      "rollOi": 1930500.0,
+      "nearOi": 86386500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 86386500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1792800.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 137700.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "COLPAL": {
+      "symbol": "COLPAL",
+      "rolloverPct": 8.0193,
+      "totalOi": 6152025.0,
+      "rollOi": 493350.0,
+      "nearOi": 5658675.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5658675.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 483175.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 10175.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "FEDERALBNK": {
+      "symbol": "FEDERALBNK",
+      "rolloverPct": 12.3187,
+      "totalOi": 93435000.0,
+      "rollOi": 11510000.0,
+      "nearOi": 81925000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 81925000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 11190000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 320000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "FORCEMOT": {
+      "symbol": "FORCEMOT",
+      "rolloverPct": 8.1053,
+      "totalOi": 360875.0,
+      "rollOi": 29250.0,
+      "nearOi": 331625.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 331625.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 27400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1850.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "GODREJCP": {
+      "symbol": "GODREJCP",
+      "rolloverPct": 3.9859,
+      "totalOi": 9922500.0,
+      "rollOi": 395500.0,
+      "nearOi": 9527000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 9527000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 387500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 8000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "KPITTECH": {
+      "symbol": "KPITTECH",
+      "rolloverPct": 8.0053,
+      "totalOi": 11772250.0,
+      "rollOi": 942400.0,
+      "nearOi": 10829850.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 10829850.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 843975.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 98425.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "LT": {
+      "symbol": "LT",
+      "rolloverPct": 12.2826,
+      "totalOi": 13118000.0,
+      "rollOi": 1611225.0,
+      "nearOi": 11506775.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 11506775.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1492050.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 119175.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NMDC": {
+      "symbol": "NMDC",
+      "rolloverPct": 2.206,
+      "totalOi": 365350500.0,
+      "rollOi": 8059500.0,
+      "nearOi": 357291000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 357291000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 7506000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 553500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "OIL": {
+      "symbol": "OIL",
+      "rolloverPct": 2.3114,
+      "totalOi": 13809600.0,
+      "rollOi": 319200.0,
+      "nearOi": 13490400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 13490400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 292600.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 26600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PHOENIXLTD": {
+      "symbol": "PHOENIXLTD",
+      "rolloverPct": 1.7653,
+      "totalOi": 3886050.0,
+      "rollOi": 68600.0,
+      "nearOi": 3817450.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3817450.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 66850.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PIIND": {
+      "symbol": "PIIND",
+      "rolloverPct": 6.6194,
+      "totalOi": 4097800.0,
+      "rollOi": 271250.0,
+      "nearOi": 3826550.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3826550.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 248500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 22750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TATACONSUM": {
+      "symbol": "TATACONSUM",
+      "rolloverPct": 7.5361,
+      "totalOi": 17654450.0,
+      "rollOi": 1330450.0,
+      "nearOi": 16324000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 16324000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1320000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 10450.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "WIPRO": {
+      "symbol": "WIPRO",
+      "rolloverPct": 10.9949,
+      "totalOi": 213126000.0,
+      "rollOi": 23433000.0,
+      "nearOi": 189693000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 189693000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 22431000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1002000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BHARATFORG": {
+      "symbol": "BHARATFORG",
+      "rolloverPct": 1.8077,
+      "totalOi": 8408500.0,
+      "rollOi": 152000.0,
+      "nearOi": 8256500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 8256500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 143500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 8500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "CROMPTON": {
+      "symbol": "CROMPTON",
+      "rolloverPct": 2.8909,
+      "totalOi": 76230400.0,
+      "rollOi": 2203750.0,
+      "nearOi": 74026650.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 74026650.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2107000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 96750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "INDUSTOWER": {
+      "symbol": "INDUSTOWER",
+      "rolloverPct": 3.6046,
+      "totalOi": 87062100.0,
+      "rollOi": 3138200.0,
+      "nearOi": 83923900.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 83923900.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 3060000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 78200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NAM-INDIA": {
+      "symbol": "NAM-INDIA",
+      "rolloverPct": 4.2956,
+      "totalOi": 4059375.0,
+      "rollOi": 174375.0,
+      "nearOi": 3885000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3885000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 172500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1875.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PATANJALI": {
+      "symbol": "PATANJALI",
+      "rolloverPct": 1.8024,
+      "totalOi": 40139425.0,
+      "rollOi": 723475.0,
+      "nearOi": 39415950.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 39415950.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 674025.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 49450.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "POWERINDIA": {
+      "symbol": "POWERINDIA",
+      "rolloverPct": 1.9116,
+      "totalOi": 474725.0,
+      "rollOi": 9075.0,
+      "nearOi": 465650.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 465650.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 8075.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SOLARINDS": {
+      "symbol": "SOLARINDS",
+      "rolloverPct": 9.6329,
+      "totalOi": 960250.0,
+      "rollOi": 92500.0,
+      "nearOi": 867750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 867750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 82700.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 9800.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TATAPOWER": {
+      "symbol": "TATAPOWER",
+      "rolloverPct": 3.0076,
+      "totalOi": 68412450.0,
+      "rollOi": 2057550.0,
+      "nearOi": 66354900.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 66354900.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1919800.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 137750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "VOLTAS": {
+      "symbol": "VOLTAS",
+      "rolloverPct": 3.0908,
+      "totalOi": 11053125.0,
+      "rollOi": 341625.0,
+      "nearOi": 10711500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 10711500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 311625.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 30000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "APOLLOHOSP": {
+      "symbol": "APOLLOHOSP",
+      "rolloverPct": 13.2069,
+      "totalOi": 2504375.0,
+      "rollOi": 330750.0,
+      "nearOi": 2173625.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2173625.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 313125.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 17625.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "DELHIVERY": {
+      "symbol": "DELHIVERY",
+      "rolloverPct": 1.8806,
+      "totalOi": 29128850.0,
+      "rollOi": 547800.0,
+      "nearOi": 28581050.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 28581050.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 524975.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 22825.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "DIXON": {
+      "symbol": "DIXON",
+      "rolloverPct": 7.829,
+      "totalOi": 2714900.0,
+      "rollOi": 212550.0,
+      "nearOi": 2502350.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2502350.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 201900.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 10650.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "FORTIS": {
+      "symbol": "FORTIS",
+      "rolloverPct": 14.292,
+      "totalOi": 12412400.0,
+      "rollOi": 1773975.0,
+      "nearOi": 10638425.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 10638425.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1742200.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 31775.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "GLENMARK": {
+      "symbol": "GLENMARK",
+      "rolloverPct": 0.4193,
+      "totalOi": 11180625.0,
+      "rollOi": 46875.0,
+      "nearOi": 11133750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 11133750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 46125.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HINDUNILVR": {
+      "symbol": "HINDUNILVR",
+      "rolloverPct": 9.579,
+      "totalOi": 17472600.0,
+      "rollOi": 1673700.0,
+      "nearOi": 15798900.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 15798900.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1614300.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 59400.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ICICIPRULI": {
+      "symbol": "ICICIPRULI",
+      "rolloverPct": 6.5487,
+      "totalOi": 19449975.0,
+      "rollOi": 1273725.0,
+      "nearOi": 18176250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 18176250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1204350.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 69375.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "IDEA": {
+      "symbol": "IDEA",
+      "rolloverPct": 4.3731,
+      "totalOi": 6521307525.0,
+      "rollOi": 285185250.0,
+      "nearOi": 6236122275.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6236122275.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 274535475.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 10649775.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NBCC": {
+      "symbol": "NBCC",
+      "rolloverPct": 4.3875,
+      "totalOi": 91260000.0,
+      "rollOi": 4004000.0,
+      "nearOi": 87256000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 87256000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 3685500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 318500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "POLYCAB": {
+      "symbol": "POLYCAB",
+      "rolloverPct": 2.1063,
+      "totalOi": 2362000.0,
+      "rollOi": 49750.0,
+      "nearOi": 2312250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2312250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 46125.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 3625.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ALKEM": {
+      "symbol": "ALKEM",
+      "rolloverPct": 0.7658,
+      "totalOi": 1664875.0,
+      "rollOi": 12750.0,
+      "nearOi": 1652125.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 1652125.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 11875.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 875.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ASHOKLEY": {
+      "symbol": "ASHOKLEY",
+      "rolloverPct": 6.6998,
+      "totalOi": 126795000.0,
+      "rollOi": 8495000.0,
+      "nearOi": 118300000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 118300000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 7505000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 990000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ASTRAL": {
+      "symbol": "ASTRAL",
+      "rolloverPct": 2.2328,
+      "totalOi": 5367750.0,
+      "rollOi": 119850.0,
+      "nearOi": 5247900.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5247900.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 114750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 5100.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BANKBARODA": {
+      "symbol": "BANKBARODA",
+      "rolloverPct": 2.8464,
+      "totalOi": 143866125.0,
+      "rollOi": 4095000.0,
+      "nearOi": 139771125.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 139771125.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 3808350.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 286650.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BHARTIARTL": {
+      "symbol": "BHARTIARTL",
+      "rolloverPct": 14.1729,
+      "totalOi": 57196175.0,
+      "rollOi": 8106350.0,
+      "nearOi": 49089825.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 49089825.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 5076800.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 3029550.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BPCL": {
+      "symbol": "BPCL",
+      "rolloverPct": 2.3055,
+      "totalOi": 41461175.0,
+      "rollOi": 955900.0,
+      "nearOi": 40505275.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 40505275.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 892700.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 63200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "CHOLAFIN": {
+      "symbol": "CHOLAFIN",
+      "rolloverPct": 9.3483,
+      "totalOi": 14721875.0,
+      "rollOi": 1376250.0,
+      "nearOi": 13345625.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 13345625.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1365000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 11250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "CUMMINSIND": {
+      "symbol": "CUMMINSIND",
+      "rolloverPct": 6.3514,
+      "totalOi": 6068000.0,
+      "rollOi": 385400.0,
+      "nearOi": 5682600.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5682600.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 383600.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1800.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "DIVISLAB": {
+      "symbol": "DIVISLAB",
+      "rolloverPct": 11.274,
+      "totalOi": 4802200.0,
+      "rollOi": 541400.0,
+      "nearOi": 4260800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 4260800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 531600.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 9800.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "IEX": {
+      "symbol": "IEX",
+      "rolloverPct": 3.2937,
+      "totalOi": 77129850.0,
+      "rollOi": 2540400.0,
+      "nearOi": 74589450.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 74589450.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2540400.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "INDUSINDBK": {
+      "symbol": "INDUSINDBK",
+      "rolloverPct": 5.6935,
+      "totalOi": 44641800.0,
+      "rollOi": 2541700.0,
+      "nearOi": 42100100.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 42100100.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2311400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 230300.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "JSWENERGY": {
+      "symbol": "JSWENERGY",
+      "rolloverPct": 1.5604,
+      "totalOi": 29347500.0,
+      "rollOi": 457950.0,
+      "nearOi": 28889550.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 28889550.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 420325.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 37625.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "KALYANKJIL": {
+      "symbol": "KALYANKJIL",
+      "rolloverPct": 3.4946,
+      "totalOi": 23101200.0,
+      "rollOi": 807300.0,
+      "nearOi": 22293900.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 22293900.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 679050.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 128250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "LAURUSLABS": {
+      "symbol": "LAURUSLABS",
+      "rolloverPct": 5.4824,
+      "totalOi": 20666900.0,
+      "rollOi": 1133050.0,
+      "nearOi": 19533850.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 19533850.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1053150.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 79900.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "LTF": {
+      "symbol": "LTF",
+      "rolloverPct": 6.8183,
+      "totalOi": 64415250.0,
+      "rollOi": 4392000.0,
+      "nearOi": 60023250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 60023250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 4194000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 198000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MANAPPURAM": {
+      "symbol": "MANAPPURAM",
+      "rolloverPct": 0.9112,
+      "totalOi": 69468000.0,
+      "rollOi": 633000.0,
+      "nearOi": 68835000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 68835000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 618000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 15000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MARICO": {
+      "symbol": "MARICO",
+      "rolloverPct": 0.6353,
+      "totalOi": 17754000.0,
+      "rollOi": 112800.0,
+      "nearOi": 17641200.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 17641200.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 96000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 16800.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MOTHERSON": {
+      "symbol": "MOTHERSON",
+      "rolloverPct": 13.8416,
+      "totalOi": 156265350.0,
+      "rollOi": 21629550.0,
+      "nearOi": 134635800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 134635800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 15362700.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 6266850.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MOTILALOFS": {
+      "symbol": "MOTILALOFS",
+      "rolloverPct": 2.597,
+      "totalOi": 5431200.0,
+      "rollOi": 141050.0,
+      "nearOi": 5290150.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5290150.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 113150.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 27900.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "RELIANCE": {
+      "symbol": "RELIANCE",
+      "rolloverPct": 12.8903,
+      "totalOi": 164798500.0,
+      "rollOi": 21243000.0,
+      "nearOi": 143555500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 143555500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 19527500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1715500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SRF": {
+      "symbol": "SRF",
+      "rolloverPct": 1.5359,
+      "totalOi": 3984600.0,
+      "rollOi": 61200.0,
+      "nearOi": 3923400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3923400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 56400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 4800.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SWIGGY": {
+      "symbol": "SWIGGY",
+      "rolloverPct": 2.9386,
+      "totalOi": 76761325.0,
+      "rollOi": 2255700.0,
+      "nearOi": 74505625.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 74505625.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1965525.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 290175.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "VMM": {
+      "symbol": "VMM",
+      "rolloverPct": 2.9664,
+      "totalOi": 61148800.0,
+      "rollOi": 1813900.0,
+      "nearOi": 59334900.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 59334900.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1585950.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 227950.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ZYDUSLIFE": {
+      "symbol": "ZYDUSLIFE",
+      "rolloverPct": 3.0032,
+      "totalOi": 10458900.0,
+      "rollOi": 314100.0,
+      "nearOi": 10144800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 10144800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 268200.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 45900.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ADANIGREEN": {
+      "symbol": "ADANIGREEN",
+      "rolloverPct": 1.4224,
+      "totalOi": 23410800.0,
+      "rollOi": 333000.0,
+      "nearOi": 23077800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 23077800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 299400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 33600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ADANIPORTS": {
+      "symbol": "ADANIPORTS",
+      "rolloverPct": 9.9335,
+      "totalOi": 15497825.0,
+      "rollOi": 1539475.0,
+      "nearOi": 13958350.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 13958350.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1473450.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 66025.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ANANDRATHI": {
+      "symbol": "ANANDRATHI",
+      "rolloverPct": 33.139,
+      "totalOi": 4287250.0,
+      "rollOi": 1420750.0,
+      "nearOi": 2866500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2866500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1003500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 417250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BAJAJFINSV": {
+      "symbol": "BAJAJFINSV",
+      "rolloverPct": 8.3728,
+      "totalOi": 8112000.0,
+      "rollOi": 679200.0,
+      "nearOi": 7432800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 7432800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 637500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 41700.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BLUESTARCO": {
+      "symbol": "BLUESTARCO",
+      "rolloverPct": 10.8575,
+      "totalOi": 7118150.0,
+      "rollOi": 772850.0,
+      "nearOi": 6345300.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6345300.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 764075.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 8775.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "DABUR": {
+      "symbol": "DABUR",
+      "rolloverPct": 8.4201,
+      "totalOi": 27731250.0,
+      "rollOi": 2335000.0,
+      "nearOi": 25396250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 25396250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2272500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 62500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HDFCAMC": {
+      "symbol": "HDFCAMC",
+      "rolloverPct": 12.6799,
+      "totalOi": 7547400.0,
+      "rollOi": 957000.0,
+      "nearOi": 6590400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6590400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 936900.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 20100.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "IOC": {
+      "symbol": "IOC",
+      "rolloverPct": 4.0385,
+      "totalOi": 136407375.0,
+      "rollOi": 5508750.0,
+      "nearOi": 130898625.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 130898625.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 4977375.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 531375.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ITC": {
+      "symbol": "ITC",
+      "rolloverPct": 7.093,
+      "totalOi": 212337150.0,
+      "rollOi": 15060975.0,
+      "nearOi": 197276175.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 197276175.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 13141050.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1919925.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MAXHEALTH": {
+      "symbol": "MAXHEALTH",
+      "rolloverPct": 2.9876,
+      "totalOi": 12441450.0,
+      "rollOi": 371700.0,
+      "nearOi": 12069750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 12069750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 322350.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 49350.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NIFTYNXT50": {
+      "symbol": "NIFTYNXT50",
+      "rolloverPct": 4.522,
+      "totalOi": 19350.0,
+      "rollOi": 875.0,
+      "nearOi": 18475.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 18475.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 850.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 25.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "OFSS": {
+      "symbol": "OFSS",
+      "rolloverPct": 4.9252,
+      "totalOi": 1230400.0,
+      "rollOi": 60600.0,
+      "nearOi": 1169800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 1169800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 59400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PIDILITIND": {
+      "symbol": "PIDILITIND",
+      "rolloverPct": 3.03,
+      "totalOi": 5132000.0,
+      "rollOi": 155500.0,
+      "nearOi": 4976500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 4976500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 146000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 9500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SBIN": {
+      "symbol": "SBIN",
+      "rolloverPct": 8.9251,
+      "totalOi": 109183500.0,
+      "rollOi": 9744750.0,
+      "nearOi": 99438750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 99438750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 9307500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 437250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "360ONE": {
+      "symbol": "360ONE",
+      "rolloverPct": 1.8894,
+      "totalOi": 4313500.0,
+      "rollOi": 81500.0,
+      "nearOi": 4232000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 4232000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 80000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ADANIENT": {
+      "symbol": "ADANIENT",
+      "rolloverPct": 8.4522,
+      "totalOi": 17939304.0,
+      "rollOi": 1516263.0,
+      "nearOi": 16423041.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 16423041.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1456626.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 59637.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "JSWSTEEL": {
+      "symbol": "JSWSTEEL",
+      "rolloverPct": 1.8493,
+      "totalOi": 42231375.0,
+      "rollOi": 780975.0,
+      "nearOi": 41450400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 41450400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 755325.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 25650.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "LICI": {
+      "symbol": "LICI",
+      "rolloverPct": 3.0117,
+      "totalOi": 46718000.0,
+      "rollOi": 1407000.0,
+      "nearOi": 45311000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 45311000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1309000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 98000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MAHABANK": {
+      "symbol": "MAHABANK",
+      "rolloverPct": 1.7502,
+      "totalOi": 40852500.0,
+      "rollOi": 715000.0,
+      "nearOi": 40137500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 40137500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 539500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 175500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "POLICYBZR": {
+      "symbol": "POLICYBZR",
+      "rolloverPct": 3.4907,
+      "totalOi": 20053250.0,
+      "rollOi": 700000.0,
+      "nearOi": 19353250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 19353250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 637350.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 62650.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PREMIERENE": {
+      "symbol": "PREMIERENE",
+      "rolloverPct": 1.4721,
+      "totalOi": 13113750.0,
+      "rollOi": 193050.0,
+      "nearOi": 12920700.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 12920700.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 187850.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 5200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SAIL": {
+      "symbol": "SAIL",
+      "rolloverPct": 1.3056,
+      "totalOi": 187920100.0,
+      "rollOi": 2453400.0,
+      "nearOi": 185466700.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 185466700.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2185500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 267900.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SUZLON": {
+      "symbol": "SUZLON",
+      "rolloverPct": 11.5937,
+      "totalOi": 467525100.0,
+      "rollOi": 54203600.0,
+      "nearOi": 413321500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 413321500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 50419000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 3784600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "UJJIVANSFB": {
+      "symbol": "UJJIVANSFB",
+      "rolloverPct": 12.5043,
+      "totalOi": 23416000.0,
+      "rollOi": 2928000.0,
+      "nearOi": 20488000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 20488000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2424000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 504000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "UPL": {
+      "symbol": "UPL",
+      "rolloverPct": 2.6587,
+      "totalOi": 31954965.0,
+      "rollOi": 849585.0,
+      "nearOi": 31105380.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 31105380.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 715440.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 134145.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "VEDL": {
+      "symbol": "VEDL",
+      "rolloverPct": 4.7265,
+      "totalOi": 52505550.0,
+      "rollOi": 2481700.0,
+      "nearOi": 50023850.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 50023850.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2222950.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 258750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ASIANPAINT": {
+      "symbol": "ASIANPAINT",
+      "rolloverPct": 8.0168,
+      "totalOi": 7241000.0,
+      "rollOi": 580500.0,
+      "nearOi": 6660500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6660500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 568750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 11750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BRITANNIA": {
+      "symbol": "BRITANNIA",
+      "rolloverPct": 1.6852,
+      "totalOi": 2522000.0,
+      "rollOi": 42500.0,
+      "nearOi": 2479500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2479500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 37500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 5000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "GRASIM": {
+      "symbol": "GRASIM",
+      "rolloverPct": 0.99,
+      "totalOi": 7172000.0,
+      "rollOi": 71000.0,
+      "nearOi": 7101000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 7101000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 62500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 8500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HDFCLIFE": {
+      "symbol": "HDFCLIFE",
+      "rolloverPct": 10.4876,
+      "totalOi": 44282700.0,
+      "rollOi": 4644200.0,
+      "nearOi": 39638500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 39638500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 4539700.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 104500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ICICIBANK": {
+      "symbol": "ICICIBANK",
+      "rolloverPct": 13.7835,
+      "totalOi": 130828600.0,
+      "rollOi": 18032700.0,
+      "nearOi": 112795900.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 112795900.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 8158500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 9874200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ICICIGI": {
+      "symbol": "ICICIGI",
+      "rolloverPct": 1.0645,
+      "totalOi": 5862025.0,
+      "rollOi": 62400.0,
+      "nearOi": 5799625.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5799625.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 61100.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1300.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "INFY": {
+      "symbol": "INFY",
+      "rolloverPct": 3.0921,
+      "totalOi": 76516400.0,
+      "rollOi": 2366000.0,
+      "nearOi": 74150400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 74150400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2176400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 189600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "KFINTECH": {
+      "symbol": "KFINTECH",
+      "rolloverPct": 9.001,
+      "totalOi": 5870750.0,
+      "rollOi": 528425.0,
+      "nearOi": 5342325.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5342325.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 513475.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 14950.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MARUTI": {
+      "symbol": "MARUTI",
+      "rolloverPct": 8.8051,
+      "totalOi": 2817700.0,
+      "rollOi": 248100.0,
+      "nearOi": 2569600.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2569600.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 205350.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 42750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MUTHOOTFIN": {
+      "symbol": "MUTHOOTFIN",
+      "rolloverPct": 4.287,
+      "totalOi": 6786725.0,
+      "rollOi": 290950.0,
+      "nearOi": 6495775.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6495775.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 273900.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 17050.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PFC": {
+      "symbol": "PFC",
+      "rolloverPct": 4.2116,
+      "totalOi": 104794300.0,
+      "rollOi": 4413500.0,
+      "nearOi": 100380800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 100380800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 3910400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 503100.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SUNPHARMA": {
+      "symbol": "SUNPHARMA",
+      "rolloverPct": 6.7878,
+      "totalOi": 17005450.0,
+      "rollOi": 1154300.0,
+      "nearOi": 15851150.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 15851150.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1128750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 25550.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SUPREMEIND": {
+      "symbol": "SUPREMEIND",
+      "rolloverPct": 3.7861,
+      "totalOi": 2241750.0,
+      "rollOi": 84875.0,
+      "nearOi": 2156875.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2156875.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 82950.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1925.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "UNOMINDA": {
+      "symbol": "UNOMINDA",
+      "rolloverPct": 0.9106,
+      "totalOi": 5858600.0,
+      "rollOi": 53350.0,
+      "nearOi": 5805250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5805250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 48950.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 4400.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "COFORGE": {
+      "symbol": "COFORGE",
+      "rolloverPct": 1.51,
+      "totalOi": 13998725.0,
+      "rollOi": 211375.0,
+      "nearOi": 13787350.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 13787350.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 179550.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 31825.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "GAIL": {
+      "symbol": "GAIL",
+      "rolloverPct": 1.6862,
+      "totalOi": 79370900.0,
+      "rollOi": 1338350.0,
+      "nearOi": 78032550.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 78032550.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1196350.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 142000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HAVELLS": {
+      "symbol": "HAVELLS",
+      "rolloverPct": 7.5142,
+      "totalOi": 11012500.0,
+      "rollOi": 827500.0,
+      "nearOi": 10185000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 10185000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 796500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 31000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HDFCBANK": {
+      "symbol": "HDFCBANK",
+      "rolloverPct": 12.0586,
+      "totalOi": 380363750.0,
+      "rollOi": 45866600.0,
+      "nearOi": 334497150.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 334497150.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 32501300.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 13365300.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HEROMOTOCO": {
+      "symbol": "HEROMOTOCO",
+      "rolloverPct": 1.6343,
+      "totalOi": 3790500.0,
+      "rollOi": 61950.0,
+      "nearOi": 3728550.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3728550.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 54000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 7950.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MANKIND": {
+      "symbol": "MANKIND",
+      "rolloverPct": 1.7291,
+      "totalOi": 3354250.0,
+      "rollOi": 58000.0,
+      "nearOi": 3296250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3296250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 51000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 7000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MAZDOCK": {
+      "symbol": "MAZDOCK",
+      "rolloverPct": 7.9654,
+      "totalOi": 5672025.0,
+      "rollOi": 451800.0,
+      "nearOi": 5220225.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 5220225.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 419625.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 32175.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MCX": {
+      "symbol": "MCX",
+      "rolloverPct": 3.816,
+      "totalOi": 7269975.0,
+      "rollOi": 277425.0,
+      "nearOi": 6992550.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6992550.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 258300.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 19125.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NIFTY": {
+      "symbol": "NIFTY",
+      "rolloverPct": 12.8871,
+      "totalOi": 21745295.0,
+      "rollOi": 2802345.0,
+      "nearOi": 18942950.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 18942950.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2459795.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 342550.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "PETRONET": {
+      "symbol": "PETRONET",
+      "rolloverPct": 1.1088,
+      "totalOi": 32043500.0,
+      "rollOi": 355300.0,
+      "nearOi": 31688200.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 31688200.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 347700.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 7600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SIEMENS": {
+      "symbol": "SIEMENS",
+      "rolloverPct": 4.1304,
+      "totalOi": 3635275.0,
+      "rollOi": 150150.0,
+      "nearOi": 3485125.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3485125.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 148575.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1575.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "UNITDSPR": {
+      "symbol": "UNITDSPR",
+      "rolloverPct": 0.8125,
+      "totalOi": 7039600.0,
+      "rollOi": 57200.0,
+      "nearOi": 6982400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6982400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 51200.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 6000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "AMBER": {
+      "symbol": "AMBER",
+      "rolloverPct": 2.3245,
+      "totalOi": 1234700.0,
+      "rollOi": 28700.0,
+      "nearOi": 1206000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 1206000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 26900.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1800.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BAJFINANCE": {
+      "symbol": "BAJFINANCE",
+      "rolloverPct": 14.4779,
+      "totalOi": 69473250.0,
+      "rollOi": 10058250.0,
+      "nearOi": 59415000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 59415000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 7932000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 2126250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "CANBK": {
+      "symbol": "CANBK",
+      "rolloverPct": 5.6146,
+      "totalOi": 371128500.0,
+      "rollOi": 20837250.0,
+      "nearOi": 350291250.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 350291250.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 20310750.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 526500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "DMART": {
+      "symbol": "DMART",
+      "rolloverPct": 8.1432,
+      "totalOi": 4969800.0,
+      "rollOi": 404700.0,
+      "nearOi": 4565100.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 4565100.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 372900.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 31800.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "FINNIFTY": {
+      "symbol": "FINNIFTY",
+      "rolloverPct": 0.9238,
+      "totalOi": 25980.0,
+      "rollOi": 240.0,
+      "nearOi": 25740.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 25740.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 240.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 0.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HINDZINC": {
+      "symbol": "HINDZINC",
+      "rolloverPct": 3.2768,
+      "totalOi": 25047575.0,
+      "rollOi": 820750.0,
+      "nearOi": 24226825.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 24226825.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 757050.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 63700.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "IREDA": {
+      "symbol": "IREDA",
+      "rolloverPct": 14.1221,
+      "totalOi": 91255675.0,
+      "rollOi": 12887200.0,
+      "nearOi": 78368475.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 78368475.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 12887200.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "LICHSGFIN": {
+      "symbol": "LICHSGFIN",
+      "rolloverPct": 3.5644,
+      "totalOi": 37959000.0,
+      "rollOi": 1353000.0,
+      "nearOi": 36606000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 36606000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1318000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 35000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "LTM": {
+      "symbol": "LTM",
+      "rolloverPct": 10.2713,
+      "totalOi": 5125950.0,
+      "rollOi": 526500.0,
+      "nearOi": 4599450.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 4599450.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 513000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 13500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "LUPIN": {
+      "symbol": "LUPIN",
+      "rolloverPct": 3.7573,
+      "totalOi": 7951750.0,
+      "rollOi": 298775.0,
+      "nearOi": 7652975.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 7652975.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 286025.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 12750.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "RADICO": {
+      "symbol": "RADICO",
+      "rolloverPct": 1.2259,
+      "totalOi": 1137900.0,
+      "rollOi": 13950.0,
+      "nearOi": 1123950.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 1123950.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 10350.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 3600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "RVNL": {
+      "symbol": "RVNL",
+      "rolloverPct": 13.4133,
+      "totalOi": 38519250.0,
+      "rollOi": 5166700.0,
+      "nearOi": 33352550.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 33352550.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 4639250.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 527450.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SHRIRAMFIN": {
+      "symbol": "SHRIRAMFIN",
+      "rolloverPct": 4.0656,
+      "totalOi": 26541900.0,
+      "rollOi": 1079100.0,
+      "nearOi": 25462800.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 25462800.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 989175.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 89925.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TMPV": {
+      "symbol": "TMPV",
+      "rolloverPct": 9.8455,
+      "totalOi": 92712000.0,
+      "rollOi": 9128000.0,
+      "nearOi": 83584000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 83584000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 8721600.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 406400.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ANGELONE": {
+      "symbol": "ANGELONE",
+      "rolloverPct": 3.749,
+      "totalOi": 37810000.0,
+      "rollOi": 1417500.0,
+      "nearOi": 36392500.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 36392500.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1230000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 187500.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "AUBANK": {
+      "symbol": "AUBANK",
+      "rolloverPct": 10.3975,
+      "totalOi": 23823000.0,
+      "rollOi": 2477000.0,
+      "nearOi": 21346000.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 21346000.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 2421000.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 56000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "BANDHANBNK": {
+      "symbol": "BANDHANBNK",
+      "rolloverPct": 7.8191,
+      "totalOi": 127947600.0,
+      "rollOi": 10004400.0,
+      "nearOi": 117943200.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 117943200.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 9910800.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 93600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "CAMS": {
+      "symbol": "CAMS",
+      "rolloverPct": 4.8451,
+      "totalOi": 10489050.0,
+      "rollOi": 508200.0,
+      "nearOi": 9980850.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 9980850.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 466950.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 41250.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "ENRIN": {
+      "symbol": "ENRIN",
+      "rolloverPct": 2.8471,
+      "totalOi": 497875.0,
+      "rollOi": 14175.0,
+      "nearOi": 483700.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 483700.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 13300.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 875.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HINDALCO": {
+      "symbol": "HINDALCO",
+      "rolloverPct": 8.387,
+      "totalOi": 51997400.0,
+      "rollOi": 4361000.0,
+      "nearOi": 47636400.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 47636400.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 4190900.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 170100.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "HYUNDAI": {
+      "symbol": "HYUNDAI",
+      "rolloverPct": 6.0059,
+      "totalOi": 4794075.0,
+      "rollOi": 287925.0,
+      "nearOi": 4506150.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 4506150.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 280500.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 7425.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "IRFC": {
+      "symbol": "IRFC",
+      "rolloverPct": 14.7969,
+      "totalOi": 111125700.0,
+      "rollOi": 16443175.0,
+      "nearOi": 94682525.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 94682525.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 14826525.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 1616650.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "MIDCPNIFTY": {
+      "symbol": "MIDCPNIFTY",
+      "rolloverPct": 4.7386,
+      "totalOi": 2134800.0,
+      "rollOi": 101160.0,
+      "nearOi": 2033640.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 2033640.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 98160.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 3000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NAUKRI": {
+      "symbol": "NAUKRI",
+      "rolloverPct": 4.2763,
+      "totalOi": 14443550.0,
+      "rollOi": 617650.0,
+      "nearOi": 13825900.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 13825900.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 75350.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 542300.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "NIFTYFPI": {
+      "symbol": "NIFTYFPI",
+      "rolloverPct": 0.0,
+      "totalOi": 7700.0,
+      "rollOi": 0.0,
+      "nearOi": 7700.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 7700.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 0.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 0.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "RECLTD": {
+      "symbol": "RECLTD",
+      "rolloverPct": 9.3527,
+      "totalOi": 49273875.0,
+      "rollOi": 4608450.0,
+      "nearOi": 44665425.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 44665425.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 4217850.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 390600.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "SBICARD": {
+      "symbol": "SBICARD",
+      "rolloverPct": 6.0664,
+      "totalOi": 18436000.0,
+      "rollOi": 1118400.0,
+      "nearOi": 17317600.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 17317600.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 966400.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 152000.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "TORNTPHARM": {
+      "symbol": "TORNTPHARM",
+      "rolloverPct": 11.9217,
+      "totalOi": 3593250.0,
+      "rollOi": 428375.0,
+      "nearOi": 3164875.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 3164875.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 428250.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 125.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "VBL": {
+      "symbol": "VBL",
+      "rolloverPct": 1.7672,
+      "totalOi": 70776525.0,
+      "rollOi": 1250775.0,
+      "nearOi": 69525750.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 69525750.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 1179375.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 71400.0
+        }
+      ],
+      "date": "20261009"
+    },
+    "WAAREEENER": {
+      "symbol": "WAAREEENER",
+      "rolloverPct": 5.4084,
+      "totalOi": 6652625.0,
+      "rollOi": 359800.0,
+      "nearOi": 6292825.0,
+      "contracts": [
+        {
+          "expiry": "2026-10-27",
+          "oi": 6292825.0
+        },
+        {
+          "expiry": "2026-11-23",
+          "oi": 339675.0
+        },
+        {
+          "expiry": "2026-12-29",
+          "oi": 20125.0
+        }
+      ],
+      "date": "20261009"
+    }
+  }
+}

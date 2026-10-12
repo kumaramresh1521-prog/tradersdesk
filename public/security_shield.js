@@ -90,17 +90,7 @@
     } catch (e) {}
   }
 
-  // 1. Block Context Menu (Right Click)
-  document.addEventListener(
-    "contextmenu",
-    function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      triggerLock("CONTEXT_MENU");
-      return false;
-    },
-    true
-  );
+  // 1. Right Click (Context Menu) - Enabled natively so users can open links in new tab, inspect, and use browser menus
 
   // 2. Block Keyboard Shortcuts (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U, Ctrl+S)
   window.addEventListener(

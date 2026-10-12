@@ -79,6 +79,26 @@
         };
         window.navigateDesk = window.instNav;
 
+        window.instNavClick = function(e, key, subview) {
+          if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
+            return true; // Let browser open in new tab!
+          }
+          if (e && e.preventDefault) e.preventDefault();
+          window.instNav(key, subview);
+          return false;
+        };
+
+        window.futuresDeskTabClick = function(e, subtab) {
+          if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
+            return true; // Let browser open in new tab!
+          }
+          if (e && e.preventDefault) e.preventDefault();
+          if (window.futuresDesk && typeof window.futuresDesk.switchSubTab === "function") {
+            window.futuresDesk.switchSubTab(subtab);
+          }
+          return false;
+        };
+
         // Instant panel activation on DOMContentLoaded
         document.addEventListener("DOMContentLoaded", function() {
           try {
@@ -193,63 +213,63 @@
 
           <!-- 1. DASHBOARD / HOMEPAGE -->
           <div class="inst-nav-item">
-            <button class="inst-nav-btn active" id="navDashboard" type="button" onclick="window.instNav('dashboard')">
+            <a href="/" class="inst-nav-btn active" id="navDashboard" onclick="return window.instNavClick(event, 'dashboard')">
               <span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span>
-            </button>
+            </a>
           </div>
 
           <!-- 2. FUTURES DASHBOARD (MAIN MENU WITH SUBMENUS) -->
           <div class="inst-nav-item has-dropdown">
-            <button class="inst-nav-btn" id="navFutures" type="button" onclick="window.instNav('futures', 'matrix')">
+            <a href="/futures" class="inst-nav-btn" id="navFutures" onclick="return window.instNavClick(event, 'futures', 'matrix')">
               <span class="inst-nav-icon">📈</span> <span class="nav-label">Futures Dashboard</span>
               <span class="inst-nav-arrow">▾</span>
-            </button>
+            </a>
             <div class="inst-dropdown inst-dropdown-md">
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">Futures Market &amp; Structure</span>
                 <!-- Submenu 1: Future Marketwatch -->
-                <button class="inst-dd-item" onclick="window.instNav('futures', 'matrix'); return false;">
+                <a href="/futures" class="inst-dd-item" onclick="return window.instNavClick(event, 'futures', 'matrix')">
                   <span class="dd-icon">📊</span>
                   <div class="dd-text">
                     <span class="dd-title">Future Marketwatch</span>
                     <span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span>
                   </div>
-                </button>
+                </a>
                 <!-- Submenu 2: Future Index Term Structure -->
-                <button class="inst-dd-item" onclick="window.instNav('futures', 'indices'); return false;">
+                <a href="/futures/indices" class="inst-dd-item" onclick="return window.instNavClick(event, 'futures', 'indices')">
                   <span class="dd-icon">📈</span>
                   <div class="dd-text">
                     <span class="dd-title">Future Index Term Structure</span>
                     <span class="dd-sub">Cash-futures basis, cost of carry &amp; index term structure</span>
                   </div>
-                </button>
+                </a>
                 <!-- Submenu 3: Future Buildup -->
-                <button class="inst-dd-item" onclick="window.instNav('futures', 'buildup'); return false;">
+                <a href="/futures/buildup" class="inst-dd-item" onclick="return window.instNavClick(event, 'futures', 'buildup')">
                   <span class="dd-icon">⚡</span>
                   <div class="dd-text">
                     <span class="dd-title">Future Buildup</span>
                     <span class="dd-sub">Long/short buildup quadrants &amp; unwinding signals</span>
                   </div>
-                </button>
+                </a>
               </div>
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">F&amp;O Analytics &amp; Risk</span>
                 <!-- Submenu 4: Future Heatmap -->
-                <button class="inst-dd-item" onclick="window.instNav('futures', 'heatmap'); return false;">
+                <a href="/futures/heatmap" class="inst-dd-item" onclick="return window.instNavClick(event, 'futures', 'heatmap')">
                   <span class="dd-icon">🗺️</span>
                   <div class="dd-text">
                     <span class="dd-title">Future Heatmap</span>
                     <span class="dd-sub">Visual sector heatmap &amp; momentum distribution</span>
                   </div>
-                </button>
+                </a>
                 <!-- Submenu 5: MWPL and Ban Radar -->
-                <button class="inst-dd-item" onclick="window.instNav('futures', 'mwpl'); return false;">
+                <a href="/futures/mwpl" class="inst-dd-item" onclick="return window.instNavClick(event, 'futures', 'mwpl')">
                   <span class="dd-icon">🚫</span>
                   <div class="dd-text">
                     <span class="dd-title">MWPL and Ban Radar</span>
                     <span class="dd-sub">Market-Wide Position Limit tracker &amp; ban alert zone</span>
                   </div>
-                </button>
+                </a>
                 <!-- Submenu 6: Futures Rollover Matrix (Dedicated Standalone Page) -->
                 <a href="/futures/rollover" class="inst-dd-item" title="Open Dedicated Futures Rollover Matrix Terminal">
                   <span class="dd-icon">🔄</span>
@@ -264,29 +284,29 @@
 
           <!-- 3. GLOBAL MARKETS & MACRO (DIRECTLY AFTER FUTURES) -->
           <div class="inst-nav-item">
-            <button class="inst-nav-btn inst-nav-btn-blue" id="navGlobalMarkets" type="button" onclick="window.instNav('globalMarkets')" title="GIFT NIFTY &amp; Real-time World Indices">
+            <a href="/global-markets" class="inst-nav-btn inst-nav-btn-blue" id="navGlobalMarkets" onclick="return window.instNavClick(event, 'globalMarkets')" title="GIFT NIFTY &amp; Real-time World Indices">
               <span class="inst-nav-icon">🌐</span> <span class="nav-label">Global Markets</span>
               <span class="p2-badge p2-badge-blue">MACRO</span>
-            </button>
+            </a>
           </div>
 
           <!-- 4. OPTIONS (MAIN MENU WITH SUBMENUS) -->
           <div class="inst-nav-item has-dropdown">
-            <button class="inst-nav-btn inst-nav-btn-highlight" id="navOptions" type="button" onclick="window.instNav('upstoxChain')">
+            <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight" id="navOptions" onclick="return window.instNavClick(event, 'upstoxChain')">
               <span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span>
               <span class="inst-nav-arrow">▾</span>
-            </button>
+            </a>
             <div class="inst-dropdown inst-dropdown-md">
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">Derivatives Suite</span>
                 <!-- Submenu 1: Option Chain Pro -->
-                <button class="inst-dd-item" onclick="window.instNav('upstoxChain'); return false;">
+                <a href="/option-chain-pro" class="inst-dd-item" onclick="return window.instNavClick(event, 'upstoxChain')">
                   <span class="dd-icon">⚡</span>
                   <div class="dd-text">
                     <span class="dd-title">Option Chain Pro <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
                     <span class="dd-sub">Multi-broker live chain, Greeks, PCR &amp; IV skew</span>
                   </div>
-                </button>
+                </a>
                 <!-- Submenu 2: Straddle -->
                 <a href="/straddle" class="inst-dd-item" style="text-decoration:none; color:inherit;">
                   <span class="dd-icon">📉</span>
@@ -307,36 +327,36 @@
                   </div>
                 </a>
                 <!-- Submenu 4: Market Breadth with Advance Decline -->
-                <button class="inst-dd-item" onclick="window.instNav('breadth'); return false;">
+                <a href="/market-breadth" class="inst-dd-item" onclick="return window.instNavClick(event, 'breadth')">
                   <span class="dd-icon">📉</span>
                   <div class="dd-text">
                     <span class="dd-title">Market Breadth with Advance Decline</span>
                     <span class="dd-sub">Point &amp; Figure breadth matrices &amp; distribution models</span>
                   </div>
-                </button>
+                </a>
               </div>
             </div>
           </div>
 
           <!-- 5. FII / DII DESK (TOP-LEVEL MENU) -->
           <div class="inst-nav-item">
-            <button class="inst-nav-btn" id="navFiiDii" type="button" onclick="window.instNav('smartmoney')" title="Institutional Cash &amp; Derivatives Positioning">
+            <a href="/fii-dii" class="inst-nav-btn" id="navFiiDii" onclick="return window.instNavClick(event, 'smartmoney')" title="Institutional Cash &amp; Derivatives Positioning">
               <span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII / DII Desk</span>
-            </button>
+            </a>
           </div>
 
           <!-- 6. DELIVERY DESK (TOP-LEVEL MENU) -->
           <div class="inst-nav-item">
-            <button class="inst-nav-btn" id="navDelivery" type="button" onclick="window.instNav('delivery')" title="High Conviction Delivery Volume &amp; Accumulation">
+            <a href="/delivery" class="inst-nav-btn" id="navDelivery" onclick="return window.instNavClick(event, 'delivery')" title="High Conviction Delivery Volume &amp; Accumulation">
               <span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery Desk</span>
-            </button>
+            </a>
           </div>
 
           <!-- 7. MTF DESK (TOP-LEVEL MENU) -->
           <div class="inst-nav-item">
-            <button class="inst-nav-btn" id="navMtf" type="button" onclick="window.instNav('mtf')" title="Margin Trading Facility Broker Leverage">
+            <a href="/mtf" class="inst-nav-btn" id="navMtf" onclick="return window.instNavClick(event, 'mtf')" title="Margin Trading Facility Broker Leverage">
               <span class="inst-nav-icon">💳</span> <span class="nav-label">MTF Desk</span>
-            </button>
+            </a>
           </div>
 
 
@@ -1251,12 +1271,12 @@
 
           <!-- In-Desk Sub-Views Navigation Ribbon -->
           <div class="fut-subtabs-nav" style="display:flex; gap:6px; margin:0 0 14px 0; background:#080e1e; padding:6px; border-radius:8px; border:1px solid #162035; overflow-x:auto;">
-            <button type="button" class="fut-tab-btn active" data-tab="matrix" onclick="window.futuresDesk.switchSubTab('matrix')">📊 Marketwatch</button>
-            <button type="button" class="fut-tab-btn" data-tab="indices" onclick="window.futuresDesk.switchSubTab('indices')">📈 Index Term Structure</button>
-            <button type="button" class="fut-tab-btn" data-tab="buildup" onclick="window.futuresDesk.switchSubTab('buildup')">⚡ Buildup Quadrants</button>
-            <button type="button" class="fut-tab-btn" data-tab="heatmap" onclick="window.futuresDesk.switchSubTab('heatmap')">🗺️ Heatmap</button>
-            <button type="button" class="fut-tab-btn" data-tab="mwpl" onclick="window.futuresDesk.switchSubTab('mwpl')">🚫 MWPL &amp; Ban Radar</button>
-            <a href="/futures/rollover" class="fut-tab-btn" style="text-decoration:none; display:inline-flex; align-items:center;" title="Open Dedicated Standalone Rollover Desk">🔄 Rollover Matrix ↗</a>
+            <a href="/futures" class="fut-tab-btn active" data-tab="matrix" onclick="return window.futuresDeskTabClick(event, 'matrix')">📊 Marketwatch</a>
+            <a href="/futures/indices" class="fut-tab-btn" data-tab="indices" onclick="return window.futuresDeskTabClick(event, 'indices')">📈 Index Term Structure</a>
+            <a href="/futures/buildup" class="fut-tab-btn" data-tab="buildup" onclick="return window.futuresDeskTabClick(event, 'buildup')">⚡ Buildup Quadrants</a>
+            <a href="/futures/heatmap" class="fut-tab-btn" data-tab="heatmap" onclick="return window.futuresDeskTabClick(event, 'heatmap')">🗺️ Heatmap</a>
+            <a href="/futures/mwpl" class="fut-tab-btn" data-tab="mwpl" onclick="return window.futuresDeskTabClick(event, 'mwpl')">🚫 MWPL &amp; Ban Radar</a>
+            <a href="/futures/rollover" class="fut-tab-btn" data-tab="rollover" style="text-decoration:none; display:inline-flex; align-items:center;" title="Futures Rollover Matrix">🔄 Rollover Matrix</a>
           </div>
 
           <!-- ================================================================
