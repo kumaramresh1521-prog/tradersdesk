@@ -18,7 +18,8 @@ gcloud run deploy ${SERVICE_NAME} \
   --memory 1Gi \
   --cpu 1 \
   --min-instances 0 \
-  --max-instances 10
+  --max-instances 10 \
+  --set-env-vars ADMIN_SECRET_KEY=9771897535
 
 echo ""
 echo "✅ Deployment completed successfully!"

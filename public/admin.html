@@ -1627,29 +1627,37 @@
         } catch(e) {}
       }
 
+      function cleanAdmInput(id) {
+        const val = (document.getElementById(id)?.value || '').trim();
+        if (!val || val.includes('*') || val.startsWith('...') || val.includes('••••')) {
+          return '';
+        }
+        return val;
+      }
+
       async function saveMasterBrokers() {
         const payload = {
           activeBroker: 'ANGEL',
           angel: {
-            apiKey: document.getElementById('admAngelKey').value.trim(),
-            clientCode: document.getElementById('admAngelClient').value.trim(),
-            pin: document.getElementById('admAngelPin').value.trim(),
-            totpSecret: document.getElementById('admAngelTotp').value.trim(),
+            apiKey: cleanAdmInput('admAngelKey'),
+            clientCode: cleanAdmInput('admAngelClient'),
+            pin: cleanAdmInput('admAngelPin'),
+            totpSecret: cleanAdmInput('admAngelTotp'),
             totpCode: (document.getElementById('admAngelTotpCode')?.value || '').trim()
           },
           upstox: {
-            apiKey: (document.getElementById('admUpstoxKey')?.value || '').trim(),
-            apiSecret: (document.getElementById('admUpstoxSecret')?.value || '').trim(),
-            accessToken: (document.getElementById('admUpstoxToken')?.value || '').trim()
+            apiKey: cleanAdmInput('admUpstoxKey'),
+            apiSecret: cleanAdmInput('admUpstoxSecret'),
+            accessToken: cleanAdmInput('admUpstoxToken')
           },
           kotak: {
-            consumerKey: (document.getElementById('admKotakConsumerKey')?.value || '').trim(),
-            ucc: (document.getElementById('admKotakUcc')?.value || '').trim(),
-            mobileNo: (document.getElementById('admKotakMobileNo')?.value || '').trim(),
-            mpin: (document.getElementById('admKotakMpin')?.value || '').trim(),
-            totpSecret: (document.getElementById('admKotakTotpSecret')?.value || '').trim(),
+            consumerKey: cleanAdmInput('admKotakConsumerKey'),
+            ucc: cleanAdmInput('admKotakUcc'),
+            mobileNo: cleanAdmInput('admKotakMobileNo'),
+            mpin: cleanAdmInput('admKotakMpin'),
+            totpSecret: cleanAdmInput('admKotakTotpSecret'),
             liveTotp: (document.getElementById('admKotakLiveTotp')?.value || '').trim(),
-            accessToken: (document.getElementById('admKotakToken')?.value || '').trim()
+            accessToken: cleanAdmInput('admKotakToken')
           }
         };
 
@@ -1660,23 +1668,27 @@
             body: JSON.stringify(payload)
           });
           const result = await res.json();
-          if (result.ok) {
-            showAdmAlert('✓ Broker (Angel, Upstox & Kotak) configuration saved successfully!', 'success');
+          if (res.ok && result.ok) {
+            showAdmAlert('✓ ' + (result.message || 'Broker configuration saved successfully!'), 'success');
             loadTelemetry();
             loadMasterBrokers();
+          } else if (res.status === 401) {
+            showAdmAlert('🔒 Admin session expired or PIN required. Enter your Admin PIN to unlock.', 'error');
+            document.getElementById('adminLockOverlay').style.display = 'flex';
+            document.getElementById('adminSecretInput').focus();
           } else {
-            showAdmAlert(result.message || 'Failed to save', 'error');
+            showAdmAlert(result.message || 'Failed to save broker configuration', 'error');
           }
         } catch(e) {
-          showAdmAlert(e.message, 'error');
+          showAdmAlert('Network error saving brokers: ' + e.message, 'error');
         }
       }
 
       async function testActiveBroker() {
-        const apiKey = (document.getElementById('admAngelKey')?.value || '').trim();
-        const clientCode = (document.getElementById('admAngelClient')?.value || '').trim();
-        const pin = (document.getElementById('admAngelPin')?.value || '').trim();
-        const totpSecret = (document.getElementById('admAngelTotp')?.value || '').trim();
+        const apiKey = cleanAdmInput('admAngelKey');
+        const clientCode = cleanAdmInput('admAngelClient');
+        const pin = cleanAdmInput('admAngelPin');
+        const totpSecret = cleanAdmInput('admAngelTotp');
         const liveTotp = (document.getElementById('admAngelTotpCode')?.value || '').trim();
 
         if (apiKey || clientCode || pin) {
@@ -1712,9 +1724,9 @@
       }
 
       async function testUpstoxConnection() {
-        const token = (document.getElementById('admUpstoxToken')?.value || '').trim();
-        const apiKey = (document.getElementById('admUpstoxKey')?.value || '').trim();
-        const apiSecret = (document.getElementById('admUpstoxSecret')?.value || '').trim();
+        const token = cleanAdmInput('admUpstoxToken');
+        const apiKey = cleanAdmInput('admUpstoxKey');
+        const apiSecret = cleanAdmInput('admUpstoxSecret');
         const resBox = document.getElementById('upstoxTestResultBox');
         const badge = document.getElementById('admUpstoxBadge');
 
@@ -1771,12 +1783,12 @@
       }
 
       async function testKotakConnection() {
-        const token = (document.getElementById('admKotakToken')?.value || '').trim();
-        const consumerKey = (document.getElementById('admKotakConsumerKey')?.value || '').trim();
-        const ucc = (document.getElementById('admKotakUcc')?.value || '').trim();
-        const mobileNo = (document.getElementById('admKotakMobileNo')?.value || '').trim();
-        const mpin = (document.getElementById('admKotakMpin')?.value || '').trim();
-        const totpSecret = (document.getElementById('admKotakTotpSecret')?.value || '').trim();
+        const token = cleanAdmInput('admKotakToken');
+        const consumerKey = cleanAdmInput('admKotakConsumerKey');
+        const ucc = cleanAdmInput('admKotakUcc');
+        const mobileNo = cleanAdmInput('admKotakMobileNo');
+        const mpin = cleanAdmInput('admKotakMpin');
+        const totpSecret = cleanAdmInput('admKotakTotpSecret');
         const liveTotp = (document.getElementById('admKotakLiveTotp')?.value || '').trim();
         const resBox = document.getElementById('kotakTestResultBox');
         const badge = document.getElementById('admKotakBadge');
