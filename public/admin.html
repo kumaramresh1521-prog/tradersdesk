@@ -883,7 +883,7 @@
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
               <div class="adm-form-group">
-                <label>Upstox API Key</label>
+                <label>Upstox API Key (Client ID)</label>
                 <input type="text" id="admUpstoxKey" class="adm-input" placeholder="e.g. 40184fd7-5d24-4aa0-aca3-..." />
               </div>
               <div class="adm-form-group">
@@ -892,16 +892,32 @@
               </div>
             </div>
 
+            <div style="display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:16px;">
+              <div class="adm-form-group">
+                <label>Registered Mobile No.</label>
+                <input type="text" id="admUpstoxMobile" class="adm-input" placeholder="10-digit mobile number" />
+              </div>
+              <div class="adm-form-group">
+                <label>6-Digit Account PIN</label>
+                <input type="password" id="admUpstoxPin" class="adm-input" placeholder="••••••" maxlength="6" />
+              </div>
+              <div class="adm-form-group">
+                <label>🔐 Upstox TOTP Secret Key <span style="color:#34d399; font-weight:normal;">(Auto-Login)</span></label>
+                <input type="password" id="admUpstoxTotpSecret" class="adm-input" placeholder="Base32 TOTP secret key" />
+              </div>
+            </div>
+
             <div class="adm-form-group">
-              <label>Upstox Daily OAuth Access Token (Bearer Token)</label>
-              <textarea id="admUpstoxToken" class="adm-textarea" style="min-height:75px; font-family:'JetBrains Mono',monospace; font-size:12px;" placeholder="Paste your active Upstox access token here (from Upstox Developer Portal)"></textarea>
+              <label>Upstox Daily OAuth Access Token (Bearer Token) <span style="color:#34d399; font-weight:normal;">— Auto-saved on Server &amp; Cloud Sync</span></label>
+              <textarea id="admUpstoxToken" class="adm-textarea" style="min-height:70px; font-family:'JetBrains Mono',monospace; font-size:12px;" placeholder="Paste your active Upstox access token here or click Authorize below"></textarea>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; flex-wrap:wrap; gap:10px;">
                 <small style="color:var(--adm-muted); font-size:11px;">
-                  Generate or refresh this token daily at <a href="https://upstox.com/developer/api-documentation/" target="_blank" style="color:#60a5fa; text-decoration:none;">Upstox Developer Console ↗</a>
+                  Redirect URI for Upstox App: <code id="admUpstoxRedirectUri" style="color:#38bdf8;">http://127.0.0.1:8000/api/upstox/callback</code>
                 </small>
-                <div style="display:flex; gap:10px;">
-                  <button type="button" class="btn-adm-primary" onclick="testUpstoxConnection()" style="background:#10b981; padding:8px 16px; font-size:12px;">🧪 Test Upstox Option Chain Connection</button>
-                  <button type="button" class="btn-adm-primary" onclick="saveMasterBrokers()" style="padding:8px 16px; font-size:12px;">💾 Save Keys</button>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <button type="button" class="btn-adm-primary" onclick="launchUpstoxOAuth()" style="background:#0284c7; padding:8px 14px; font-size:12px;">⚡ 1-Click Upstox OAuth Login</button>
+                  <button type="button" class="btn-adm-primary" onclick="testUpstoxConnection()" style="background:#10b981; padding:8px 16px; font-size:12px;">🧪 Verify &amp; Test Upstox</button>
+                  <button type="button" class="btn-adm-primary" onclick="saveMasterBrokers()" style="padding:8px 16px; font-size:12px;">💾 Save Upstox Keys</button>
                 </div>
               </div>
             </div>
@@ -1550,12 +1566,61 @@
       // 2. Master Brokers (Angel One Primary)
       // 2. Master Brokers (Angel One & Upstox Option Chain)
       // 2. Master Brokers (Angel One & Upstox Option Chain & Kotak Neo)
+      let _latestUpstoxLiveTotp = '';
+
+      window.addEventListener('message', (ev) => {
+        if (ev && ev.data && ev.data.type === 'UPSTOX_AUTH_SUCCESS') {
+          const tokEl = document.getElementById('admUpstoxToken');
+          if (tokEl && ev.data.token) tokEl.value = ev.data.token;
+          showAdmAlert('✅ Upstox OAuth Access Token generated and saved automatically!', 'success');
+          loadMasterBrokers();
+          testUpstoxConnection();
+        }
+      });
+
+      function mergeBrokerVaultToLocalStorage(payload) {
+        try {
+          const existing = JSON.parse(localStorage.getItem('td_admin_broker_vault') || '{}');
+          for (const section of ['angel', 'upstox', 'kotak']) {
+            if (payload[section]) {
+              existing[section] = existing[section] || {};
+              for (const [k, v] of Object.entries(payload[section])) {
+                if (v && typeof v === 'string' && v.trim() && !v.includes('••••')) {
+                  existing[section][k] = v.trim();
+                }
+              }
+            }
+          }
+          localStorage.setItem('td_admin_broker_vault', JSON.stringify(existing));
+        } catch(e) {}
+      }
+
       async function loadMasterBrokers() {
         try {
+          const redirEl = document.getElementById('admUpstoxRedirectUri');
+          if (redirEl) redirEl.textContent = `${window.location.origin}/api/upstox/callback`;
+
           const res = await fetch('/api/admin/broker-config', { headers: getAuthHeaders() });
           if (!res.ok) return;
-          const data = await res.json();
+          let data = await res.json();
           if (!data.ok) return;
+
+          // Auto-restore from local browser vault if server restarted on an ephemeral container with empty keys
+          try {
+            const localVault = JSON.parse(localStorage.getItem('td_admin_broker_vault') || '{}');
+            const serverMissingAngel = !data.angel?.apiKey && localVault.angel?.apiKey;
+            const serverMissingUpstox = !data.upstox?.apiKey && localVault.upstox?.apiKey;
+            const serverMissingKotak = !data.kotak?.consumerKey && localVault.kotak?.consumerKey;
+            if (serverMissingAngel || serverMissingUpstox || serverMissingKotak) {
+              await fetch('/api/admin/broker-config', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(localVault)
+              });
+              const res2 = await fetch('/api/admin/broker-config', { headers: getAuthHeaders() });
+              if (res2.ok) data = await res2.json();
+            }
+          } catch(e) {}
 
           // Angel One
           if (data.angel) {
@@ -1582,11 +1647,24 @@
           if (data.upstox) {
             const elUKey = document.getElementById('admUpstoxKey');
             const elUSec = document.getElementById('admUpstoxSecret');
+            const elUMob = document.getElementById('admUpstoxMobile');
+            const elUPin = document.getElementById('admUpstoxPin');
+            const elUTotp = document.getElementById('admUpstoxTotpSecret');
             const elUTok = document.getElementById('admUpstoxToken');
 
             if (elUKey && !elUKey.value) elUKey.value = data.upstox.apiKey || '';
             if (elUSec && data.upstox.hasApiSecret) {
               elUSec.placeholder = '•••••••• (Saved on server)';
+            }
+            if (elUMob && !elUMob.value) elUMob.value = data.upstox.mobile || '';
+            if (elUPin && data.upstox.hasPin) {
+              elUPin.placeholder = '•••••• (Saved on server)';
+            }
+            if (elUTotp && data.upstox.hasTotpSecret) {
+              elUTotp.placeholder = `•••••••• (Saved: ${data.upstox.totpSecretMasked || 'Active'})`;
+            }
+            if (data.upstox.liveTotpGenerated) {
+              _latestUpstoxLiveTotp = data.upstox.liveTotpGenerated;
             }
             if (elUTok && !elUTok.value) {
               elUTok.value = data.upstox.accessToken || '';
@@ -1663,6 +1741,9 @@
           upstox: {
             apiKey: cleanAdmInput('admUpstoxKey'),
             apiSecret: cleanAdmInput('admUpstoxSecret'),
+            mobile: cleanAdmInput('admUpstoxMobile'),
+            pin: cleanAdmInput('admUpstoxPin'),
+            totpSecret: cleanAdmInput('admUpstoxTotpSecret'),
             accessToken: cleanAdmInput('admUpstoxToken')
           },
           kotak: {
@@ -1675,6 +1756,8 @@
             accessToken: cleanAdmInput('admKotakToken')
           }
         };
+
+        mergeBrokerVaultToLocalStorage(payload);
 
         try {
           const res = await fetch('/api/admin/broker-config', {
@@ -1691,6 +1774,12 @@
             if (pinEl && pinEl.value) { pinEl.placeholder = '•••••••• (Saved on server)'; pinEl.value = ''; }
             const totpEl = document.getElementById('admAngelTotp');
             if (totpEl && totpEl.value) { totpEl.placeholder = '•••••••• (Saved on server)'; totpEl.value = ''; }
+            const uSecEl = document.getElementById('admUpstoxSecret');
+            if (uSecEl && uSecEl.value) { uSecEl.placeholder = '•••••••• (Saved on server)'; uSecEl.value = ''; }
+            const uPinEl = document.getElementById('admUpstoxPin');
+            if (uPinEl && uPinEl.value) { uPinEl.placeholder = '•••••• (Saved on server)'; uPinEl.value = ''; }
+            const uTotpEl = document.getElementById('admUpstoxTotpSecret');
+            if (uTotpEl && uTotpEl.value) { uTotpEl.placeholder = '•••••••• (Saved on server)'; uTotpEl.value = ''; }
             const mpinEl = document.getElementById('admKotakMpin');
             if (mpinEl && mpinEl.value) { mpinEl.placeholder = '•••••••• (Saved on server)'; mpinEl.value = ''; }
             const kTotpEl = document.getElementById('admKotakTotpSecret');
@@ -1713,6 +1802,25 @@
         } catch(e) {
           showAdmAlert('Network error saving brokers: ' + e.message, 'error');
         }
+      }
+
+      async function launchUpstoxOAuth() {
+        await saveMasterBrokers();
+        await loadMasterBrokers();
+        const apiKey = cleanAdmInput('admUpstoxKey');
+        if (!apiKey) {
+          showAdmAlert('Please enter your Upstox API Key first.', 'error');
+          return;
+        }
+        if (_latestUpstoxLiveTotp) {
+          try {
+            await navigator.clipboard.writeText(_latestUpstoxLiveTotp);
+            showAdmAlert(`📋 Live 6-digit TOTP (${_latestUpstoxLiveTotp}) auto-copied to clipboard! Paste if prompted.`, 'success');
+          } catch(e) {}
+        }
+        const redirectUri = `${window.location.origin}/api/upstox/callback`;
+        const oauthUrl = `/api/upstox/oauth-start?apiKey=${encodeURIComponent(apiKey)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+        window.open(oauthUrl, 'UpstoxOAuthPopup', 'width=560,height=720,menubar=no,toolbar=no,location=yes,status=no');
       }
 
       async function testActiveBroker() {
@@ -1758,6 +1866,9 @@
         const token = cleanAdmInput('admUpstoxToken');
         const apiKey = cleanAdmInput('admUpstoxKey');
         const apiSecret = cleanAdmInput('admUpstoxSecret');
+        const mobile = cleanAdmInput('admUpstoxMobile');
+        const pin = cleanAdmInput('admUpstoxPin');
+        const totpSecret = cleanAdmInput('admUpstoxTotpSecret');
         const resBox = document.getElementById('upstoxTestResultBox');
         const badge = document.getElementById('admUpstoxBadge');
 
@@ -1773,9 +1884,10 @@
           const res = await fetch('/api/upstox/test-connection', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ token, apiKey, apiSecret })
+            body: JSON.stringify({ token, apiKey, apiSecret, mobile, pin, totpSecret })
           });
           const data = await res.json();
+          if (data.liveTotp) _latestUpstoxLiveTotp = data.liveTotp;
           if (data.ok) {
             if (resBox) {
               resBox.style.background = 'rgba(16, 185, 129, 0.15)';
@@ -1794,7 +1906,7 @@
               resBox.style.background = 'rgba(239, 68, 68, 0.15)';
               resBox.style.color = '#f87171';
               resBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-              resBox.textContent = '❌ ' + (data.message || 'Upstox connection failed');
+              resBox.textContent = '❌ ' + (data.message || 'Upstox connection failed') + (data.liveTotp ? ` | Live TOTP: ${data.liveTotp} (Click ⚡ 1-Click Upstox OAuth Login above)` : '');
             }
             if (badge) {
               badge.textContent = 'TOKEN NEEDED';

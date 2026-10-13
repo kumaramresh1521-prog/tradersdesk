@@ -71,6 +71,7 @@ const els = {
   // MTF Desk Elements
 
   mtfSessionSelect: document.getElementById("mtfSessionSelect"),
+  mtfDateInput: document.getElementById("mtfDateInput"),
   mtfRefreshBtn: document.getElementById("mtfRefreshBtn"),
   mtfAsOfBadge: document.getElementById("mtfAsOfBadge"),
   mtfSourceBadge: document.getElementById("mtfSourceBadge"),
@@ -3431,6 +3432,7 @@ let p1FiiCrosshairPos = null;
 let p1FiiCurrentPeriod = "daily";
 let p1FiiCurrentView = "net";
 let p1FiiCurrentRange = "30";
+let p1FiiChartStyle = "grouped"; // 'grouped' | 'cumulative' | 'divergence'
 let p1FiiCashFlowData = null;
 let p1FiiChartInitialized = false;
 
@@ -3484,6 +3486,25 @@ function initP1FiiCashChartControls() {
         btn.style.background = "#2563eb";
         btn.style.color = "#ffffff";
         p1FiiCurrentView = btn.dataset.view || "net";
+        renderP1FiiCashChart();
+      });
+    });
+  }
+
+  // Chart Style Switcher (Grouped Dual Bars vs Cumulative Area vs Horizontal Divergence)
+  const styleGroup = document.getElementById("p1FiiChartStyleGroup");
+  if (styleGroup) {
+    styleGroup.querySelectorAll(".fii-style-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        styleGroup.querySelectorAll(".fii-style-btn").forEach(b => {
+          b.classList.remove("active");
+          b.style.background = "transparent";
+          b.style.color = "var(--text-secondary)";
+        });
+        btn.classList.add("active");
+        btn.style.background = "#2563eb";
+        btn.style.color = "#ffffff";
+        p1FiiChartStyle = btn.dataset.style || "grouped";
         renderP1FiiCashChart();
       });
     });
@@ -3632,9 +3653,276 @@ function renderP1FiiCashChart() {
     grid: isLightMode ? "rgba(0, 0, 0, 0.08)" : "rgba(255, 255, 255, 0.08)",
     teal: isLightMode ? "#0284c7" : "#00e5ff",
     green: "#10b981",
-    red: "#ef4444"
+    red: "#ef4444",
+    blue: "#3b82f6",
+    purple: "#8b5cf6",
+    amber: "#f59e0b"
   };
 
+  const periodLabel = p1FiiCurrentPeriod.toUpperCase();
+  const viewLabel = p1FiiCurrentView === "net" ? "FII / FPI & DII Net" : (p1FiiCurrentView === "fii" ? "FII / FPI Net Flow" : "DII Domestic Net Flow");
+  const titleEl = document.getElementById("p1FiiChartTitle");
+
+  // ── STYLE 1 & 2: VERTICAL MODERN CHARTS (GROUPED DUAL BARS OR CUMULATIVE TREND) ──
+  if (p1FiiChartStyle === "grouped" || p1FiiChartStyle === "cumulative") {
+    if (titleEl) {
+      titleEl.textContent = p1FiiChartStyle === "grouped"
+        ? `FII vs DII Institutional Flow & Nifty 50 Overlay (₹ Cr) - ${periodLabel}`
+        : `Cumulative Institutional Flow Trend vs Nifty 50 (₹ Cr) - ${periodLabel}`;
+    }
+
+    // Chronological order (oldest left -> newest right)
+    const chronRows = [...p1FiiChartRows].reverse();
+    const n = chronRows.length;
+    const totalHeight = 340;
+    const padLeft = 68;
+    const padRight = 68;
+    const padTop = 36;
+    const padBottom = 54;
+    const plotW = Math.max(100, containerWidth - padLeft - padRight);
+    const plotH = totalHeight - padTop - padBottom;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = containerWidth * dpr;
+    canvas.height = totalHeight * dpr;
+    canvas.style.width = containerWidth + "px";
+    canvas.style.height = totalHeight + "px";
+
+    const ctx = canvas.getContext("2d");
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+
+    // Prepare series
+    let valsA = []; // FII or Combined
+    let valsB = []; // DII
+    let niftyVals = [];
+    let cumFii = 0, cumDii = 0, cumNet = 0;
+
+    chronRows.forEach(r => {
+      const f = Number(r.fiiNet || 0);
+      const d = Number(r.diiNet || 0);
+      const tot = Number(r.totalNet || (f + d));
+      cumFii += f;
+      cumDii += d;
+      cumNet += tot;
+      if (p1FiiChartStyle === "cumulative") {
+        if (p1FiiCurrentView === "fii") valsA.push(cumFii);
+        else if (p1FiiCurrentView === "dii") valsA.push(cumDii);
+        else { valsA.push(cumFii); valsB.push(cumDii); }
+      } else {
+        if (p1FiiCurrentView === "fii") valsA.push(f);
+        else if (p1FiiCurrentView === "dii") valsA.push(d);
+        else { valsA.push(f); valsB.push(d); }
+      }
+      const nc = Number(r.niftyClose || 0);
+      if (nc > 1000) niftyVals.push(nc);
+    });
+
+    const allFlowVals = [...valsA, ...valsB, 0];
+    let vMin = Math.min(...allFlowVals);
+    let vMax = Math.max(...allFlowVals);
+    const span = Math.max(Math.abs(vMin), Math.abs(vMax), 500);
+    vMin = -span * 1.12;
+    vMax = span * 1.12;
+
+    const yValToPx = (v) => padTop + plotH - ((v - vMin) / (vMax - vMin)) * plotH;
+    const zeroY = yValToPx(0);
+
+    // Horizontal grid lines
+    const ySteps = 6;
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    for (let i = 0; i <= ySteps; i++) {
+      const gv = vMin + (i / ySteps) * (vMax - vMin);
+      const gy = yValToPx(gv);
+      ctx.beginPath();
+      ctx.strokeStyle = Math.abs(gv) < 1 ? (isLightMode ? "#334155" : "#94a3b8") : colors.grid;
+      ctx.lineWidth = Math.abs(gv) < 1 ? 1.4 : 1;
+      if (Math.abs(gv) >= 1) ctx.setLineDash([4, 4]);
+      else ctx.setLineDash([]);
+      ctx.moveTo(padLeft, gy);
+      ctx.lineTo(padLeft + plotW, gy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = colors.text;
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      const lbl = Math.abs(gv) >= 1000 ? `${(gv / 1000).toFixed(1)}k` : gv.toFixed(0);
+      ctx.fillText(`₹${lbl}`, padLeft - 8, gy);
+    }
+
+    // Zero line highlight
+    ctx.beginPath();
+    ctx.strokeStyle = isLightMode ? "rgba(15,23,42,0.45)" : "rgba(248,250,252,0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(padLeft, zeroY);
+    ctx.lineTo(padLeft + plotW, zeroY);
+    ctx.stroke();
+
+    const slotW = plotW / Math.max(1, n);
+    // Reverse hover index because p1FiiChartRows is newest-first
+    const hoveredChronIdx = p1FiiHoveredIndex >= 0 ? (n - 1 - p1FiiHoveredIndex) : -1;
+
+    if (p1FiiChartStyle === "grouped") {
+      // Draw Grouped Bars (FII vs DII or Single Selected View)
+      const isDual = (p1FiiCurrentView === "net");
+      const barGroupW = Math.min(34, Math.max(4, slotW * 0.72));
+      const singleBarW = isDual ? (barGroupW / 2 - 1) : barGroupW;
+
+      chronRows.forEach((row, idx) => {
+        const cx = padLeft + idx * slotW + slotW / 2;
+        const isHov = (idx === hoveredChronIdx);
+
+        if (isHov) {
+          ctx.fillStyle = isLightMode ? "rgba(37,99,235,0.07)" : "rgba(56,189,248,0.1)";
+          ctx.fillRect(padLeft + idx * slotW, padTop, slotW, plotH);
+        }
+
+        const drawVBar = (val, xLeft, bw, posColor, negColor) => {
+          const yVal = yValToPx(val);
+          const topY = val >= 0 ? yVal : zeroY;
+          const bh = Math.max(2, Math.abs(zeroY - yVal));
+          ctx.fillStyle = val >= 0 ? posColor : negColor;
+          ctx.beginPath();
+          ctx.roundRect(xLeft, topY, bw, bh, 2);
+          ctx.fill();
+        };
+
+        if (isDual) {
+          // FII Bar (left in pair): Cyan/Green for buy, Red for sell
+          const fVal = valsA[idx];
+          drawVBar(fVal, cx - singleBarW - 1, singleBarW, fVal >= 0 ? "#0ea5e9" : "#ef4444", "#ef4444");
+          // DII Bar (right in pair): Purple/Emerald for buy, Amber/Orange for sell
+          const dVal = valsB[idx];
+          drawVBar(dVal, cx + 1, singleBarW, dVal >= 0 ? "#10b981" : "#f59e0b", "#f59e0b");
+        } else {
+          const v = valsA[idx];
+          drawVBar(v, cx - singleBarW / 2, singleBarW, "#10b981", "#ef4444");
+        }
+
+        // X-axis Date Labels (spaced nicely)
+        const labelStep = Math.max(1, Math.ceil(n / 10));
+        if (idx % labelStep === 0 || idx === n - 1 || isHov) {
+          ctx.save();
+          ctx.fillStyle = isHov ? colors.teal : colors.text;
+          ctx.font = isHov ? "bold 10.5px Inter, sans-serif" : "10px Inter, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          const dStr = (row.period || row.date || "").slice(0, 6);
+          ctx.fillText(dStr, cx, padTop + plotH + 10);
+          ctx.restore();
+        }
+      });
+    } else {
+      // STYLE 2: Cumulative Smooth Area / Line Chart
+      const drawSmoothCurve = (series, strokeCol, fillRgbaTop) => {
+        if (!series.length) return;
+        ctx.save();
+        ctx.beginPath();
+        series.forEach((v, idx) => {
+          const x = padLeft + idx * slotW + slotW / 2;
+          const y = yValToPx(v);
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = strokeCol;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Area fill to zeroY
+        const lastX = padLeft + (series.length - 1) * slotW + slotW / 2;
+        const firstX = padLeft + slotW / 2;
+        ctx.lineTo(lastX, zeroY);
+        ctx.lineTo(firstX, zeroY);
+        ctx.closePath();
+        const grad = ctx.createLinearGradient(0, padTop, 0, padTop + plotH);
+        grad.addColorStop(0, fillRgbaTop);
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.restore();
+      };
+
+      drawSmoothCurve(valsA, "#0ea5e9", "rgba(14, 165, 233, 0.25)");
+      if (valsB.length) {
+        drawSmoothCurve(valsB, "#10b981", "rgba(16, 185, 129, 0.20)");
+      }
+
+      chronRows.forEach((row, idx) => {
+        const cx = padLeft + idx * slotW + slotW / 2;
+        const isHov = (idx === hoveredChronIdx);
+        const labelStep = Math.max(1, Math.ceil(n / 10));
+        if (idx % labelStep === 0 || idx === n - 1 || isHov) {
+          ctx.fillStyle = isHov ? colors.teal : colors.text;
+          ctx.font = isHov ? "bold 10.5px Inter, sans-serif" : "10px Inter, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText((row.period || row.date || "").slice(0, 6), cx, padTop + plotH + 10);
+        }
+      });
+    }
+
+    // Overlay Nifty 50 Line on Secondary Right Axis (if daily and valid Nifty prices exist)
+    if (niftyVals.length >= 2) {
+      const nMin = Math.min(...niftyVals) * 0.996;
+      const nMax = Math.max(...niftyVals) * 1.004;
+      const nToY = (nv) => padTop + plotH - ((nv - nMin) / Math.max(1, nMax - nMin)) * plotH;
+
+      ctx.save();
+      ctx.beginPath();
+      let started = false;
+      chronRows.forEach((row, idx) => {
+        const nc = Number(row.niftyClose || 0);
+        if (nc > 1000) {
+          const x = padLeft + idx * slotW + slotW / 2;
+          const y = nToY(nc);
+          if (!started) { ctx.moveTo(x, y); started = true; }
+          else ctx.lineTo(x, y);
+        }
+      });
+      ctx.strokeStyle = isLightMode ? "#eab308" : "#facc15";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Right Y-axis Nifty labels
+      ctx.fillStyle = isLightMode ? "#ca8a04" : "#facc15";
+      ctx.font = "10px 'JetBrains Mono', monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      for (let i = 0; i <= 4; i++) {
+        const nv = nMin + (i / 4) * (nMax - nMin);
+        const ny = nToY(nv);
+        ctx.fillText(Math.round(nv).toLocaleString("en-IN"), padLeft + plotW + 6, ny);
+      }
+      ctx.restore();
+    }
+
+    // Top Legend Header inside Canvas
+    ctx.save();
+    ctx.font = "bold 11px Inter, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    if (p1FiiCurrentView === "net") {
+      ctx.fillStyle = "#0ea5e9";
+      ctx.fillText("■ FII Flow", padLeft, 14);
+      ctx.fillStyle = "#10b981";
+      ctx.fillText("■ DII Flow", padLeft + 75, 14);
+    } else {
+      ctx.fillStyle = "#10b981";
+      ctx.fillText("■ Inflow (+)", padLeft, 14);
+      ctx.fillStyle = "#ef4444";
+      ctx.fillText("■ Outflow (-)", padLeft + 85, 14);
+    }
+    if (niftyVals.length >= 2) {
+      ctx.fillStyle = isLightMode ? "#ca8a04" : "#facc15";
+      ctx.fillText("━ Nifty 50 (Right Axis)", padLeft + 170, 14);
+    }
+    ctx.restore();
+
+    return;
+  }
+
+  // ── STYLE 3: HORIZONTAL ZERO-CENTERED DIVERGENCE BARS ──
   const labelWidth = Math.min(105, Math.max(80, containerWidth * 0.14));
   const paddingRight = 95;
   const paddingTop = 45;
@@ -3653,13 +3941,8 @@ function renderP1FiiCashChart() {
   ctx.resetTransform();
   ctx.scale(dpr, dpr);
 
-  // Update Dynamic Chart Title
-  const periodLabel = p1FiiCurrentPeriod.toUpperCase();
-  const viewLabel = p1FiiCurrentView === "net" ? "FII / FPI & DII Net" : (p1FiiCurrentView === "fii" ? "FII / FPI Net Flow" : "DII Domestic Net Flow");
-  const titleEl = document.getElementById("p1FiiChartTitle");
   if (titleEl) titleEl.textContent = `${viewLabel} (in Crores.) - ${periodLabel}`;
 
-  // Compute min and max values
   let valMin = 0;
   let valMax = 0;
   p1FiiChartRows.forEach(row => {
@@ -3685,7 +3968,6 @@ function renderP1FiiCashChart() {
 
   const zeroX = xValToPx(0);
 
-  // Draw Vertical Grid Lines & X-Axis labels
   const stepCount = 8;
   const stepVal = (xMax - xMin) / stepCount;
   ctx.font = "10px Inter, sans-serif";
@@ -3706,18 +3988,15 @@ function renderP1FiiCashChart() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Label at bottom
     ctx.fillStyle = v === 0 ? colors.textBright : colors.text;
     const fmtVal = Math.abs(v) >= 1000 ? (v / 1).toFixed(0) : v.toFixed(0);
     ctx.fillText(fmtVal, gx, totalHeight - paddingBottom + 8);
   }
 
-  // Top X-axis label header
   ctx.fillStyle = colors.text;
   ctx.textAlign = "right";
   ctx.fillText("₹ in Crores ➔", containerWidth - paddingRight, 15);
 
-  // Draw Bars for each row
   p1FiiChartRows.forEach((row, i) => {
     const yCenter = paddingTop + i * rowHeight + rowHeight / 2;
     const barTop = yCenter - barHeight / 2;
@@ -3731,13 +4010,11 @@ function renderP1FiiCashChart() {
     const targetX = xValToPx(val);
     const isPositive = val >= 0;
 
-    // Draw Row Highlight if Hovered
     if (isHovered) {
       ctx.fillStyle = isLightMode ? "rgba(37, 99, 235, 0.08)" : "rgba(56, 189, 248, 0.12)";
       ctx.fillRect(0, paddingTop + i * rowHeight, containerWidth, rowHeight);
     }
 
-    // Draw Date Label on Left
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
     ctx.font = isHovered ? "bold 11.5px Inter, sans-serif" : "11px Inter, sans-serif";
@@ -3745,7 +4022,6 @@ function renderP1FiiCashChart() {
     const dateText = row.period || row.date || "";
     ctx.fillText(dateText, labelWidth - 10, yCenter);
 
-    // Create Bar Gradient
     const barX = isPositive ? zeroX : targetX;
     const barW = Math.max(2, Math.abs(targetX - zeroX));
 
@@ -3778,7 +4054,6 @@ function renderP1FiiCashChart() {
     ctx.fill();
     ctx.restore();
 
-    // Value label near bar tip
     ctx.font = isHovered ? "bold 11px 'JetBrains Mono', monospace" : "10px 'JetBrains Mono', monospace";
     ctx.fillStyle = isPositive ? "#10b981" : "#ef4444";
     ctx.textBaseline = "middle";
@@ -3794,7 +4069,6 @@ function renderP1FiiCashChart() {
     }
   });
 
-  // Draw Crosshair if Active
   if (p1FiiHoveredIndex >= 0 && p1FiiCrosshairPos) {
     const activeY = paddingTop + p1FiiHoveredIndex * rowHeight + rowHeight / 2;
     const mouseX = Math.max(labelWidth, Math.min(containerWidth - paddingRight, p1FiiCrosshairPos.x));
@@ -3804,19 +4078,16 @@ function renderP1FiiCashChart() {
     ctx.lineWidth = 1;
     ctx.setLineDash([5, 4]);
 
-    // Horizontal guideline
     ctx.beginPath();
     ctx.moveTo(labelWidth, activeY);
     ctx.lineTo(containerWidth - paddingRight, activeY);
     ctx.stroke();
 
-    // Vertical guideline
     ctx.beginPath();
     ctx.moveTo(mouseX, paddingTop - 10);
     ctx.lineTo(mouseX, totalHeight - paddingBottom + 5);
     ctx.stroke();
 
-    // Value pill on X-axis tracking cursor
     const cursorVal = xMin + ((mouseX - labelWidth) / chartWidth) * (xMax - xMin);
     const pillText = (cursorVal >= 0 ? "+" : "") + cursorVal.toFixed(0) + " Cr";
     ctx.font = "bold 10px 'JetBrains Mono', monospace";
@@ -3849,9 +4120,22 @@ function handleP1FiiCanvasMouseMove(e) {
   const mouseX = e.clientX - rect.left;
   const mouseY = e.clientY - rect.top;
 
-  const paddingTop = 45;
-  const rowHeight = 28;
-  const idx = Math.floor((mouseY - paddingTop) / rowHeight);
+  let idx = -1;
+  if (p1FiiChartStyle === "grouped" || p1FiiChartStyle === "cumulative") {
+    const padLeft = 68;
+    const padRight = 68;
+    const plotW = Math.max(100, rect.width - padLeft - padRight);
+    const n = p1FiiChartRows.length;
+    const slotW = plotW / Math.max(1, n);
+    const chronIdx = Math.floor((mouseX - padLeft) / slotW);
+    if (chronIdx >= 0 && chronIdx < n) {
+      idx = n - 1 - chronIdx; // convert back to newest-first index
+    }
+  } else {
+    const paddingTop = 45;
+    const rowHeight = 28;
+    idx = Math.floor((mouseY - paddingTop) / rowHeight);
+  }
 
   if (idx >= 0 && idx < p1FiiChartRows.length) {
     p1FiiHoveredIndex = idx;
@@ -5729,6 +6013,10 @@ function renderMtfDashboard(data) {
   // ── Session Select ────────────────────────────────────────────────────────
   if (els.mtfSessionSelect && data.availableSessions && data.availableSessions.length) {
     const currentIso = (data.stockScreenerAsOf || data.asOf || '').slice(0, 10);
+    if (els.mtfDateInput && currentIso) {
+      els.mtfDateInput.value = currentIso;
+      els.mtfDateInput.setAttribute('max', new Date().toISOString().slice(0, 10));
+    }
     els.mtfSessionSelect.innerHTML = data.availableSessions.map((s, idx) => {
       const iso      = s.dateIso ? s.dateIso.slice(0, 10) : s.dateCode;
       const selected = (iso === currentIso || s.dateCode === currentIso) ? 'selected' : '';
@@ -8136,12 +8424,8 @@ function switchTab(tab) {
     } catch(e){}
   } else if (tab === "settings") {
     isOptionsTabActive = false;
-    showPanel("panelSettings", "tabSettings");
-    try {
-      if (typeof loadBrokerSettings === "function") {
-        loadBrokerSettings();
-      }
-    } catch(e){}
+    showPanel("panelDashboard", "tabDashboard");
+    try { loadMarketDashboard(); } catch(e){}
   }
 }
 window.switchTab = switchTab;
@@ -10162,6 +10446,14 @@ if (els.mtfSessionSelect) {
   els.mtfSessionSelect.addEventListener("change", () => {
     const val = els.mtfSessionSelect.value;
     loadMtfData({ date: val });
+  });
+}
+if (els.mtfDateInput) {
+  els.mtfDateInput.addEventListener("change", () => {
+    const val = els.mtfDateInput.value;
+    if (val && val.length === 10) {
+      loadMtfData({ date: val });
+    }
   });
 }
 if (els.mtfStockSearch) {

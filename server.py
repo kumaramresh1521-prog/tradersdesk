@@ -414,23 +414,39 @@ def load_dotenv() -> None:
         except Exception:
             pass
 
-    # Fallback to persistent broker cache if .env is missing or wiped on Cloud Run
+    # Fallback 1: Persistent local cache file
     if CONFIG_BACKUP_FILE.exists():
         try:
             backup_data = json.loads(CONFIG_BACKUP_FILE.read_text(encoding="utf-8"))
             if isinstance(backup_data, dict):
                 for k, v in backup_data.items():
-                    if k not in os.environ or not os.environ[k]:
+                    if v and (k not in os.environ or not os.environ[k]):
                         os.environ[k] = str(v)
         except Exception:
             pass
+
+    # Fallback 2: Restore from Supabase cloud vault if container restarted fresh on Cloud Run
+    try:
+        sb_res = supabase_engine.load_user_workspace("master_broker_vault")
+        if sb_res.get("ok") and isinstance(sb_res.get("workspace"), dict):
+            cloud_vault = sb_res["workspace"]
+            restored_any = False
+            for k, v in cloud_vault.items():
+                if v and (k not in os.environ or not os.environ[k]):
+                    os.environ[k] = str(v)
+                    restored_any = True
+            if restored_any:
+                ensure_cache()
+                CONFIG_BACKUP_FILE.write_text(json.dumps(cloud_vault, indent=2), encoding="utf-8")
+    except Exception:
+        pass
 
 
 load_dotenv()
 
 
 def save_dotenv(updates: dict[str, str]) -> None:
-    """Updates key-value pairs in .env, persistent backup, and os.environ without disturbing comments or formatting."""
+    """Updates key-value pairs in .env, persistent backup, Supabase cloud vault, and os.environ."""
     existing_lines = []
     if ENV_FILE.exists():
         try:
@@ -462,9 +478,9 @@ def save_dotenv(updates: dict[str, str]) -> None:
     except Exception:
         pass
 
+    backup = {}
     try:
         ensure_cache()
-        backup = {}
         if CONFIG_BACKUP_FILE.exists():
             try:
                 backup = json.loads(CONFIG_BACKUP_FILE.read_text(encoding="utf-8"))
@@ -474,6 +490,23 @@ def save_dotenv(updates: dict[str, str]) -> None:
         CONFIG_BACKUP_FILE.write_text(json.dumps(backup, indent=2), encoding="utf-8")
     except Exception:
         pass
+
+    # Clear Upstox invalid token cache if Upstox token was updated
+    if "UPSTOX_ACCESS_TOKEN" in updates:
+        try:
+            upstox_engine._INVALID_TOKENS.clear()
+        except Exception:
+            pass
+
+    # Async sync to Supabase cloud vault so ephemeral Cloud Run restarts never lose broker config
+    def _sync_vault_bg(vault_data: dict):
+        try:
+            supabase_engine.save_user_workspace("master_broker_vault", vault_data)
+        except Exception:
+            pass
+
+    if backup:
+        threading.Thread(target=_sync_vault_bg, args=(dict(backup),), daemon=True).start()
 
 
 
@@ -5767,10 +5800,8 @@ def get_available_participant_sessions() -> list[tuple[date, pathlib.Path]]:
 
 
 def fetch_participant_csv_by_date(target_dt: date) -> tuple[str, date]:
+    # 1. Check exact match in local cache first
     sessions = get_available_participant_sessions()
-    if not sessions:
-        return "", target_dt
-
     for s_dt, f in sessions:
         if s_dt == target_dt:
             try:
@@ -5779,6 +5810,46 @@ def fetch_participant_csv_by_date(target_dt: date) -> tuple[str, date]:
                     return txt, s_dt
             except Exception:
                 pass
+
+    # 2. If not cached locally, attempt on-demand download from NSE Archive (check target_dt and up to 5 prior days for holidays/weekends)
+    today = now_ist().date()
+    if target_dt <= today:
+        PARTICIPANT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        for offset in range(6):
+            chk_dt = target_dt - timedelta(days=offset)
+            if chk_dt.weekday() >= 5:
+                continue
+            # Check if chk_dt is already in sessions
+            for s_dt, f in sessions:
+                if s_dt == chk_dt:
+                    try:
+                        txt = f.read_text(encoding="utf-8")
+                        if "Client Type" in txt:
+                            return txt, s_dt
+                    except Exception:
+                        pass
+            code = chk_dt.strftime("%d%m%Y")
+            url = f"https://archives.nseindia.com/content/nsccl/fao_participant_oi_{code}.csv"
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "*/*",
+                "Referer": "https://www.nseindia.com/"
+            }
+            try:
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    content = resp.read()
+                    if len(content) > 100 and b"Client" in content:
+                        cached_file = PARTICIPANT_CACHE_DIR / f"fao_participant_oi_{code}.csv"
+                        cached_file.write_bytes(content)
+                        return content.decode("utf-8", errors="ignore"), chk_dt
+            except Exception:
+                continue
+
+    # 3. Fallback to nearest available cached session
+    sessions = get_available_participant_sessions()
+    if not sessions:
+        return "", target_dt
 
     candidates = [s for s in sessions if s[0] <= target_dt]
     chosen_dt, chosen_file = candidates[-1] if candidates else sessions[-1]
@@ -6502,6 +6573,17 @@ def build_delivery_analytics(payload: dict) -> dict:
             d_chk = now_dt - timedelta(days=i)
             if d_chk.weekday() < 5:
                 fetch_delivery_bhav_by_date(d_chk)
+        # If user requested a specific historical date, also fetch that date (and up to 5 prior days for holidays/weekends + 5D avg)
+        if date_val:
+            try:
+                req_dt = datetime.fromisoformat(str(date_val)[:10]).date()
+                if req_dt <= now_dt:
+                    for offset in range(8):
+                        chk_d = req_dt - timedelta(days=offset)
+                        if chk_d.weekday() < 5:
+                            fetch_delivery_bhav_by_date(chk_d)
+            except Exception:
+                pass
     except Exception:
         pass
 
@@ -7334,6 +7416,53 @@ def build_mtf(payload: dict) -> dict:
             if target_val in (s_code, s_dt.isoformat(), s_dt.strftime("%Y-%m-%d"), s_dt.strftime("%d%m%y")):
                 selected_tuple = (s_dt, s_code, s_file)
                 break
+
+    # If user picked a custom date not yet in local cache, fetch on-demand from NSE Archive
+    if target_val and not selected_tuple:
+        req_dt = None
+        try:
+            if "-" in target_val and len(target_val) >= 10:
+                req_dt = datetime.fromisoformat(target_val[:10]).date()
+            else:
+                req_dt = _mtf_date_from_code(target_val)
+        except Exception:
+            pass
+        if req_dt and req_dt <= now_ist().date():
+            fno_symbols = _get_fno_symbols(fetch_remote=False)
+            for offset in range(6):
+                chk_dt = req_dt - timedelta(days=offset)
+                if chk_dt.weekday() >= 5:
+                    continue
+                d_code = chk_dt.strftime("%d%m%y")
+                cached_f = MTF_CACHE_DIR / f"mtf_stockwise_{d_code}.json"
+                if cached_f.exists():
+                    selected_tuple = (chk_dt, d_code, cached_f)
+                    break
+                try:
+                    req = urllib.request.Request(MTF_ARCHIVE_URL.format(date_code=d_code), headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+                    with urllib.request.urlopen(req, timeout=5) as response:
+                        archive = zipfile.ZipFile(io.BytesIO(response.read()))
+                        csv_file = next((name for name in archive.namelist() if name.lower().endswith(".csv")), archive.namelist()[0])
+                        csv_text = archive.read(csv_file).decode("utf-8", errors="ignore")
+                        dl_stocks = _parse_mtf_rows(csv_text, fno_symbols)
+                        if dl_stocks:
+                            MTF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                            write_json(cached_f, dl_stocks)
+                            selected_tuple = (chk_dt, d_code, cached_f)
+                            # Refresh available sessions list
+                            sessions = get_available_mtf_sessions()
+                            available_sessions = [
+                                {
+                                    "date": s_d.strftime("%d %b %Y"),
+                                    "dateIso": s_d.isoformat(),
+                                    "dateCode": s_c,
+                                    "shortLabel": s_d.strftime("%d %b"),
+                                }
+                                for s_d, s_c, _ in sessions
+                            ]
+                            break
+                except Exception:
+                    continue
 
     if not selected_tuple and sessions:
         selected_tuple = sessions[0]
@@ -8488,21 +8617,35 @@ def run_system_diagnostics() -> dict:
             "latencyMs": round((time.time() - t0) * 1000, 1),
         })
 
-    # 7. Angel One SmartAPI (Master Broker)
+    # 7. Angel One SmartAPI (Master Broker) - TRUE LIVE PING VERIFICATION
     t0 = time.time()
     try:
         angel_cfg = angel_configured()
         if angel_cfg:
-            checks.append({
-                "id": "broker",
-                "name": "Angel One SmartAPI (Primary Broker)",
-                "category": "Broker Feeds",
-                "status": "PASS",
-                "icon": "🪽",
-                "summary": "Configured (API Key & Client Code active)",
-                "detail": "Configured for live quotes and Option Chain WebSocket streaming",
-                "latencyMs": round((time.time() - t0) * 1000, 1),
-            })
+            try:
+                ac = AngelClient()
+                ac.ensure_session()
+                checks.append({
+                    "id": "broker",
+                    "name": "Angel One SmartAPI (Primary Broker)",
+                    "category": "Broker Feeds",
+                    "status": "PASS",
+                    "icon": "🪽",
+                    "summary": f"🟢 Live Session Active (Client: {ac.client_code})",
+                    "detail": "JWT Session verified & active for live quotes and Option Chain streaming",
+                    "latencyMs": round((time.time() - t0) * 1000, 1),
+                })
+            except Exception as auth_err:
+                checks.append({
+                    "id": "broker",
+                    "name": "Angel One SmartAPI (Primary Broker)",
+                    "category": "Broker Feeds",
+                    "status": "FAIL",
+                    "icon": "🪽",
+                    "summary": "🔴 Session Auth Failed / Expired",
+                    "detail": f"Keys saved, but live login failed: {str(auth_err)[:120]}",
+                    "latencyMs": round((time.time() - t0) * 1000, 1),
+                })
         else:
             checks.append({
                 "id": "broker",
@@ -8510,8 +8653,8 @@ def run_system_diagnostics() -> dict:
                 "category": "Broker Feeds",
                 "status": "WARN",
                 "icon": "🪽",
-                "summary": "Credentials Pending Configuration",
-                "detail": "Configure API Key, Client Code, and TOTP in Master Broker APIs tab",
+                "summary": "🟡 Credentials Not Configured",
+                "detail": "Configure API Key, Client Code, PIN, and TOTP Secret in Master Broker APIs tab",
                 "latencyMs": round((time.time() - t0) * 1000, 1),
             })
     except Exception as e:
@@ -8564,24 +8707,46 @@ def run_system_diagnostics() -> dict:
             "latencyMs": round((time.time() - t0) * 1000, 1),
         })
 
-    # 9. Upstox Option Chain Pro Engine
+    # 9. Upstox Option Chain Pro Engine - TRUE TOKEN VALIDATION
     t0 = time.time()
     try:
         up_token = env("UPSTOX_ACCESS_TOKEN", "").strip()
         up_cfg = bool(up_token and len(up_token) > 20)
-        up_chain = upstox_engine.get_option_chain("NSE_INDEX|Nifty 50")
-        is_live = up_chain.get("isLive", False)
-        stk_len = len(up_chain.get("data", []))
-        checks.append({
-            "id": "upstox_chain",
-            "name": "Upstox Option Chain Pro Desk",
-            "category": "Option Analytics",
-            "status": "PASS" if is_live else ("INFO" if not up_cfg else "WARN"),
-            "icon": "⚡",
-            "summary": f"{'🟢 Upstox Live Feed Active' if is_live else '🟡 Simulation Active (Live Token Optional)'} ({stk_len} strikes)",
-            "detail": f"Spot: ₹{up_chain.get('spotPrice', 0):,.2f} | PCR: {up_chain.get('pcr')} | Max Pain: {up_chain.get('maxPain')} | Token: {'Configured' if up_cfg else 'None'}",
-            "latencyMs": round((time.time() - t0) * 1000, 1),
-        })
+        if up_cfg:
+            up_test = upstox_engine.test_connection(up_token)
+            if up_test.get("ok"):
+                checks.append({
+                    "id": "upstox_chain",
+                    "name": "Upstox Option Chain Pro Desk",
+                    "category": "Option Analytics",
+                    "status": "PASS",
+                    "icon": "⚡",
+                    "summary": "🟢 Upstox Live Token Verified",
+                    "detail": up_test.get("message", "Live Upstox API v2 connection active"),
+                    "latencyMs": round((time.time() - t0) * 1000, 1),
+                })
+            else:
+                checks.append({
+                    "id": "upstox_chain",
+                    "name": "Upstox Option Chain Pro Desk",
+                    "category": "Option Analytics",
+                    "status": "FAIL",
+                    "icon": "⚡",
+                    "summary": "🔴 Upstox Token Expired / Invalid",
+                    "detail": up_test.get("message", "Token rejected by Upstox v2 API. Please refresh token."),
+                    "latencyMs": round((time.time() - t0) * 1000, 1),
+                })
+        else:
+            checks.append({
+                "id": "upstox_chain",
+                "name": "Upstox Option Chain Pro Desk",
+                "category": "Option Analytics",
+                "status": "WARN",
+                "icon": "⚡",
+                "summary": "🟡 Upstox Token Not Set (Using Fallback)",
+                "detail": "No Upstox Access Token saved. Option Chain is running on fallback engine.",
+                "latencyMs": round((time.time() - t0) * 1000, 1),
+            })
     except Exception as e:
         checks.append({
             "id": "upstox_chain",
@@ -8594,27 +8759,57 @@ def run_system_diagnostics() -> dict:
             "latencyMs": round((time.time() - t0) * 1000, 1),
         })
 
-    # 10. Futures Intelligence & Kotak Engine
+    # 10. Futures Intelligence & Kotak Engine - TRUE KOTAK TOTP/SESSION VERIFICATION
     t0 = time.time()
     try:
-        f_dash = futures_engine.get_futures_dashboard()
-        mwpl_data = futures_engine.get_mwpl_data()
         kotak_tok = env("KOTAK_ACCESS_TOKEN", "").strip()
-        kotak_cfg = bool(kotak_tok or (env("KOTAK_CONSUMER_KEY") and env("KOTAK_MOBILE_NO")))
-        checks.append({
-            "id": "futures_desk",
-            "name": "Futures Intelligence & Kotak Engine",
-            "category": "Derivatives Analytics",
-            "status": "PASS",
-            "icon": "📈",
-            "summary": f"Active ({f_dash.get('buildupCounts', {}).get('total', 0)} F&O contracts tracked)",
-            "detail": f"Turnover: ₹{f_dash.get('totalTurnoverCr', 0):,.0f} Cr | Banned: {mwpl_data.get('bannedCount')} | Kotak: {'Configured' if kotak_cfg else 'Simulation'}",
-            "latencyMs": round((time.time() - t0) * 1000, 1),
-        })
+        kotak_ckey = env("KOTAK_CONSUMER_KEY", "").strip()
+        kotak_mob = env("KOTAK_MOBILE_NO", "").strip()
+        kotak_mpin = env("KOTAK_MPIN", "").strip()
+        kotak_ucc = env("KOTAK_UCC", "").strip()
+        kotak_totp = env("KOTAK_TOTP_SECRET", "").strip()
+        kotak_cfg = bool(kotak_tok or (kotak_ckey and (kotak_mob or kotak_ucc)))
+        if kotak_cfg:
+            k_res = futures_engine.test_kotak_connection(
+                kotak_tok, kotak_ckey, kotak_mob, kotak_mpin, ucc=kotak_ucc, totp_secret=kotak_totp
+            )
+            if k_res.get("ok"):
+                checks.append({
+                    "id": "futures_desk",
+                    "name": "Kotak Neo & Futures Intelligence",
+                    "category": "Derivatives Analytics",
+                    "status": "PASS",
+                    "icon": "📈",
+                    "summary": "🟢 Kotak Neo Live Session Active",
+                    "detail": k_res.get("message", "Kotak Neo authenticated successfully"),
+                    "latencyMs": round((time.time() - t0) * 1000, 1),
+                })
+            else:
+                checks.append({
+                    "id": "futures_desk",
+                    "name": "Kotak Neo & Futures Intelligence",
+                    "category": "Derivatives Analytics",
+                    "status": "FAIL",
+                    "icon": "📈",
+                    "summary": "🔴 Kotak Neo Login / Token Failed",
+                    "detail": k_res.get("message", "Kotak credentials saved, but session handshake failed."),
+                    "latencyMs": round((time.time() - t0) * 1000, 1),
+                })
+        else:
+            checks.append({
+                "id": "futures_desk",
+                "name": "Kotak Neo & Futures Intelligence",
+                "category": "Derivatives Analytics",
+                "status": "WARN",
+                "icon": "📈",
+                "summary": "🟡 Kotak Keys Not Configured (NSE Bhavcopy Active)",
+                "detail": "Kotak Neo credentials not configured. Futures desk using NSE Bhavcopy + Angel fallback.",
+                "latencyMs": round((time.time() - t0) * 1000, 1),
+            })
     except Exception as e:
         checks.append({
             "id": "futures_desk",
-            "name": "Futures Intelligence & Kotak Engine",
+            "name": "Kotak Neo & Futures Intelligence",
             "category": "Derivatives Analytics",
             "status": "FAIL",
             "icon": "📈",
@@ -8625,7 +8820,7 @@ def run_system_diagnostics() -> dict:
 
 
     total_latency = round((time.time() - t_start) * 1000, 1)
-    pass_count = sum(1 for c in checks if c["status"] in ("PASS", "INFO"))
+    pass_count = sum(1 for c in checks if c["status"] == "PASS")
     warn_count = sum(1 for c in checks if c["status"] == "WARN")
     fail_count = sum(1 for c in checks if c["status"] == "FAIL")
 
@@ -9099,6 +9294,85 @@ class RequestHandler(BaseHTTPRequestHandler):
         if path in ("/api/upstox/securities", "/api/upstox/instruments"):
             return self.send_json(200, upstox_engine.get_all_securities())
 
+        if path == "/api/upstox/oauth-start":
+            query = urllib.parse.parse_qs(parsed.query)
+            api_key = (query.get("apiKey", [""])[0] or env("UPSTOX_API_KEY", "")).strip()
+            api_secret = (query.get("apiSecret", [""])[0] or env("UPSTOX_API_SECRET", "")).strip()
+            if api_key and not is_masked_or_empty(api_key):
+                upd_o = {"UPSTOX_API_KEY": api_key}
+                if api_secret and not is_masked_or_empty(api_secret):
+                    upd_o["UPSTOX_API_SECRET"] = api_secret
+                save_dotenv(upd_o)
+            if not api_key:
+                return self.send_json(400, {"ok": False, "message": "UPSTOX_API_KEY is missing. Please enter API Key in Admin Panel first."})
+            host_hdr = self.headers.get("X-Forwarded-Host") or self.headers.get("Host") or "127.0.0.1:8000"
+            proto = self.headers.get("X-Forwarded-Proto") or ("http" if ("127.0.0.1" in host_hdr or "localhost" in host_hdr) else "https")
+            redirect_uri = (query.get("redirect_uri", [""])[0] or f"{proto}://{host_hdr}/api/upstox/callback").strip()
+            os.environ["UPSTOX_REDIRECT_URI"] = redirect_uri
+            auth_url = (
+                f"https://api.upstox.com/v2/login/authorization/dialog"
+                f"?response_type=code&client_id={urllib.parse.quote(api_key)}"
+                f"&redirect_uri={urllib.parse.quote(redirect_uri)}"
+            )
+            self.send_response(302)
+            self.send_header("Location", auth_url)
+            self.end_headers()
+            return
+
+        if path == "/api/upstox/callback":
+            query = urllib.parse.parse_qs(parsed.query)
+            code = (query.get("code", [""])[0]).strip()
+            if not code:
+                return self.send_json(400, {"ok": False, "message": "Missing authorization code from Upstox callback."})
+            api_key = env("UPSTOX_API_KEY", "").strip()
+            api_secret = env("UPSTOX_API_SECRET", "").strip()
+            host_hdr = self.headers.get("X-Forwarded-Host") or self.headers.get("Host") or "127.0.0.1:8000"
+            proto = self.headers.get("X-Forwarded-Proto") or ("http" if ("127.0.0.1" in host_hdr or "localhost" in host_hdr) else "https")
+            redirect_uri = env("UPSTOX_REDIRECT_URI", "") or f"{proto}://{host_hdr}/api/upstox/callback"
+            token_url = "https://api.upstox.com/v2/login/authorization/token"
+            form_data = urllib.parse.urlencode({
+                "code": code,
+                "client_id": api_key,
+                "client_secret": api_secret,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code",
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                token_url,
+                data=form_data,
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "Mozilla/5.0",
+                },
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    tok_data = json.loads(resp.read().decode("utf-8"))
+                    access_token = (tok_data.get("access_token") or "").strip()
+                    if access_token:
+                        save_dotenv({"UPSTOX_ACCESS_TOKEN": access_token})
+                        log_system_event("SUCCESS", "UPSTOX", "Upstox OAuth Access Token auto-generated and saved to vault.")
+                        html_resp = f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>Upstox Connected</title>
+                        <style>body{{background:#0b1220;color:#10b981;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;}}
+                        .box{{background:#111c2d;padding:28px 36px;border-radius:12px;border:1px solid rgba(16,185,129,0.4);box-shadow:0 10px 30px rgba(0,0,0,0.5);}}</style></head>
+                        <body><div class="box"><h2>✅ Upstox Auto-Connected!</h2><p style="color:#94a3b8;">Access Token saved to server & cloud vault. Closing window...</p></div>
+                        <script>
+                        try {{ if (window.opener) window.opener.postMessage({{ type: 'UPSTOX_AUTH_SUCCESS', token: {json.dumps(access_token)} }}, '*'); }} catch(e) {{}}
+                        setTimeout(() => {{ window.close(); window.location.href = '/admin.html'; }}, 1200);
+                        </script></body></html>"""
+                        body_bytes = html_resp.encode("utf-8")
+                        self.send_response(200)
+                        self.send_header("Content-Type", "text/html; charset=utf-8")
+                        self.send_header("Content-Length", str(len(body_bytes)))
+                        self.end_headers()
+                        self.wfile.write(body_bytes)
+                        return
+                    return self.send_json(400, {"ok": False, "message": "No access_token returned by Upstox.", "raw": tok_data})
+            except Exception as exc:
+                return self.send_json(500, {"ok": False, "message": f"Upstox token exchange failed: {exc}"})
+
         if path == "/api/market-pulse":
             return self.send_json(200, get_market_pulse())
 
@@ -9158,6 +9432,14 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
             active_broker = brokers.get_active_broker_name(env)
             upstox_tok = env("UPSTOX_ACCESS_TOKEN", "").strip()
+            upstox_pin = env("UPSTOX_PIN", "").strip()
+            upstox_totp = env("UPSTOX_TOTP_SECRET", "").strip()
+            upstox_live_totp = ""
+            if upstox_totp:
+                try:
+                    upstox_live_totp = generate_totp(upstox_totp)
+                except Exception:
+                    upstox_live_totp = ""
             kotak_tok = env("KOTAK_ACCESS_TOKEN", "").strip()
             kotak_ckey = env("KOTAK_CONSUMER_KEY", "").strip()
             kotak_mob = env("KOTAK_MOBILE_NO", "").strip()
@@ -9184,6 +9466,11 @@ class RequestHandler(BaseHTTPRequestHandler):
                 "upstox": {
                     "apiKey": env("UPSTOX_API_KEY"),
                     "hasApiSecret": bool(env("UPSTOX_API_SECRET")),
+                    "mobile": env("UPSTOX_MOBILE"),
+                    "hasPin": bool(upstox_pin),
+                    "hasTotpSecret": bool(upstox_totp),
+                    "totpSecretMasked": f"...{upstox_totp[-4:]}" if len(upstox_totp) > 4 else ("••••••" if upstox_totp else ""),
+                    "liveTotpGenerated": upstox_live_totp,
                     "accessToken": upstox_tok,
                     "accessTokenMasked": f"...{upstox_tok[-6:]}" if len(upstox_tok) > 6 else "",
                     "configured": bool(upstox_tok and len(upstox_tok) > 20),
@@ -9691,10 +9978,41 @@ class RequestHandler(BaseHTTPRequestHandler):
 
             if parsed.path == "/api/upstox/test-connection":
                 payload = self.read_body()
-                tok = payload.get("token") or payload.get("accessToken") or env("UPSTOX_ACCESS_TOKEN", "")
-                k = payload.get("apiKey") or env("UPSTOX_API_KEY", "")
-                s = payload.get("apiSecret") or env("UPSTOX_API_SECRET", "")
+                tok = payload.get("token") or payload.get("accessToken") or ""
+                if is_masked_or_empty(tok):
+                    tok = env("UPSTOX_ACCESS_TOKEN", "")
+                k = payload.get("apiKey") or ""
+                if is_masked_or_empty(k):
+                    k = env("UPSTOX_API_KEY", "")
+                s = payload.get("apiSecret") or ""
+                if is_masked_or_empty(s):
+                    s = env("UPSTOX_API_SECRET", "")
+                mob = payload.get("mobile") or ""
+                if is_masked_or_empty(mob):
+                    mob = env("UPSTOX_MOBILE", "")
+                pin_val = payload.get("pin") or ""
+                if is_masked_or_empty(pin_val):
+                    pin_val = env("UPSTOX_PIN", "")
+                totp_sec = payload.get("totpSecret") or ""
+                if is_masked_or_empty(totp_sec):
+                    totp_sec = env("UPSTOX_TOTP_SECRET", "")
+
+                upd = {}
+                if tok and not is_masked_or_empty(tok): upd["UPSTOX_ACCESS_TOKEN"] = tok.strip()
+                if k and not is_masked_or_empty(k): upd["UPSTOX_API_KEY"] = k.strip()
+                if s and not is_masked_or_empty(s): upd["UPSTOX_API_SECRET"] = s.strip()
+                if mob and not is_masked_or_empty(mob): upd["UPSTOX_MOBILE"] = mob.strip()
+                if pin_val and not is_masked_or_empty(pin_val): upd["UPSTOX_PIN"] = pin_val.strip()
+                if totp_sec and not is_masked_or_empty(totp_sec): upd["UPSTOX_TOTP_SECRET"] = totp_sec.strip()
+                if upd:
+                    save_dotenv(upd)
+
                 res = upstox_engine.test_connection(tok, k, s)
+                if totp_sec:
+                    try:
+                        res["liveTotp"] = generate_totp(totp_sec)
+                    except Exception:
+                        pass
                 return self.send_json(200, res)
 
             if parsed.path == "/api/market-pulse":
@@ -9824,7 +10142,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                             updates[env_key] = val_str
 
                 upstox = payload.get("upstox") or {}
-                for k, env_key in [("accessToken", "UPSTOX_ACCESS_TOKEN"), ("apiKey", "UPSTOX_API_KEY"), ("apiSecret", "UPSTOX_API_SECRET")]:
+                for k, env_key in [("accessToken", "UPSTOX_ACCESS_TOKEN"), ("apiKey", "UPSTOX_API_KEY"), 
+                                   ("apiSecret", "UPSTOX_API_SECRET"), ("mobile", "UPSTOX_MOBILE"), 
+                                   ("pin", "UPSTOX_PIN"), ("totpSecret", "UPSTOX_TOTP_SECRET")]:
                     if k in upstox and upstox[k] is not None:
                         val_str = str(upstox[k]).strip()
                         if not is_masked_or_empty(val_str):

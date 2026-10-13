@@ -3115,6 +3115,11 @@
               </div>
 
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div class="fii-style-switcher" id="p1FiiChartStyleGroup" style="display: inline-flex; border: 1px solid var(--border-default); border-radius: 6px; overflow: hidden;">
+                  <button type="button" class="fii-style-btn active" data-style="grouped" style="padding: 5px 10px; font-size: 11px; font-weight: 700; border: none; background: #2563eb; color: #fff; cursor: pointer;" title="FII vs DII Side-by-Side Comparison + Nifty Line">📊 FII vs DII Dual</button>
+                  <button type="button" class="fii-style-btn" data-style="cumulative" style="padding: 5px 10px; font-size: 11px; font-weight: 700; border: none; background: transparent; color: var(--text-secondary); cursor: pointer;" title="Cumulative Institutional Flow Curve vs Nifty">📈 Cumulative Trend</button>
+                  <button type="button" class="fii-style-btn" data-style="divergence" style="padding: 5px 10px; font-size: 11px; font-weight: 700; border: none; background: transparent; color: var(--text-secondary); cursor: pointer;" title="Zero-Centered Horizontal Divergence Bars">↔️ Divergence Bars</button>
+                </div>
                 <label style="font-size: 11.5px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 6px;">
                   <span>Sessions:</span>
                   <select id="p1FiiRangeSelect" class="ctrl-select" style="font-size: 11.5px; padding: 4px 10px; font-weight: 600;">
@@ -3724,10 +3729,14 @@
         <section class="control-band" aria-label="MTF Controls" style="margin-bottom:14px;">
           <div class="ctrl-group" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
             <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700;">
-              <span>Session Date:</span>
+              <span>📅 Session Date:</span>
               <select id="mtfSessionSelect" class="ctrl-select" style="font-weight:700; padding:4px 8px; font-size:12px;">
                 <option value="auto">Loading Sessions...</option>
               </select>
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700;">
+              <span>Custom Archive Date:</span>
+              <input id="mtfDateInput" type="date" class="ctrl-select" style="font-weight:700; padding:3px 8px; font-size:12px; cursor:pointer;" title="Select any historical NSE trading date">
             </label>
             <button id="mtfRefreshBtn" class="btn primary btn-compact" type="button">🔄 Sync Latest NSE MTF File</button>
             <span id="mtaAsOfStatus" style="font-size:11px; color:#64748b; margin-left:4px;"></span>

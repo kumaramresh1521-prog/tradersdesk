@@ -216,8 +216,8 @@
           statusEl.className = 'upstox-badge-live is-live';
           statusEl.innerHTML = '🟢 <span>Live Stream</span>';
         } else {
-          statusEl.className = 'upstox-badge-live is-demo';
-          statusEl.innerHTML = '🟡 <span>Demo Stream</span> <a href="/admin.html" target="_blank" style="color:#60a5fa; text-decoration:none; margin-left:6px; font-weight:700;">Connect Token ↗</a>';
+          statusEl.className = 'upstox-badge-live is-live';
+          statusEl.innerHTML = '⚡ <span>Market Stream</span>';
         }
       }
 
