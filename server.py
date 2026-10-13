@@ -9298,17 +9298,21 @@ class RequestHandler(BaseHTTPRequestHandler):
             query = urllib.parse.parse_qs(parsed.query)
             api_key = (query.get("apiKey", [""])[0] or env("UPSTOX_API_KEY", "")).strip()
             api_secret = (query.get("apiSecret", [""])[0] or env("UPSTOX_API_SECRET", "")).strip()
+            host_hdr = self.headers.get("X-Forwarded-Host") or self.headers.get("Host") or "127.0.0.1:8000"
+            proto = self.headers.get("X-Forwarded-Proto") or ("http" if ("127.0.0.1" in host_hdr or "localhost" in host_hdr) else "https")
+            default_redir = f"{proto}://{host_hdr}/api/upstox/callback"
+            redirect_uri = (query.get("redirect_uri", [""])[0] or env("UPSTOX_REDIRECT_URI", "") or default_redir).strip()
+            upd_o = {}
             if api_key and not is_masked_or_empty(api_key):
-                upd_o = {"UPSTOX_API_KEY": api_key}
-                if api_secret and not is_masked_or_empty(api_secret):
-                    upd_o["UPSTOX_API_SECRET"] = api_secret
+                upd_o["UPSTOX_API_KEY"] = api_key
+            if api_secret and not is_masked_or_empty(api_secret):
+                upd_o["UPSTOX_API_SECRET"] = api_secret
+            if redirect_uri:
+                upd_o["UPSTOX_REDIRECT_URI"] = redirect_uri
+            if upd_o:
                 save_dotenv(upd_o)
             if not api_key:
                 return self.send_json(400, {"ok": False, "message": "UPSTOX_API_KEY is missing. Please enter API Key in Admin Panel first."})
-            host_hdr = self.headers.get("X-Forwarded-Host") or self.headers.get("Host") or "127.0.0.1:8000"
-            proto = self.headers.get("X-Forwarded-Proto") or ("http" if ("127.0.0.1" in host_hdr or "localhost" in host_hdr) else "https")
-            redirect_uri = (query.get("redirect_uri", [""])[0] or f"{proto}://{host_hdr}/api/upstox/callback").strip()
-            os.environ["UPSTOX_REDIRECT_URI"] = redirect_uri
             auth_url = (
                 f"https://api.upstox.com/v2/login/authorization/dialog"
                 f"?response_type=code&client_id={urllib.parse.quote(api_key)}"
@@ -9471,6 +9475,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                     "hasTotpSecret": bool(upstox_totp),
                     "totpSecretMasked": f"...{upstox_totp[-4:]}" if len(upstox_totp) > 4 else ("••••••" if upstox_totp else ""),
                     "liveTotpGenerated": upstox_live_totp,
+                    "redirectUri": env("UPSTOX_REDIRECT_URI"),
                     "accessToken": upstox_tok,
                     "accessTokenMasked": f"...{upstox_tok[-6:]}" if len(upstox_tok) > 6 else "",
                     "configured": bool(upstox_tok and len(upstox_tok) > 20),
@@ -10144,7 +10149,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 upstox = payload.get("upstox") or {}
                 for k, env_key in [("accessToken", "UPSTOX_ACCESS_TOKEN"), ("apiKey", "UPSTOX_API_KEY"), 
                                    ("apiSecret", "UPSTOX_API_SECRET"), ("mobile", "UPSTOX_MOBILE"), 
-                                   ("pin", "UPSTOX_PIN"), ("totpSecret", "UPSTOX_TOTP_SECRET")]:
+                                   ("pin", "UPSTOX_PIN"), ("totpSecret", "UPSTOX_TOTP_SECRET"),
+                                   ("redirectUri", "UPSTOX_REDIRECT_URI")]:
                     if k in upstox and upstox[k] is not None:
                         val_str = str(upstox[k]).strip()
                         if not is_masked_or_empty(val_str):

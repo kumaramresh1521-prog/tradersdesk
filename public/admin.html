@@ -883,16 +883,33 @@
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
               <div class="adm-form-group">
-                <label>Upstox API Key (Client ID)</label>
-                <input type="text" id="admUpstoxKey" class="adm-input" placeholder="e.g. 40184fd7-5d24-4aa0-aca3-..." />
+                <label>Upstox App API Key (Client ID from developer.upstox.com) <span style="color:#ef4444;">*</span></label>
+                <input type="text" id="admUpstoxKey" class="adm-input" placeholder="e.g. 40184fd7-5d24-4aa0-aca3-388277..." />
+                <small style="color:#94a3b8; font-size:11px;">⚠️ Note: developer.upstox.com ka <strong>API Key (UUID)</strong> dalein, apna 6-digit UCC ya phone number nahi.</small>
               </div>
               <div class="adm-form-group">
                 <label>Upstox API Secret</label>
                 <input type="password" id="admUpstoxSecret" class="adm-input" placeholder="e.g. zgjtae0eae" />
+                <small style="color:#94a3b8; font-size:11px;">Upstox Developer portal me App details ke andar API Secret milega.</small>
               </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:16px;">
+            <!-- UPSTOX REDIRECT URI INPUT -->
+            <div class="adm-form-group" style="margin-top:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label style="margin:0;">Upstox Registered Redirect URI <span style="color:#ef4444;">*Must match Upstox App settings exactly</span></label>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" onclick="copyUpstoxRedirectUri()" style="background:rgba(56,189,248,0.15); border:1px solid #38bdf8; color:#38bdf8; font-size:11px; padding:2px 8px; border-radius:4px; cursor:pointer;">📋 Copy URI</button>
+                  <button type="button" onclick="resetUpstoxRedirectUri()" style="background:rgba(148,163,184,0.15); border:1px solid #64748b; color:#94a3b8; font-size:11px; padding:2px 8px; border-radius:4px; cursor:pointer;">🔄 Use Current URL</button>
+                </div>
+              </div>
+              <input type="text" id="admUpstoxRedirectUri" class="adm-input" placeholder="http://127.0.0.1:8000/api/upstox/callback" />
+              <small style="color:#cbd5e1; font-size:11px; line-height:1.4; display:block; margin-top:4px;">
+                💡 <strong>Error UDAPI100068 Fix:</strong> Upstox Developer Dashboard (<a href="https://developer.upstox.com" target="_blank" style="color:#38bdf8;">developer.upstox.com</a>) me aapke App ke <strong>Redirect URL</strong> me jo likha hai, yahan wahi exact hona chahiye.
+              </small>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:16px; margin-top:10px;">
               <div class="adm-form-group">
                 <label>Registered Mobile No.</label>
                 <input type="text" id="admUpstoxMobile" class="adm-input" placeholder="10-digit mobile number" />
@@ -909,15 +926,12 @@
 
             <div class="adm-form-group">
               <label>Upstox Daily OAuth Access Token (Bearer Token) <span style="color:#34d399; font-weight:normal;">— Auto-saved on Server &amp; Cloud Sync</span></label>
-              <textarea id="admUpstoxToken" class="adm-textarea" style="min-height:70px; font-family:'JetBrains Mono',monospace; font-size:12px;" placeholder="Paste your active Upstox access token here or click Authorize below"></textarea>
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; flex-wrap:wrap; gap:10px;">
-                <small style="color:var(--adm-muted); font-size:11px;">
-                  Redirect URI for Upstox App: <code id="admUpstoxRedirectUri" style="color:#38bdf8;">http://127.0.0.1:8000/api/upstox/callback</code>
-                </small>
+              <textarea id="admUpstoxToken" class="adm-textarea" style="min-height:70px; font-family:'JetBrains Mono',monospace; font-size:12px;" placeholder="Click '⚡ 1-Click Upstox OAuth Login' below or paste token here directly"></textarea>
+              <div style="display:flex; justify-content:flex-end; align-items:center; margin-top:8px; flex-wrap:wrap; gap:10px;">
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                  <button type="button" class="btn-adm-primary" onclick="launchUpstoxOAuth()" style="background:#0284c7; padding:8px 14px; font-size:12px;">⚡ 1-Click Upstox OAuth Login</button>
-                  <button type="button" class="btn-adm-primary" onclick="testUpstoxConnection()" style="background:#10b981; padding:8px 16px; font-size:12px;">🧪 Verify &amp; Test Upstox</button>
-                  <button type="button" class="btn-adm-primary" onclick="saveMasterBrokers()" style="padding:8px 16px; font-size:12px;">💾 Save Upstox Keys</button>
+                  <button type="button" class="btn-adm-primary" onclick="launchUpstoxOAuth()" style="background:#0284c7; padding:9px 16px; font-size:12px; font-weight:700;">⚡ 1-Click Upstox OAuth Login</button>
+                  <button type="button" class="btn-adm-primary" onclick="testUpstoxConnection()" style="background:#10b981; padding:9px 16px; font-size:12px;">🧪 Verify &amp; Test Upstox</button>
+                  <button type="button" class="btn-adm-primary" onclick="saveMasterBrokers()" style="padding:9px 16px; font-size:12px;">💾 Save Upstox Keys</button>
                 </div>
               </div>
             </div>
@@ -1598,7 +1612,7 @@
       async function loadMasterBrokers() {
         try {
           const redirEl = document.getElementById('admUpstoxRedirectUri');
-          if (redirEl) redirEl.textContent = `${window.location.origin}/api/upstox/callback`;
+          if (redirEl && !redirEl.value) redirEl.value = `${window.location.origin}/api/upstox/callback`;
 
           const res = await fetch('/api/admin/broker-config', { headers: getAuthHeaders() });
           if (!res.ok) return;
@@ -1665,6 +1679,10 @@
             }
             if (data.upstox.liveTotpGenerated) {
               _latestUpstoxLiveTotp = data.upstox.liveTotpGenerated;
+            }
+            const elURedir = document.getElementById('admUpstoxRedirectUri');
+            if (elURedir && data.upstox.redirectUri) {
+              elURedir.value = data.upstox.redirectUri;
             }
             if (elUTok && !elUTok.value) {
               elUTok.value = data.upstox.accessToken || '';
@@ -1741,6 +1759,7 @@
           upstox: {
             apiKey: cleanAdmInput('admUpstoxKey'),
             apiSecret: cleanAdmInput('admUpstoxSecret'),
+            redirectUri: cleanAdmInput('admUpstoxRedirectUri'),
             mobile: cleanAdmInput('admUpstoxMobile'),
             pin: cleanAdmInput('admUpstoxPin'),
             totpSecret: cleanAdmInput('admUpstoxTotpSecret'),
@@ -1804,6 +1823,21 @@
         }
       }
 
+      function copyUpstoxRedirectUri() {
+        const el = document.getElementById('admUpstoxRedirectUri');
+        const val = (el?.value || '').trim() || `${window.location.origin}/api/upstox/callback`;
+        navigator.clipboard.writeText(val);
+        showAdmAlert('📋 Upstox Redirect URI copied to clipboard! Paste this in your Upstox App Settings at developer.upstox.com', 'success');
+      }
+
+      function resetUpstoxRedirectUri() {
+        const el = document.getElementById('admUpstoxRedirectUri');
+        if (el) {
+          el.value = `${window.location.origin}/api/upstox/callback`;
+          showAdmAlert('✓ Redirect URI set to current origin: ' + el.value, 'success');
+        }
+      }
+
       async function launchUpstoxOAuth() {
         await saveMasterBrokers();
         await loadMasterBrokers();
@@ -1812,13 +1846,17 @@
           showAdmAlert('Please enter your Upstox API Key first.', 'error');
           return;
         }
+        if (apiKey.length < 15 && !apiKey.includes('-')) {
+          showAdmAlert('⚠️ Warning: Upstox API Key UUID format me hota hai (e.g. 40184fd7-5d24-4aa0-...). Aapne jo dala hai wo trading Client Code ya phone number lag raha hai. Kripya developer.upstox.com se App API Key copy karein.', 'error');
+          return;
+        }
+        const redirectUri = cleanAdmInput('admUpstoxRedirectUri') || `${window.location.origin}/api/upstox/callback`;
         if (_latestUpstoxLiveTotp) {
           try {
             await navigator.clipboard.writeText(_latestUpstoxLiveTotp);
             showAdmAlert(`📋 Live 6-digit TOTP (${_latestUpstoxLiveTotp}) auto-copied to clipboard! Paste if prompted.`, 'success');
           } catch(e) {}
         }
-        const redirectUri = `${window.location.origin}/api/upstox/callback`;
         const oauthUrl = `/api/upstox/oauth-start?apiKey=${encodeURIComponent(apiKey)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
         window.open(oauthUrl, 'UpstoxOAuthPopup', 'width=560,height=720,menubar=no,toolbar=no,location=yes,status=no');
       }
