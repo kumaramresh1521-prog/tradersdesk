@@ -3944,7 +3944,36 @@ function updateP1FiiTooltip(clientX, clientY, row) {
   tooltip.style.top = `${Math.max(10, posY)}px`;
 }
 
+let _fiiDeskSubview = null; // 'cash' | 'derivatives' | null (show all tabs)
 let activeP1FiiSubtab = "cash";
+
+function applyFiiDeskSubview(subview) {
+  _fiiDeskSubview = subview;
+  const tabBar = document.querySelector(".fii-dii-subtabs");
+  const btnCash = document.getElementById("btnFiiSubtabCash");
+  const btnDeriv = document.getElementById("btnFiiSubtabDeriv");
+  const btnOi = document.getElementById("btnFiiSubtabOi");
+
+  if (subview === "cash") {
+    // Hide tab bar entirely, force cash panel visible
+    if (tabBar) tabBar.style.display = "none";
+    switchP1FiiSubtab("cash");
+  } else if (subview === "derivatives" || subview === "oi") {
+    // Show only Deriv + OI tab buttons, hide Cash button
+    if (tabBar) tabBar.style.display = "flex";
+    if (btnCash) btnCash.style.display = "none";
+    if (btnDeriv) { btnDeriv.style.display = ""; }
+    if (btnOi) { btnOi.style.display = ""; }
+    switchP1FiiSubtab(subview === "oi" ? "oi" : "deriv");
+  } else {
+    // Full mode — show all 3 tabs
+    if (tabBar) tabBar.style.display = "flex";
+    if (btnCash) { btnCash.style.display = ""; }
+    if (btnDeriv) { btnDeriv.style.display = ""; }
+    if (btnOi) { btnOi.style.display = ""; }
+    switchP1FiiSubtab("cash");
+  }
+}
 
 function switchP1FiiSubtab(tabKey) {
   activeP1FiiSubtab = tabKey;
@@ -11945,6 +11974,12 @@ const ROUTE_CONFIG = {
     title: "FII / DII Cash Market Flow - Daily Institutional Net Buy/Sell | TradersDesk",
     desc: "FII and DII daily cash market net buy/sell figures from NSE. Nifty 50 benchmark correlation and monthly/yearly trend charts."
   },
+  "/fii-dii-cash": {
+    desk: "smartmoney",
+    subview: "cash",
+    title: "FII / DII Cash Market Flow - Daily Institutional Net Buy/Sell | TradersDesk",
+    desc: "FII and DII daily cash market net buy/sell figures from NSE. Nifty 50 benchmark correlation and monthly/yearly trend charts."
+  },
   "/fii-dii/derivatives": {
     desk: "smartmoney",
     subview: "derivatives",
@@ -12237,22 +12272,11 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
         }
       }, 80);
     }
-    if ((tabKey === "smartMoney" || key === "smartMoney" || key === "smartmoney") && subview === "oi") {
+    if (tabKey === "smartMoney" || key === "smartMoney" || key === "smartmoney") {
       setTimeout(() => {
-        const b = document.getElementById("btnFiiSubtabOi");
-        if (b) b.click();
-      }, 120);
-    }
-    if ((tabKey === "smartMoney" || key === "smartMoney" || key === "smartmoney") && subview === "cash") {
-      setTimeout(() => {
-        const b = document.getElementById("btnFiiSubtabCash");
-        if (b) b.click();
-      }, 120);
-    }
-    if ((tabKey === "smartMoney" || key === "smartMoney" || key === "smartmoney") && subview === "derivatives") {
-      setTimeout(() => {
-        const b = document.getElementById("btnFiiSubtabDeriv");
-        if (b) b.click();
+        if (typeof applyFiiDeskSubview === "function") {
+          applyFiiDeskSubview(subview || null);
+        }
       }, 120);
     }
   }

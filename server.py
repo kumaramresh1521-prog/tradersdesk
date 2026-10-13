@@ -9303,6 +9303,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/fii-dii-derivatives",
             "/fii-dii/cash",
             "/fii-dii/derivatives",
+            "/fii-dii-cash",
             "/mtf-analytics",
             "/mtf",
             "/mtf/overview",
@@ -9331,7 +9332,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/page2.html",
             "/atm-straddle",
             "/straddle",
-            "/fii-dii-cash",
             "/breadth-contribution",
             "/contribution",
         }

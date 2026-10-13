@@ -236,7 +236,11 @@
     const contribBtn = document.getElementById("p2SuiteContributionBtn");
 
     if (straddleBtn) straddleBtn.addEventListener("click", () => activateSuite("straddle", true));
-    if (fiiBtn) fiiBtn.addEventListener("click", () => activateSuite("fiidii", true));
+    if (fiiBtn) fiiBtn.addEventListener("click", (e) => {
+      // Direct navigation to the main terminal FII DII Cash page
+      e.preventDefault();
+      window.location.href = "/fii-dii/cash";
+    });
     if (contribBtn) contribBtn.addEventListener("click", () => activateSuite("contribution", true));
   }
 

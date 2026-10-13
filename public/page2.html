@@ -237,9 +237,9 @@
           <button id="p2SuiteStraddleBtn" class="page2-suite-btn active" type="button">
             <span>📉</span> <span>STRADDLE</span>
           </button>
-          <button id="p2SuiteFiiDiiBtn" class="page2-suite-btn" type="button">
+          <a href="/fii-dii/cash" id="p2SuiteFiiDiiBtn" class="page2-suite-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
             <span>🏛️</span> <span>FII / DII CASH FLOW</span>
-          </button>
+          </a>
           <button id="p2SuiteContributionBtn" class="page2-suite-btn" type="button">
             <span>📈</span> <span>BREADTH &amp; CONTRIBUTION</span>
           </button>
@@ -481,132 +481,6 @@
 
   </main>
 
-  <!-- ====================================================================
-       SECTION 4: FII / DII INSTITUTIONAL CASH FLOW DESK
-       ==================================================================== -->
-  <main id="p2SectionFiiDii" class="page2-main-content" style="display:none;">
-    <!-- Top Header Bar with Period & View Switchers -->
-    <div class="page2-tool-header fii-header-container">
-      <div class="page2-tool-title-wrap">
-        <h2>🏛️ FII / FPI & DII Institutional Flow</h2>
-        <p>Cash Market Institutional Gross & Net Trading Volumes across Daily, Monthly & Yearly Horizons</p>
-      </div>
-
-      <!-- Controls Strip: Period Switcher + View Switcher + Range Select -->
-      <div class="fii-top-controls">
-        <!-- Timeframe Period Switcher (Daily / Monthly / Yearly) -->
-        <div class="fii-period-switcher" id="fiiPeriodGroup">
-          <button class="fii-period-btn active" data-period="daily" type="button">FII/DII DAILY</button>
-          <button class="fii-period-btn" data-period="monthly" type="button">FII/DII MONTHLY</button>
-          <button class="fii-period-btn" data-period="yearly" type="button">FII/DII YEARLY</button>
-        </div>
-
-        <!-- Metric View Switcher (Net / FII / DII) -->
-        <div class="fii-view-switcher" id="fiiViewGroup">
-          <button class="fii-view-btn active" data-view="net" type="button">FII/DII - NET</button>
-          <button class="fii-view-btn" data-view="fii" type="button">FII BUY/SELL NET</button>
-          <button class="fii-view-btn" data-view="dii" type="button">DII BUY/SELL NET</button>
-        </div>
-
-        <!-- Range Filter Dropdown -->
-        <div class="fii-range-wrap">
-          <select id="fiiRangeSelect" class="page2-ctrl-select">
-            <option value="15">Last 15 Sessions</option>
-            <option value="30" selected>Last 30 Sessions</option>
-            <option value="60">Last 60 Sessions</option>
-            <option value="all">All Available</option>
-          </select>
-        </div>
-
-        <!-- Refresh & Status Indicator -->
-        <div class="fii-refresh-wrap" style="display: flex; align-items: center; gap: 8px;">
-          <span id="fiiLastUpdatedBadge" class="p2-badge p2-badge-teal" style="font-size: 11px; padding: 4px 8px; font-family: 'JetBrains Mono', monospace;">Updated: --</span>
-          <button id="fiiRefreshBtn" class="nt-btn-primary" type="button" style="padding: 6px 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
-            <span id="fiiRefreshIcon">🔄</span> <span id="fiiRefreshText">Refresh FII/DII</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Summary Metrics Strip (4 Dynamic KPI Cards) -->
-    <div class="p2-metrics-row" id="fiiMetricCards">
-      <div class="p2-metric-card">
-        <div class="metric-header"><span class="metric-title">TOTAL INSTITUTIONAL NET</span> <span class="p2-badge p2-badge-green" id="fiiBadgeTotal">INFLOW</span></div>
-        <div class="metric-value text-green" id="fiiValTotal">+₹1,619.23 Cr</div>
-        <div class="metric-footer"><span class="metric-lbl">Combined Cash Flow:</span> <span class="metric-sub" id="fiiSubTotal">FII + DII Net</span></div>
-      </div>
-      <div class="p2-metric-card">
-        <div class="metric-header"><span class="metric-title">FII / FPI NET FLOW</span> <span class="p2-badge p2-badge-teal" id="fiiBadgeFii">BUYERS</span></div>
-        <div class="metric-value text-green" id="fiiValFii">+₹599.54 Cr</div>
-        <div class="metric-footer"><span class="metric-lbl">Buy: <strong id="fiiBuyVal">₹14,850 Cr</strong> | Sell: <strong id="fiiSellVal">₹14,251 Cr</strong></span></div>
-      </div>
-      <div class="p2-metric-card">
-        <div class="metric-header"><span class="metric-title">DII DOMESTIC NET FLOW</span> <span class="p2-badge p2-badge-teal" id="fiiBadgeDii">BUYERS</span></div>
-        <div class="metric-value text-green" id="fiiValDii">+₹1,019.69 Cr</div>
-        <div class="metric-footer"><span class="metric-lbl">Buy: <strong id="diiBuyVal">₹12,901 Cr</strong> | Sell: <strong id="diiSellVal">₹11,881 Cr</strong></span></div>
-      </div>
-      <div class="p2-metric-card">
-        <div class="metric-header"><span class="metric-title">NIFTY 50 BENCHMARK</span> <span class="p2-badge p2-badge-green" id="fiiBadgeNifty">+0.33%</span></div>
-        <div class="metric-value" id="fiiValNifty">23,346.40</div>
-        <div class="metric-footer"><span class="metric-lbl">Session Change:</span> <span class="metric-sub text-green" id="fiiSubNifty">+75.80 pts</span></div>
-      </div>
-    </div>
-
-    <!-- Chart Card with Crosshair -->
-    <div class="p2-card">
-      <div class="p2-card-header">
-        <div>
-          <span class="p2-card-title" id="fiiChartTitle">FII / FPI & DII Net (in Crores.) - Daily</span>
-          <div class="p2-card-subtitle">Horizontal zero-centered institutional divergence bars with crosshair tracking & high-precision tooltips</div>
-        </div>
-        <div class="fii-chart-legend">
-          <span class="fii-legend-pill green"><span class="fii-dot"></span> Inflow (+ ₹ Cr)</span>
-          <span class="fii-legend-pill red"><span class="fii-dot"></span> Outflow (- ₹ Cr)</span>
-          <span class="fii-crosshair-indicator"><span>🎯 Crosshair:</span> <strong id="fiiCrosshairStatus">Active</strong></span>
-        </div>
-      </div>
-
-      <!-- Chart Container & Canvas -->
-      <div class="fii-chart-canvas-container" id="fiiChartContainer">
-        <canvas id="chartFiiDiiCanvas"></canvas>
-        <div id="fiiCrosshairTooltip" class="fii-crosshair-tooltip"></div>
-      </div>
-    </div>
-
-    <!-- Data Table Card -->
-    <div class="p2-card">
-      <div class="p2-card-header">
-        <div>
-          <span class="p2-card-title" id="fiiTableTitle">FII/FPI & DII Net Buy/Sell Data - Daily</span>
-          <div class="p2-card-subtitle">Detailed session-by-session institutional gross purchases, sales, and index spot correlation</div>
-        </div>
-        <div class="fii-table-controls">
-          <input type="text" id="fiiTableSearch" placeholder="🔍 Filter date..." class="nt-input-search">
-          <button id="fiiExportCsvBtn" class="nt-btn-secondary" type="button">📥 Export CSV / Excel</button>
-        </div>
-      </div>
-
-      <div class="p2-table-container">
-        <table class="p2-table" id="tableFiiDiiData">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th class="text-right">NIFTY 50</th>
-              <th class="text-right">FII/DII Net (In Crs.)</th>
-              <th class="text-right">FII Gross Buy (₹ Cr)</th>
-              <th class="text-right">FII Gross Sell (₹ Cr)</th>
-              <th class="text-right">FII Net (In Crs.)</th>
-              <th class="text-right">DII Gross Buy (₹ Cr)</th>
-              <th class="text-right">DII Gross Sell (₹ Cr)</th>
-              <th class="text-right">DII Net (In Crs.)</th>
-              <th class="text-center">Institutional Action</th>
-            </tr>
-          </thead>
-          <tbody id="fiiTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </main>
 
   <!-- ====================================================================
        SECTION 5: INDEX BREADTH & STOCK WEIGHT CONTRIBUTION DESK
