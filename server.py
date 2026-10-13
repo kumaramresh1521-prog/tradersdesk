@@ -383,6 +383,15 @@ INDEX_CHARTS = {
     "sensex": {"label": "BSE Sensex", "symbol": "SENSEX", "name": "SENSEX", "exchange": "BSE", "seed": 72600},
 }
 
+INDEX_YF_MAP = {
+    "nifty50": "%5ENSEI",
+    "banknifty": "%5ENSEBANK",
+    "finnifty": "%5ECNXFIN",
+    "sensex": "%5EBSESN",
+    "midcpnifty": "%5ENSEMDCP50",
+    "indiavix": "%5EINDIAVIX",
+}
+
 SAMPLE_SECTORS = [
     "Financial Services",
     "Information Technology",
@@ -840,6 +849,10 @@ class AngelClient(brokers.BaseBrokerClient):
         cache_path: Path,
     ) -> list[list]:
         self.ensure_session()
+        # Clamp to_date to current IST minute if requesting today to prevent Angel API future timestamp rejection
+        now_dt_str = now_ist().strftime("%Y-%m-%d %H:%M")
+        if len(to_date) >= 16 and to_date[:10] == now_dt_str[:10] and to_date > now_dt_str:
+            to_date = now_dt_str
         body = {
             "exchange": instrument.exchange,
             "symboltoken": instrument.token,
@@ -934,6 +947,9 @@ class AngelClient(brokers.BaseBrokerClient):
         allow_stale: bool = False,
         background_refresh: bool = False,
     ) -> list[list]:
+        now_dt_str = now_ist().strftime("%Y-%m-%d %H:%M")
+        if len(to_date) >= 16 and to_date[:10] == now_dt_str[:10] and to_date > now_dt_str:
+            to_date = now_dt_str
         candle_cache = CACHE_DIR / "candles"
         candle_cache.mkdir(exist_ok=True)
         refresh_key = cache_key(instrument.exchange, instrument.token, interval, from_date, to_date)
@@ -1084,6 +1100,7 @@ class ResilientBrokerClient(brokers.BaseBrokerClient):
     def __init__(self, primary: brokers.BaseBrokerClient, fallback: brokers.BaseBrokerClient):
         self.primary = primary
         self.fallback = fallback
+        self._primary_failed_at = 0.0
 
     @property
     def broker_name(self) -> str:
@@ -1109,6 +1126,7 @@ class ResilientBrokerClient(brokers.BaseBrokerClient):
         try:
             self.primary.ensure_session()
         except Exception as exc:
+            self._primary_failed_at = time.time()
             if self.fallback.is_configured():
                 self.fallback.ensure_session()
             else:
@@ -1124,7 +1142,7 @@ class ResilientBrokerClient(brokers.BaseBrokerClient):
         allow_stale: bool = False,
         background_refresh: bool = False,
     ) -> list[list]:
-        if self.primary.is_configured():
+        if self.primary.is_configured() and (time.time() - self._primary_failed_at > 60.0):
             try:
                 candles = self.primary.candle_data(
                     instrument,
@@ -1137,7 +1155,7 @@ class ResilientBrokerClient(brokers.BaseBrokerClient):
                 if candles:
                     return candles
             except Exception:
-                pass
+                self._primary_failed_at = time.time()
         if self.fallback.is_configured():
             return self.fallback.candle_data(
                 instrument,
@@ -1204,6 +1222,10 @@ def get_active_client(manual_totp: str = "") -> brokers.BaseBrokerClient:
 
     bname = brokers.get_active_broker_name(env)
     if bname == "ANGEL":
+        upstox_token = env("UPSTOX_ACCESS_TOKEN", "").strip()
+        if upstox_token and len(upstox_token) > 40 and not upstox_token.isdigit():
+            fallback = brokers.UpstoxClient(cache_dir=CACHE_DIR, env_func=env)
+            return ResilientBrokerClient(primary=primary, fallback=fallback)
         return primary
 
     fallback = AngelClient()
@@ -1604,6 +1626,143 @@ def sample_index_candles(index_key: str, date_value: str, from_date: str = None,
 
 def sample_nifty_candles(date_value: str, interval_minutes: int = 1) -> list[list]:
     return sample_index_candles("nifty50", date_value, interval_minutes=interval_minutes)
+
+
+def fetch_real_intraday_index_candles(index_key: str, date_value: str, interval_minutes: int = 1) -> list[list]:
+    """
+    Ultra-resilient real-time index candle fetcher for intraday sessions:
+    1. Check disk cache with TTL (30s during market hours, 24h otherwise).
+    2. Priority 1: Check active broker client if configured.
+    3. Priority 2: Real Exchange Intraday Candles via Yahoo Finance Chart API.
+    4. Stitches the latest candle with get_live_market_index_quotes() spot price.
+    5. Fallback to sample_index_candles ONLY if both networks fail completely.
+    """
+    normalized = normalize_index_key(index_key)
+    now_dt = now_ist()
+    today_str = now_dt.strftime("%Y-%m-%d")
+    is_today = (date_value == today_str)
+
+    # 1. Disk cache check
+    cache_file = CACHE_DIR / "candles" / f"real_idx_{normalized}_{date_value}_{interval_minutes}m.json"
+    cache_ttl = 30.0 if (is_today and is_market_open()) else 86400.0
+    if cache_file.exists():
+        try:
+            cached_obj = read_json(cache_file, {})
+            c_data = cached_obj.get("data") or []
+            c_age = time.time() - cached_obj.get("cached_at", 0)
+            if c_data and c_age < cache_ttl:
+                return c_data
+        except Exception:
+            pass
+
+    candles: list[list] = []
+
+    # 2. Priority 1: Check active broker client if configured
+    try:
+        if is_active_broker_configured():
+            client = get_active_client()
+            if client and client.is_configured():
+                idx_inst, idx_k = resolve_index(normalized)
+                cur_end_time = now_dt.strftime("%H:%M") if (is_today and is_market_open()) else "15:30"
+                b_candles = client.candle_data(
+                    idx_inst,
+                    interval="ONE_MINUTE" if interval_minutes == 1 else f"{interval_minutes}_MINUTE",
+                    from_date=f"{date_value} 09:15",
+                    to_date=f"{date_value} {cur_end_time}",
+                    allow_stale=True,
+                )
+                if b_candles and len(b_candles) >= 5:
+                    candles = b_candles
+    except Exception:
+        pass
+
+    # 3. Priority 2: Real Exchange Intraday Candles via Yahoo Finance Chart API
+    if not candles:
+        try:
+            yf_sym = INDEX_YF_MAP.get(normalized, "%5ENSEI")
+            yf_range = "1d" if is_today else "5d"
+            yf_url = f"https://query1.finance.yahoo.com/v8/finance/chart/{yf_sym}?interval=1m&range={yf_range}"
+            req = urllib.request.Request(yf_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                data = json.loads(resp.read().decode())
+                res = data.get("chart", {}).get("result", [{}])[0]
+                timestamps = res.get("timestamp", [])
+                q_ind = res.get("indicators", {}).get("quote", [{}])[0]
+                opens = q_ind.get("open", [])
+                highs = q_ind.get("high", [])
+                lows = q_ind.get("low", [])
+                closes = q_ind.get("close", [])
+                volumes = q_ind.get("volume", [])
+
+                raw_yf = []
+                for i in range(len(timestamps)):
+                    if closes[i] is not None:
+                        t_dt = datetime.fromtimestamp(timestamps[i], tz=INDIA_TZ)
+                        if t_dt.strftime("%Y-%m-%d") == date_value:
+                            ts_iso = t_dt.isoformat(timespec="seconds")
+                            o = round(float(opens[i] or closes[i]), 2)
+                            h = round(float(highs[i] or closes[i]), 2)
+                            l = round(float(lows[i] or closes[i]), 2)
+                            c = round(float(closes[i]), 2)
+                            v = int(volumes[i] or 0)
+                            raw_yf.append([ts_iso, o, h, l, c, v])
+
+                if raw_yf and len(raw_yf) >= 5:
+                    if interval_minutes > 1:
+                        agg_candles = []
+                        for k in range(0, len(raw_yf), interval_minutes):
+                            chunk = raw_yf[k : k + interval_minutes]
+                            if chunk:
+                                agg_candles.append([
+                                    chunk[0][0],
+                                    chunk[0][1],
+                                    max(p[2] for p in chunk),
+                                    min(p[3] for p in chunk),
+                                    chunk[-1][4],
+                                    sum(p[5] for p in chunk),
+                                ])
+                        candles = agg_candles
+                    else:
+                        candles = raw_yf
+        except Exception:
+            pass
+
+    # 4. Live Spot Stitching for active market hours
+    if candles and is_today and is_market_open():
+        try:
+            live_quotes = get_live_market_index_quotes()
+            live_spot_obj = live_quotes.get(normalized, {})
+            l_spot = float(live_spot_obj.get("spot") or 0.0)
+            if l_spot > 0:
+                cur_hhmm = now_dt.strftime("%H:%M")
+                last_candle_hhmm = str(candles[-1][0])[11:16]
+                if last_candle_hhmm == cur_hhmm:
+                    candles[-1][4] = l_spot
+                    candles[-1][2] = max(candles[-1][2], l_spot)
+                    candles[-1][3] = min(candles[-1][3], l_spot)
+                elif cur_hhmm > last_candle_hhmm:
+                    candles.append([
+                        f"{today_str}T{cur_hhmm}:00+05:30",
+                        candles[-1][4],
+                        max(candles[-1][4], l_spot),
+                        min(candles[-1][4], l_spot),
+                        l_spot,
+                        0,
+                    ])
+        except Exception:
+            pass
+
+    # 5. Last resort fallback if broker + Yahoo Finance both failed
+    if not candles:
+        candles = sample_index_candles(normalized, date_value, interval_minutes=interval_minutes)
+
+    if candles:
+        try:
+            write_json(cache_file, {"cached_at": time.time(), "data": candles})
+        except Exception:
+            pass
+
+    return candles
 
 
 def build_sample_option_chain(spot: float, strike_range: int, strike_step: int = 50) -> tuple[list[dict], dict]:
@@ -2450,7 +2609,13 @@ def _build_breadth_internal(payload: dict) -> dict:
         instruments, missing = resolve_instruments(rows)
         instruments_used = instruments
         from_date = f"{fetch_from_date} {start_time}"
-        to_date = f"{actual_end_date} {end_time}"
+        now_dt_str = now_ist().strftime("%Y-%m-%d %H:%M")
+        effective_end_time = end_time
+        if actual_end_date == now_dt_str[:10] and is_market_open():
+            now_hhmm = now_dt_str[11:16]
+            if now_hhmm < end_time:
+                effective_end_time = now_hhmm
+        to_date = f"{actual_end_date} {effective_end_time}"
         workers = max(1, min(int(env("BREADTH_MAX_WORKERS", "4") or 4), 8))
 
         def load_one(index: int, instrument: Instrument):
@@ -4651,12 +4816,18 @@ def _build_nifty_internal(payload: dict) -> dict:
 
             points = []
             candle_error = ""
+            now_dt_str = now_ist().strftime("%Y-%m-%d %H:%M")
+            effective_end_time = end_time
+            if date_value == now_dt_str[:10] and is_market_open():
+                now_hhmm = now_dt_str[11:16]
+                if now_hhmm < end_time:
+                    effective_end_time = now_hhmm
             try:
                 candles = client.candle_data(
                     index,
                     interval=candle_interval,
                     from_date=f"{fetch_from_date} {start_time}",
-                    to_date=f"{date_value} {end_time}",
+                    to_date=f"{date_value} {effective_end_time}",
                     allow_stale=fast_refresh,
                     background_refresh=fast_refresh,
                 )
@@ -4665,14 +4836,12 @@ def _build_nifty_internal(payload: dict) -> dict:
                 candle_error = str(exc)
 
             is_simulated = False
-            # During live market hours or for higher intervals (5m, 15m, 30m, 1h),
-            # having fewer than 60 candles is normal and valid. We only fall back to
-            # sample candles if no points could be fetched from the broker at all.
             if not points:
-                is_simulated = True
                 interval_minutes = interval_to_minutes(candle_interval)
-                candles = sample_index_candles(index_key, date_value, from_date=fetch_from_date, interval_minutes=interval_minutes)
+                candles = fetch_real_intraday_index_candles(index_key, date_value, interval_minutes=interval_minutes)
                 points = candle_points(candles)
+                if not candles or (len(candles) > 0 and str(candles[0][0]).startswith("sample")):
+                    is_simulated = True
 
             # Ensure spot is accurate
             live_spot = None
@@ -8236,8 +8405,15 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
         live_quotes = get_live_market_index_quotes()
         live_q = live_quotes.get(norm_idx)
 
+        now_ist_dt = now_ist()
+        is_today_session = (resolved_date == now_ist_dt.strftime("%Y-%m-%d"))
+        market_open_time = dt_time(9, 15)
+        market_close_time = dt_time(15, 30)
+        is_live_trading = is_today_session and (market_open_time <= now_ist_dt.time() < market_close_time)
+        cur_cutoff_hhmm = now_ist_dt.strftime("%H:%M") if is_live_trading else "15:30"
+
         b_broker_src = "broker" if is_active_broker_configured() else "sample"
-        n_broker_src = "angel" if is_active_broker_configured() else "sample"
+        n_broker_src = "broker" if is_active_broker_configured() else "sample"
 
         # Parallel Execution: Build breadth timeline & Nifty spot candles concurrently using resolved_date (with fast timeout fallback)
         b_res = {}
@@ -8260,7 +8436,7 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
                     "fastRefresh": True,
                     "symbols": "",
                     "startTime": "09:15",
-                    "endTime": "15:30"
+                    "endTime": cur_cutoff_hhmm
                 })
                 future_n = pool.submit(build_nifty, {
                     "date": resolved_date,
@@ -8270,7 +8446,7 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
                     "includeOptionChain": False,
                     "fastRefresh": True,
                     "startTime": "09:15",
-                    "endTime": "15:30"
+                    "endTime": cur_cutoff_hhmm
                 })
                 try:
                     b_res = future_b.result(timeout=35.0)
@@ -8282,13 +8458,6 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
                     n_res = {}
         except Exception:
             pass
-
-        now_ist_dt = now_ist()
-        is_today_session = (resolved_date == now_ist_dt.strftime("%Y-%m-%d"))
-        market_open_time = dt_time(9, 15)
-        market_close_time = dt_time(15, 30)
-        is_live_trading = is_today_session and (market_open_time <= now_ist_dt.time() < market_close_time)
-        cur_cutoff_hhmm = now_ist_dt.strftime("%H:%M") if is_live_trading else "15:30"
 
         raw_b = b_res.get("timeline") or []
         actual_b_date = resolved_date
@@ -8334,11 +8503,31 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
         if not real_n:
             real_n = [pt for pt in raw_n if "09:15" <= str(pt.get("time", ""))[11:16] <= cur_cutoff_hhmm]
 
-        # Guarantee complete index candles: if real_n is missing or partial, fall back to sample_index_candles
+        # Guarantee complete genuine index candles: if real_n is missing or partial, use fetch_real_intraday_index_candles
         min_candles_needed = max(5, min(int((now_ist_dt - datetime.combine(now_ist_dt.date(), dt_time(9, 15)).replace(tzinfo=INDIA_TZ)).total_seconds() / 60), 60)) if is_live_trading else 30
         if not real_n or len(real_n) < min_candles_needed:
-            sample_candles = sample_index_candles(norm_idx, resolved_date, interval_minutes=1)
-            real_n = candle_points(sample_candles) if sample_candles else []
+            real_candles = fetch_real_intraday_index_candles(norm_idx, resolved_date, interval_minutes=1)
+            raw_pts = candle_points(real_candles) if real_candles else []
+            real_n = [pt for pt in raw_pts if "09:15" <= str(pt.get("time", ""))[11:16] <= cur_cutoff_hhmm]
+
+        # Stitch latest real spot quote so the chart is accurate to the exact second
+        if real_n and live_q and live_q.get("spot"):
+            latest_spot = round(float(live_q["spot"]), 2)
+            last_pt = real_n[-1]
+            last_hhmm = str(last_pt.get("time", ""))[11:16]
+            if last_hhmm == cur_cutoff_hhmm:
+                last_pt["close"] = latest_spot
+                last_pt["high"] = max(float(last_pt.get("high") or latest_spot), latest_spot)
+                last_pt["low"] = min(float(last_pt.get("low") or latest_spot), latest_spot)
+            elif is_live_trading and cur_cutoff_hhmm > last_hhmm:
+                real_n.append({
+                    "time": f"{resolved_date}T{cur_cutoff_hhmm}:00+05:30",
+                    "open": float(last_pt.get("close") or latest_spot),
+                    "high": latest_spot,
+                    "low": latest_spot,
+                    "close": latest_spot,
+                    "volume": 0,
+                })
 
         constituents_list = (
             breadth_contribution_engine.BANKNIFTY_CONSTITUENTS

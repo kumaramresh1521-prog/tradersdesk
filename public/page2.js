@@ -2019,7 +2019,7 @@
 
   async function loadBreadthContributionSuite(indexKey = "nifty50", dateStr = null, isRefresh = false) {
     const dateBadge = document.getElementById("contribDateDisplayBadge");
-    if (dateBadge && !dateBadge.textContent.includes("⏳")) {
+    if (isRefresh && dateBadge && !dateBadge.textContent.includes("⏳")) {
       dateBadge.textContent = "⏳ Computing Breadth...";
     }
     try {

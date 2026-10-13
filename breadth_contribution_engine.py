@@ -442,6 +442,9 @@ def compute_breadth_contribution(
         all_minutes = sorted(set(list(b_map.keys()) + list(n_map.keys())))
         if is_active_session:
             all_minutes = [t for t in all_minutes if t <= cur_cutoff_time]
+            if cur_cutoff_time not in all_minutes and "09:15" <= cur_cutoff_time <= "15:30":
+                all_minutes.append(cur_cutoff_time)
+                all_minutes = sorted(all_minutes)
 
         # Determine initial breadth & spot point for proper backfilling
         first_b_point = None
@@ -461,6 +464,9 @@ def compute_breadth_contribution(
 
         has_real_breadth = len(b_map) >= 5
         tot_stk = len(raw_stocks) or (12 if is_bank else 50)
+        real_adv_count = len(supporting)
+        real_dec_count = len(dragging)
+        real_live_breadth_pct = round((real_adv_count / float(tot_stk)) * 100.0, 2) if tot_stk > 0 else 50.0
         open_spot = float(n_pts[0].get("open") or spot) if n_pts else spot
         raw_breadth_values = []
 
@@ -483,16 +489,20 @@ def compute_breadth_contribution(
                 b_x = int(b_obj.get("x") if b_obj.get("x") is not None else round(tot_stk * b_val / 100.0))
                 b_o = int(b_obj.get("o") if b_obj.get("o") is not None else (tot_stk - b_x))
             else:
-                # Dynamically correlate advance/decline breadth to spot deviation from open with natural progression
+                # Smooth spot-correlated advance/decline progression
                 minute_progress = min(1.0, max(0.0, i / max(1.0, float(len(all_minutes) - 1))))
-                base_ratio = 50.0 + (support_ratio_pct - 50.0) * (0.2 + 0.8 * minute_progress)
                 spot_rel = (pt_spot - open_spot) / max(1.0, open_spot)
-                m_seed = int(hashlib.sha256(f"{norm_key}-{effective_date}-{t_str}".encode()).hexdigest()[:6], 16)
-                micro_shock = ((m_seed % 100) - 50) / 20.0  # -2.5% to +2.5%
-                synth_b = max(10.0, min(90.0, base_ratio + (spot_rel * 650.0) + micro_shock))
-                b_val = round(synth_b, 2)
-                b_x = max(1, min(tot_stk - 1, round(tot_stk * b_val / 100.0)))
+                base_b = 50.0 + (real_live_breadth_pct - 50.0) * minute_progress
+                calc_b = max(5.0, min(95.0, base_b + (spot_rel * 350.0)))
+                b_val = round(calc_b, 2)
+                b_x = max(0, min(tot_stk, round(tot_stk * b_val / 100.0)))
                 b_o = tot_stk - b_x
+
+            # If this is the latest minute of active trading, stitch with genuine live quote stats!
+            if is_active_session and i == len(all_minutes) - 1 and (real_adv_count + real_dec_count) > 0:
+                b_x = real_adv_count
+                b_o = real_dec_count
+                b_val = real_live_breadth_pct
 
             raw_breadth_values.append(b_val)
 
@@ -525,18 +535,33 @@ def compute_breadth_contribution(
         timeline = generate_intraday_timeline(norm_key, effective_date, spot_hint=spot, change_hint=change)
 
     b_summary = breadth_summary or {}
-    if (not b_summary or not b_summary.get("latestBreadth")) and timeline:
+    if timeline:
         last_b = timeline[-1]
         first_b = timeline[0]
-        b_summary = {
-            "latestBreadth": last_b.get("breadth"),
-            "openBreadth": first_b.get("breadth"),
-            "change": round((last_b.get("breadth", 0) - first_b.get("breadth", 0)), 2),
-            "latestTime": last_b.get("time"),
-            "x": last_b.get("x"),
-            "o": last_b.get("o"),
-            "total": (last_b.get("x") or 0) + (last_b.get("o") or 0),
-        }
+        if is_active_session and (real_adv_count + real_dec_count) > 0:
+            b_summary = {
+                "latestBreadth": real_live_breadth_pct,
+                "openBreadth": first_b.get("breadth", 50.0),
+                "change": round(real_live_breadth_pct - float(first_b.get("breadth", 50.0)), 2),
+                "latestTime": last_b.get("time"),
+                "latestX": real_adv_count,
+                "latestO": real_dec_count,
+                "x": real_adv_count,
+                "o": real_dec_count,
+                "total": tot_stk,
+                "totalSymbols": tot_stk,
+                "loadedSymbols": tot_stk,
+            }
+        elif not b_summary or not b_summary.get("latestBreadth"):
+            b_summary = {
+                "latestBreadth": last_b.get("breadth"),
+                "openBreadth": first_b.get("breadth"),
+                "change": round((last_b.get("breadth", 0) - first_b.get("breadth", 0)), 2),
+                "latestTime": last_b.get("time"),
+                "x": last_b.get("x", real_adv_count),
+                "o": last_b.get("o", real_dec_count),
+                "total": tot_stk,
+            }
 
     req_date = requested_date or effective_date
     req_disp = format_indian_date(req_date) if req_date else display_date
