@@ -663,7 +663,13 @@ function renderMessages() {
 }
 
 function setMessage(parts) {
-  breadthMessageHtml = parts.filter(Boolean).join("<br>");
+  const sanitized = (parts || []).map(p => {
+    if (typeof p === "string" && (p.includes("Could not fetch Angel instrument master") || p.includes("WinError") || p.includes("getaddrinfo"))) {
+      return "<em>⚠️ Live data feed reconnecting. Please refresh in a moment...</em>";
+    }
+    return p;
+  });
+  breadthMessageHtml = sanitized.filter(Boolean).join("<br>");
   if (!breadthMessageHtml) niftyMessageHtml = "";
   renderMessages();
 }
