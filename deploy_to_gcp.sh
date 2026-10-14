@@ -22,8 +22,7 @@ gcloud run deploy ${SERVICE_NAME} \
   --cpu-throttling \
   --min-instances 0 \
   --max-instances 10 \
-  --concurrency 80 \
-  --set-env-vars ADMIN_SECRET_KEY=9771897535
+  --concurrency 80
 
 echo ""
 echo "✅ Deployment completed successfully!"

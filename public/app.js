@@ -10407,7 +10407,18 @@ window.addEventListener("resize", () => {
   resizeNiftyAdCanvas();
   resizeOptCanvases();
   initOptionsAutoRefresh();
-  await loadStatus();
+  try {
+    await loadStatus();
+  } catch (err) {
+    // Do not retain a baked-in historical date when status is briefly
+    // unavailable. It would otherwise request and plot the wrong session.
+    const istNow = new Date(Date.now() + (5.5 * 60 * 60 * 1000));
+    const fallbackDate = istNow.toISOString().slice(0, 10);
+    if (els.dateInput) els.dateInput.value = fallbackDate;
+    if (els.endDateInput) els.endDateInput.value = fallbackDate;
+    _isMarketOpenState = false;
+    console.warn("Status unavailable; using current IST date without auto-refresh.", err);
+  }
   
   if (els.optIndexSelect && els.indexSelect) {
     els.optIndexSelect.value = els.indexSelect.value;
@@ -12367,6 +12378,48 @@ async function loadDashboardData(force = false) {
   }
 }
 
+function initMobileNavigation() {
+  const nav = document.getElementById("mainInstNav");
+  const toggle = document.getElementById("mobileNavToggle");
+  const close = document.getElementById("mobileNavClose");
+  const backdrop = document.getElementById("mobileNavBackdrop");
+  if (!nav || !toggle || !backdrop || toggle.dataset.mobileNavReady) return;
+
+  toggle.dataset.mobileNavReady = "true";
+  const isMobile = () => window.matchMedia("(max-width: 860px)").matches;
+  const setOpen = (open) => {
+    document.body.classList.toggle("mobile-nav-is-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
+    backdrop.setAttribute("aria-hidden", String(!open));
+    if (!open) nav.querySelectorAll(".has-dropdown.mobile-open").forEach((item) => item.classList.remove("mobile-open"));
+  };
+
+  toggle.addEventListener("click", () => setOpen(!document.body.classList.contains("mobile-nav-is-open")));
+  close?.addEventListener("click", () => setOpen(false));
+  backdrop.addEventListener("click", () => setOpen(false));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.body.classList.contains("mobile-nav-is-open")) setOpen(false);
+  });
+  window.addEventListener("resize", () => {
+    if (!isMobile()) setOpen(false);
+  });
+
+  nav.addEventListener("click", (event) => {
+    if (!isMobile()) return;
+    const topLevel = event.target.closest(".has-dropdown > .inst-nav-btn");
+    if (topLevel) {
+      event.preventDefault();
+      const item = topLevel.closest(".has-dropdown");
+      const willOpen = !item.classList.contains("mobile-open");
+      nav.querySelectorAll(".has-dropdown.mobile-open").forEach((other) => other.classList.remove("mobile-open"));
+      item.classList.toggle("mobile-open", willOpen);
+      return;
+    }
+    if (event.target.closest(".inst-dd-item, .inst-nav-item:not(.has-dropdown) .inst-nav-btn")) setOpen(false);
+  });
+}
+
 function initInstNavState() {
   // Always kick off real-time ticking market clock on load immediately
   try { startLiveMarketClock(); } catch(e) { console.warn("Clock init err:", e); }
@@ -12524,9 +12577,11 @@ if (Array.isArray(window._instNavQueue) && window._instNavQueue.length > 0) {
 // Initialize route navigation state now that ROUTE_CONFIG, instNav and panels are ready
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
+    initMobileNavigation();
     initInstNavState();
   });
 } else {
+  initMobileNavigation();
   initInstNavState();
 }
 

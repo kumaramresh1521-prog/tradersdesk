@@ -532,7 +532,15 @@ def compute_breadth_contribution(
             pt["ma"] = round(sum(w_vals) / float(len(w_vals)), 2)
 
     if not timeline:
-        timeline = generate_intraday_timeline(norm_key, effective_date, spot_hint=spot, change_hint=change)
+        return {
+            "ok": False,
+            "quality": "unavailable",
+            "isSimulated": False,
+            "message": "Verified breadth and index candles are required before rendering contribution charts.",
+            "date": effective_date,
+            "requestedDate": requested_date or effective_date,
+            "timeline": [],
+        }
 
     b_summary = breadth_summary or {}
     if timeline:

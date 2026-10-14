@@ -1635,7 +1635,7 @@ def fetch_real_intraday_index_candles(index_key: str, date_value: str, interval_
     2. Priority 1: Check active broker client if configured.
     3. Priority 2: Real Exchange Intraday Candles via Yahoo Finance Chart API.
     4. Stitches the latest candle with get_live_market_index_quotes() spot price.
-    5. Fallback to sample_index_candles ONLY if both networks fail completely.
+    5. Returns an empty series if the broker and exchange sources are unavailable.
     """
     normalized = normalize_index_key(index_key)
     now_dt = now_ist()
@@ -1751,10 +1751,6 @@ def fetch_real_intraday_index_candles(index_key: str, date_value: str, interval_
                     ])
         except Exception:
             pass
-
-    # 5. Last resort fallback if broker + Yahoo Finance both failed
-    if not candles:
-        candles = sample_index_candles(normalized, date_value, interval_minutes=interval_minutes)
 
     if candles:
         try:
@@ -4879,6 +4875,15 @@ def _build_nifty_internal(payload: dict) -> dict:
                     background_refresh=fast_refresh,
                 )
                 points = candle_points(candles)
+                # Broker caches can return a non-empty series from another
+                # session. A valid chart must contain the requested date, not
+                # merely any candles.
+                if straddle_days <= 1:
+                    dated_points = [p for p in points if str(p.get("time", ""))[:10] == date_value]
+                    if dated_points:
+                        points = dated_points
+                    elif any(len(str(p.get("time", ""))) >= 10 and str(p.get("time", ""))[:4].isdigit() for p in points):
+                        points = []
             except Exception as exc:
                 candle_error = str(exc)
 
@@ -8350,6 +8355,7 @@ def build_indices_overview(payload: dict) -> dict:
     _INDICES_OVERVIEW_CACHE["data"] = data
     _INDICES_OVERVIEW_CACHE["timestamp"] = time.time()
 _BREADTH_CONTRIB_CACHE = {}
+_BREADTH_CONTRIB_CACHE_VERSION = 2
 _BREADTH_RECOMPUTE_LOCK = threading.Lock()
 _BREADTH_RECOMPUTING = set()
 _CONSTITUENTS_CACHE = {"timestamp": 0.0, "data": {}}
@@ -8587,6 +8593,24 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
             raw_pts = candle_points(real_candles) if real_candles else []
             real_n = [pt for pt in raw_pts if "09:15" <= str(pt.get("time", ""))[11:16] <= cur_cutoff_hhmm]
 
+        # Contribution charts must be sourced from the same verified session.
+        # Never manufacture either breadth or index history when a feed is incomplete.
+        if len(real_b) < 5 or len(real_n) < 5:
+            missing = []
+            if len(real_b) < 5:
+                missing.append("breadth candles")
+            if len(real_n) < 5:
+                missing.append("index candles")
+            return {
+                "ok": False,
+                "quality": "unavailable",
+                "isSimulated": False,
+                "message": "Verified session data is unavailable for " + " and ".join(missing) + ". No estimated chart has been shown.",
+                "date": resolved_date,
+                "requestedDate": effective_date,
+                "errors": (b_res.get("errors") or []) + (n_res.get("errors") or []),
+            }
+
         # Stitch latest real spot quote so the chart is accurate to the exact second
         if real_n and live_q and live_q.get("spot"):
             latest_spot = round(float(live_q["spot"]), 2)
@@ -8631,6 +8655,7 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
         # Save to in-memory cache and on-disk cache ONLY if valid and timeline has items!
         tl = data.get("timeline") or []
         if data and data.get("ok") and len(tl) > 0:
+            data["cacheSchemaVersion"] = _BREADTH_CONTRIB_CACHE_VERSION
             _BREADTH_CONTRIB_CACHE[cache_key] = {"data": data, "_cached_at": time.time()}
             _BREADTH_CONTRIB_CACHE[resolved_cache_key] = {"data": data, "_cached_at": time.time()}
             try:
@@ -8672,7 +8697,7 @@ def get_cached_breadth_contribution(idx: str, date_param: str, force_refresh: bo
 
     # 1. In-memory hot cache (check both effective_date and resolved_date)
     cached = _BREADTH_CONTRIB_CACHE.get(cache_key) or _BREADTH_CONTRIB_CACHE.get(resolved_cache_key)
-    if cached and cached.get("data", {}).get("timeline") and len(cached["data"]["timeline"]) > 0:
+    if cached and cached.get("data", {}).get("cacheSchemaVersion") == _BREADTH_CONTRIB_CACHE_VERSION and cached.get("data", {}).get("timeline") and len(cached["data"]["timeline"]) > 0:
         age = time.time() - cached.get("_cached_at", 0)
         if not force_refresh:
             if age >= cache_ttl and market_open:
@@ -8695,7 +8720,7 @@ def get_cached_breadth_contribution(idx: str, date_param: str, force_refresh: bo
                 try:
                     with open(disk_cache_file, "r", encoding="utf-8") as df:
                         disk_data = json.load(df)
-                        if disk_data.get("ok") and disk_data.get("timeline") and len(disk_data["timeline"]) > 0:
+                        if disk_data.get("ok") and disk_data.get("cacheSchemaVersion") == _BREADTH_CONTRIB_CACHE_VERSION and disk_data.get("timeline") and len(disk_data["timeline"]) > 0:
                             file_age = time.time() - disk_cache_file.stat().st_mtime
                             _BREADTH_CONTRIB_CACHE[k] = {"data": disk_data, "_cached_at": time.time() - file_age}
                             return disk_data
@@ -9156,6 +9181,16 @@ def get_straddle_chart_response(params: dict) -> dict:
             })
         except Exception:
             nifty_data = None
+
+        if not nifty_data or not nifty_data.get("ok") or not nifty_data.get("points"):
+            return {
+                "ok": False,
+                "quality": "unavailable",
+                "isSimulated": False,
+                "message": "Verified Nifty candles are unavailable, so the straddle chart has not been estimated.",
+                "brokerError": (nifty_data or {}).get("brokerError") if isinstance(nifty_data, dict) else "Nifty data request failed",
+                "points": [],
+            }
 
         live_spot = None
         if not is_historical:

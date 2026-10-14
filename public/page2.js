@@ -84,11 +84,53 @@
     }
   }
 
+  function initMobileNavigation() {
+    const nav = document.getElementById("mainInstNav");
+    const toggle = document.getElementById("mobileNavToggle");
+    const close = document.getElementById("mobileNavClose");
+    const backdrop = document.getElementById("mobileNavBackdrop");
+    if (!nav || !toggle || !backdrop || toggle.dataset.mobileNavReady) return;
+
+    toggle.dataset.mobileNavReady = "true";
+    const isMobile = () => window.matchMedia("(max-width: 860px)").matches;
+    const setOpen = (open) => {
+      document.body.classList.toggle("mobile-nav-is-open", open);
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
+      backdrop.setAttribute("aria-hidden", String(!open));
+      if (!open) nav.querySelectorAll(".has-dropdown.mobile-open").forEach((item) => item.classList.remove("mobile-open"));
+    };
+
+    toggle.addEventListener("click", () => setOpen(!document.body.classList.contains("mobile-nav-is-open")));
+    close?.addEventListener("click", () => setOpen(false));
+    backdrop.addEventListener("click", () => setOpen(false));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && document.body.classList.contains("mobile-nav-is-open")) setOpen(false);
+    });
+    window.addEventListener("resize", () => {
+      if (!isMobile()) setOpen(false);
+    });
+    nav.addEventListener("click", (event) => {
+      if (!isMobile()) return;
+      const topLevel = event.target.closest(".has-dropdown > .inst-nav-btn");
+      if (topLevel) {
+        event.preventDefault();
+        const item = topLevel.closest(".has-dropdown");
+        const willOpen = !item.classList.contains("mobile-open");
+        nav.querySelectorAll(".has-dropdown.mobile-open").forEach((other) => other.classList.remove("mobile-open"));
+        item.classList.toggle("mobile-open", willOpen);
+        return;
+      }
+      if (event.target.closest(".inst-dd-item, .inst-nav-item:not(.has-dropdown) .inst-nav-btn")) setOpen(false);
+    });
+  }
+
   // ========================================================================
   // INITIALIZATION & SUITE SWITCHING
   // ========================================================================
   document.addEventListener("DOMContentLoaded", () => {
     initTheme();
+    initMobileNavigation();
     setupSuiteSwitching();
     setupGlobalControls();
     setupStraddleControls();
@@ -663,6 +705,12 @@
       const data = await res.json();
 
       if (!data || !data.ok) {
+        straddleState.data = null;
+        renderStraddleChart({ points: [] });
+        const heading = document.getElementById("straddleChartHeading");
+        if (heading) heading.textContent = "Live straddle data unavailable";
+        const subtitle = document.querySelector(".straddle-chart-title-left .p2-card-subtitle");
+        if (subtitle) subtitle.textContent = data?.message || "Verified Nifty candles or option quotes are currently unavailable. No estimated chart is displayed.";
         console.error("Straddle fetch failed:", data);
         return;
       }
@@ -773,6 +821,10 @@
       }
 
     } catch (err) {
+      straddleState.data = null;
+      renderStraddleChart({ points: [] });
+      const heading = document.getElementById("straddleChartHeading");
+      if (heading) heading.textContent = "Live straddle data unavailable";
       console.error("Error loading straddle tool:", err);
     } finally {
       if (refBtn && !isSilent) {
@@ -2028,7 +2080,10 @@
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
-      if (!data.ok) throw new Error("API returned ok: false");
+      if (!data.ok) throw new Error(data.message || "Contribution data is unavailable");
+      if (!Array.isArray(data.timeline) || data.timeline.length < 5) {
+        throw new Error("Verified contribution timeline is incomplete");
+      }
 
       contribDataCache = data;
       contribTimeline = data.timeline || [];
@@ -2177,6 +2232,39 @@
       });
 
     } catch (err) {
+      contribDataCache = null;
+      contribTimeline = [];
+      const msg = err.message || "Verified breadth and index data are unavailable.";
+      if (dateBadge) {
+        dateBadge.textContent = "⚠ Data unavailable";
+        dateBadge.className = "p2-badge p2-badge-amber";
+      }
+      const noticeBanner = document.getElementById("contribMarketNoticeBanner");
+      const noticeText = document.getElementById("contribMarketNoticeText");
+      if (noticeBanner && noticeText) {
+        noticeText.textContent = `${msg} No estimated breadth or Nifty chart is displayed.`;
+        noticeBanner.style.display = "flex";
+      }
+      ["tbodyPullingDown", "tbodySupporting"].forEach((id) => {
+        const body = document.getElementById(id);
+        if (body) body.innerHTML = `<tr><td colspan="5" class="text-center">Verified data unavailable</td></tr>`;
+      });
+      ["chartIntradayBreadthCanvas", "chartIntradayNiftyCanvas"].forEach((id) => {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const rect = canvas.getBoundingClientRect();
+        const width = rect.width || 600, height = rect.height || 300;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = document.body.classList.contains("theme-light") ? "#ffffff" : "#0c121e";
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = document.body.classList.contains("theme-light") ? "#64748b" : "#94a3b8";
+        ctx.font = "13px Inter, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Verified session data unavailable", width / 2, height / 2);
+      });
       console.error("Failed to load Breadth Contribution suite:", err);
     }
   }
