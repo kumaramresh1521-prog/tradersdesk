@@ -1019,6 +1019,20 @@
       max-width: 340px;
     }
   </style>
+<!-- MOBILE-FIX-INJECTED-v2 -->
+
+<style>
+/* Calendar Studio Mobile Fixes */
+@media (max-width: 768px) {
+  body { overflow-x: hidden !important; }
+  #spreadsheet, .jspreadsheet_wrapper { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+  .toolbar { flex-wrap: wrap !important; gap: 6px !important; padding: 8px !important; }
+  .toolbar button { min-height: 36px !important; font-size: 12px !important; }
+  select, input { min-height: 36px !important; font-size: 14px !important; }
+  .header-bar { flex-wrap: wrap !important; gap: 6px !important; }
+}
+</style>
+
 </head>
 <body>
 

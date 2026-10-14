@@ -12876,3 +12876,20 @@ if (document.readyState === "loading") {
   initDynamicFooter();
 }
 window.initDynamicFooter = initDynamicFooter;
+
+
+// Close mobile dropdowns when tapping outside
+document.addEventListener('click', function(e) {
+  if (window.innerWidth <= 860 || ('ontouchstart' in window)) {
+    const nav = document.getElementById('mainInstNav') || document.querySelector('.inst-nav');
+    if (nav && !nav.contains(e.target)) {
+      nav.querySelectorAll('.has-dropdown.mobile-open').forEach(function(item) {
+        item.classList.remove('mobile-open');
+      });
+    }
+  }
+}, true);
+window.closeAllMobileDropdowns = function() {
+  const nav = document.getElementById('mainInstNav') || document.querySelector('.inst-nav');
+  if (nav) nav.querySelectorAll('.has-dropdown.mobile-open').forEach(function(item) { item.classList.remove('mobile-open'); });
+};

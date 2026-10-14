@@ -1182,7 +1182,7 @@
               </div>
             </div>
             <div class="canvas-wrap">
-              <canvas id="niftyCanvas" width="760" height="340"></canvas>
+              <canvas style="width:100%;max-width:100%;" id="niftyCanvas" height="340"></canvas>
               <div class="chart-tooltip" id="niftyTooltip"></div>
             </div>
           </section>
@@ -1198,7 +1198,7 @@
               </div>
             </div>
             <div class="canvas-wrap">
-              <canvas id="niftyAdCanvas" width="760" height="340"></canvas>
+              <canvas style="width:100%;max-width:100%;" id="niftyAdCanvas" height="340"></canvas>
               <div class="chart-tooltip" id="niftyAdTooltip"></div>
             </div>
           </section>
@@ -1219,7 +1219,7 @@
               </div>
             </div>
             <div class="canvas-wrap">
-              <canvas id="breadthCanvas" width="760" height="340"></canvas>
+              <canvas style="width:100%;max-width:100%;" id="breadthCanvas" height="340"></canvas>
               <div class="chart-tooltip" id="chartTooltip"></div>
             </div>
           </section>
@@ -1236,7 +1236,7 @@
               </div>
             </div>
             <div class="canvas-wrap">
-              <canvas id="adCanvas" width="760" height="340"></canvas>
+              <canvas style="width:100%;max-width:100%;" id="adCanvas" height="340"></canvas>
               <div class="chart-tooltip" id="adTooltip"></div>
             </div>
           </section>
@@ -1853,7 +1853,7 @@
 
                 <!-- High-Performance Interactive Canvas Visualizer -->
                 <div class="opt-vis-chart-canvas-wrap" id="optVisCanvasWrap">
-                  <canvas id="optVisCanvas" height="320"></canvas>
+                  <canvas style="width:100%;max-width:100%;" id="optVisCanvas" height="320"></canvas>
                   <div id="optVisTooltip" class="opt-vis-tooltip" style="display:none;"></div>
                 </div>
 
@@ -2264,7 +2264,7 @@
 
           <!-- Straddle Canvas & Tooltip Container -->
           <div class="straddle-canvas-container">
-            <canvas id="straddleCanvas" width="1200" height="320"></canvas>
+            <canvas style="width:100%;max-width:100%;" id="straddleCanvas" height="320"></canvas>
             <div class="straddle-chart-tooltip" id="straddleTooltip"></div>
           </div>
 
@@ -2383,7 +2383,7 @@
               <h2>Open Interest Distribution (Calls vs Puts)</h2>
             </div>
             <div class="canvas-wrap">
-              <canvas id="optOiCanvas" width="760" height="280"></canvas>
+              <canvas style="width:100%;max-width:100%;" id="optOiCanvas" height="280"></canvas>
               <div id="optOiTooltip" class="chart-tooltip" style="display:none;"></div>
             </div>
           </article>
@@ -2392,7 +2392,7 @@
               <h2>Implied Volatility Curve</h2>
             </div>
             <div class="canvas-wrap">
-              <canvas id="optIvCanvas" width="760" height="280"></canvas>
+              <canvas style="width:100%;max-width:100%;" id="optIvCanvas" height="280"></canvas>
               <div id="optIvTooltip" class="chart-tooltip" style="display:none;"></div>
             </div>
           </article>
@@ -2766,20 +2766,20 @@
             <div class="opstra-dual-chart-container" id="wpcrDualChartContainer">
               <!-- Top Subplot: Stock Price Area Chart -->
               <div class="opstra-pane opstra-pane-price" id="opstraPriceWrap">
-                <canvas id="wpcrPriceCanvas" width="1200" height="260" style="width:100%; height:260px; display:block;"></canvas>
+                <canvas id="wpcrPriceCanvas" height="260" style="width:100%; height:260px; display:block;"></canvas>
                 <div class="opstra-chart-tooltip" id="wpcrPriceTooltip" style="display:none;"></div>
               </div>
 
               <!-- Bottom Subplot: Synchronized PCR (Red) vs WPCR (Blue) -->
               <div class="opstra-pane opstra-pane-pcr" id="opstraPcrWrap">
-                <canvas id="wpcrPcrCanvas" width="1200" height="210" style="width:100%; height:210px; display:block;"></canvas>
+                <canvas id="wpcrPcrCanvas" height="210" style="width:100%; height:210px; display:block;"></canvas>
                 <div class="opstra-chart-tooltip" id="wpcrPcrTooltip" style="display:none;"></div>
               </div>
             </div>
 
             <!-- Strike-Wise Bar Canvas Container (Visible in Strike Matrix mode) -->
             <div class="canvas-wrap" id="wpcrCapitalWrap" style="position:relative; margin-top:8px; display:none;">
-              <canvas id="wpcrCapitalCanvas" width="1200" height="280" style="width:100%; height:280px;"></canvas>
+              <canvas id="wpcrCapitalCanvas" height="280" style="width:100%; height:280px;"></canvas>
               <div class="straddle-chart-tooltip" id="wpcrCanvasTooltip"></div>
             </div>
           </div>
