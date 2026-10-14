@@ -3697,3 +3697,46 @@ document.addEventListener("keydown", function(e) {
     if (window.closeMobileDotMenu) window.closeMobileDotMenu();
   }
 });
+
+
+// Page 2: Mobile Dropdown Toggle Handler
+document.addEventListener("DOMContentLoaded", function() {
+  const nav = document.getElementById("mainInstNav") || document.querySelector(".inst-nav");
+  if (!nav) return;
+
+  nav.querySelectorAll(".has-dropdown").forEach(function(item) {
+    const btn = item.querySelector(".inst-nav-btn");
+    if (btn) {
+      btn.addEventListener("click", function(e) {
+        const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
+        if (!isMobile) return;
+
+        if (!item.classList.contains("mobile-open")) {
+          e.preventDefault();
+          e.stopPropagation();
+          nav.querySelectorAll(".has-dropdown.mobile-open").forEach(function(other) {
+            if (other !== item) other.classList.remove("mobile-open");
+          });
+          item.classList.add("mobile-open");
+        } else {
+          item.classList.remove("mobile-open");
+        }
+      });
+    }
+
+    item.querySelectorAll(".inst-dd-item").forEach(function(subItem) {
+      subItem.addEventListener("click", function() {
+        item.classList.remove("mobile-open");
+      });
+    });
+  });
+
+  document.addEventListener("click", function(e) {
+    if (window.innerWidth <= 860 || ("ontouchstart" in window)) {
+      const openItem = document.querySelector(".has-dropdown.mobile-open");
+      if (openItem && !openItem.contains(e.target)) {
+        openItem.classList.remove("mobile-open");
+      }
+    }
+  });
+});

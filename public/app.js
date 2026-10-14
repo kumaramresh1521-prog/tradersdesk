@@ -12935,3 +12935,55 @@ document.addEventListener("keydown", function(e) {
     if (window.closeMobileDotMenu) window.closeMobileDotMenu();
   }
 });
+
+window.instNavClick = function(e, key, subview) {
+  if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
+    return true; // Let browser open in new tab!
+  }
+
+  // On mobile touch devices, check if this button belongs to a dropdown item
+  const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
+  if (isMobile) {
+    const target = e ? (e.target || e.srcElement) : null;
+    const btn = target ? (target.classList.contains("inst-nav-btn") ? target : target.closest(".inst-nav-btn")) : null;
+    const navItem = btn ? btn.closest(".has-dropdown") : null;
+
+    if (navItem && btn) {
+      // If the dropdown is not yet open on mobile, open it so user can see and click submenus!
+      if (!navItem.classList.contains("mobile-open")) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (e && e.stopPropagation) e.stopPropagation();
+
+        // Close any other open dropdowns
+        document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(other) {
+          if (other !== navItem) other.classList.remove("mobile-open");
+        });
+
+        navItem.classList.add("mobile-open");
+        return false;
+      }
+      // If it was already open and user taps the header button again, close it and proceed
+      navItem.classList.remove("mobile-open");
+    }
+  }
+
+  if (e && e.preventDefault) e.preventDefault();
+
+  // Close any open mobile dropdowns
+  document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(item) {
+    item.classList.remove("mobile-open");
+  });
+
+  instNav(key, subview);
+  return false;
+};
+
+// Dismiss open mobile dropdown when clicking outside
+document.addEventListener("click", function(e) {
+  if (window.innerWidth <= 860 || ("ontouchstart" in window)) {
+    const openItem = document.querySelector(".has-dropdown.mobile-open");
+    if (openItem && !openItem.contains(e.target)) {
+      openItem.classList.remove("mobile-open");
+    }
+  }
+});

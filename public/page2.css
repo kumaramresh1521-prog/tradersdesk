@@ -3907,3 +3907,51 @@ body.theme-light .inst-dd-item:hover .dd-sub {
   border-top-color: #e2e8f0;
   background: #f8fafc;
 }
+
+
+/* Desktop: HIDE 6-dot menu button completely */
+@media (min-width: 861px) {
+  .inst-dot-menu-btn,
+  #mobileDotMenuBtn,
+  #p2DotMenuBtn {
+    display: none !important;
+  }
+}
+
+/* Mobile: SHOW 6-dot menu button */
+@media (max-width: 860px) {
+  .inst-dot-menu-btn,
+  #mobileDotMenuBtn,
+  #p2DotMenuBtn {
+    display: inline-flex !important;
+  }
+
+  .page2-header, .inst-header {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: #080c17 !important;
+  }
+
+  .inst-nav-item.has-dropdown.mobile-open .inst-dropdown {
+    display: flex !important;
+    position: fixed !important;
+    top: 54px !important;
+    bottom: auto !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100vh - 70px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    background: #0a0f1d !important;
+    border: 1.5px solid #38bdf8 !important;
+    border-radius: 14px !important;
+    flex-direction: column !important;
+    padding: 14px 14px 28px 14px !important;
+    gap: 10px !important;
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(56, 189, 248, 0.25) !important;
+    z-index: 999999 !important;
+  }
+}
