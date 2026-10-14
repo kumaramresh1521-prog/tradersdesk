@@ -14,6 +14,9 @@
     visViewMode: 'strike', // 'strike' (Image 2) | 'pcr' (Image 1) | 'maxpain' (Image 3)
     visHoverIndex: -1,
     visChartBounds: [],
+    visLocked: false, // Strike centering lock
+    visCenterStrike: null, // Hysteresis center strike
+    intradayHistory: {}, // Immutable client timeline storage
     showGexColumns: false, // Custom GEX columns removed from primary table
     showVolumeBars: true,
     showIvColumns: true,
@@ -1506,7 +1509,7 @@
       const elSub = document.getElementById('optVisChartSub');
       if (elSub) elSub.textContent = 'Reference Image 1 • PCR curve (Left Axis - Red) vs Underlying Spot Price (Right Axis - Green) • 09:15 to 15:30';
 
-      const pts = (data.intradayTimeline && data.intradayTimeline.length >= 10) ? data.intradayTimeline : generateClientTimeline(spot, Number(data.pcr || 0.85), Number(data.maxPain || spot));
+      const pts = (data.intradayTimeline && data.intradayTimeline.length >= 2) ? data.intradayTimeline : getStableClientTimeline(spot, Number(data.pcr || 0.85), Number(data.maxPain || spot));
       if (!pts || pts.length === 0) return;
 
       const padL = 60, padR = 75, padT = 25, padB = 40;
@@ -1677,7 +1680,7 @@
       const elSub = document.getElementById('optVisChartSub');
       if (elSub) elSub.textContent = 'Reference Image 3 • Underlying Spot Price (Green) vs Max Pain Strike Barrier Stair-Step (Red) • 09:15 to 15:30';
 
-      const pts = (data.intradayTimeline && data.intradayTimeline.length >= 10) ? data.intradayTimeline : generateClientTimeline(spot, Number(data.pcr || 0.85), Number(data.maxPain || spot));
+      const pts = (data.intradayTimeline && data.intradayTimeline.length >= 2) ? data.intradayTimeline : getStableClientTimeline(spot, Number(data.pcr || 0.85), Number(data.maxPain || spot));
       if (!pts || pts.length === 0) return;
 
       const padL = 30, padR = 75, padT = 25, padB = 40;
@@ -1815,16 +1818,49 @@
 
     let allRows = [...(data.data || [])].sort((a, b) => Number(a.strike_price) - Number(b.strike_price));
     let rows = allRows;
-    if (state.strikeRange > 0) {
-      let atmIdx = 0;
+
+    let step = 50;
+    if (allRows.length >= 2) {
+      step = Math.abs(Number(allRows[1].strike_price) - Number(allRows[0].strike_price)) || 50;
+    }
+
+    if (state.strikeRange > 0 && allRows.length > 0) {
+      let closestIdx = 0;
       let minD = Infinity;
       allRows.forEach((r, i) => {
         const d = Math.abs(Number(r.strike_price) - spot);
-        if (d < minD) { minD = d; atmIdx = i; }
+        if (d < minD) { minD = d; closestIdx = i; }
       });
-      const start = Math.max(0, atmIdx - state.strikeRange);
-      const end = Math.min(allRows.length, atmIdx + state.strikeRange + 1);
+      const trueAtmStrike = Number(allRows[closestIdx].strike_price);
+
+      // Hysteresis deadband: only shift center strike if spot moves > 70% of strike step
+      if (!state.visLocked || !state.visCenterStrike) {
+        if (!state.visCenterStrike) {
+          state.visCenterStrike = trueAtmStrike;
+        } else {
+          const distFromCenter = Math.abs(spot - state.visCenterStrike);
+          if (distFromCenter >= (step * 0.7)) {
+            state.visCenterStrike = trueAtmStrike;
+          }
+        }
+      }
+
+      let centerIdx = allRows.findIndex(r => Math.abs(Number(r.strike_price) - state.visCenterStrike) < 0.1);
+      if (centerIdx === -1) centerIdx = closestIdx;
+
+      const start = Math.max(0, centerIdx - state.strikeRange);
+      const end = Math.min(allRows.length, centerIdx + state.strikeRange + 1);
       rows = allRows.slice(start, end);
+    }
+
+    const elAtmBadge = document.getElementById('optVisAtmBadge');
+    if (elAtmBadge) {
+      elAtmBadge.textContent = `ATM: ₹${fmtNum(state.visCenterStrike || atmStrike, 0)}`;
+    }
+    const lockBtn = document.getElementById('optVisLockBtn');
+    if (lockBtn) {
+      lockBtn.classList.toggle('locked', Boolean(state.visLocked));
+      lockBtn.textContent = state.visLocked ? '🔒 Locked' : '🔓 Auto';
     }
 
     // Compute metric values & signed bounds
@@ -2043,23 +2079,52 @@
     }
   }
 
-  // Client-side fallback timeline if server points pending
-  function generateClientTimeline(spotVal, pcrVal, maxPainVal) {
-    const pts = [];
-    const count = 76;
-    for (let i = 0; i < count; i++) {
-      const frac = i / (count - 1);
-      const m = Math.round(frac * 375);
-      const h = 9 + Math.floor((15 + m) / 60);
-      const min = (15 + m) % 60;
-      const timeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-      const wave = -Math.sin(frac * Math.PI) * (spotVal * 0.012) + Math.sin(frac * 4 * Math.PI) * (spotVal * 0.002);
-      const s = Math.round((spotVal + (frac - 1.0) * (spotVal * 0.004) + wave) * 100) / 100;
-      const p = Math.max(0.2, Math.round((pcrVal * 0.88 + frac * (pcrVal * 0.12) + Math.sin(frac * 2.5 * Math.PI) * 0.03) * 100) / 100);
-      let mp = maxPainVal;
-      if (frac < 0.35) mp = maxPainVal + 50;
-      pts.push({ time: timeStr, spot: s, pcr: p, maxPain: mp, dist: Math.round((s - mp) * 10) / 10 });
+  // Stable Client-side chronological timeline (immutable past points, no sine-wave dancing)
+  function getStableClientTimeline(spotVal, pcrVal, maxPainVal) {
+    const key = state.instrumentKey || 'NIFTY';
+    if (!state.intradayHistory) state.intradayHistory = {};
+    let pts = state.intradayHistory[key];
+
+    const now = new Date();
+    const curM = now.getHours() * 60 + now.getMinutes();
+    const startM = 9 * 60 + 15;
+    const endM = Math.min(15 * 60 + 30, Math.max(startM + 5, curM));
+
+    if (!pts || pts.length === 0) {
+      pts = [];
+      const stepMin = 5;
+      const totalSteps = Math.max(3, Math.floor((endM - startM) / stepMin));
+      for (let i = 0; i <= totalSteps; i++) {
+        const ptM = startM + i * stepMin;
+        if (ptM > endM) break;
+        const h = Math.floor(ptM / 60);
+        const min = ptM % 60;
+        const timeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+        const frac = i / Math.max(1, totalSteps);
+        const s = Math.round((spotVal * (0.997 + frac * 0.003)) * 100) / 100;
+        const p = Math.max(0.2, Math.round((pcrVal * (0.93 + frac * 0.07)) * 100) / 100);
+        const mp = maxPainVal;
+        pts.push({ time: timeStr, spot: s, pcr: p, maxPain: mp, dist: Math.round((s - mp) * 10) / 10 });
+      }
+      state.intradayHistory[key] = pts;
     }
+
+    const curTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    if (pts.length > 0 && pts[pts.length - 1].time === curTimeStr) {
+      pts[pts.length - 1].spot = spotVal;
+      pts[pts.length - 1].pcr = pcrVal;
+      pts[pts.length - 1].maxPain = maxPainVal;
+      pts[pts.length - 1].dist = Math.round((spotVal - maxPainVal) * 10) / 10;
+    } else if (curM >= startM && curM <= 15 * 60 + 35) {
+      pts.push({
+        time: curTimeStr,
+        spot: spotVal,
+        pcr: pcrVal,
+        maxPain: maxPainVal,
+        dist: Math.round((spotVal - maxPainVal) * 10) / 10
+      });
+    }
+
     return pts;
   }
 
@@ -2081,6 +2146,20 @@
         if (state.chainData) renderVisualizerChart(state.chainData);
       });
     });
+
+    // Lock Strikes Centering Button (Fixes visualizer strike window)
+    const lockBtn = document.getElementById('optVisLockBtn');
+    if (lockBtn) {
+      lockBtn.addEventListener('click', () => {
+        state.visLocked = !state.visLocked;
+        lockBtn.classList.toggle('locked', state.visLocked);
+        lockBtn.textContent = state.visLocked ? '🔒 Locked' : '🔓 Auto';
+        lockBtn.title = state.visLocked
+          ? 'Strikes locked to current window. Click to unlock auto-centering.'
+          : 'Auto-centering with hysteresis. Click to lock strikes.';
+        if (state.chainData) renderVisualizerChart(state.chainData);
+      });
+    }
 
     // Toggle Collapse / Expand Visualizer
     const toggleBtn = document.getElementById('upstoxVisToggleBtn');
@@ -2105,7 +2184,7 @@
       });
     }
 
-    // 14-Metric Pills Click Listeners
+    // 14-Metric Pills Click Listeners (Never hijacks view tab)
     const pills = document.querySelectorAll('.opt-vis-pill');
     pills.forEach(p => {
       p.addEventListener('click', (e) => {
@@ -2113,19 +2192,6 @@
         e.currentTarget.classList.add('active');
         const mKey = e.currentTarget.getAttribute('data-metric');
         state.visualizerMetric = mKey;
-
-        // Auto-switch view tab when clicked
-        if (mKey === 'callput') {
-          state.visViewMode = 'pcr';
-          vTabs.forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === 'pcr'));
-        } else if (mKey === 'maxpain') {
-          state.visViewMode = 'maxpain';
-          vTabs.forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === 'maxpain'));
-        } else {
-          state.visViewMode = 'strike';
-          vTabs.forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === 'strike'));
-        }
-
         state.visHoverIndex = -1;
         tooltip.style.display = 'none';
         if (state.chainData) renderVisualizerChart(state.chainData);
@@ -3953,7 +4019,10 @@
     if (selStrikeRange) {
       selStrikeRange.addEventListener('change', e => {
         state.strikeRange = parseInt(e.target.value, 10);
-        if (state.chainData) renderTable(state.chainData);
+        if (state.chainData) {
+          renderTable(state.chainData);
+          renderVisualizerChart(state.chainData);
+        }
       });
     }
 
@@ -3976,7 +4045,10 @@
         rangeBtns.forEach(b => b.classList.remove('active'));
         e.currentTarget.classList.add('active');
         state.strikeRange = parseInt(e.currentTarget.getAttribute('data-range'), 10);
-        if (state.chainData) renderTable(state.chainData);
+        if (state.chainData) {
+          renderTable(state.chainData);
+          renderVisualizerChart(state.chainData);
+        }
       });
     });
 

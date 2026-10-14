@@ -9571,7 +9571,9 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         # Futures Intelligence GET Endpoints
         if path == "/api/futures/dashboard":
-            return self.send_json(200, futures_engine.get_futures_dashboard())
+            query = urllib.parse.parse_qs(parsed.query)
+            force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
+            return self.send_json(200, futures_engine.get_futures_dashboard(force_refresh=force))
 
         if path == "/api/futures/screener":
             query = urllib.parse.parse_qs(parsed.query)
@@ -9580,18 +9582,24 @@ class RequestHandler(BaseHTTPRequestHandler):
             sort_by = query.get("sortBy", ["oiValueCr"])[0]
             sort_dir = query.get("sortDir", ["desc"])[0]
             signal = query.get("signal", ["ALL"])[0]
-            return self.send_json(200, futures_engine.get_futures_screener(sector, search, sort_by, sort_dir, signal))
+            force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
+            return self.send_json(200, futures_engine.get_futures_screener(sector, search, sort_by, sort_dir, signal, force_refresh=force))
 
         if path == "/api/futures/buildup":
-            return self.send_json(200, futures_engine.get_futures_buildup())
+            query = urllib.parse.parse_qs(parsed.query)
+            force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
+            return self.send_json(200, futures_engine.get_futures_buildup(force_refresh=force))
 
         if path == "/api/futures/heatmap":
             query = urllib.parse.parse_qs(parsed.query)
             sector = query.get("sector", ["ALL"])[0]
-            return self.send_json(200, futures_engine.get_futures_heatmap(sector))
+            force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
+            return self.send_json(200, futures_engine.get_futures_heatmap(sector, force_refresh=force))
 
         if path == "/api/futures/mwpl":
-            return self.send_json(200, futures_engine.get_mwpl_data())
+            query = urllib.parse.parse_qs(parsed.query)
+            force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
+            return self.send_json(200, futures_engine.get_mwpl_data(force_refresh=force))
 
         if path in ("/api/futures/rollover", "/api/futures/rollover-matrix"):
             query = urllib.parse.parse_qs(parsed.query)
@@ -9599,11 +9607,16 @@ class RequestHandler(BaseHTTPRequestHandler):
             search = query.get("search", [""])[0]
             sort_by = query.get("sortBy", ["symbol"])[0]
             sort_dir = query.get("sortDir", ["asc"])[0]
-            return self.send_json(200, futures_engine.get_futures_rollover_matrix(sector, search, sort_by, sort_dir))
+            force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
+            return self.send_json(200, futures_engine.get_futures_rollover_matrix(sector, search, sort_by, sort_dir, force_refresh=force))
 
         if path == "/api/futures/sync-bhavcopy":
             import fo_bhavcopy_engine
-            return self.send_json(200, fo_bhavcopy_engine.sync_latest_fo_bhavcopy(days_back=7))
+            query = urllib.parse.parse_qs(parsed.query)
+            force_today = query.get("today", ["1"])[0].lower() in ("1", "true", "yes")
+            res = fo_bhavcopy_engine.sync_latest_fo_bhavcopy(days_back=7, force_today=force_today)
+            futures_engine.invalidate_caches()
+            return self.send_json(200, res)
 
         if path in ("/api/footer-links", "/api/admin/footer-links"):
             footer_file = CACHE_DIR / "footer_links.json"
@@ -10214,7 +10227,9 @@ class RequestHandler(BaseHTTPRequestHandler):
 
             # Futures Intelligence POST Endpoints
             if parsed.path == "/api/futures/dashboard":
-                return self.send_json(200, futures_engine.get_futures_dashboard())
+                payload = self.read_body()
+                force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
+                return self.send_json(200, futures_engine.get_futures_dashboard(force_refresh=force))
 
             if parsed.path == "/api/futures/screener":
                 payload = self.read_body()
@@ -10223,18 +10238,24 @@ class RequestHandler(BaseHTTPRequestHandler):
                 sort_by = payload.get("sortBy", "oiValueCr")
                 sort_dir = payload.get("sortDir", "desc")
                 signal = payload.get("signal", "ALL")
-                return self.send_json(200, futures_engine.get_futures_screener(sector, search, sort_by, sort_dir, signal))
+                force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
+                return self.send_json(200, futures_engine.get_futures_screener(sector, search, sort_by, sort_dir, signal, force_refresh=force))
 
             if parsed.path == "/api/futures/buildup":
-                return self.send_json(200, futures_engine.get_futures_buildup())
+                payload = self.read_body()
+                force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
+                return self.send_json(200, futures_engine.get_futures_buildup(force_refresh=force))
 
             if parsed.path == "/api/futures/heatmap":
                 payload = self.read_body()
                 sector = payload.get("sector", "ALL")
-                return self.send_json(200, futures_engine.get_futures_heatmap(sector))
+                force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
+                return self.send_json(200, futures_engine.get_futures_heatmap(sector, force_refresh=force))
 
             if parsed.path == "/api/futures/mwpl":
-                return self.send_json(200, futures_engine.get_mwpl_data())
+                payload = self.read_body()
+                force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
+                return self.send_json(200, futures_engine.get_mwpl_data(force_refresh=force))
 
             if parsed.path in ("/api/futures/rollover", "/api/futures/rollover-matrix"):
                 payload = self.read_body()
@@ -10242,11 +10263,16 @@ class RequestHandler(BaseHTTPRequestHandler):
                 search = payload.get("search", "")
                 sort_by = payload.get("sortBy", "symbol")
                 sort_dir = payload.get("sortDir", "asc")
-                return self.send_json(200, futures_engine.get_futures_rollover_matrix(sector, search, sort_by, sort_dir))
+                force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
+                return self.send_json(200, futures_engine.get_futures_rollover_matrix(sector, search, sort_by, sort_dir, force_refresh=force))
 
             if parsed.path == "/api/futures/sync-bhavcopy":
                 import fo_bhavcopy_engine
-                return self.send_json(200, fo_bhavcopy_engine.sync_latest_fo_bhavcopy(days_back=7))
+                payload = self.read_body()
+                force_today = str(payload.get("today", "1")).lower() in ("1", "true", "yes")
+                res = fo_bhavcopy_engine.sync_latest_fo_bhavcopy(days_back=7, force_today=force_today)
+                futures_engine.invalidate_caches()
+                return self.send_json(200, res)
 
             if parsed.path == "/api/kotak/test-connection":
                 payload = self.read_body()

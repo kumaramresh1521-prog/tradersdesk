@@ -726,14 +726,35 @@ def _ensure_unexpired_contracts(fo_map: dict) -> dict:
 
 _BHAVCOPY_CACHE: dict = {"ts": 0.0, "data": {}, "date": ""}
 
-def _load_latest_bhavcopy_data() -> tuple[dict[str, dict], str]:
+def invalidate_caches() -> None:
+    """
+    Clears all in-memory caches for Bhavcopy, master futures records, live quotes, and rollover matrices.
+    """
+    global _BHAVCOPY_CACHE, _FUTURES_CACHE, _LIVE_QUOTES_CACHE, _LIVE_ROLLOVER_MAP, _ROLLOVER_CACHE
+    _BHAVCOPY_CACHE["ts"] = 0.0
+    _BHAVCOPY_CACHE["data"] = {}
+    _BHAVCOPY_CACHE["date"] = ""
+    if "_FUTURES_CACHE" in globals():
+        _FUTURES_CACHE["master_ts"] = 0.0
+        _FUTURES_CACHE.pop("master", None)
+    if "_LIVE_QUOTES_CACHE" in globals():
+        _LIVE_QUOTES_CACHE["ts"] = 0.0
+        _LIVE_QUOTES_CACHE["data"] = {}
+    if "_LIVE_ROLLOVER_MAP" in globals():
+        _LIVE_ROLLOVER_MAP.clear()
+    if "_ROLLOVER_CACHE" in globals():
+        _ROLLOVER_CACHE["ts"] = 0.0
+        _ROLLOVER_CACHE["rows"] = []
+        _ROLLOVER_CACHE["all_latest_vals"] = []
+
+def _load_latest_bhavcopy_data(force: bool = False) -> tuple[dict[str, dict], str]:
     """
     Loads latest official NSE F&O Bhavcopy EOD prices, OI, volume, and spot quotes.
     Caches for 60 seconds to provide zero-latency fallback when market is closed or broker feed is idle.
     """
     global _BHAVCOPY_CACHE
     now = time.time()
-    if _BHAVCOPY_CACHE["data"] and (now - _BHAVCOPY_CACHE["ts"]) < 60.0:
+    if not force and _BHAVCOPY_CACHE["data"] and (now - _BHAVCOPY_CACHE["ts"]) < 60.0:
         return _BHAVCOPY_CACHE["data"], _BHAVCOPY_CACHE["date"]
 
     fo_dir = Path("cache/fo_bhav")
@@ -1301,17 +1322,32 @@ def get_futures_master(force_refresh: bool = False) -> list[dict]:
         if (now - _FUTURES_CACHE["master_ts"]) < _CACHE_TTL:
             return _FUTURES_CACHE["master"]
 
+    if force_refresh:
+        invalidate_caches()
+        # If it is after market close (15:35+ IST) on a weekday and we don't have today's Bhavcopy, attempt sync
+        try:
+            now_dt = datetime.now()
+            today_date = now_dt.date()
+            if now_dt.weekday() < 5 and (now_dt.hour >= 16 or (now_dt.hour == 15 and now_dt.minute >= 35)):
+                fo_dir = Path("cache/fo_bhav")
+                today_csv = fo_dir / f"BhavCopy_NSE_FO_{today_date.strftime('%Y%m%d')}.csv"
+                if not today_csv.exists() or today_csv.stat().st_size < 100000:
+                    import fo_bhavcopy_engine
+                    fo_bhavcopy_engine.sync_latest_fo_bhavcopy(days_back=2, force_today=True)
+        except Exception as e:
+            logger.debug(f"Bhavcopy auto-sync check on force_refresh: {e}")
+
     recs = _build_master_futures_records()
     _FUTURES_CACHE["master"] = recs
     _FUTURES_CACHE["master_ts"] = now
     return recs
 
 
-def get_futures_dashboard() -> dict:
+def get_futures_dashboard(force_refresh: bool = False) -> dict:
     """
     Returns executive KPI cards, top movers, and buildup breakdown.
     """
-    records = get_futures_master()
+    records = get_futures_master(force_refresh=force_refresh)
     stocks = [r for r in records if not r["isIndex"]]
 
     total_turnover = sum(r["volumeValueCr"] for r in records)
@@ -1330,13 +1366,19 @@ def get_futures_dashboard() -> dict:
     # Indices
     indices_list = [r for r in records if r["isIndex"]]
 
-    _, bhav_date_str = _load_latest_bhavcopy_data()
+    _, bhav_date_str = _load_latest_bhavcopy_data(force=force_refresh)
+
+    now_dt = datetime.now()
+    is_market_hours = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
+    is_live = any(r.get("isLiveBroker") for r in records) or is_market_hours
 
     return {
         "ok": True,
-        "timestamp": datetime.now().strftime("%H:%M:%S"),
-        "date": datetime.now().strftime("%d-%b-%Y"),
-        "asOfDate": bhav_date_str or datetime.now().strftime("%d-%b-%Y"),
+        "isLive": is_live,
+        "sessionMode": "LIVE" if is_live else "EOD",
+        "timestamp": now_dt.strftime("%H:%M:%S"),
+        "date": now_dt.strftime("%d-%b-%Y"),
+        "asOfDate": bhav_date_str or now_dt.strftime("%d-%b-%Y"),
         "activeExpiry": "27-Oct-2026",
         "tickSeq": int(time.time() / 3),
         "totalTurnoverCr": round(total_turnover, 2),
@@ -1363,11 +1405,11 @@ def get_futures_dashboard() -> dict:
     }
 
 
-def get_futures_screener(sector: str = "ALL", search: str = "", sort_by: str = "oiValueCr", sort_dir: str = "desc", signal: str = "ALL") -> dict:
+def get_futures_screener(sector: str = "ALL", search: str = "", sort_by: str = "oiValueCr", sort_dir: str = "desc", signal: str = "ALL", force_refresh: bool = False) -> dict:
     """
     Returns filtered and sorted master records for the Full OI Matrix (200 instruments).
     """
-    records = get_futures_master()
+    records = get_futures_master(force_refresh=force_refresh)
 
     # Sector Filter
     if sector and sector.upper() != "ALL":
@@ -1419,11 +1461,11 @@ def get_futures_screener(sector: str = "ALL", search: str = "", sort_by: str = "
     }
 
 
-def get_futures_buildup() -> dict:
+def get_futures_buildup(force_refresh: bool = False) -> dict:
     """
     Groups stocks into the 4 Institutional Quadrants.
     """
-    records = get_futures_master()
+    records = get_futures_master(force_refresh=force_refresh)
     stocks = [r for r in records if not r["isIndex"]]
 
     lb = sorted([r for r in stocks if r["buildupCode"] == "LB"], key=lambda x: x["oiChangePct"], reverse=True)
@@ -1446,11 +1488,11 @@ def get_futures_buildup() -> dict:
     }
 
 
-def get_futures_heatmap(sector: str = "ALL") -> dict:
+def get_futures_heatmap(sector: str = "ALL", force_refresh: bool = False) -> dict:
     """
     Returns tile/treemap data sized by Open Interest and colored by Day Change %.
     """
-    records = get_futures_master()
+    records = get_futures_master(force_refresh=force_refresh)
     if sector and sector.upper() != "ALL":
         records = [r for r in records if r["sector"].upper() == sector.upper()]
 
@@ -1497,14 +1539,14 @@ def get_futures_heatmap(sector: str = "ALL") -> dict:
     }
 
 
-def get_mwpl_data() -> dict:
+def get_mwpl_data(force_refresh: bool = False) -> dict:
     """
     Returns Market Wide Position Limit analysis:
     - Banned stocks (>95%)
     - Alert Zone (80% - 95%)
     - Safe Zone (<80%)
     """
-    records = get_futures_master()
+    records = get_futures_master(force_refresh=force_refresh)
     stocks = [r for r in records if not r.get("isIndex")]
 
     for s in stocks:
@@ -1706,7 +1748,8 @@ def get_futures_rollover_matrix(
     sector: str = "ALL",
     search: str = "",
     sort_by: str = "symbol",
-    sort_dir: str = "asc"
+    sort_dir: str = "asc",
+    force_refresh: bool = False
 ) -> dict:
     """
     Returns full Historical & Monthly Futures Rollover Matrix for ONLY currently active F&O universe symbols.
@@ -1714,12 +1757,18 @@ def get_futures_rollover_matrix(
     Uses official historical records from cache/futures_rollover_official.json and
     real-time contract calculations from official NSE Bhavcopy and cache/nse_fo.csv.
     """
-    global _ROLLOVER_CACHE
+    global _ROLLOVER_CACHE, _LIVE_ROLLOVER_MAP
     now = time.time()
+
+    if force_refresh:
+        _ROLLOVER_CACHE["ts"] = 0.0
+        _ROLLOVER_CACHE["rows"] = []
+        _LIVE_ROLLOVER_MAP.clear()
+        invalidate_caches()
 
     latest_month = ROLLOVER_MONTHS[0] if ROLLOVER_MONTHS else "SEP 2026"
 
-    if _ROLLOVER_CACHE["rows"] and (now - _ROLLOVER_CACHE["ts"]) < 60.0:
+    if not force_refresh and _ROLLOVER_CACHE["rows"] and (now - _ROLLOVER_CACHE["ts"]) < 60.0:
         base_rows = _ROLLOVER_CACHE["rows"]
         all_latest_vals = _ROLLOVER_CACHE["all_latest_vals"]
     else:

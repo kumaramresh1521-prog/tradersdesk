@@ -160,20 +160,23 @@
     } catch (_) {}
   }
 
-  function refreshCurrentSubTab() {
-    loadBenchmarkRibbon();
-    if (state.activeSubTab === 'matrix') loadMatrix();
-    else if (state.activeSubTab === 'indices') loadIndicesDetailView();
-    else if (state.activeSubTab === 'buildup') loadBuildupView();
-    else if (state.activeSubTab === 'heatmap') loadHeatmapView();
-    else if (state.activeSubTab === 'mwpl') loadMwpl();
-    else if (state.activeSubTab === 'rollover') loadRolloverMatrix();
+  async function refreshCurrentSubTab(forceRefresh = false) {
+    const p1 = loadBenchmarkRibbon(forceRefresh);
+    let p2;
+    if (state.activeSubTab === 'matrix') p2 = loadMatrix(forceRefresh);
+    else if (state.activeSubTab === 'indices') p2 = loadIndicesDetailView(forceRefresh);
+    else if (state.activeSubTab === 'buildup') p2 = loadBuildupView(forceRefresh);
+    else if (state.activeSubTab === 'heatmap') p2 = loadHeatmapView(forceRefresh);
+    else if (state.activeSubTab === 'mwpl') p2 = loadMwpl(forceRefresh);
+    else if (state.activeSubTab === 'rollover') p2 = loadRolloverMatrix(forceRefresh);
+    await Promise.all([p1, p2]);
   }
 
   // --- Benchmark Index Ribbon ---
-  async function loadBenchmarkRibbon() {
+  async function loadBenchmarkRibbon(forceRefresh = false) {
     try {
-      const res = await fetch('/api/futures/dashboard');
+      const url = forceRefresh ? `/api/futures/dashboard?refresh=true&_t=${Date.now()}` : '/api/futures/dashboard';
+      const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();
       state.dashboardData = data;
@@ -200,7 +203,17 @@
 
       const sessionDateEl = document.getElementById('futSessionDateBadge');
       if (sessionDateEl && data.asOfDate) {
-        sessionDateEl.textContent = `EOD • ${data.asOfDate.toUpperCase()}`;
+        const mode = data.isLive ? 'LIVE' : (data.sessionMode || 'EOD');
+        sessionDateEl.textContent = `${mode} • ${data.asOfDate.toUpperCase()}`;
+        if (data.isLive) {
+          sessionDateEl.style.background = 'rgba(16,185,129,0.15)';
+          sessionDateEl.style.color = '#10b981';
+          sessionDateEl.style.borderColor = 'rgba(16,185,129,0.3)';
+        } else {
+          sessionDateEl.style.background = 'rgba(56,189,248,0.15)';
+          sessionDateEl.style.color = '#38bdf8';
+          sessionDateEl.style.borderColor = 'rgba(56,189,248,0.3)';
+        }
       }
 
       // Sentiment Ratio Bar (Dual update for Matrix & Buildup)
@@ -298,7 +311,7 @@
   }
 
   // --- Sub-Tab 1: All F&O Market Watch Matrix ---
-  async function loadMatrix() {
+  async function loadMatrix(forceRefresh = false) {
     try {
       const q = new URLSearchParams({
         sector: state.sector,
@@ -307,6 +320,10 @@
         sortBy: state.sortBy,
         sortDir: state.sortDir
       });
+      if (forceRefresh) {
+        q.append('refresh', 'true');
+        q.append('_t', Date.now());
+      }
 
       const res = await fetch(`/api/futures/screener?${q.toString()}`);
       if (!res.ok) return;
@@ -425,9 +442,10 @@
   }
 
   // --- Sub-Tab 3: Future Buildup Quadrants ---
-  async function loadBuildupView() {
+  async function loadBuildupView(forceRefresh = false) {
     try {
-      const resB = await fetch('/api/futures/buildup');
+      const url = forceRefresh ? `/api/futures/buildup?refresh=true&_t=${Date.now()}` : '/api/futures/buildup';
+      const resB = await fetch(url);
       if (resB.ok) {
         const dataB = await resB.json();
         renderQuadrants(dataB);
@@ -438,9 +456,12 @@
   }
 
   // --- Sub-Tab 4: Dedicated Visual Heatmap View ---
-  async function loadHeatmapView() {
+  async function loadHeatmapView(forceRefresh = false) {
     try {
-      const resH = await fetch(`/api/futures/heatmap?sector=${state.sector}`);
+      const url = forceRefresh 
+        ? `/api/futures/heatmap?sector=${state.sector}&refresh=true&_t=${Date.now()}` 
+        : `/api/futures/heatmap?sector=${state.sector}`;
+      const resH = await fetch(url);
       if (resH.ok) {
         const dataH = await resH.json();
         renderHeatmap(dataH);
@@ -559,9 +580,10 @@
   }
 
   // --- Sub-Tab 3: Index Term Structure & Basis ---
-  async function loadIndicesDetailView() {
+  async function loadIndicesDetailView(forceRefresh = false) {
     try {
-      const res = await fetch('/api/futures/screener?sector=INDICES');
+      const url = forceRefresh ? `/api/futures/screener?sector=INDICES&refresh=true&_t=${Date.now()}` : '/api/futures/screener?sector=INDICES';
+      const res = await fetch(url);
       if (!res.ok) return;
       const json = await res.json();
       const container = document.getElementById('futIndicesDetailGrid');
@@ -634,9 +656,10 @@
   }
 
   // --- Sub-Tab 4: MWPL & Ban Radar ---
-  async function loadMwpl() {
+  async function loadMwpl(forceRefresh = false) {
     try {
-      const res = await fetch('/api/futures/mwpl');
+      const url = forceRefresh ? `/api/futures/mwpl?refresh=true&_t=${Date.now()}` : '/api/futures/mwpl';
+      const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();
       state.mwplData = data;
@@ -740,7 +763,8 @@
     if (!state.rolloverData || forceRefresh) {
       try {
         tbody.innerHTML = `<tr><td colspan="17" style="text-align:center; padding:30px; color:#94a3b8;"><div class="spinner-small" style="margin-bottom:8px;"></div>Fetching Historical Rollover Matrix...</td></tr>`;
-        const res = await fetch('/api/futures/rollover');
+        const url = forceRefresh ? `/api/futures/rollover?refresh=true&_t=${Date.now()}` : '/api/futures/rollover';
+        const res = await fetch(url);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         state.rolloverData = await res.json();
       } catch (err) {
@@ -1053,8 +1077,31 @@
     // Refresh Button
     const refBtn = document.getElementById('futBtnRefresh');
     if (refBtn) {
-      refBtn.addEventListener('click', () => {
-        refreshCurrentSubTab();
+      refBtn.addEventListener('click', async () => {
+        if (state.isManualRefreshing) return;
+        state.isManualRefreshing = true;
+        const origHtml = refBtn.innerHTML;
+        refBtn.disabled = true;
+        refBtn.style.opacity = '0.75';
+        refBtn.innerHTML = '<span style="display:inline-block; animation: futRotate 0.8s linear infinite;">🔄</span> Refreshing...';
+
+        try {
+          const syncP = fetch('/api/futures/sync-bhavcopy?today=1').catch(() => null);
+          await refreshCurrentSubTab(true);
+          await syncP;
+          await loadBenchmarkRibbon(true);
+          refBtn.innerHTML = '✅ Updated!';
+        } catch (err) {
+          console.warn('Manual refresh error:', err);
+          refBtn.innerHTML = '⚠️ Error';
+        } finally {
+          setTimeout(() => {
+            refBtn.innerHTML = origHtml;
+            refBtn.disabled = false;
+            refBtn.style.opacity = '1';
+            state.isManualRefreshing = false;
+          }, 1200);
+        }
       });
     }
 

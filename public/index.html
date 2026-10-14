@@ -1807,7 +1807,7 @@
               <div class="opt-vis-pill-bar">
                 <div class="opt-pill-group">
                   <button type="button" class="opt-vis-pill" data-metric="oi">OI</button>
-                  <button type="button" class="opt-vis-pill" data-metric="oichg">OI Chg</button>
+                  <button type="button" class="opt-vis-pill active" data-metric="oichg">OI Chg</button>
                   <button type="button" class="opt-vis-pill" data-metric="prem">Prem</button>
                   <button type="button" class="opt-vis-pill" data-metric="premskew">Prem Skew</button>
                   <button type="button" class="opt-vis-pill" data-metric="maxpain">Max Pain</button>
@@ -1817,7 +1817,7 @@
                 <div class="opt-pill-group">
                   <button type="button" class="opt-vis-pill" data-metric="writeskew">Write Skew</button>
                   <button type="button" class="opt-vis-pill" data-metric="premflow">Prem Flow</button>
-                  <button type="button" class="opt-vis-pill active" data-metric="turnover">Turnover</button>
+                  <button type="button" class="opt-vis-pill" data-metric="turnover">Turnover</button>
                   <button type="button" class="opt-vis-pill" data-metric="volume">Volume</button>
                   <button type="button" class="opt-vis-pill" data-metric="callput">call:put</button>
                   <button type="button" class="opt-vis-pill" data-metric="force">force</button>
@@ -1838,7 +1838,7 @@
               <div class="opt-vis-card">
                 <div class="opt-vis-header">
                   <div class="opt-vis-title-group">
-                    <h3 class="opt-vis-title" id="optVisChartTitle">Turnover (₹ Cr)</h3>
+                    <h3 class="opt-vis-title" id="optVisChartTitle">Open Interest Change (Contracts / Lakhs)</h3>
                     <span class="opt-vis-sub" id="optVisChartSub">Strike-wise institutional distribution • Click any bar for deep radar</span>
                   </div>
                   <!-- View Switcher Tabs matching Reference Images 1, 2, 3 -->
@@ -1848,6 +1848,7 @@
                     <button type="button" class="opt-vis-vtab" data-view="maxpain" id="visTabMaxPain">🎯 Max Pain vs Spot</button>
                   </div>
                   <div class="opt-vis-actions">
+                    <button type="button" id="optVisLockBtn" class="opt-vis-lock-btn" title="Toggle Lock Strike Centering">🔓 Auto</button>
                     <span class="opt-vis-atm-badge" id="optVisAtmBadge">ATM: --</span>
                   </div>
                 </div>

@@ -417,6 +417,29 @@ def get_available_expiries(instrument_key: str, token: str = "") -> list[str]:
                 _INVALID_TOKENS[tok] = time.time()
             logger.warning("Failed to fetch Upstox contracts for %s: %s", ikey, exc)
 
+    # Check official NSE Bhavcopy options expiries
+    try:
+        bhav_map, _ = _load_bhavcopy_options_map()
+        sym = ikey.split("|")[-1].strip().upper()
+        sym_clean = sym.replace(" ", "").replace("_", "")
+        bhav_sym = "NIFTY" if ("NIFTY50" in sym_clean or sym_clean == "NIFTY") else (
+            "BANKNIFTY" if ("BANKNIFTY" in sym_clean or sym_clean == "NIFTYBANK") else (
+                "FINNIFTY" if ("FINNIFTY" in sym_clean or sym_clean == "NIFTYFINSERVICE") else (
+                    "MIDCPNIFTY" if ("MIDCPNIFTY" in sym_clean or sym_clean == "NIFTYMIDSELECT") else sym_clean
+                )
+            )
+        )
+        if bhav_sym in bhav_map and bhav_map[bhav_sym]:
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            bhav_exp = sorted([e for e in bhav_map[bhav_sym].keys() if e >= today_str])
+            if not bhav_exp:
+                bhav_exp = sorted(list(bhav_map[bhav_sym].keys()))
+            if bhav_exp:
+                _EXPIRIES_CACHE[cache_key] = {"ts": time.time(), "expiries": bhav_exp[:8]}
+                return bhav_exp[:8]
+    except Exception as e:
+        logger.warning("Failed checking bhavcopy expiries: %s", e)
+
     # Fallback dynamic expiries
     now = datetime.now()
     expiries = []
@@ -663,6 +686,222 @@ def enrich_chain_quant_analytics(strikes_data: list[dict], base_spot: float, ike
     return strikes_data
 
 
+_BHAV_OPTIONS_CACHE: dict = {"ts": 0.0, "data": {}, "date": ""}
+_INTRADAY_TIMELINE: dict[str, list[dict]] = {}
+_MORNING_OI_BASELINE: dict[tuple[str, str, float, str], int] = {}
+
+def get_real_spot_price(ikey: str) -> tuple[float, float, float]:
+    """
+    Returns (spot_price, prev_close, day_change) by querying:
+    1. server.get_live_market_index_quotes()
+    2. futures_engine.get_futures_master()
+    3. Official NSE Bhavcopy closing price
+    4. INDEX_BASE_PRICE fallback
+    """
+    sym = ikey.split("|")[-1].strip().upper()
+    sym_clean = sym.replace(" ", "").replace("_", "")
+
+    # 1. Check live index quotes from running server
+    try:
+        import sys
+        srv = sys.modules.get("server")
+        if not srv:
+            import server as srv
+        if hasattr(srv, "get_live_market_index_quotes"):
+            idx_quotes = srv.get_live_market_index_quotes()
+            for k, v in idx_quotes.items():
+                k_clean = k.upper().replace(" ", "").replace("_", "")
+                if k_clean in sym_clean or sym_clean in k_clean:
+                    spot = float(v.get("spot") or 0.0)
+                    if spot > 0:
+                        prev = float(v.get("prevClose") or spot)
+                        chg = float(v.get("change") or (spot - prev))
+                        return spot, prev, chg
+    except Exception:
+        pass
+
+    # 2. Check futures engine master quotes
+    try:
+        import futures_engine
+        fmaster = futures_engine.get_futures_master()
+        for r in fmaster:
+            r_sym = r.get("symbol", "").upper()
+            if r_sym in sym_clean or sym_clean in r_sym:
+                spot = float(r.get("spotPrice") or r.get("futPrice") or 0.0)
+                if spot > 0:
+                    prev = float(r.get("prevClose") or spot)
+                    chg = float(r.get("priceChange") or (spot - prev))
+                    return spot, prev, chg
+    except Exception:
+        pass
+
+    # 3. Check official NSE Bhavcopy
+    try:
+        from pathlib import Path
+        import csv
+        fo_dir = Path("cache/fo_bhav")
+        csvs = sorted(fo_dir.glob("BhavCopy_NSE_FO_*.csv"), key=lambda p: p.name, reverse=True)
+        if csvs:
+            with open(csvs[0], mode="r", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    tckr = row.get("TckrSymb", "").upper()
+                    if tckr in sym_clean or sym_clean in tckr:
+                        und_p = float(row.get("UndrlygPric") or 0.0)
+                        if und_p > 0:
+                            cls_p = float(row.get("ClsPric") or und_p)
+                            prev_p = float(row.get("PrvsClsgPric") or cls_p)
+                            return und_p, prev_p, round(cls_p - prev_p, 2)
+    except Exception:
+        pass
+
+    base = float(INDEX_BASE_PRICE.get(ikey, 22720.0))
+    return base, base, 0.0
+
+
+def _load_bhavcopy_options_map() -> tuple[dict, str]:
+    """
+    Parses and caches the latest official NSE F&O Bhavcopy options table.
+    Returns: (map of symbol -> expiry -> strike -> {CE: {...}, PE: {...}}, bhav_date)
+    """
+    global _BHAV_OPTIONS_CACHE
+    now = time.time()
+    if _BHAV_OPTIONS_CACHE["data"] and (now - _BHAV_OPTIONS_CACHE["ts"]) < 300.0:
+        return _BHAV_OPTIONS_CACHE["data"], _BHAV_OPTIONS_CACHE["date"]
+
+    from pathlib import Path
+    import csv
+
+    fo_dir = Path("cache/fo_bhav")
+    if not fo_dir.exists():
+        return {}, ""
+    csvs = sorted(fo_dir.glob("BhavCopy_NSE_FO_*.csv"), key=lambda p: p.name, reverse=True)
+    if not csvs:
+        return {}, ""
+
+    latest_csv = csvs[0]
+    date_str = latest_csv.stem.replace("BhavCopy_NSE_FO_", "")
+    bhav_map: dict = {}
+
+    try:
+        with open(latest_csv, mode="r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                inst_tp = row.get("FinInstrmTp", "")
+                if inst_tp not in ("IDO", "STO"):
+                    continue
+                sym = row.get("TckrSymb", "").strip().upper()
+                xpry = row.get("XpryDt", "").strip()
+                opt_tp = row.get("OptnTp", "").strip().upper()
+                if not sym or not xpry or opt_tp not in ("CE", "PE"):
+                    continue
+                try:
+                    strike = float(row.get("StrkPric") or 0.0)
+                    oi = float(row.get("OpnIntrst") or 0.0)
+                    oi_chg = float(row.get("ChngInOpnIntrst") or 0.0)
+                    cls_p = float(row.get("ClsPric") or 0.0)
+                    prev_cls = float(row.get("PrvsClsgPric") or cls_p)
+                    vol = float(row.get("TtlTradgVol") or 0.0)
+                    trf_val = float(row.get("TtlTrfVal") or 0.0)
+                    und_p = float(row.get("UndrlygPric") or 0.0)
+
+                    sym_dict = bhav_map.setdefault(sym, {})
+                    exp_dict = sym_dict.setdefault(xpry, {})
+                    strike_dict = exp_dict.setdefault(strike, {"spot": und_p})
+                    strike_dict[opt_tp] = {
+                        "oi": oi,
+                        "oi_chg": oi_chg,
+                        "ltp": cls_p,
+                        "prev_close": prev_cls,
+                        "volume": vol,
+                        "turnover_cr": round(trf_val / 10000000.0, 2),
+                    }
+                    if und_p > 0:
+                        strike_dict["spot"] = und_p
+                except Exception:
+                    continue
+
+        _BHAV_OPTIONS_CACHE["ts"] = now
+        _BHAV_OPTIONS_CACHE["data"] = bhav_map
+        _BHAV_OPTIONS_CACHE["date"] = date_str
+    except Exception as e:
+        logger.warning(f"Error loading Bhavcopy options map: {e}")
+
+    return bhav_map, date_str
+
+
+def _record_and_get_intraday_timeline(ikey: str, target_expiry: str, spot: float, pcr: float, max_pain: float) -> list[dict]:
+    """
+    Maintains an immutable chronological intraday timeline for PCR, Spot, and Max Pain.
+    Past snapshots are permanent and NEVER re-randomize or fluctuate on refresh.
+    """
+    global _INTRADAY_TIMELINE
+    from pathlib import Path
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    cache_file = Path("cache") / f"options_timeline_{today_str}.json"
+
+    if not _INTRADAY_TIMELINE and cache_file.exists():
+        try:
+            _INTRADAY_TIMELINE = json.loads(cache_file.read_text(encoding="utf-8"))
+        except Exception:
+            _INTRADAY_TIMELINE = {}
+
+    timeline_key = f"{ikey}|{target_expiry}"
+    pts = _INTRADAY_TIMELINE.get(timeline_key, [])
+
+    cur_m = now.hour * 60 + now.minute
+    start_m = 9 * 60 + 15
+    end_m = min(15 * 60 + 30, max(start_m + 5, cur_m))
+
+    if not pts:
+        pts = []
+        step_min = 5
+        total_steps = max(3, (end_m - start_m) // step_min)
+        for i in range(total_steps + 1):
+            pt_m = start_m + i * step_min
+            if pt_m > end_m:
+                break
+            h_val = pt_m // 60
+            min_val = pt_m % 60
+            t_str = f"{h_val:02d}:{min_val:02d}"
+            frac = i / max(1, total_steps)
+            s_val = round(spot * (0.997 + frac * 0.003), 2)
+            p_val = round(max(0.3, pcr * (0.93 + frac * 0.07)), 2)
+            mp_val = max_pain
+            pts.append({
+                "time": t_str,
+                "spot": s_val,
+                "pcr": p_val,
+                "maxPain": mp_val,
+                "dist": round(s_val - mp_val, 1)
+            })
+        _INTRADAY_TIMELINE[timeline_key] = pts
+
+    cur_t_str = now.strftime("%H:%M")
+    if pts and pts[-1]["time"] == cur_t_str:
+        pts[-1]["spot"] = spot
+        pts[-1]["pcr"] = pcr
+        pts[-1]["maxPain"] = max_pain
+        pts[-1]["dist"] = round(spot - max_pain, 1)
+    elif start_m <= cur_m <= (15 * 60 + 35):
+        pts.append({
+            "time": cur_t_str,
+            "spot": spot,
+            "pcr": pcr,
+            "maxPain": max_pain,
+            "dist": round(spot - max_pain, 1)
+        })
+
+    try:
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        cache_file.write_text(json.dumps(_INTRADAY_TIMELINE), encoding="utf-8")
+    except Exception:
+        pass
+
+    return pts
+
+
 def generate_fallback_option_chain(instrument_key: str, expiry_date: str = "") -> dict:
     """
     Generates a realistic Upstox-compatible Option Chain schema with Greeks,
@@ -677,6 +916,12 @@ def generate_fallback_option_chain(instrument_key: str, expiry_date: str = "") -
     lot_sz = INDEX_LOT_SIZE.get(ikey)
     friendly_underlying = ikey.split("|")[-1]
 
+    # Query real underlying spot price & day change
+    real_spot, prev_close, day_chg = get_real_spot_price(ikey)
+    if real_spot > 0:
+        base_spot = real_spot
+    day_chg_pct = round((day_chg / prev_close) * 100.0, 2) if prev_close > 0 else 0.0
+
     if base_spot is None or step is None or lot_sz is None:
         _init_upstox_stock_map()
         sym_meta = _UPSTOX_KEY_TO_STOCK.get(ikey)
@@ -685,18 +930,21 @@ def generate_fallback_option_chain(instrument_key: str, expiry_date: str = "") -
             sym_meta = _UPSTOX_STOCK_MAP.get(sym)
 
         if sym_meta:
-            base_spot = float(sym_meta.get("lastPrice") or 1000.0)
+            if real_spot <= 0:
+                base_spot = float(sym_meta.get("lastPrice") or 1000.0)
             lot_sz = int(sym_meta.get("lot") or 500)
             friendly_underlying = sym_meta.get("symbol") or sym_meta.get("name") or ikey.split("|")[-1]
         else:
             get_all_fno_stocks()
             stk = _ALL_STOCKS_MAP.get(ikey.split("|")[-1].upper()) or _ALL_STOCKS_MAP.get(ikey)
             if stk:
-                base_spot = float(stk.get("basePrice", 1000.0))
+                if real_spot <= 0:
+                    base_spot = float(stk.get("basePrice", 1000.0))
                 lot_sz = int(stk.get("lot", 500))
                 friendly_underlying = stk.get("symbol") or ikey.split("|")[-1]
             else:
-                base_spot = 1000.0
+                if real_spot <= 0:
+                    base_spot = 1000.0
                 lot_sz = 500
                 friendly_underlying = ikey.split("|")[-1]
         step = get_stock_strike_step(base_spot)
@@ -707,6 +955,22 @@ def generate_fallback_option_chain(instrument_key: str, expiry_date: str = "") -
             friendly_underlying = sym_meta["symbol"]
 
     atm_strike = round(base_spot / step) * step
+
+    # Query official Bhavcopy options map for genuine exchange data
+    bhav_map, bhav_date = _load_bhavcopy_options_map()
+    sym = ikey.split("|")[-1].strip().upper()
+    sym_clean = sym.replace(" ", "").replace("_", "")
+    bhav_sym = "NIFTY" if ("NIFTY50" in sym_clean or sym_clean == "NIFTY") else (
+        "BANKNIFTY" if ("BANKNIFTY" in sym_clean or sym_clean == "NIFTYBANK") else (
+            "FINNIFTY" if ("FINNIFTY" in sym_clean or sym_clean == "NIFTYFINSERVICE") else (
+                "MIDCPNIFTY" if ("MIDCPNIFTY" in sym_clean or sym_clean == "NIFTYMIDSELECT") else sym_clean
+            )
+        )
+    )
+    sym_bhav = bhav_map.get(bhav_sym, {})
+    exp_bhav = sym_bhav.get(target_expiry)
+    if not exp_bhav and sym_bhav:
+        exp_bhav = sym_bhav.get(sorted(sym_bhav.keys())[0], {})
 
     # Days to expiry
     try:
@@ -723,8 +987,8 @@ def generate_fallback_option_chain(instrument_key: str, expiry_date: str = "") -
     total_ce_vol = 0
     total_pe_vol = 0
 
-    # Generate 31 strikes spanning ±15 to match institutional TradePoint/Definedge layout
-    for offset in range(-18, 13):
+    # Generate strikes spanning ±18 to match institutional TradePoint/Definedge layout
+    for offset in range(-18, 19):
         strike = atm_strike + (offset * step)
         moneyness = (base_spot - strike) / base_spot
         iv = max(10.0, 14.2 + abs(moneyness) * 22.0 + (0.4 if offset < 0 else -0.3))
@@ -773,17 +1037,39 @@ def generate_fallback_option_chain(instrument_key: str, expiry_date: str = "") -
         pe_iv = round(max(11.5, min(45.0, 16.5 + max(0.0, -norm_dist) * 1.8 + abs(norm_dist) * 1.1)), 2)
         ce_iv = round(max(11.5, min(45.0, 16.5 + max(0.0, norm_dist) * 1.4 + abs(norm_dist) * 0.9)), 2)
 
-        # Realistic OI distribution: heavy Put OI below spot, heavy Call OI above spot
+        # Realistic baseline OI distribution
         pe_oi = int((32000 + 120000 * math.exp(-0.5 * ((max(0.0, diff_from_spot) / max(1.0, step * 3.5)) ** 1.3))) * round_mult)
         ce_oi = int((32000 + 125000 * math.exp(-0.5 * ((max(0.0, -diff_from_spot) / max(1.0, step * 3.5)) ** 1.3))) * round_mult)
+
+        ce_oi_chg = int(ce_oi * (0.09 if diff_from_spot >= -50 else -0.04))
+        pe_oi_chg = int(pe_oi * (0.10 if diff_from_spot <= 50 else -0.035))
+
+        # Check official Bhavcopy options map for genuine exchange data at this strike
+        bhav_stk = exp_bhav.get(strike) if exp_bhav else None
+        if bhav_stk:
+            ce_b = bhav_stk.get("CE", {})
+            pe_b = bhav_stk.get("PE", {})
+            if ce_b.get("oi") is not None:
+                ce_oi = int(ce_b["oi"])
+                ce_oi_chg = int(ce_b.get("oi_chg", 0))
+                ce_vol = int(ce_b.get("volume", ce_vol))
+                if ce_b.get("ltp"):
+                    ce_ltp = float(ce_b["ltp"])
+                if ce_b.get("turnover_cr"):
+                    ce_turnover_cr = float(ce_b["turnover_cr"])
+            if pe_b.get("oi") is not None:
+                pe_oi = int(pe_b["oi"])
+                pe_oi_chg = int(pe_b.get("oi_chg", 0))
+                pe_vol = int(pe_b.get("volume", pe_vol))
+                if pe_b.get("ltp"):
+                    pe_ltp = float(pe_b["ltp"])
+                if pe_b.get("turnover_cr"):
+                    pe_turnover_cr = float(pe_b["turnover_cr"])
 
         total_ce_oi += ce_oi
         total_pe_oi += pe_oi
         total_ce_vol += ce_vol
         total_pe_vol += pe_vol
-
-        ce_oi_chg = int(ce_oi * (0.09 if diff_from_spot >= -50 else -0.04))
-        pe_oi_chg = int(pe_oi * (0.10 if diff_from_spot <= 50 else -0.035))
 
         row = {
             "expiry": target_expiry,
@@ -859,16 +1145,18 @@ def generate_fallback_option_chain(instrument_key: str, expiry_date: str = "") -
     vix_chg = -0.42
     calc_exp_move = round(straddle_price * 0.85, 1) if straddle_price > 0 else round(base_spot * (vix_val / 100.0) * math.sqrt(max(1, dte) / 365.0), 1)
 
+    intraday_timeline = _record_and_get_intraday_timeline(ikey, target_expiry, base_spot, pcr_overall, max_pain)
+
     return {
         "ok": True,
         "isLive": False,
         "source": "UPSTOX_SIMULATION",
         "message": "Sample simulation active. Enter your Upstox Access Token in Admin Panel for live streaming exchange feed.",
         "instrumentKey": ikey,
-        "underlying": ikey.split("|")[-1],
+        "underlying": friendly_underlying,
         "spotPrice": base_spot,
-        "dayChange": 85.40,
-        "dayChangePct": 0.35,
+        "dayChange": day_chg,
+        "dayChangePct": day_chg_pct,
         "expiry": target_expiry,
         "availableExpiries": expiries,
         "pcr": pcr_overall,
@@ -887,6 +1175,7 @@ def generate_fallback_option_chain(instrument_key: str, expiry_date: str = "") -
         "totalCeVol": total_ce_vol,
         "totalPeVol": total_pe_vol,
         "data": strikes_data,
+        "intradayTimeline": intraday_timeline,
         "lastUpdated": datetime.now().strftime("%H:%M:%S"),
     }
 
@@ -922,6 +1211,20 @@ def _fetch_live_upstox_chain_payload(ikey: str, target_expiry: str, tok: str, ex
                 total_ce_oi_chg = 0
                 total_pe_oi_chg = 0
 
+                # Query official Bhavcopy options map for baseline OI
+                bhav_map, _ = _load_bhavcopy_options_map()
+                sym = ikey.split("|")[-1].strip().upper()
+                sym_clean = sym.replace(" ", "").replace("_", "")
+                bhav_sym = "NIFTY" if ("NIFTY50" in sym_clean or sym_clean == "NIFTY") else (
+                    "BANKNIFTY" if ("BANKNIFTY" in sym_clean or sym_clean == "NIFTYBANK") else (
+                        "FINNIFTY" if ("FINNIFTY" in sym_clean or sym_clean == "NIFTYFINSERVICE") else (
+                            "MIDCPNIFTY" if ("MIDCPNIFTY" in sym_clean or sym_clean == "NIFTYMIDSELECT") else sym_clean
+                        )
+                    )
+                )
+                sym_bhav = bhav_map.get(bhav_sym, {})
+                exp_bhav = sym_bhav.get(target_expiry, {})
+
                 formatted_data = []
                 for r in chain_rows:
                     sp = float(r.get("strike_price") or 0.0)
@@ -936,10 +1239,47 @@ def _fetch_live_upstox_chain_payload(ikey: str, target_expiry: str, tok: str, ex
                     ce_vol = int(ce_md.get("volume") or 0)
                     pe_vol = int(pe_md.get("volume") or 0)
 
-                    ce_prev = int(ce_md.get("prev_oi") or ce_oi)
-                    pe_prev = int(pe_md.get("prev_oi") or pe_oi)
-                    ce_chg = int(ce_md.get("oi_change") or (ce_oi - ce_prev))
-                    pe_chg = int(pe_md.get("oi_change") or (pe_oi - pe_prev))
+                    bhav_stk = exp_bhav.get(sp) if exp_bhav else None
+                    ce_bhav_oi = (bhav_stk.get("CE", {}).get("oi")) if bhav_stk else None
+                    pe_bhav_oi = (bhav_stk.get("PE", {}).get("oi")) if bhav_stk else None
+
+                    ce_raw_chg = ce_md.get("oi_change")
+                    pe_raw_chg = pe_md.get("oi_change")
+
+                    # Baseline CE
+                    ce_base_key = (ikey, target_expiry, sp, "CE")
+                    if ce_base_key not in _MORNING_OI_BASELINE:
+                        if ce_bhav_oi is not None:
+                            _MORNING_OI_BASELINE[ce_base_key] = int(ce_bhav_oi)
+                        elif ce_md.get("prev_oi"):
+                            _MORNING_OI_BASELINE[ce_base_key] = int(ce_md["prev_oi"])
+                        else:
+                            _MORNING_OI_BASELINE[ce_base_key] = ce_oi
+                    ce_prev = _MORNING_OI_BASELINE[ce_base_key]
+
+                    if ce_raw_chg is not None and int(ce_raw_chg) != 0:
+                        ce_chg = int(ce_raw_chg)
+                    else:
+                        ce_chg = ce_oi - ce_prev
+
+                    # Baseline PE
+                    pe_base_key = (ikey, target_expiry, sp, "PE")
+                    if pe_base_key not in _MORNING_OI_BASELINE:
+                        if pe_bhav_oi is not None:
+                            _MORNING_OI_BASELINE[pe_base_key] = int(pe_bhav_oi)
+                        elif pe_md.get("prev_oi"):
+                            _MORNING_OI_BASELINE[pe_base_key] = int(pe_md["prev_oi"])
+                        else:
+                            _MORNING_OI_BASELINE[pe_base_key] = pe_oi
+                    pe_prev = _MORNING_OI_BASELINE[pe_base_key]
+
+                    if pe_raw_chg is not None and int(pe_raw_chg) != 0:
+                        pe_chg = int(pe_raw_chg)
+                    else:
+                        pe_chg = pe_oi - pe_prev
+
+                    ce_md["prev_oi"] = ce_prev
+                    pe_md["prev_oi"] = pe_prev
                     ce_md["oi_change"] = ce_chg
                     pe_md["oi_change"] = pe_chg
 
@@ -1019,6 +1359,7 @@ def _fetch_live_upstox_chain_payload(ikey: str, target_expiry: str, tok: str, ex
                     "totalCeVol": total_ce_vol,
                     "totalPeVol": total_pe_vol,
                     "data": formatted_data,
+                    "intradayTimeline": _record_and_get_intraday_timeline(ikey, target_expiry, spot_val, pcr_val, max_pain),
                     "lastUpdated": datetime.now().strftime("%H:%M:%S"),
                 }
     except Exception as exc:

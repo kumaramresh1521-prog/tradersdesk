@@ -130,14 +130,15 @@ def parse_fo_bhavcopy(csv_path: Path) -> tuple[dict[str, dict], bool, str]:
     return results, is_expiry_day, expiry_month_label
 
 
-def sync_latest_fo_bhavcopy(days_back: int = 7) -> dict:
+def sync_latest_fo_bhavcopy(days_back: int = 7, force_today: bool = False) -> dict:
     """
     Fetches the most recent official NSE F&O Bhavcopy and updates latest rollover cache.
     Also handles monthly expiry freezing automatically.
     """
     today = now_ist().date()
-    # If before 16:30 IST today, today's Bhavcopy might not be out yet, start from yesterday
-    start_dt = today if now_ist().hour >= 17 else today - timedelta(days=1)
+    # Market closes at 15:30 IST. After 15:35 IST or if force_today is requested, check today's file first.
+    chk_today = force_today or (now_ist().hour >= 16 or (now_ist().hour == 15 and now_ist().minute >= 35))
+    start_dt = today if chk_today else today - timedelta(days=1)
 
     latest_csv = None
     bhav_date = None
@@ -187,6 +188,13 @@ def sync_latest_fo_bhavcopy(days_back: int = 7) -> dict:
     # If this Bhavcopy was on monthly expiry day, append new month to official historical archive
     if is_expiry and exp_month:
         _auto_freeze_monthly_expiry(results, exp_month)
+
+    # Invalidate futures engine caches so updated bhavcopy is loaded immediately
+    try:
+        import futures_engine
+        futures_engine.invalidate_caches()
+    except Exception:
+        pass
 
     logger.info(f"Official NSE FO Bhavcopy synced successfully for {dt_display}: {len(results)} symbols.")
     return payload
