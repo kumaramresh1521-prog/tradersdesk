@@ -698,5 +698,26 @@ def inject_seo_metadata(html: str, path: str) -> str:
         elif "<head>" in html:
             html = html.replace("<head>", f'<head>\n  <meta name="google-site-verification" content="{g_verify}">', 1)
 
+    # 9. Google Analytics 4 (GA4) / GTM Script Injection
+    import os
+    ga_id = (global_cfg.get("google_analytics_id", "") or os.getenv("GOOGLE_ANALYTICS_ID", "")).strip()
+    if ga_id:
+        if ga_id not in html and "googletagmanager.com/gtag/js" not in html:
+            ga_snippet = (
+                f'\n  <!-- Google tag (gtag.js) -->\n'
+                f'  <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'
+                f'  <script>\n'
+                f'    window.dataLayer = window.dataLayer || [];\n'
+                f'    function gtag(){{dataLayer.push(arguments);}}\n'
+                f'    gtag("js", new Date());\n'
+                f'    gtag("config", "{ga_id}");\n'
+                f'  </script>'
+            )
+            if "<head>" in html:
+                html = html.replace("<head>", f'<head>{ga_snippet}', 1)
+            elif "<HEAD>" in html:
+                html = html.replace("<HEAD>", f'<HEAD>{ga_snippet}', 1)
+
     return html
+
 

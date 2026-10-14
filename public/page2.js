@@ -85,45 +85,47 @@
   }
 
   function initMobileNavigation() {
-    const nav = document.getElementById("mainInstNav");
-    const toggle = document.getElementById("mobileNavToggle");
-    const close = document.getElementById("mobileNavClose");
-    const backdrop = document.getElementById("mobileNavBackdrop");
-    if (!nav || !toggle || !backdrop || toggle.dataset.mobileNavReady) return;
+  const nav = document.getElementById("mainInstNav") || document.querySelector(".inst-nav");
+  if (!nav) return;
 
-    toggle.dataset.mobileNavReady = "true";
-    const isMobile = () => window.matchMedia("(max-width: 860px)").matches;
-    const setOpen = (open) => {
-      document.body.classList.toggle("mobile-nav-is-open", open);
-      toggle.setAttribute("aria-expanded", String(open));
-      toggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
-      backdrop.setAttribute("aria-hidden", String(!open));
-      if (!open) nav.querySelectorAll(".has-dropdown.mobile-open").forEach((item) => item.classList.remove("mobile-open"));
-    };
+  // Touch handling for mega-menu dropdowns on mobile/touch screens
+  nav.querySelectorAll(".has-dropdown").forEach((item) => {
+    const btn = item.querySelector(".inst-nav-btn");
+    if (btn) {
+      btn.addEventListener("click", (e) => {
+        const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
+        if (!isMobile) return; // Desktop uses CSS hover
 
-    toggle.addEventListener("click", () => setOpen(!document.body.classList.contains("mobile-nav-is-open")));
-    close?.addEventListener("click", () => setOpen(false));
-    backdrop.addEventListener("click", () => setOpen(false));
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && document.body.classList.contains("mobile-nav-is-open")) setOpen(false);
+        // If dropdown is not currently open, open it
+        if (!item.classList.contains("mobile-open")) {
+          e.preventDefault();
+          e.stopPropagation();
+          // Close other open dropdowns
+          nav.querySelectorAll(".has-dropdown.mobile-open").forEach((other) => {
+            if (other !== item) other.classList.remove("mobile-open");
+          });
+          item.classList.add("mobile-open");
+        }
+      });
+    }
+
+    // When clicking any submenu item, allow click through and close dropdown
+    item.querySelectorAll(".inst-dd-item").forEach((subItem) => {
+      subItem.addEventListener("click", () => {
+        item.classList.remove("mobile-open");
+      });
     });
-    window.addEventListener("resize", () => {
-      if (!isMobile()) setOpen(false);
-    });
-    nav.addEventListener("click", (event) => {
-      if (!isMobile()) return;
-      const topLevel = event.target.closest(".has-dropdown > .inst-nav-btn");
-      if (topLevel) {
-        event.preventDefault();
-        const item = topLevel.closest(".has-dropdown");
-        const willOpen = !item.classList.contains("mobile-open");
-        nav.querySelectorAll(".has-dropdown.mobile-open").forEach((other) => other.classList.remove("mobile-open"));
-        item.classList.toggle("mobile-open", willOpen);
-        return;
-      }
-      if (event.target.closest(".inst-dd-item, .inst-nav-item:not(.has-dropdown) .inst-nav-btn")) setOpen(false);
-    });
-  }
+  });
+
+  // Tapping anywhere outside closes any open dropdown
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".has-dropdown")) {
+      document.querySelectorAll(".has-dropdown.mobile-open").forEach((item) => {
+        item.classList.remove("mobile-open");
+      });
+    }
+  });
+}
 
   // ========================================================================
   // INITIALIZATION & SUITE SWITCHING

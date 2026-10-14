@@ -195,10 +195,6 @@
 
           <!-- Right: System Health, Refresh, Admin, Theme Toggle (Zero Sign In / Sign Up) -->
           <div class="inst-right-controls">
-            <button id="mobileNavToggle" type="button" class="mobile-nav-toggle" aria-label="Open navigation menu" aria-controls="mainInstNav" aria-expanded="false">
-              <span aria-hidden="true">☰</span>
-              <span class="mobile-nav-toggle-text">Menu</span>
-            </button>
             <div class="status inst-api-status" id="apiStatus" title="Broker Gateway Connection State">Checking API...</div>
             <button id="btnTopRefresh" type="button" class="inst-util-btn" onclick="if(typeof loadDashboardData==='function'){loadDashboardData(true);}else{location.reload();}" title="Refresh Live Market Data">
               <span class="util-icon">🔄</span>
@@ -214,11 +210,6 @@
 
         <!-- Row 2: Institutional Mega-Menu Navigation -->
         <nav class="inst-nav" aria-label="Main Navigation" id="mainInstNav">
-          <div class="mobile-nav-drawer-head">
-            <span>Navigation</span>
-            <button id="mobileNavClose" type="button" aria-label="Close navigation menu">×</button>
-          </div>
-
           <!-- 1. DASHBOARD / HOMEPAGE -->
           <div class="inst-nav-item">
             <a href="/" class="inst-nav-btn active" id="navDashboard" onclick="return window.instNavClick(event, 'dashboard')">
@@ -408,8 +399,6 @@
           <button id="tabSettings" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">Settings</button>
         </nav>
       </header>
-      <div id="mobileNavBackdrop" class="mobile-nav-backdrop" aria-hidden="true"></div>
-
       <!-- ================================================================
            Dashboard Panel (LAUNCH EDITION)
            ================================================================ -->
