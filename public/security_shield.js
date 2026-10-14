@@ -9,7 +9,9 @@
   let lockOverlay = null;
 
   function createLockScreen() {
-    if (lockOverlay) return lockOverlay;
+    if (lockOverlay && document.getElementById("terminalSecurityLock")) {
+      return lockOverlay;
+    }
 
     lockOverlay = document.createElement("div");
     lockOverlay.id = "terminalSecurityLock";
@@ -29,24 +31,26 @@
       user-select: none !important;
       -webkit-user-select: none !important;
       pointer-events: auto !important;
+      visibility: visible !important;
+      opacity: 1 !important;
     `;
 
     lockOverlay.innerHTML = `
-      <div style="max-width: 540px; background: #0f1b33; border: 1.5px solid #dc2626; border-radius: 16px; padding: 36px 28px; box-shadow: 0 25px 60px rgba(220, 38, 38, 0.25);">
-        <div style="width: 72px; height: 72px; margin: 0 auto 18px; border-radius: 50%; background: rgba(220, 38, 38, 0.15); display: flex; align-items: center; justify-content: center; font-size: 34px; border: 2px solid rgba(220, 38, 38, 0.4);">
+      <div style="max-width: 520px; width: 90%; background: #0f1b33; border: 1.5px solid #dc2626; border-radius: 16px; padding: 32px 24px; box-shadow: 0 25px 60px rgba(220, 38, 38, 0.35);">
+        <div style="width: 68px; height: 68px; margin: 0 auto 16px; border-radius: 50%; background: rgba(220, 38, 38, 0.15); display: flex; align-items: center; justify-content: center; font-size: 32px; border: 2px solid rgba(220, 38, 38, 0.4);">
           🔒
         </div>
-        <h2 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 800; color: #f87171; letter-spacing: -0.4px;">
+        <h2 style="margin: 0 0 10px 0; font-size: 21px; font-weight: 800; color: #f87171; letter-spacing: -0.4px;">
           Security Alert: Terminal Locked
         </h2>
-        <p style="margin: 0 0 16px 0; font-size: 14px; font-weight: 700; color: #ffffff;">
-          Developer Tools or Source Inspection Detected
+        <p style="margin: 0 0 14px 0; font-size: 14px; font-weight: 700; color: #ffffff;">
+          Source Inspection / Developer Tools Detected
         </p>
-        <p style="margin: 0 0 24px 0; font-size: 12.5px; line-height: 1.6; color: #94a3b8;">
-          To protect proprietary quantitative algorithms, live exchange market data feeds, and session security, source code inspection is strictly prohibited on TradersDesk Terminal.
+        <p style="margin: 0 0 20px 0; font-size: 12.5px; line-height: 1.6; color: #94a3b8;">
+          To protect proprietary quantitative algorithms, live exchange market data feeds, and institutional session security, source inspection and developer tools are strictly prohibited on TradersDesk.in.
         </p>
-        <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; margin-bottom: 24px; font-family: monospace; font-size: 11.5px; color: #cbd5e1;">
-          Status: <strong>ACCESS_RESTRICTED (Code: 403_INSPECT_BLOCKED)</strong>
+        <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; margin-bottom: 22px; font-family: monospace; font-size: 11.5px; color: #cbd5e1;">
+          Status: <strong style="color:#ef4444;">ACCESS_RESTRICTED (403_INSPECT_BLOCKED)</strong>
         </div>
         <button id="secUnlockBtn" style="padding: 10px 24px; font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(37,99,235,0.4); transition: transform 0.15s ease;">
           🔄 Close Inspector &amp; Reload Terminal
@@ -72,12 +76,11 @@
 
     try {
       createLockScreen();
-      // Blur and conceal underlying page content
-      const app = document.querySelector(".app-container") || document.body;
-      if (app && app !== lockOverlay) {
-        app.style.filter = "blur(30px)";
-        app.style.opacity = "0.05";
-        app.style.pointerEvents = "none";
+
+      // Hide main application content so nothing can be seen in elements or rendered
+      const app = document.querySelector(".app") || document.querySelector(".app-container") || document.getElementById("mainContent") || document.body;
+      if (app) {
+        app.style.display = "none";
       }
     } catch (e) {}
 
@@ -88,11 +91,40 @@
         "color: red; font-size: 18px; font-weight: bold;"
       );
     } catch (e) {}
+
+    // Debugger trap loop once locked
+    setInterval(function () {
+      try {
+        console.clear();
+        (function () { return false; })["constructor"]("debugger")["call"]();
+      } catch (e) {}
+    }, 200);
   }
 
-  // 1. Right Click (Context Menu) - Enabled natively so users can open links in new tab, inspect, and use browser menus
+  // 1. Block Context Menu (Right Click) across document and window
+  document.addEventListener(
+    "contextmenu",
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerLock("CONTEXT_MENU");
+      return false;
+    },
+    true
+  );
 
-  // 2. Block Keyboard Shortcuts (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U, Ctrl+S)
+  window.addEventListener(
+    "contextmenu",
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerLock("CONTEXT_MENU");
+      return false;
+    },
+    true
+  );
+
+  // 2. Block Keyboard Shortcuts (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+Shift+K, Ctrl+U, Ctrl+S)
   window.addEventListener(
     "keydown",
     function (e) {
@@ -100,8 +132,9 @@
       const code = e.keyCode || 0;
       const isCtrl = e.ctrlKey || e.metaKey;
       const isShift = e.shiftKey;
+      const isAlt = e.altKey;
 
-      // F12 (code 123)
+      // F12
       if (key === "F12" || code === 123) {
         e.preventDefault();
         e.stopPropagation();
@@ -109,24 +142,27 @@
         return false;
       }
 
-      // Ctrl + Shift + I (Inspect)
-      if (isCtrl && isShift && (key === "I" || key === "i" || code === 73)) {
+      // Ctrl + Shift + I / Meta + Alt + I (Inspect)
+      if ((isCtrl && isShift && (key === "I" || key === "i" || code === 73)) ||
+          (isCtrl && isAlt && (key === "I" || key === "i" || code === 73))) {
         e.preventDefault();
         e.stopPropagation();
         triggerLock("CTRL_SHIFT_I");
         return false;
       }
 
-      // Ctrl + Shift + J (Console)
-      if (isCtrl && isShift && (key === "J" || key === "j" || code === 74)) {
+      // Ctrl + Shift + J / Meta + Alt + J (Console)
+      if ((isCtrl && isShift && (key === "J" || key === "j" || code === 74)) ||
+          (isCtrl && isAlt && (key === "J" || key === "j" || code === 74))) {
         e.preventDefault();
         e.stopPropagation();
         triggerLock("CTRL_SHIFT_J");
         return false;
       }
 
-      // Ctrl + Shift + C (Element selector)
-      if (isCtrl && isShift && (key === "C" || key === "c" || code === 67)) {
+      // Ctrl + Shift + C / Meta + Alt + C (Element selector)
+      if ((isCtrl && isShift && (key === "C" || key === "c" || code === 67)) ||
+          (isCtrl && isAlt && (key === "C" || key === "c" || code === 67))) {
         e.preventDefault();
         e.stopPropagation();
         triggerLock("CTRL_SHIFT_C");
@@ -141,8 +177,9 @@
         return false;
       }
 
-      // Ctrl + U (View Source)
-      if (isCtrl && (key === "U" || key === "u" || code === 85)) {
+      // Ctrl + U / Meta + Alt + U (View Source)
+      if ((isCtrl && (key === "U" || key === "u" || code === 85)) ||
+          (isCtrl && isAlt && (key === "U" || key === "u" || code === 85))) {
         e.preventDefault();
         e.stopPropagation();
         triggerLock("CTRL_U");
@@ -155,13 +192,20 @@
         e.stopPropagation();
         return false;
       }
+
+      // Ctrl + P (Print / Save PDF)
+      if (isCtrl && (key === "P" || key === "p" || code === 80)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
     },
     true
   );
 
   // 3. DevTools Outer Dimensions Threshold Probe
   function checkDevToolsDimensions() {
-    const threshold = 160;
+    const threshold = 100;
     const widthDiff = window.outerWidth - window.innerWidth > threshold;
     const heightDiff = window.outerHeight - window.innerHeight > threshold;
 
@@ -176,10 +220,27 @@
     /* eslint-disable no-debugger */
     (function () {}).constructor("debugger")();
     const duration = performance.now() - start;
-    if (duration > 100) {
+    if (duration > 80) {
       triggerLock("DEVTOOLS_DEBUGGER_TIMING");
     }
   }
+
+  // 5. Console Element Evaluation Probe
+  try {
+    const detector = new Image();
+    Object.defineProperty(detector, "id", {
+      get: function () {
+        triggerLock("DEVTOOLS_CONSOLE_PROBE");
+        return "shield";
+      }
+    });
+    setInterval(function () {
+      if (!isLocked) {
+        console.log("%c", detector);
+        console.clear();
+      }
+    }, 1500);
+  } catch (e) {}
 
   // Periodic Watcher
   setInterval(function () {
@@ -187,7 +248,7 @@
       checkDevToolsDimensions();
       checkDebuggerTiming();
     }
-  }, 1000);
+  }, 800);
 
   window.addEventListener("resize", function () {
     if (!isLocked) {
