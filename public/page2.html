@@ -219,6 +219,19 @@
 
       <!-- Night / White Mode Toggle for Page 2 Header Top Row -->
       <div style="display:flex; align-items:center; gap:8px;">
+                <!-- 6-DOT APP LAUNCHER / ALL MENUS & SUBMENUS TRIGGER -->
+        <button id="p2DotMenuBtn" type="button" class="inst-dot-menu-btn" onclick="openMobileDotMenu()" aria-label="Open All Navigation & Desks" title="All Desks & Menus">
+          <svg class="dot-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="8" cy="5" r="2.2" />
+            <circle cx="16" cy="5" r="2.2" />
+            <circle cx="8" cy="12" r="2.2" />
+            <circle cx="16" cy="12" r="2.2" />
+            <circle cx="8" cy="19" r="2.2" />
+            <circle cx="16" cy="19" r="2.2" />
+          </svg>
+          <span class="dot-menu-label">Menu</span>
+        </button>
+
         <button id="p2ThemeToggleBtn" class="page2-theme-toggle-btn" type="button" title="Toggle Night / White Theme">
           <span id="p2ThemeIcon">🌙</span> <span id="p2ThemeLabel">Night Mode</span>
         </button>
@@ -712,5 +725,270 @@
   </main>
 
   <script src="/page2.js?v=20260922_v13"></script>
-</body>
+    <!-- ================================================================
+         6-DOT APP LAUNCHER: ALL DESKS, MENUS & SUBMENUS MODAL
+         ================================================================ -->
+    <div id="mobileDotMenuModal" class="dot-menu-backdrop" style="display:none;" onclick="if(event.target===this) closeMobileDotMenu();">
+      <div class="dot-menu-sheet">
+        <!-- Header -->
+        <div class="dot-menu-header">
+          <div class="dot-menu-brand">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#38bdf8">
+              <circle cx="8" cy="5" r="2.2" />
+              <circle cx="16" cy="5" r="2.2" />
+              <circle cx="8" cy="12" r="2.2" />
+              <circle cx="16" cy="12" r="2.2" />
+              <circle cx="8" cy="19" r="2.2" />
+              <circle cx="16" cy="19" r="2.2" />
+            </svg>
+            <div class="dot-menu-header-text">
+              <div class="dot-menu-header-title">TradersDesk Directory</div>
+              <div class="dot-menu-header-subtitle">All Platform Desks &amp; Submenus</div>
+            </div>
+          </div>
+          <button type="button" class="dot-menu-close" onclick="closeMobileDotMenu()" aria-label="Close menu">&times;</button>
+        </div>
+
+        <!-- Quick Utilities Strip -->
+        <div class="dot-menu-quick-strip">
+          <button type="button" class="dot-menu-quick-btn" onclick="closeMobileDotMenu(); if(typeof openGlobalSearch==='function') openGlobalSearch();">
+            <span>🔍</span> <span>Search</span>
+          </button>
+          <button type="button" class="dot-menu-quick-btn" onclick="closeMobileDotMenu(); if(typeof loadDashboardData==='function'){loadDashboardData(true);}else{location.reload();}">
+            <span>🔄</span> <span>Refresh</span>
+          </button>
+          <button type="button" class="dot-menu-quick-btn" onclick="if(typeof toggleTheme==='function'){toggleTheme();}else if(typeof toggleP2Theme==='function'){toggleP2Theme();}">
+            <span>🌓</span> <span>Theme</span>
+          </button>
+        </div>
+
+        <!-- Scrollable Sections Container -->
+        <div class="dot-menu-content">
+
+          <!-- 1. DASHBOARD -->
+          <div class="dot-menu-section">
+            <a href="/" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'dashboard')">
+              <div class="dot-menu-item-left">
+                <span class="dot-menu-item-icon">📊</span>
+                <div>
+                  <div class="dot-menu-item-title">Dashboard Overview</div>
+                  <div class="dot-menu-item-desc">Live Market indices, Advance/Decline &amp; momentum movers</div>
+                </div>
+              </div>
+              <span class="dot-menu-arrow">→</span>
+            </a>
+          </div>
+
+          <!-- 2. FUTURES DASHBOARD WITH ALL 6 SUBMENUS -->
+          <div class="dot-menu-section">
+            <div class="dot-menu-section-header">
+              <span class="dot-section-icon">⚡</span>
+              <span class="dot-section-title">Futures Dashboard</span>
+              <span class="p2-badge p2-badge-teal" style="font-size:10px;">F&amp;O</span>
+            </div>
+            <div class="dot-sub-grid">
+              <!-- Sub 1 -->
+              <a href="/futures" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'matrix')">
+                <span class="dot-sub-icon">📈</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future Marketwatch</div>
+                  <div class="dot-sub-desc">Active contracts matrix, LTP, OI &amp; leaders</div>
+                </div>
+              </a>
+              <!-- Sub 2 -->
+              <a href="/futures/indices" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'indices')">
+                <span class="dot-sub-icon">📊</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future Index Term Structure</div>
+                  <div class="dot-sub-desc">Cash-futures basis, cost of carry &amp; curve</div>
+                </div>
+              </a>
+              <!-- Sub 3 -->
+              <a href="/futures/buildup" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'buildup')">
+                <span class="dot-sub-icon">🔄</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future Buildup</div>
+                  <div class="dot-sub-desc">Long/short buildup quadrants &amp; unwinding</div>
+                </div>
+              </a>
+              <!-- Sub 4 -->
+              <a href="/futures/heatmap" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'heatmap')">
+                <span class="dot-sub-icon">🗺️</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future Heatmap</div>
+                  <div class="dot-sub-desc">Sector visual heatmap &amp; momentum</div>
+                </div>
+              </a>
+              <!-- Sub 5 -->
+              <a href="/futures/mwpl" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'mwpl')">
+                <span class="dot-sub-icon">🚫</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">MWPL &amp; Ban Radar</div>
+                  <div class="dot-sub-desc">Market-wide limit tracker &amp; ban alerts</div>
+                </div>
+              </a>
+              <!-- Sub 6 -->
+              <a href="/futures/rollover" class="dot-sub-item">
+                <span class="dot-sub-icon">📑</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Futures Rollover Matrix <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">PRO</span></div>
+                  <div class="dot-sub-desc">Historical rollover %, 3M/6M velocity</div>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- 3. GLOBAL MARKETS & MACRO -->
+          <div class="dot-menu-section">
+            <a href="/global-markets" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'globalMarkets')">
+              <div class="dot-menu-item-left">
+                <span class="dot-menu-item-icon">🌐</span>
+                <div>
+                  <div class="dot-menu-item-title">Global Markets &amp; Macro <span class="p2-badge p2-badge-blue" style="font-size:10px; margin-left:4px;">MACRO</span></div>
+                  <div class="dot-menu-item-desc">GIFT Nifty, US / Asian markets, Crude, Yields &amp; Forex</div>
+                </div>
+              </div>
+              <span class="dot-menu-arrow">→</span>
+            </a>
+          </div>
+
+          <!-- 4. OPTIONS DESK WITH ALL 4 SUBMENUS -->
+          <div class="dot-menu-section">
+            <div class="dot-menu-section-header">
+              <span class="dot-section-icon">📈</span>
+              <span class="dot-section-title">Options Desk</span>
+              <span class="p2-badge p2-badge-cyan" style="font-size:10px;">GREEKS</span>
+            </div>
+            <div class="dot-sub-grid">
+              <!-- Sub 1 -->
+              <a href="/option-chain-pro" class="dot-sub-item" onclick="return window.dotNavClick(event, 'options')">
+                <span class="dot-sub-icon">⚡</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Option Chain Pro</div>
+                  <div class="dot-sub-desc">Delta, Gamma, Theta, Vega, PCR &amp; Max Pain</div>
+                </div>
+              </a>
+              <!-- Sub 2 -->
+              <a href="/straddle" class="dot-sub-item" onclick="return window.dotNavClick(event, 'straddle')">
+                <span class="dot-sub-icon">📉</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">ATM Straddle Engine <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">LIVE</span></div>
+                  <div class="dot-sub-desc">Intraday decay curve &amp; premium dynamics</div>
+                </div>
+              </a>
+              <!-- Sub 3 -->
+              <a href="/breadth-contribution" class="dot-sub-item" onclick="return window.dotNavClick(event, 'contribution')">
+                <span class="dot-sub-icon">⚖️</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Market Breadth &amp; Contribution</div>
+                  <div class="dot-sub-desc">Index point impact &amp; weighted distribution</div>
+                </div>
+              </a>
+              <!-- Sub 4 -->
+              <a href="/market-breadth" class="dot-sub-item" onclick="return window.dotNavClick(event, 'breadth')">
+                <span class="dot-sub-icon">📊</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Market Breadth with A/D</div>
+                  <div class="dot-sub-desc">Advance/Decline ratios &amp; historical breadth</div>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- 5. FII / DII DESK (WITH BOTH SUBMENUS) -->
+          <div class="dot-menu-section">
+            <div class="dot-menu-section-header">
+              <span class="dot-section-icon">🏦</span>
+              <span class="dot-section-title">FII / DII Desk</span>
+              <span class="p2-badge p2-badge-gold" style="font-size:10px;">SMART MONEY</span>
+            </div>
+            <div class="dot-sub-grid">
+              <!-- Sub 1 -->
+              <a href="/fii-dii/cash" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'cash')">
+                <span class="dot-sub-icon">💵</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">FII / DII Cash Market</div>
+                  <div class="dot-sub-desc">Daily net buy/sell flow &amp; historical trend</div>
+                </div>
+              </a>
+              <!-- Sub 2 -->
+              <a href="/fii-dii/derivatives" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'derivatives')">
+                <span class="dot-sub-icon">📊</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">FII / DII Derivatives <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">F&amp;O</span></div>
+                  <div class="dot-sub-desc">Index &amp; stock futures OI &amp; positioning</div>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- 6. DELIVERY DESK -->
+          <div class="dot-menu-section">
+            <a href="/delivery-analytics" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'delivery')">
+              <div class="dot-menu-item-left">
+                <span class="dot-menu-item-icon">📦</span>
+                <div>
+                  <div class="dot-menu-item-title">Cash Delivery Desk</div>
+                  <div class="dot-menu-item-desc">High-conviction institutional accumulation vs distribution</div>
+                </div>
+              </div>
+              <span class="dot-menu-arrow">→</span>
+            </a>
+          </div>
+
+          <!-- 7. MTF DESK -->
+          <div class="dot-menu-section">
+            <a href="/mtf-analytics" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'mtf')">
+              <div class="dot-menu-item-left">
+                <span class="dot-menu-item-icon">💳</span>
+                <div>
+                  <div class="dot-menu-item-title">MTF Margin Leverage Desk</div>
+                  <div class="dot-menu-item-desc">Margin Trading Facility loan book &amp; pledged equity exposure</div>
+                </div>
+              </div>
+              <span class="dot-menu-arrow">→</span>
+            </a>
+          </div>
+
+          <!-- 8. TOOLS & UTILITIES -->
+          <div class="dot-menu-section">
+            <div class="dot-menu-section-header">
+              <span class="dot-section-icon">🛠️</span>
+              <span class="dot-section-title">Tools &amp; Calculators</span>
+            </div>
+            <div class="dot-sub-grid">
+              <a href="/calendar-studio" class="dot-sub-item">
+                <span class="dot-sub-icon">📅</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Calendar Studio</div>
+                  <div class="dot-sub-desc">Interactive Calendar spread matrix</div>
+                </div>
+              </a>
+              <a href="/wpcr" class="dot-sub-item" onclick="return window.dotNavClick(event, 'wpcr')">
+                <span class="dot-sub-icon">🎯</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">WPCR Matrix</div>
+                  <div class="dot-sub-desc">Weighted Put-Call Ratio dynamics</div>
+                </div>
+              </a>
+              <a href="/admin.html" class="dot-sub-item">
+                <span class="dot-sub-icon">🔒</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Platform Admin</div>
+                  <div class="dot-sub-desc">System configuration &amp; logs</div>
+                </div>
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="dot-menu-footer">
+          <span>&copy; 2026 TradersDesk.in &bull; Institutional Quant Terminal</span>
+        </div>
+      </div>
+    </div>
+
+  </body>
 </html>

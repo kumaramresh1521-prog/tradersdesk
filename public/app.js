@@ -12893,3 +12893,45 @@ window.closeAllMobileDropdowns = function() {
   const nav = document.getElementById('mainInstNav') || document.querySelector('.inst-nav');
   if (nav) nav.querySelectorAll('.has-dropdown.mobile-open').forEach(function(item) { item.classList.remove('mobile-open'); });
 };
+
+
+// 6-Dot Mobile & Desktop App Launcher Directory
+window.openMobileDotMenu = function() {
+  const modal = document.getElementById("mobileDotMenuModal");
+  if (modal) {
+    modal.style.display = "flex";
+    document.body.style.overflow = "hidden";
+  }
+};
+
+window.closeMobileDotMenu = function() {
+  const modal = document.getElementById("mobileDotMenuModal");
+  if (modal) {
+    modal.style.display = "none";
+    document.body.style.overflow = "";
+  }
+};
+
+window.dotNavClick = function(e, key, subview) {
+  closeMobileDotMenu();
+  if (window.instNavClick && typeof window.instNavClick === "function") {
+    return window.instNavClick(e, key, subview);
+  } else if (window.activateSuite && typeof window.activateSuite === "function") {
+    if (key === "straddle") {
+      activateSuite("straddle");
+      return false;
+    } else if (key === "contribution") {
+      activateSuite("contribution");
+      return false;
+    }
+    return true;
+  }
+  return true;
+};
+
+// Close on Escape key
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") {
+    if (window.closeMobileDotMenu) window.closeMobileDotMenu();
+  }
+});
