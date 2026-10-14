@@ -2038,6 +2038,10 @@
                 <option value="30">ATM +/- 30 (Wide)</option>
               </select>
             </label>
+            <label class="check-label" title="Keep the displayed strike window stable while live prices refresh">
+              <input id="optLockStrikeWindow" type="checkbox" checked>
+              <span>Lock strikes</span>
+            </label>
           </div>
 
           <div class="ctrl-group">
@@ -3096,13 +3100,10 @@
              ================================================================ -->
         <div id="p1FiiSubtabCash" class="fii-dii-subpanel" style="display:block;">
 
-          <!-- Controls Bar: Chart Toggle, Period Switcher, View Switcher & Range -->
+          <!-- Controls Bar: Period Switcher, View Switcher & Range -->
           <div class="sm-card" style="margin-bottom: 14px; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 12px 14px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <button type="button" id="btnToggleP1FiiChart" class="ctrl-btn primary" style="font-size: 11.5px; font-weight: 700; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                  <span>📈</span> <span id="lblToggleP1FiiChart">Hide Flow Chart</span>
-                </button>
                 <div class="fii-period-switcher" id="p1FiiPeriodGroup" style="display: inline-flex; border: 1px solid var(--border-default); border-radius: 6px; overflow: hidden;">
                   <button type="button" class="fii-period-btn active" data-period="daily" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; border: none; background: #2563eb; color: #fff; cursor: pointer;">DAILY</button>
                   <button type="button" class="fii-period-btn" data-period="monthly" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; border: none; background: transparent; color: var(--text-secondary); cursor: pointer;">MONTHLY</button>
@@ -3116,11 +3117,6 @@
               </div>
 
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <div class="fii-style-switcher" id="p1FiiChartStyleGroup" style="display: inline-flex; border: 1px solid var(--border-default); border-radius: 6px; overflow: hidden;">
-                  <button type="button" class="fii-style-btn active" data-style="grouped" style="padding: 5px 10px; font-size: 11px; font-weight: 700; border: none; background: #2563eb; color: #fff; cursor: pointer;" title="FII vs DII Side-by-Side Comparison + Nifty Line">📊 FII vs DII Dual</button>
-                  <button type="button" class="fii-style-btn" data-style="cumulative" style="padding: 5px 10px; font-size: 11px; font-weight: 700; border: none; background: transparent; color: var(--text-secondary); cursor: pointer;" title="Cumulative Institutional Flow Curve vs Nifty">📈 Cumulative Trend</button>
-                  <button type="button" class="fii-style-btn" data-style="divergence" style="padding: 5px 10px; font-size: 11px; font-weight: 700; border: none; background: transparent; color: var(--text-secondary); cursor: pointer;" title="Zero-Centered Horizontal Divergence Bars">↔️ Divergence Bars</button>
-                </div>
                 <label style="font-size: 11.5px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 6px;">
                   <span>Sessions:</span>
                   <select id="p1FiiRangeSelect" class="ctrl-select" style="font-size: 11.5px; padding: 4px 10px; font-weight: 600;">
@@ -3170,27 +3166,6 @@
               </div>
               <div id="p1FiiValNifty" style="font-size: 18px; font-weight: 900; color: var(--text-primary); font-family: 'JetBrains Mono', monospace;">--</div>
               <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;" id="p1FiiSubNifty">Session Change: --</div>
-            </div>
-          </div>
-
-          <!-- Interactive Chart Card with Crosshair & High-DPI Canvas -->
-          <div class="sm-card" id="p1FiiChartWrap" style="margin-bottom: 16px; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; margin-bottom: 12px;">
-              <div>
-                <h4 id="p1FiiChartTitle" style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text-primary);">FII / FPI &amp; DII Net (in Crores.) - Daily</h4>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Zero-centered institutional divergence bars with crosshair tracking &amp; high-precision tooltips</div>
-              </div>
-              <div style="display: flex; align-items: center; gap: 10px; font-size: 11.5px; flex-wrap: wrap;">
-                <span style="display: inline-flex; align-items: center; gap: 5px; color: #10b981; font-weight: 700;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span> Inflow (+ ₹ Cr)</span>
-                <span style="display: inline-flex; align-items: center; gap: 5px; color: #ef4444; font-weight: 700;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span> Outflow (- ₹ Cr)</span>
-                <span style="font-size: 11px; color: var(--text-muted);"><strong style="color: #38bdf8;">🎯 Crosshair:</strong> Active</span>
-              </div>
-            </div>
-
-            <!-- Chart Canvas Container -->
-            <div id="p1FiiChartContainer" style="position: relative; width: 100%; min-height: 280px; overflow-x: auto;">
-              <canvas id="p1FiiDiiCanvas" style="display: block; width: 100%; cursor: crosshair;"></canvas>
-              <div id="p1FiiCrosshairTooltip" class="fii-crosshair-tooltip" style="display: none; position: absolute; pointer-events: none; z-index: 100;"></div>
             </div>
           </div>
 

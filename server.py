@@ -1944,6 +1944,7 @@ def _compute_index_option_chain_raw(
     date_value: str,
     expiry: str,
     strike_range: int,
+    anchor_strike: float | None = None,
 ) -> tuple[list[dict], dict, list[dict], str]:
     expiries = available_index_expiries(index_name, date_value)
     if not expiries:
@@ -1963,11 +1964,13 @@ def _compute_index_option_chain_raw(
     if not unique_strikes:
         return [], {"atm": None, "pcrOi": None, "totalCallOi": 0, "totalPutOi": 0, "maxPain": None, "avgIv": None}, expiries, selected_expiry
 
-    # ATM Strike selection
+    # The true ATM follows the live underlying. The optional anchor controls
+    # only the displayed window, preventing live refreshes from moving strikes.
     atm = min(unique_strikes, key=lambda s: abs(s - spot))
-    atm_idx = unique_strikes.index(atm)
-    start_idx = max(0, atm_idx - strike_range)
-    end_idx = min(len(unique_strikes), atm_idx + strike_range + 1)
+    display_anchor = min(unique_strikes, key=lambda s: abs(s - anchor_strike)) if anchor_strike else atm
+    anchor_idx = unique_strikes.index(display_anchor)
+    start_idx = max(0, anchor_idx - strike_range)
+    end_idx = min(len(unique_strikes), anchor_idx + strike_range + 1)
     wanted_strikes = unique_strikes[start_idx:end_idx]
 
     by_strike: dict[float, dict[str, dict]] = {}
@@ -2129,6 +2132,7 @@ def _compute_index_option_chain_raw(
 
     summary = {
         "atm": atm,
+        "displayAnchor": display_anchor,
         "pcrOi": round(total_put_oi / total_call_oi, 2) if total_call_oi else None,
         "totalCallOi": total_call_oi,
         "totalPutOi": total_put_oi,
@@ -2148,8 +2152,10 @@ def build_index_option_chain(
     date_value: str,
     expiry: str,
     strike_range: int,
+    anchor_strike: float | None = None,
 ) -> tuple[list[dict], dict, list[dict], str]:
-    cache_key = f"{index_name}:{date_value}:{expiry}:{strike_range}:{round(spot / 50.0)}"
+    anchor_key = round(float(anchor_strike) / 50.0) if anchor_strike else "auto"
+    cache_key = f"{index_name}:{date_value}:{expiry}:{strike_range}:{round(spot / 50.0)}:{anchor_key}"
     cached = _INDEX_CHAIN_MEM_CACHE.get(cache_key)
     ttl = 4.0 if is_market_open() else 60.0
 
@@ -2170,6 +2176,7 @@ def build_index_option_chain(
                             date_value=date_value,
                             expiry=expiry,
                             strike_range=strike_range,
+                            anchor_strike=anchor_strike,
                         )
                         with _INDEX_CHAIN_CACHE_LOCK:
                             _INDEX_CHAIN_MEM_CACHE[cache_key] = {"ts": time.time(), "val": res}
@@ -2188,6 +2195,7 @@ def build_index_option_chain(
         date_value=date_value,
         expiry=expiry,
         strike_range=strike_range,
+        anchor_strike=anchor_strike,
     )
     with _INDEX_CHAIN_CACHE_LOCK:
         _INDEX_CHAIN_MEM_CACHE[cache_key] = {"ts": time.time(), "val": res}
@@ -2571,6 +2579,7 @@ def _build_breadth_internal(payload: dict) -> dict:
     max_symbols = int(payload.get("maxSymbols") or 60)
     data_source = payload.get("dataSource") or "sample"
     fast_refresh = parse_bool(str(payload.get("fastRefresh", "")), default=False)
+    allow_simulated = parse_bool(str(payload.get("allowSimulated", "")), default=False)
     start_time = payload.get("startTime") or "09:15"
     end_time = payload.get("endTime") or "15:30"
     max_symbols = max(1, min(max_symbols, 500))
@@ -2606,7 +2615,18 @@ def _build_breadth_internal(payload: dict) -> dict:
     if data_source not in ("sample", "offline"):
         manual_totp = payload.get("manualTotp") or ""
         client = get_active_client(manual_totp)
-        instruments, missing = resolve_instruments(rows)
+        try:
+            instruments, missing = resolve_instruments(rows)
+        except Exception as exc:
+            return {
+                "ok": False,
+                "dataSource": "unavailable",
+                "quality": "unavailable",
+                "isSimulated": False,
+                "message": "Live breadth instruments could not be loaded. Simulated breadth has been blocked.",
+                "coverage": f"0/{len(rows)} symbols",
+                "errors": [{"message": str(exc)}],
+            }
         instruments_used = instruments
         from_date = f"{fetch_from_date} {start_time}"
         now_dt_str = now_ist().strftime("%Y-%m-%d %H:%M")
@@ -2672,6 +2692,16 @@ def _build_breadth_internal(payload: dict) -> dict:
                         return cached_res
                 except Exception:
                     pass
+            if not allow_simulated:
+                return {
+                    "ok": False,
+                    "dataSource": "unavailable",
+                    "quality": "unavailable",
+                    "isSimulated": False,
+                    "message": "Live breadth data is unavailable. Simulated breadth has been blocked.",
+                    "coverage": f"0/{len(rows)} symbols",
+                    "errors": errors[:80],
+                }
             data_source = "sample"
             is_simulated = True
             data_quality = "simulated"
@@ -2701,6 +2731,16 @@ def _build_breadth_internal(payload: dict) -> dict:
                         chart_mode=chart_mode,
                     )
     else:
+        if not allow_simulated:
+            return {
+                "ok": False,
+                "dataSource": "unavailable",
+                "quality": "unavailable",
+                "isSimulated": False,
+                "message": "Simulated breadth requires an explicit demo request.",
+                "coverage": f"0/{len(rows)} symbols",
+                "errors": [],
+            }
         is_simulated = True
         data_quality = "simulated"
         data_source = "sample"
@@ -4771,9 +4811,16 @@ def _build_nifty_internal(payload: dict) -> dict:
     data_source = payload.get("dataSource") or "angel"
     fast_refresh = parse_bool(str(payload.get("fastRefresh", "")), default=False)
     include_option_chain = parse_bool(str(payload.get("includeOptionChain", "")), default=False)
+    # Synthetic market values are never acceptable in the normal product flow.
+    # They may be requested explicitly by an isolated demo client only.
+    allow_simulated = parse_bool(str(payload.get("allowSimulated", "")), default=False)
     strike_range = int(payload.get("strikeRange") or 8)
     strike_range = max(2, min(strike_range, 35))
     expiry = str(payload.get("expiry") or "auto").upper()
+    try:
+        anchor_strike = float(payload.get("anchorStrike")) if payload.get("anchorStrike") not in (None, "", "auto") else None
+    except (TypeError, ValueError):
+        anchor_strike = None
     start_time = payload.get("startTime") or "09:15"
     end_time = payload.get("endTime") or "15:30"
     wpcr_days = int(payload.get("wpcrDays") or 250)
@@ -4874,6 +4921,7 @@ def _build_nifty_internal(payload: dict) -> dict:
                         date_value=date_value,
                         expiry=expiry,
                         strike_range=strike_range,
+                        anchor_strike=anchor_strike,
                     )
                 except Exception as exc:
                     chain_error = str(exc)
@@ -4939,6 +4987,17 @@ def _build_nifty_internal(payload: dict) -> dict:
 
             any_simulated = is_simulated or is_chain_simulated
             fallback_reason_final = chain_fallback_reason or (f"Live candles failed: {candle_error}" if is_simulated else None)
+            if any_simulated and not allow_simulated:
+                return {
+                    "ok": False,
+                    "dataSource": "unavailable",
+                    "quality": "unavailable",
+                    "isSimulated": False,
+                    "message": "Live broker data is unavailable. Simulated prices and charts have been blocked.",
+                    "brokerName": getattr(client, "broker_name", "BROKER"),
+                    "brokerError": candle_error or quote_error or chain_error or fallback_reason_final,
+                    "errors": [item for item in [quote_error, chain_error, candle_error] if item],
+                }
             return {
                 "ok": True,
                 "source": "simulated" if any_simulated else "angel",
@@ -4970,6 +5029,7 @@ def _build_nifty_internal(payload: dict) -> dict:
                 "expiries": expiries,
                 "selectedExpiry": selected_expiry,
                 "strikeRange": strike_range,
+                "displayAnchorStrike": chain_summary.get("displayAnchor"),
                 "chainSummary": chain_summary,
                 "optionChain": option_rows,
                 "straddleData": straddle_data,
@@ -4984,6 +5044,18 @@ def _build_nifty_internal(payload: dict) -> dict:
             }
         except Exception as exc:
             outer_error = str(exc)
+
+    if not allow_simulated:
+        return {
+            "ok": False,
+            "dataSource": "unavailable",
+            "quality": "unavailable",
+            "isSimulated": False,
+            "message": "Live broker data is unavailable. Simulated prices and charts have been blocked.",
+            "brokerName": brokers.get_active_broker_name(env),
+            "brokerError": outer_error or "No active broker session",
+            "errors": [outer_error] if outer_error else [],
+        }
 
     interval_minutes = interval_to_minutes(candle_interval)
     candles = sample_index_candles(index_key, date_value, from_date=fetch_from_date, interval_minutes=interval_minutes)
@@ -5105,10 +5177,15 @@ def build_nifty(payload: dict) -> dict:
     inc_opt = parse_bool(str(payload.get("includeOptionChain", "")), default=False)
     strike_range = int(payload.get("strikeRange") or 8)
     expiry = str(payload.get("expiry") or "auto").upper()
+    try:
+        anchor_strike = float(payload.get("anchorStrike")) if payload.get("anchorStrike") not in (None, "", "auto") else None
+    except (TypeError, ValueError):
+        anchor_strike = None
     data_src = str(payload.get("dataSource") or "angel").strip()
     is_force = parse_bool(str(payload.get("forceRefresh", "")), default=False) or parse_bool(str(payload.get("refresh", "")), default=False)
 
-    cache_key = f"{index_key}_{date_val}_{interval}_{straddle_days}_{inc_opt}_{strike_range}_{expiry}_{data_src}"
+    anchor_key = round(anchor_strike / 50.0) if anchor_strike else "auto"
+    cache_key = f"{index_key}_{date_val}_{interval}_{straddle_days}_{inc_opt}_{strike_range}_{expiry}_{data_src}_{anchor_key}"
 
     is_today = (date_val == now_ist().date().isoformat())
     now_h, now_m = now_ist().hour, now_ist().minute
@@ -9240,6 +9317,13 @@ class RequestHandler(BaseHTTPRequestHandler):
             )
         if path == "/api/settings":
             active_broker = brokers.get_active_broker_name(env)
+            # Never send credentials back to the browser.  Status is enough to
+            # confirm that a persisted server-side configuration survived a
+            # restart, while keeping every secret write-only.
+            angel_ready = angel_configured()
+            upstox_ready = bool(env("UPSTOX_ACCESS_TOKEN", "").strip())
+            kotak_ready = bool(env("KOTAK_ACCESS_TOKEN", "").strip() or (env("KOTAK_CONSUMER_KEY", "").strip() and env("KOTAK_MOBILE_NO", "").strip()))
+            fyers_ready = bool(env("FYERS_APP_ID", "").strip() and env("FYERS_ACCESS_TOKEN", "").strip())
             return self.send_json(
                 200,
                 {
@@ -9252,13 +9336,13 @@ class RequestHandler(BaseHTTPRequestHandler):
                         "totpSecret": "",
                         "totpCode": "",
                         "baseUrl": ANGEL_ROOT,
-                        "configured": False,
+                        "configured": angel_ready,
                     },
                     "upstox": {
                         "accessToken": "",
                         "apiKey": "",
                         "apiSecret": "",
-                        "configured": False,
+                        "configured": upstox_ready,
                     },
                     "kotak": {
                         "accessToken": "",
@@ -9267,12 +9351,12 @@ class RequestHandler(BaseHTTPRequestHandler):
                         "viewToken": "",
                         "mobileNo": "",
                         "mpin": "",
-                        "configured": False,
+                        "configured": kotak_ready,
                     },
                     "fyers": {
                         "appId": "",
                         "accessToken": "",
-                        "configured": False,
+                        "configured": fyers_ready,
                     },
                 },
             )

@@ -98,6 +98,7 @@ const els = {
   optIndexSelect: document.getElementById("optIndexSelect"),
   optExpirySelect: document.getElementById("optExpirySelect"),
   optStrikeRange: document.getElementById("optStrikeRange"),
+  optLockStrikeWindow: document.getElementById("optLockStrikeWindow"),
   optShowGreeks: document.getElementById("optShowGreeks"),
   optCompact: document.getElementById("optCompact"),
   optRefreshButton: document.getElementById("optRefreshButton"),
@@ -1855,6 +1856,7 @@ function scheduleAutoRefresh() {
    ========================================================================== */
 let optChainDataGlobal = null;
 let isOptLoading = false;
+let optionChainAnchorStrike = null;
 let isOptionsTabActive = false;
 let autoRefreshTotalSeconds = 5;
 let autoRefreshCountdown = 5;
@@ -3373,23 +3375,39 @@ function renderP1FiiCashTable(rows) {
     return num >= 0 ? "color:var(--green); font-weight:700;" : "color:var(--red); font-weight:700;";
   };
 
+  const isFiiView = (p1FiiCurrentView === "fii");
+  const isDiiView = (p1FiiCurrentView === "dii");
+  const fiiBg = isFiiView ? "background: rgba(56, 189, 248, 0.06);" : "";
+  const diiBg = isDiiView ? "background: rgba(16, 185, 129, 0.06);" : "";
+  const netBg = (!isFiiView && !isDiiView) ? "background: rgba(99, 102, 241, 0.04);" : "";
+
   tbody.innerHTML = filtered.map(r => {
-    const niftyClose = r.niftyClose ? Number(r.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "--";
-    const niftyChgPct = r.niftyPct !== undefined && r.niftyPct !== null
-      ? `<span style="font-size:10.5px; font-weight:700; ${r.niftyPct >= 0 ? 'color:var(--green);' : 'color:var(--red);'}">${r.niftyPct >= 0 ? '+' : ''}${r.niftyPct}%</span>`
-      : "";
+    const niftyClose = (r.niftyClose && Number(r.niftyClose) > 1000)
+      ? Number(r.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : (r.niftyClose ? String(r.niftyClose) : "--");
+
+    let niftyChgBadge = "";
+    if (r.niftyPct !== undefined && r.niftyPct !== null) {
+      const isPos = Number(r.niftyPct) >= 0;
+      const color = isPos ? "var(--green)" : "var(--red)";
+      const sign = isPos ? "+" : "";
+      const ptsStr = (r.niftyChange !== undefined && r.niftyChange !== null)
+        ? `${Number(r.niftyChange) >= 0 ? '+' : ''}${Number(r.niftyChange).toFixed(2)} `
+        : "";
+      niftyChgBadge = `<span style="font-size:10.5px; font-weight:700; color:${color}; margin-left:4px;">(${ptsStr}${sign}${Number(r.niftyPct).toFixed(2)}%)</span>`;
+    }
 
     return `
       <tr style="border-bottom: 1px solid var(--table-border);">
         <td style="font-weight:700; color:var(--text-primary); padding:8px 10px; white-space:nowrap;">${r.date || r.period}</td>
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary);">${niftyClose} ${niftyChgPct}</td>
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.totalNet)}">${fmtCr(r.totalNet, true)}</td>
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary);">${fmtCr(r.fiiBuy)}</td>
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary);">${fmtCr(r.fiiSell)}</td>
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.fiiNet)}">${fmtCr(r.fiiNet, true)}</td>
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary);">${fmtCr(r.diiBuy)}</td>
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary);">${fmtCr(r.diiSell)}</td>
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.diiNet)}">${fmtCr(r.diiNet, true)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); white-space:nowrap;">${niftyClose !== "--" ? "₹" + niftyClose : "--"} ${niftyChgBadge}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.totalNet)} ${netBg}">${fmtCr(r.totalNet, true)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${fiiBg}">${fmtCr(r.fiiBuy)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${fiiBg}">${fmtCr(r.fiiSell)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.fiiNet)} ${fiiBg}">${fmtCr(r.fiiNet, true)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${diiBg}">${fmtCr(r.diiBuy)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${diiBg}">${fmtCr(r.diiSell)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.diiNet)} ${diiBg}">${fmtCr(r.diiNet, true)}</td>
       </tr>
     `;
   }).join("");
@@ -3397,12 +3415,13 @@ function renderP1FiiCashTable(rows) {
 
 function exportP1FiiCashCsv() {
   if (!p1FiiCashDataRows || !p1FiiCashDataRows.length) return;
-  const headers = ["Date", "Nifty 50 Close", "Nifty Change %", "Combined Net Cr", "FII Buy Cr", "FII Sell Cr", "FII Net Cr", "DII Buy Cr", "DII Sell Cr", "DII Net Cr"];
+  const headers = ["Date", "Nifty 50 Close", "Nifty Change Pts", "Nifty Change %", "Combined Net Cr", "FII Buy Cr", "FII Sell Cr", "FII Net Cr", "DII Buy Cr", "DII Sell Cr", "DII Net Cr"];
   const csvRows = [headers.join(",")];
   p1FiiCashDataRows.forEach(r => {
     csvRows.push([
       `"${r.date || r.period}"`,
       r.niftyClose || "",
+      r.niftyChange !== undefined ? r.niftyChange : "",
       r.niftyPct !== undefined ? r.niftyPct : "",
       r.totalNet !== undefined ? r.totalNet : "",
       r.fiiBuy !== undefined ? r.fiiBuy : "",
@@ -3424,34 +3443,18 @@ function exportP1FiiCashCsv() {
 }
 
 // ============================================================================
-// 📊 FII / DII CASH MARKET FLOW INTERACTIVE CHART & CROSSHAIR ENGINE
+// 📊 FII / DII CASH MARKET FLOW CONTROLS & TABLE ENGINE
 // ============================================================================
 let p1FiiChartRows = [];
-let p1FiiHoveredIndex = -1;
-let p1FiiCrosshairPos = null;
 let p1FiiCurrentPeriod = "daily";
 let p1FiiCurrentView = "net";
 let p1FiiCurrentRange = "30";
-let p1FiiChartStyle = "grouped"; // 'grouped' | 'cumulative' | 'divergence'
 let p1FiiCashFlowData = null;
 let p1FiiChartInitialized = false;
 
 function initP1FiiCashChartControls() {
   if (p1FiiChartInitialized) return;
   p1FiiChartInitialized = true;
-
-  // Toggle Chart Button
-  const btnToggle = document.getElementById("btnToggleP1FiiChart");
-  const chartWrap = document.getElementById("p1FiiChartWrap");
-  const lblToggle = document.getElementById("lblToggleP1FiiChart");
-  if (btnToggle && chartWrap) {
-    btnToggle.addEventListener("click", () => {
-      const isHidden = chartWrap.style.display === "none";
-      chartWrap.style.display = isHidden ? "block" : "none";
-      if (lblToggle) lblToggle.textContent = isHidden ? "Hide Flow Chart" : "Show Flow Chart";
-      if (isHidden) renderP1FiiCashChart();
-    });
-  }
 
   // Period Switcher Buttons (Daily / Monthly / Yearly)
   const periodGroup = document.getElementById("p1FiiPeriodGroup");
@@ -3486,26 +3489,7 @@ function initP1FiiCashChartControls() {
         btn.style.background = "#2563eb";
         btn.style.color = "#ffffff";
         p1FiiCurrentView = btn.dataset.view || "net";
-        renderP1FiiCashChart();
-      });
-    });
-  }
-
-  // Chart Style Switcher (Grouped Dual Bars vs Cumulative Area vs Horizontal Divergence)
-  const styleGroup = document.getElementById("p1FiiChartStyleGroup");
-  if (styleGroup) {
-    styleGroup.querySelectorAll(".fii-style-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        styleGroup.querySelectorAll(".fii-style-btn").forEach(b => {
-          b.classList.remove("active");
-          b.style.background = "transparent";
-          b.style.color = "var(--text-secondary)";
-        });
-        btn.classList.add("active");
-        btn.style.background = "#2563eb";
-        btn.style.color = "#ffffff";
-        p1FiiChartStyle = btn.dataset.style || "grouped";
-        renderP1FiiCashChart();
+        renderP1FiiCashTable(p1FiiChartRows);
       });
     });
   }
@@ -3518,26 +3502,6 @@ function initP1FiiCashChartControls() {
       updateP1FiiChartRows();
     });
   }
-
-  // Canvas Mouse & Touch Events
-  const canvas = document.getElementById("p1FiiDiiCanvas");
-  if (canvas) {
-    canvas.addEventListener("mousemove", handleP1FiiCanvasMouseMove);
-    canvas.addEventListener("mouseleave", handleP1FiiCanvasMouseLeave);
-    canvas.addEventListener("touchmove", e => {
-      if (e.touches && e.touches[0]) {
-        handleP1FiiCanvasMouseMove(e.touches[0]);
-      }
-    }, { passive: true });
-    canvas.addEventListener("touchend", handleP1FiiCanvasMouseLeave);
-  }
-
-  // Window resize debounced
-  window.addEventListener("resize", () => {
-    if (activeTab === "smartMoney" || activeP1FiiSubtab === "cash") {
-      requestAnimationFrame(renderP1FiiCashChart);
-    }
-  });
 }
 
 function renderP1FiiCashDashboard(cashFlow) {
@@ -3619,619 +3583,48 @@ function updateP1FiiChartRows() {
     const vNifty = document.getElementById("p1FiiValNifty");
     const sNifty = document.getElementById("p1FiiSubNifty");
     const bNifty = document.getElementById("p1FiiBadgeNifty");
-    if (vNifty && latest.niftyClose) {
-      vNifty.textContent = Number(latest.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (vNifty) {
+      if (latest.niftyClose && Number(latest.niftyClose) > 1000) {
+        vNifty.textContent = `₹${Number(latest.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      } else if (latest.niftyClose) {
+        vNifty.textContent = String(latest.niftyClose);
+      } else {
+        vNifty.textContent = "--";
+      }
     }
-    if (sNifty && latest.niftyPct !== undefined) {
-      const isPos = latest.niftyPct >= 0;
-      sNifty.textContent = `Session Change: ${isPos ? '+' : ''}${latest.niftyPct}%`;
-      sNifty.style.color = isPos ? "#10b981" : "#ef4444";
+    if (sNifty) {
+      if (latest.niftyPct !== undefined && latest.niftyPct !== null) {
+        const isPos = Number(latest.niftyPct) >= 0;
+        const ptsStr = (latest.niftyChange !== undefined && latest.niftyChange !== null)
+          ? `${Number(latest.niftyChange) >= 0 ? '+' : ''}${Number(latest.niftyChange).toFixed(2)} pts `
+          : "";
+        sNifty.textContent = `Session: ${ptsStr}(${isPos ? '+' : ''}${Number(latest.niftyPct).toFixed(2)}%)`;
+        sNifty.style.color = isPos ? "#10b981" : "#ef4444";
+      } else {
+        sNifty.textContent = p1FiiCurrentPeriod === "daily" ? "Session Change: --" : "Period Rollup";
+        sNifty.style.color = "var(--text-muted)";
+      }
     }
-    if (bNifty && latest.niftyPct !== undefined) {
-      bNifty.textContent = `${latest.niftyPct >= 0 ? '+' : ''}${latest.niftyPct}%`;
-      bNifty.style.color = latest.niftyPct >= 0 ? "#10b981" : "#ef4444";
+    if (bNifty) {
+      if (latest.niftyPct !== undefined && latest.niftyPct !== null) {
+        const isPos = Number(latest.niftyPct) >= 0;
+        bNifty.textContent = `${isPos ? '+' : ''}${Number(latest.niftyPct).toFixed(2)}%`;
+        bNifty.style.background = isPos ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)";
+        bNifty.style.color = isPos ? "#10b981" : "#ef4444";
+      } else {
+        bNifty.textContent = "SPOT";
+        bNifty.style.background = "rgba(148,163,184,0.15)";
+        bNifty.style.color = "var(--text-muted)";
+      }
     }
   }
 
-  // Also update data table with this period
-  renderP1FiiCashTable(rows);
-  renderP1FiiCashChart();
+  // Update data table with this period
+  renderP1FiiCashTable(p1FiiChartRows);
 }
 
 function renderP1FiiCashChart() {
-  const canvas = document.getElementById("p1FiiDiiCanvas");
-  if (!canvas || !p1FiiChartRows || p1FiiChartRows.length === 0) return;
-
-  const container = document.getElementById("p1FiiChartContainer");
-  const containerWidth = container ? container.clientWidth : 800;
-  if (containerWidth < 100) return;
-
-  const isLightMode = !document.body.classList.contains("theme-dark");
-  const colors = {
-    text: isLightMode ? "#64748b" : "#94a3b8",
-    textBright: isLightMode ? "#0f172a" : "#f8fafc",
-    grid: isLightMode ? "rgba(0, 0, 0, 0.08)" : "rgba(255, 255, 255, 0.08)",
-    teal: isLightMode ? "#0284c7" : "#00e5ff",
-    green: "#10b981",
-    red: "#ef4444",
-    blue: "#3b82f6",
-    purple: "#8b5cf6",
-    amber: "#f59e0b"
-  };
-
-  const periodLabel = p1FiiCurrentPeriod.toUpperCase();
-  const viewLabel = p1FiiCurrentView === "net" ? "FII / FPI & DII Net" : (p1FiiCurrentView === "fii" ? "FII / FPI Net Flow" : "DII Domestic Net Flow");
-  const titleEl = document.getElementById("p1FiiChartTitle");
-
-  // ── STYLE 1 & 2: VERTICAL MODERN CHARTS (GROUPED DUAL BARS OR CUMULATIVE TREND) ──
-  if (p1FiiChartStyle === "grouped" || p1FiiChartStyle === "cumulative") {
-    if (titleEl) {
-      titleEl.textContent = p1FiiChartStyle === "grouped"
-        ? `FII vs DII Institutional Flow & Nifty 50 Overlay (₹ Cr) - ${periodLabel}`
-        : `Cumulative Institutional Flow Trend vs Nifty 50 (₹ Cr) - ${periodLabel}`;
-    }
-
-    // Chronological order (oldest left -> newest right)
-    const chronRows = [...p1FiiChartRows].reverse();
-    const n = chronRows.length;
-    const totalHeight = 340;
-    const padLeft = 68;
-    const padRight = 68;
-    const padTop = 36;
-    const padBottom = 54;
-    const plotW = Math.max(100, containerWidth - padLeft - padRight);
-    const plotH = totalHeight - padTop - padBottom;
-
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = containerWidth * dpr;
-    canvas.height = totalHeight * dpr;
-    canvas.style.width = containerWidth + "px";
-    canvas.style.height = totalHeight + "px";
-
-    const ctx = canvas.getContext("2d");
-    ctx.resetTransform();
-    ctx.scale(dpr, dpr);
-
-    // Prepare series
-    let valsA = []; // FII or Combined
-    let valsB = []; // DII
-    let niftyVals = [];
-    let cumFii = 0, cumDii = 0, cumNet = 0;
-
-    chronRows.forEach(r => {
-      const f = Number(r.fiiNet || 0);
-      const d = Number(r.diiNet || 0);
-      const tot = Number(r.totalNet || (f + d));
-      cumFii += f;
-      cumDii += d;
-      cumNet += tot;
-      if (p1FiiChartStyle === "cumulative") {
-        if (p1FiiCurrentView === "fii") valsA.push(cumFii);
-        else if (p1FiiCurrentView === "dii") valsA.push(cumDii);
-        else { valsA.push(cumFii); valsB.push(cumDii); }
-      } else {
-        if (p1FiiCurrentView === "fii") valsA.push(f);
-        else if (p1FiiCurrentView === "dii") valsA.push(d);
-        else { valsA.push(f); valsB.push(d); }
-      }
-      const nc = Number(r.niftyClose || 0);
-      if (nc > 1000) niftyVals.push(nc);
-    });
-
-    const allFlowVals = [...valsA, ...valsB, 0];
-    let vMin = Math.min(...allFlowVals);
-    let vMax = Math.max(...allFlowVals);
-    const span = Math.max(Math.abs(vMin), Math.abs(vMax), 500);
-    vMin = -span * 1.12;
-    vMax = span * 1.12;
-
-    const yValToPx = (v) => padTop + plotH - ((v - vMin) / (vMax - vMin)) * plotH;
-    const zeroY = yValToPx(0);
-
-    // Horizontal grid lines
-    const ySteps = 6;
-    ctx.font = "10px 'JetBrains Mono', monospace";
-    for (let i = 0; i <= ySteps; i++) {
-      const gv = vMin + (i / ySteps) * (vMax - vMin);
-      const gy = yValToPx(gv);
-      ctx.beginPath();
-      ctx.strokeStyle = Math.abs(gv) < 1 ? (isLightMode ? "#334155" : "#94a3b8") : colors.grid;
-      ctx.lineWidth = Math.abs(gv) < 1 ? 1.4 : 1;
-      if (Math.abs(gv) >= 1) ctx.setLineDash([4, 4]);
-      else ctx.setLineDash([]);
-      ctx.moveTo(padLeft, gy);
-      ctx.lineTo(padLeft + plotW, gy);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.fillStyle = colors.text;
-      ctx.textAlign = "right";
-      ctx.textBaseline = "middle";
-      const lbl = Math.abs(gv) >= 1000 ? `${(gv / 1000).toFixed(1)}k` : gv.toFixed(0);
-      ctx.fillText(`₹${lbl}`, padLeft - 8, gy);
-    }
-
-    // Zero line highlight
-    ctx.beginPath();
-    ctx.strokeStyle = isLightMode ? "rgba(15,23,42,0.45)" : "rgba(248,250,252,0.35)";
-    ctx.lineWidth = 1.5;
-    ctx.moveTo(padLeft, zeroY);
-    ctx.lineTo(padLeft + plotW, zeroY);
-    ctx.stroke();
-
-    const slotW = plotW / Math.max(1, n);
-    // Reverse hover index because p1FiiChartRows is newest-first
-    const hoveredChronIdx = p1FiiHoveredIndex >= 0 ? (n - 1 - p1FiiHoveredIndex) : -1;
-
-    if (p1FiiChartStyle === "grouped") {
-      // Draw Grouped Bars (FII vs DII or Single Selected View)
-      const isDual = (p1FiiCurrentView === "net");
-      const barGroupW = Math.min(34, Math.max(4, slotW * 0.72));
-      const singleBarW = isDual ? (barGroupW / 2 - 1) : barGroupW;
-
-      chronRows.forEach((row, idx) => {
-        const cx = padLeft + idx * slotW + slotW / 2;
-        const isHov = (idx === hoveredChronIdx);
-
-        if (isHov) {
-          ctx.fillStyle = isLightMode ? "rgba(37,99,235,0.07)" : "rgba(56,189,248,0.1)";
-          ctx.fillRect(padLeft + idx * slotW, padTop, slotW, plotH);
-        }
-
-        const drawVBar = (val, xLeft, bw, posColor, negColor) => {
-          const yVal = yValToPx(val);
-          const topY = val >= 0 ? yVal : zeroY;
-          const bh = Math.max(2, Math.abs(zeroY - yVal));
-          ctx.fillStyle = val >= 0 ? posColor : negColor;
-          ctx.beginPath();
-          ctx.roundRect(xLeft, topY, bw, bh, 2);
-          ctx.fill();
-        };
-
-        if (isDual) {
-          // FII Bar (left in pair): Cyan/Green for buy, Red for sell
-          const fVal = valsA[idx];
-          drawVBar(fVal, cx - singleBarW - 1, singleBarW, fVal >= 0 ? "#0ea5e9" : "#ef4444", "#ef4444");
-          // DII Bar (right in pair): Purple/Emerald for buy, Amber/Orange for sell
-          const dVal = valsB[idx];
-          drawVBar(dVal, cx + 1, singleBarW, dVal >= 0 ? "#10b981" : "#f59e0b", "#f59e0b");
-        } else {
-          const v = valsA[idx];
-          drawVBar(v, cx - singleBarW / 2, singleBarW, "#10b981", "#ef4444");
-        }
-
-        // X-axis Date Labels (spaced nicely)
-        const labelStep = Math.max(1, Math.ceil(n / 10));
-        if (idx % labelStep === 0 || idx === n - 1 || isHov) {
-          ctx.save();
-          ctx.fillStyle = isHov ? colors.teal : colors.text;
-          ctx.font = isHov ? "bold 10.5px Inter, sans-serif" : "10px Inter, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "top";
-          const dStr = (row.period || row.date || "").slice(0, 6);
-          ctx.fillText(dStr, cx, padTop + plotH + 10);
-          ctx.restore();
-        }
-      });
-    } else {
-      // STYLE 2: Cumulative Smooth Area / Line Chart
-      const drawSmoothCurve = (series, strokeCol, fillRgbaTop) => {
-        if (!series.length) return;
-        ctx.save();
-        ctx.beginPath();
-        series.forEach((v, idx) => {
-          const x = padLeft + idx * slotW + slotW / 2;
-          const y = yValToPx(v);
-          if (idx === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.strokeStyle = strokeCol;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        // Area fill to zeroY
-        const lastX = padLeft + (series.length - 1) * slotW + slotW / 2;
-        const firstX = padLeft + slotW / 2;
-        ctx.lineTo(lastX, zeroY);
-        ctx.lineTo(firstX, zeroY);
-        ctx.closePath();
-        const grad = ctx.createLinearGradient(0, padTop, 0, padTop + plotH);
-        grad.addColorStop(0, fillRgbaTop);
-        grad.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = grad;
-        ctx.fill();
-        ctx.restore();
-      };
-
-      drawSmoothCurve(valsA, "#0ea5e9", "rgba(14, 165, 233, 0.25)");
-      if (valsB.length) {
-        drawSmoothCurve(valsB, "#10b981", "rgba(16, 185, 129, 0.20)");
-      }
-
-      chronRows.forEach((row, idx) => {
-        const cx = padLeft + idx * slotW + slotW / 2;
-        const isHov = (idx === hoveredChronIdx);
-        const labelStep = Math.max(1, Math.ceil(n / 10));
-        if (idx % labelStep === 0 || idx === n - 1 || isHov) {
-          ctx.fillStyle = isHov ? colors.teal : colors.text;
-          ctx.font = isHov ? "bold 10.5px Inter, sans-serif" : "10px Inter, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "top";
-          ctx.fillText((row.period || row.date || "").slice(0, 6), cx, padTop + plotH + 10);
-        }
-      });
-    }
-
-    // Overlay Nifty 50 Line on Secondary Right Axis (if daily and valid Nifty prices exist)
-    if (niftyVals.length >= 2) {
-      const nMin = Math.min(...niftyVals) * 0.996;
-      const nMax = Math.max(...niftyVals) * 1.004;
-      const nToY = (nv) => padTop + plotH - ((nv - nMin) / Math.max(1, nMax - nMin)) * plotH;
-
-      ctx.save();
-      ctx.beginPath();
-      let started = false;
-      chronRows.forEach((row, idx) => {
-        const nc = Number(row.niftyClose || 0);
-        if (nc > 1000) {
-          const x = padLeft + idx * slotW + slotW / 2;
-          const y = nToY(nc);
-          if (!started) { ctx.moveTo(x, y); started = true; }
-          else ctx.lineTo(x, y);
-        }
-      });
-      ctx.strokeStyle = isLightMode ? "#eab308" : "#facc15";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Right Y-axis Nifty labels
-      ctx.fillStyle = isLightMode ? "#ca8a04" : "#facc15";
-      ctx.font = "10px 'JetBrains Mono', monospace";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      for (let i = 0; i <= 4; i++) {
-        const nv = nMin + (i / 4) * (nMax - nMin);
-        const ny = nToY(nv);
-        ctx.fillText(Math.round(nv).toLocaleString("en-IN"), padLeft + plotW + 6, ny);
-      }
-      ctx.restore();
-    }
-
-    // Top Legend Header inside Canvas
-    ctx.save();
-    ctx.font = "bold 11px Inter, sans-serif";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "left";
-    if (p1FiiCurrentView === "net") {
-      ctx.fillStyle = "#0ea5e9";
-      ctx.fillText("■ FII Flow", padLeft, 14);
-      ctx.fillStyle = "#10b981";
-      ctx.fillText("■ DII Flow", padLeft + 75, 14);
-    } else {
-      ctx.fillStyle = "#10b981";
-      ctx.fillText("■ Inflow (+)", padLeft, 14);
-      ctx.fillStyle = "#ef4444";
-      ctx.fillText("■ Outflow (-)", padLeft + 85, 14);
-    }
-    if (niftyVals.length >= 2) {
-      ctx.fillStyle = isLightMode ? "#ca8a04" : "#facc15";
-      ctx.fillText("━ Nifty 50 (Right Axis)", padLeft + 170, 14);
-    }
-    ctx.restore();
-
-    return;
-  }
-
-  // ── STYLE 3: HORIZONTAL ZERO-CENTERED DIVERGENCE BARS ──
-  const labelWidth = Math.min(105, Math.max(80, containerWidth * 0.14));
-  const paddingRight = 95;
-  const paddingTop = 45;
-  const paddingBottom = 40;
-  const rowHeight = 28;
-  const barHeight = 16;
-  const totalHeight = paddingTop + p1FiiChartRows.length * rowHeight + paddingBottom;
-
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = containerWidth * dpr;
-  canvas.height = totalHeight * dpr;
-  canvas.style.width = containerWidth + "px";
-  canvas.style.height = totalHeight + "px";
-
-  const ctx = canvas.getContext("2d");
-  ctx.resetTransform();
-  ctx.scale(dpr, dpr);
-
-  if (titleEl) titleEl.textContent = `${viewLabel} (in Crores.) - ${periodLabel}`;
-
-  let valMin = 0;
-  let valMax = 0;
-  p1FiiChartRows.forEach(row => {
-    let val = 0;
-    if (p1FiiCurrentView === "net") val = Number(row.totalNet || 0);
-    else if (p1FiiCurrentView === "fii") val = Number(row.fiiNet || 0);
-    else val = Number(row.diiNet || 0);
-
-    if (val < valMin) valMin = val;
-    if (val > valMax) valMax = val;
-  });
-
-  const absMax = Math.max(Math.abs(valMin), Math.abs(valMax), 1000);
-  const magnitude = Math.pow(10, Math.floor(Math.log10(absMax)));
-  const ceilMax = Math.ceil(absMax / (magnitude / 2)) * (magnitude / 2);
-  const xMin = -ceilMax;
-  const xMax = ceilMax;
-  const chartWidth = containerWidth - labelWidth - paddingRight;
-
-  function xValToPx(v) {
-    return labelWidth + ((v - xMin) / (xMax - xMin)) * chartWidth;
-  }
-
-  const zeroX = xValToPx(0);
-
-  const stepCount = 8;
-  const stepVal = (xMax - xMin) / stepCount;
-  ctx.font = "10px Inter, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-
-  for (let i = 0; i <= stepCount; i++) {
-    const v = xMin + i * stepVal;
-    const gx = xValToPx(v);
-
-    ctx.beginPath();
-    ctx.strokeStyle = v === 0 ? (isLightMode ? "#0f172a" : "#ffffff") : colors.grid;
-    ctx.lineWidth = v === 0 ? 1.5 : 1;
-    if (v !== 0) ctx.setLineDash([4, 4]);
-    else ctx.setLineDash([]);
-    ctx.moveTo(gx, paddingTop - 10);
-    ctx.lineTo(gx, totalHeight - paddingBottom + 5);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = v === 0 ? colors.textBright : colors.text;
-    const fmtVal = Math.abs(v) >= 1000 ? (v / 1).toFixed(0) : v.toFixed(0);
-    ctx.fillText(fmtVal, gx, totalHeight - paddingBottom + 8);
-  }
-
-  ctx.fillStyle = colors.text;
-  ctx.textAlign = "right";
-  ctx.fillText("₹ in Crores ➔", containerWidth - paddingRight, 15);
-
-  p1FiiChartRows.forEach((row, i) => {
-    const yCenter = paddingTop + i * rowHeight + rowHeight / 2;
-    const barTop = yCenter - barHeight / 2;
-    const isHovered = (i === p1FiiHoveredIndex);
-
-    let val = 0;
-    if (p1FiiCurrentView === "net") val = Number(row.totalNet || 0);
-    else if (p1FiiCurrentView === "fii") val = Number(row.fiiNet || 0);
-    else val = Number(row.diiNet || 0);
-
-    const targetX = xValToPx(val);
-    const isPositive = val >= 0;
-
-    if (isHovered) {
-      ctx.fillStyle = isLightMode ? "rgba(37, 99, 235, 0.08)" : "rgba(56, 189, 248, 0.12)";
-      ctx.fillRect(0, paddingTop + i * rowHeight, containerWidth, rowHeight);
-    }
-
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
-    ctx.font = isHovered ? "bold 11.5px Inter, sans-serif" : "11px Inter, sans-serif";
-    ctx.fillStyle = isHovered ? (isLightMode ? "#2563eb" : "#38bdf8") : colors.text;
-    const dateText = row.period || row.date || "";
-    ctx.fillText(dateText, labelWidth - 10, yCenter);
-
-    const barX = isPositive ? zeroX : targetX;
-    const barW = Math.max(2, Math.abs(targetX - zeroX));
-
-    ctx.save();
-    const grad = ctx.createLinearGradient(zeroX, barTop, targetX, barTop);
-    if (isPositive) {
-      grad.addColorStop(0, "#059669");
-      grad.addColorStop(1, "#10b981");
-      if (isHovered) {
-        ctx.shadowColor = "rgba(16, 185, 129, 0.7)";
-        ctx.shadowBlur = 10;
-      }
-    } else {
-      grad.addColorStop(0, "#dc2626");
-      grad.addColorStop(1, "#ef4444");
-      if (isHovered) {
-        ctx.shadowColor = "rgba(239, 68, 68, 0.7)";
-        ctx.shadowBlur = 10;
-      }
-    }
-
-    ctx.fillStyle = grad;
-    const radius = 3;
-    ctx.beginPath();
-    if (isPositive) {
-      ctx.roundRect(barX, barTop, barW, barHeight, [0, radius, radius, 0]);
-    } else {
-      ctx.roundRect(barX, barTop, barW, barHeight, [radius, 0, 0, radius]);
-    }
-    ctx.fill();
-    ctx.restore();
-
-    ctx.font = isHovered ? "bold 11px 'JetBrains Mono', monospace" : "10px 'JetBrains Mono', monospace";
-    ctx.fillStyle = isPositive ? "#10b981" : "#ef4444";
-    ctx.textBaseline = "middle";
-    const sign = val > 0 ? "+" : "";
-    const valStr = `${sign}${val.toLocaleString("en-IN", { maximumFractionDigits: 1 })}`;
-
-    if (isPositive) {
-      ctx.textAlign = "left";
-      ctx.fillText(valStr, targetX + 8, yCenter);
-    } else {
-      ctx.textAlign = "right";
-      ctx.fillText(valStr, targetX - 8, yCenter);
-    }
-  });
-
-  if (p1FiiHoveredIndex >= 0 && p1FiiCrosshairPos) {
-    const activeY = paddingTop + p1FiiHoveredIndex * rowHeight + rowHeight / 2;
-    const mouseX = Math.max(labelWidth, Math.min(containerWidth - paddingRight, p1FiiCrosshairPos.x));
-
-    ctx.save();
-    ctx.strokeStyle = colors.teal;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 4]);
-
-    ctx.beginPath();
-    ctx.moveTo(labelWidth, activeY);
-    ctx.lineTo(containerWidth - paddingRight, activeY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(mouseX, paddingTop - 10);
-    ctx.lineTo(mouseX, totalHeight - paddingBottom + 5);
-    ctx.stroke();
-
-    const cursorVal = xMin + ((mouseX - labelWidth) / chartWidth) * (xMax - xMin);
-    const pillText = (cursorVal >= 0 ? "+" : "") + cursorVal.toFixed(0) + " Cr";
-    ctx.font = "bold 10px 'JetBrains Mono', monospace";
-    const textW = ctx.measureText(pillText).width;
-    const pillW = textW + 12;
-    const pillH = 18;
-    const pillX = mouseX - pillW / 2;
-    const pillY = totalHeight - paddingBottom + 5;
-
-    ctx.setLineDash([]);
-    ctx.fillStyle = colors.teal;
-    ctx.beginPath();
-    ctx.roundRect(pillX, pillY, pillW, pillH, 4);
-    ctx.fill();
-
-    ctx.fillStyle = "#ffffff";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(pillText, mouseX, pillY + pillH / 2);
-
-    ctx.restore();
-  }
-}
-
-function handleP1FiiCanvasMouseMove(e) {
-  const canvas = document.getElementById("p1FiiDiiCanvas");
-  if (!canvas || !p1FiiChartRows || p1FiiChartRows.length === 0) return;
-
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-
-  let idx = -1;
-  if (p1FiiChartStyle === "grouped" || p1FiiChartStyle === "cumulative") {
-    const padLeft = 68;
-    const padRight = 68;
-    const plotW = Math.max(100, rect.width - padLeft - padRight);
-    const n = p1FiiChartRows.length;
-    const slotW = plotW / Math.max(1, n);
-    const chronIdx = Math.floor((mouseX - padLeft) / slotW);
-    if (chronIdx >= 0 && chronIdx < n) {
-      idx = n - 1 - chronIdx; // convert back to newest-first index
-    }
-  } else {
-    const paddingTop = 45;
-    const rowHeight = 28;
-    idx = Math.floor((mouseY - paddingTop) / rowHeight);
-  }
-
-  if (idx >= 0 && idx < p1FiiChartRows.length) {
-    p1FiiHoveredIndex = idx;
-    p1FiiCrosshairPos = { x: mouseX, y: mouseY };
-    renderP1FiiCashChart();
-    updateP1FiiTooltip(e.clientX, e.clientY, p1FiiChartRows[idx]);
-  } else {
-    handleP1FiiCanvasMouseLeave();
-  }
-}
-
-function handleP1FiiCanvasMouseLeave() {
-  p1FiiHoveredIndex = -1;
-  p1FiiCrosshairPos = null;
-  renderP1FiiCashChart();
-  const tooltip = document.getElementById("p1FiiCrosshairTooltip");
-  if (tooltip) tooltip.style.display = "none";
-}
-
-function updateP1FiiTooltip(clientX, clientY, row) {
-  const tooltip = document.getElementById("p1FiiCrosshairTooltip");
-  if (!tooltip || !row) return;
-
-  const container = document.getElementById("p1FiiChartContainer");
-  if (!container) return;
-  const containerRect = container.getBoundingClientRect();
-  const relX = clientX - containerRect.left;
-  const relY = clientY - containerRect.top;
-
-  const totalNet = Number(row.totalNet || 0);
-  const fiiNet = Number(row.fiiNet || 0);
-  const diiNet = Number(row.diiNet || 0);
-  const fiiBuy = Number(row.fiiBuy || 0);
-  const fiiSell = Number(row.fiiSell || 0);
-  const diiBuy = Number(row.diiBuy || 0);
-  const diiSell = Number(row.diiSell || 0);
-  const niftyClose = row.niftyClose ? Number(row.niftyClose).toFixed(2) : "--";
-  const niftyPct = row.niftyPct !== undefined ? (row.niftyPct > 0 ? `+${row.niftyPct}%` : `${row.niftyPct}%`) : "";
-
-  const totClass = totalNet >= 0 ? "color:#10b981;" : "color:#ef4444;";
-  const fiiClass = fiiNet >= 0 ? "color:#10b981;" : "color:#ef4444;";
-  const diiClass = diiNet >= 0 ? "color:#10b981;" : "color:#ef4444;";
-
-  tooltip.innerHTML = `
-    <div style="font-weight:800; font-size:12px; border-bottom:1px solid rgba(255,255,255,0.15); padding-bottom:6px; margin-bottom:8px; display:flex; justify-content:space-between; gap:12px;">
-      <span>📅 ${row.period || row.date}</span>
-      <span style="color:#38bdf8;">${niftyClose} (${niftyPct})</span>
-    </div>
-    <div style="display:flex; justify-content:space-between; gap:14px; font-size:11.5px; margin-bottom:4px;">
-      <span style="color:#94a3b8;">Combined Net:</span>
-      <strong style="${totClass}">${totalNet >= 0 ? '+' : ''}₹${totalNet.toLocaleString("en-IN", { maximumFractionDigits: 1 })} Cr</strong>
-    </div>
-    <div style="display:flex; justify-content:space-between; gap:14px; font-size:11.5px; margin-bottom:4px;">
-      <span style="color:#94a3b8;">FII / FPI Net:</span>
-      <strong style="${fiiClass}">${fiiNet >= 0 ? '+' : ''}₹${fiiNet.toLocaleString("en-IN", { maximumFractionDigits: 1 })} Cr</strong>
-    </div>
-    <div style="font-size:10px; color:#64748b; margin-bottom:6px; padding-left:4px;">
-      Buy: ₹${Math.round(fiiBuy).toLocaleString("en-IN")} Cr | Sell: ₹${Math.round(fiiSell).toLocaleString("en-IN")} Cr
-    </div>
-    <div style="display:flex; justify-content:space-between; gap:14px; font-size:11.5px; margin-bottom:4px;">
-      <span style="color:#94a3b8;">DII Domestic Net:</span>
-      <strong style="${diiClass}">${diiNet >= 0 ? '+' : ''}₹${diiNet.toLocaleString("en-IN", { maximumFractionDigits: 1 })} Cr</strong>
-    </div>
-    <div style="font-size:10px; color:#64748b; padding-left:4px;">
-      Buy: ₹${Math.round(diiBuy).toLocaleString("en-IN")} Cr | Sell: ₹${Math.round(diiSell).toLocaleString("en-IN")} Cr
-    </div>
-  `;
-
-  tooltip.style.display = "block";
-  tooltip.style.position = "absolute";
-  tooltip.style.background = "rgba(15, 23, 42, 0.95)";
-  tooltip.style.color = "#f8fafc";
-  tooltip.style.padding = "10px 14px";
-  tooltip.style.borderRadius = "8px";
-  tooltip.style.boxShadow = "0 8px 24px rgba(0,0,0,0.35)";
-  tooltip.style.border = "1px solid rgba(56, 189, 248, 0.3)";
-  tooltip.style.minWidth = "230px";
-  tooltip.style.pointerEvents = "none";
-  tooltip.style.zIndex = "1000";
-
-  // Position tooltip safely
-  const tipWidth = 240;
-  const tipHeight = 150;
-  let posX = relX + 15;
-  let posY = relY - tipHeight / 2;
-
-  if (posX + tipWidth > containerRect.width) {
-    posX = relX - tipWidth - 15;
-  }
-  if (posY < 10) posY = 10;
-  if (posY + tipHeight > container.clientHeight) {
-    posY = container.clientHeight - tipHeight - 10;
-  }
-
-  tooltip.style.left = `${Math.max(10, posX)}px`;
-  tooltip.style.top = `${Math.max(10, posY)}px`;
+  // Flow chart removed per user request
 }
 
 let _fiiDeskSubview = null; // 'cash' | 'derivatives' | null (show all tabs)
@@ -9216,6 +8609,9 @@ async function loadOptionChain(opts = {}) {
       wpcrDays: wpcrDays,
       fastRefresh: true,
     };
+    if (els.optLockStrikeWindow?.checked && optionChainAnchorStrike) {
+      payload.anchorStrike = optionChainAnchorStrike;
+    }
     if ((els.dataSource.value === "angel" || els.dataSource.value === "broker") && els.totpInput && els.totpInput.value.trim()) {
       payload.manualTotp = els.totpInput.value.trim();
     }
@@ -9236,6 +8632,9 @@ async function loadOptionChain(opts = {}) {
     const spot = index.spot || 0;
     
     optChainDataGlobal = chain;
+    if (els.optLockStrikeWindow?.checked && !optionChainAnchorStrike) {
+      optionChainAnchorStrike = Number(data.displayAnchorStrike || chainSummary.displayAnchor || chainSummary.atm) || null;
+    }
     
     const currentExpiry = els.optExpirySelect.value;
     els.optExpirySelect.innerHTML = "";
@@ -9319,6 +8718,12 @@ async function loadOptionChain(opts = {}) {
     
   } catch (err) {
     console.error(err);
+    // Never leave a prior live/simulated snapshot visible after a failed
+    // refresh; stale strikes can otherwise look like a current option chain.
+    optChainDataGlobal = [];
+    renderOptionChain([], 0);
+    drawOptOiChart([]);
+    drawOptIvChart([]);
     if (els.optionChainBody) {
       els.optionChainBody.innerHTML = `<tr><td colspan="17" style="text-align: center; padding: 16px; color: var(--red);">Error: ${escapeHtml(err.message)}</td></tr>`;
     }
@@ -10490,7 +9895,9 @@ if (els.smDateInput) {
 }
 if (els.p1FiiTableSearch) {
   els.p1FiiTableSearch.addEventListener("input", () => {
-    if (smartMoneyDataGlobal && smartMoneyDataGlobal.cashFlow && smartMoneyDataGlobal.cashFlow.daily) {
+    if (p1FiiChartRows && p1FiiChartRows.length) {
+      renderP1FiiCashTable(p1FiiChartRows);
+    } else if (smartMoneyDataGlobal && smartMoneyDataGlobal.cashFlow && smartMoneyDataGlobal.cashFlow.daily) {
       renderP1FiiCashTable(smartMoneyDataGlobal.cashFlow.daily);
     }
   });
@@ -10962,9 +10369,13 @@ if (els.wpcrModeGroup) {
 }
 
 // Options desk controls listeners (safely guarded)
-if (els.optIndexSelect) els.optIndexSelect.addEventListener("change", () => loadOptionChain());
+if (els.optIndexSelect) els.optIndexSelect.addEventListener("change", () => { optionChainAnchorStrike = null; loadOptionChain(); });
 if (els.optExpirySelect) els.optExpirySelect.addEventListener("change", () => loadOptionChain());
-if (els.optStrikeRange) els.optStrikeRange.addEventListener("change", () => loadOptionChain());
+if (els.optStrikeRange) els.optStrikeRange.addEventListener("change", () => { optionChainAnchorStrike = null; loadOptionChain(); });
+if (els.optLockStrikeWindow) els.optLockStrikeWindow.addEventListener("change", () => {
+  optionChainAnchorStrike = null;
+  loadOptionChain();
+});
 if (els.optShowGreeks) els.optShowGreeks.addEventListener("change", applyTableDisplaySettings);
 if (els.optShowModelFair) {
   els.optShowModelFair.addEventListener("change", applyTableDisplaySettings);
@@ -11378,7 +10789,10 @@ async function loadBrokerSettings() {
     // Fetch secure masked configuration from server
     let serverSettings = null;
     try {
-      const resp = await fetch("/api/settings");
+      const adminKey = sessionStorage.getItem("bl_admin_secret") || localStorage.getItem("breadthlab_admin_secret") || "";
+      const resp = await fetch("/api/settings", {
+        headers: adminKey ? { "X-Admin-Secret": adminKey } : {}
+      });
       if (resp.ok) {
         serverSettings = await resp.json();
       }
@@ -11424,7 +10838,7 @@ async function loadBrokerSettings() {
 
       const badge = document.getElementById("badgeAngelStatus");
       if (badge) {
-        const isCfg = Boolean(data.angel.apiKey && data.angel.clientCode && data.angel.pin);
+        const isCfg = Boolean(data.angel.configured || (data.angel.apiKey && data.angel.clientCode && data.angel.pin));
         badge.className = isCfg ? "broker-status-pill configured" : "broker-status-pill not-configured";
         badge.textContent = isCfg ? "Configured" : "Not Configured";
       }
@@ -11441,7 +10855,7 @@ async function loadBrokerSettings() {
 
       const badge = document.getElementById("badgeUpstoxStatus");
       if (badge) {
-        const isCfg = Boolean(data.upstox.accessToken);
+        const isCfg = Boolean(data.upstox.configured || data.upstox.accessToken);
         badge.className = isCfg ? "broker-status-pill configured" : "broker-status-pill not-configured";
         badge.textContent = isCfg ? "Configured" : "Not Configured";
       }
@@ -11462,7 +10876,7 @@ async function loadBrokerSettings() {
 
       const badge = document.getElementById("badgeKotakStatus");
       if (badge) {
-        const isCfg = Boolean(data.kotak.accessToken || (data.kotak.consumerKey && data.kotak.mobileNo));
+        const isCfg = Boolean(data.kotak.configured || data.kotak.accessToken || (data.kotak.consumerKey && data.kotak.mobileNo));
         badge.className = isCfg ? "broker-status-pill configured" : "broker-status-pill not-configured";
         badge.textContent = isCfg ? "Configured" : "Not Configured";
       }
@@ -11477,7 +10891,7 @@ async function loadBrokerSettings() {
 
       const badge = document.getElementById("badgeFyersStatus");
       if (badge) {
-        const isCfg = Boolean(data.fyers.appId && data.fyers.accessToken);
+        const isCfg = Boolean(data.fyers.configured || (data.fyers.appId && data.fyers.accessToken));
         badge.className = isCfg ? "broker-status-pill configured" : "broker-status-pill not-configured";
         badge.textContent = isCfg ? "Configured" : "Not Configured";
       }
@@ -11540,21 +10954,24 @@ async function saveBrokerSettings() {
   });
 
   try {
-    const adminKey = localStorage.getItem("breadthlab_admin_secret") || "";
-    // Also save to server session if applicable
-    await fetch("/api/settings", {
+    const adminKey = sessionStorage.getItem("bl_admin_secret") || localStorage.getItem("breadthlab_admin_secret") || "";
+    const response = await fetch("/api/settings", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(adminKey ? { "X-Admin-Secret": adminKey } : {})
       },
       body: JSON.stringify(payload),
-    }).catch(() => {});
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok) {
+      throw new Error(result.message || "Settings were not saved on the server.");
+    }
 
-    showSettingsAlert(`Your broker credentials have been securely saved to your account! Active: ${activeBroker}`, "success");
+    showSettingsAlert(result.message || `Broker credentials saved securely. Active: ${activeBroker}`, "success");
     await loadBrokerSettings();
   } catch (err) {
-    showSettingsAlert(`Saved to your account profile!`, "success");
+    showSettingsAlert(`Save failed: ${err.message || "Admin authentication is required."}`, "error");
   } finally {
     saveBtns.forEach(btn => {
       if (btn) {

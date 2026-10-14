@@ -157,11 +157,26 @@ def sync_fii_dii_history(
 
     # Nifty 50 Benchmark Close values
     if nifty_close is None or nifty_close <= 0:
-        # Default to latest known close if not passed
+        try:
+            import upstox_engine
+            spot, prev_c, chg = upstox_engine.get_real_spot_price("NSE_INDEX|Nifty 50")
+            if spot > 0:
+                nifty_close = spot
+                nifty_change = chg
+                nifty_pct = round((chg / prev_c) * 100.0, 2) if prev_c > 0 else 0.0
+        except Exception:
+            pass
+
+    if nifty_close is None or nifty_close <= 0:
         prev_entry = daily_list[0] if daily_list else {}
-        nifty_close = prev_entry.get("niftyClose", 23414.3)
-        nifty_change = prev_entry.get("niftyChange", 67.9)
-        nifty_pct = prev_entry.get("niftyPct", 0.29)
+        nifty_close = prev_entry.get("niftyClose", 22721.95)
+        nifty_change = prev_entry.get("niftyChange", 358.6)
+        nifty_pct = prev_entry.get("niftyPct", 1.6)
+    elif daily_list and (nifty_change is None or nifty_change == 0.0):
+        prev_c = float(daily_list[0].get("niftyClose") or 0.0)
+        if prev_c > 0 and nifty_close:
+            nifty_change = round(float(nifty_close) - prev_c, 2)
+            nifty_pct = round((nifty_change / prev_c) * 100.0, 2)
 
     new_daily_entry = {
         "period": rec_date,
