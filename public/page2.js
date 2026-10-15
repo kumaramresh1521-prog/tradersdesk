@@ -3699,50 +3699,7 @@ document.addEventListener("keydown", function(e) {
 });
 
 
-// Page 2: Mobile Dropdown Toggle Handler
-document.addEventListener("DOMContentLoaded", function() {
-  const nav = document.getElementById("mainInstNav") || document.querySelector(".inst-nav");
-  if (!nav) return;
-
-  nav.querySelectorAll(".has-dropdown").forEach(function(item) {
-    const btn = item.querySelector(".inst-nav-btn");
-    if (btn) {
-      btn.addEventListener("click", function(e) {
-        const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
-        if (!isMobile) return;
-
-        if (!item.classList.contains("mobile-open")) {
-          e.preventDefault();
-          e.stopPropagation();
-          nav.querySelectorAll(".has-dropdown.mobile-open").forEach(function(other) {
-            if (other !== item) other.classList.remove("mobile-open");
-          });
-          item.classList.add("mobile-open");
-        } else {
-          item.classList.remove("mobile-open");
-        }
-      });
-    }
-
-    item.querySelectorAll(".inst-dd-item").forEach(function(subItem) {
-      subItem.addEventListener("click", function() {
-        item.classList.remove("mobile-open");
-      });
-    });
-  });
-
-  document.addEventListener("click", function(e) {
-    if (window.innerWidth <= 860 || ("ontouchstart" in window)) {
-      const openItem = document.querySelector(".has-dropdown.mobile-open");
-      if (openItem && !openItem.contains(e.target)) {
-        openItem.classList.remove("mobile-open");
-      }
-    }
-  });
-});
-
-
-// Page 2: Smart Mobile Dropdown Delegation
+// Page 2: Mobile Dropdown Toggle Handler & Modal Directory
 window.openMobileDotMenu = function(focusSection) {
   const modal = document.getElementById("mobileDotMenuModal");
   if (modal) {
@@ -3770,23 +3727,61 @@ window.closeMobileDotMenu = function() {
   }
 };
 
+window.closeAllMobileDropdowns = function() {
+  document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(item) {
+    item.classList.remove("mobile-open");
+  });
+};
+
 document.addEventListener("DOMContentLoaded", function() {
   const nav = document.getElementById("mainInstNav") || document.querySelector(".inst-nav");
   if (!nav) return;
 
-  nav.querySelectorAll(".has-dropdown .inst-nav-btn").forEach(function(btn) {
-    btn.addEventListener("click", function(e) {
-      const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
-      if (!isMobile) return;
+  nav.querySelectorAll(".has-dropdown").forEach(function(item) {
+    const btn = item.querySelector(".inst-nav-btn");
+    const dropdown = item.querySelector(".inst-dropdown");
+    if (btn && dropdown) {
+      btn.addEventListener("click", function(e) {
+        const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
+        if (!isMobile) return;
 
-      const href = btn.getAttribute("href") || "";
-      let sec = "futures";
-      if (href.indexOf("option") >= 0 || href.indexOf("straddle") >= 0) sec = "options";
-      else if (href.indexOf("fii") >= 0) sec = "fiidii";
+        const isAlreadyOpen = item.classList.contains("mobile-open");
 
-      e.preventDefault();
-      e.stopPropagation();
-      openMobileDotMenu(sec);
+        // Close any other open dropdown
+        document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(other) {
+          if (other !== item) other.classList.remove("mobile-open");
+        });
+
+        if (!isAlreadyOpen) {
+          if (e && e.preventDefault) e.preventDefault();
+          if (e && e.stopPropagation) e.stopPropagation();
+
+          const header = document.querySelector(".page2-header") || document.querySelector(".inst-header");
+          const headerBottom = header ? Math.round(header.getBoundingClientRect().bottom) : 100;
+          dropdown.style.setProperty("--mobile-dropdown-top", (headerBottom + 4) + "px");
+          dropdown.style.top = (headerBottom + 4) + "px";
+          dropdown.style.maxHeight = "calc(100vh - " + (headerBottom + 20) + "px)";
+
+          item.classList.add("mobile-open");
+        } else {
+          item.classList.remove("mobile-open");
+        }
+      });
+    }
+
+    item.querySelectorAll(".inst-dd-item").forEach(function(subItem) {
+      subItem.addEventListener("click", function() {
+        item.classList.remove("mobile-open");
+      });
     });
   });
+
+  document.addEventListener("click", function(e) {
+    if (window.innerWidth <= 860 || ("ontouchstart" in window)) {
+      const openItem = document.querySelector(".has-dropdown.mobile-open");
+      if (openItem && !openItem.contains(e.target)) {
+        openItem.classList.remove("mobile-open");
+      }
+    }
+  }, true);
 });

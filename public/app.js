@@ -12936,60 +12936,7 @@ document.addEventListener("keydown", function(e) {
   }
 });
 
-window.instNavClick = function(e, key, subview) {
-  if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
-    return true; // Let browser open in new tab!
-  }
-
-  // On mobile touch devices, check if this button belongs to a dropdown item
-  const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
-  if (isMobile) {
-    const target = e ? (e.target || e.srcElement) : null;
-    const btn = target ? (target.classList.contains("inst-nav-btn") ? target : target.closest(".inst-nav-btn")) : null;
-    const navItem = btn ? btn.closest(".has-dropdown") : null;
-
-    if (navItem && btn) {
-      // If the dropdown is not yet open on mobile, open it so user can see and click submenus!
-      if (!navItem.classList.contains("mobile-open")) {
-        if (e && e.preventDefault) e.preventDefault();
-        if (e && e.stopPropagation) e.stopPropagation();
-
-        // Close any other open dropdowns
-        document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(other) {
-          if (other !== navItem) other.classList.remove("mobile-open");
-        });
-
-        navItem.classList.add("mobile-open");
-        return false;
-      }
-      // If it was already open and user taps the header button again, close it and proceed
-      navItem.classList.remove("mobile-open");
-    }
-  }
-
-  if (e && e.preventDefault) e.preventDefault();
-
-  // Close any open mobile dropdowns
-  document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(item) {
-    item.classList.remove("mobile-open");
-  });
-
-  instNav(key, subview);
-  return false;
-};
-
-// Dismiss open mobile dropdown when clicking outside
-document.addEventListener("click", function(e) {
-  if (window.innerWidth <= 860 || ("ontouchstart" in window)) {
-    const openItem = document.querySelector(".has-dropdown.mobile-open");
-    if (openItem && !openItem.contains(e.target)) {
-      openItem.classList.remove("mobile-open");
-    }
-  }
-});
-
-
-// Smart Navigation Handler: On mobile, clicking a dropdown item opens the directory focused on that category
+// 6-Dot Mobile & Desktop App Launcher Directory Modal
 window.openMobileDotMenu = function(focusSection) {
   const modal = document.getElementById("mobileDotMenuModal");
   if (modal) {
@@ -13017,32 +12964,63 @@ window.closeMobileDotMenu = function() {
   }
 };
 
+window.closeAllMobileDropdowns = function() {
+  document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(item) {
+    item.classList.remove("mobile-open");
+  });
+};
+
+// Institutional Navigation Click Handler with Mobile Dropdown Positioning
 window.instNavClick = function(e, key, subview) {
   if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
-    return true; // Let browser open in new tab!
+    return true; // Let browser open in new tab
   }
 
   const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
   if (isMobile) {
-    // If user clicked any dropdown parent on mobile, open the full-screen clean directory focused on it!
-    const dropdownSections = {
-      futures: "futures",
-      options: "options",
-      smartmoney: "fiidii",
-      fiidii: "fiidii",
-      fii: "fiidii"
-    };
+    const target = e ? (e.target || e.srcElement) : null;
+    const btn = target ? (target.classList.contains("inst-nav-btn") ? target : target.closest(".inst-nav-btn")) : null;
+    const navItem = btn ? btn.closest(".has-dropdown") : null;
 
-    if (dropdownSections[key]) {
-      if (e && e.preventDefault) e.preventDefault();
-      if (e && e.stopPropagation) e.stopPropagation();
-      openMobileDotMenu(dropdownSections[key]);
-      return false;
+    if (navItem && btn) {
+      const dropdown = navItem.querySelector(".inst-dropdown");
+      const isAlreadyOpen = navItem.classList.contains("mobile-open");
+
+      // Close all other open dropdowns first
+      window.closeAllMobileDropdowns();
+
+      if (!isAlreadyOpen && dropdown) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (e && e.stopPropagation) e.stopPropagation();
+
+        // Calculate dynamic header bottom position to guarantee zero clipping/overlapping
+        const header = document.querySelector(".inst-header") || document.getElementById("instHeader");
+        const headerBottom = header ? Math.round(header.getBoundingClientRect().bottom) : 100;
+        dropdown.style.setProperty("--mobile-dropdown-top", (headerBottom + 4) + "px");
+        dropdown.style.top = (headerBottom + 4) + "px";
+        dropdown.style.maxHeight = "calc(100vh - " + (headerBottom + 20) + "px)";
+
+        navItem.classList.add("mobile-open");
+        return false;
+      }
+      // If it was already open and user taps the header button again, close it and navigate to desk
+      navItem.classList.remove("mobile-open");
     }
   }
 
   if (e && e.preventDefault) e.preventDefault();
-  closeMobileDotMenu();
+  window.closeAllMobileDropdowns();
+  if (window.closeMobileDotMenu) window.closeMobileDotMenu();
   instNav(key, subview);
   return false;
 };
+
+// Dismiss open mobile dropdown when clicking outside
+document.addEventListener("click", function(e) {
+  if (window.innerWidth <= 860 || ("ontouchstart" in window)) {
+    const openItem = document.querySelector(".has-dropdown.mobile-open");
+    if (openItem && !openItem.contains(e.target)) {
+      openItem.classList.remove("mobile-open");
+    }
+  }
+}, true);
