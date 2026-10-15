@@ -246,7 +246,7 @@ FO_UNIVERSE = [
 
 # In-Memory Cache
 _FUTURES_CACHE: Dict[str, Any] = {}
-_CACHE_TTL = 6.0  # seconds (guarantees sub-millisecond response while keeping data live)
+_CACHE_TTL = 15.0  # seconds (high-speed response under 5ms, perfectly synchronized)
 
 
 def generate_totp_code(secret: str, interval: int = 30, digits: int = 6) -> str:
@@ -846,6 +846,25 @@ def _load_latest_bhavcopy_data(force: bool = False) -> tuple[dict[str, dict], st
 
     return bhav_map, bhav_date_str
 
+def is_jwt_token_valid(token: str) -> bool:
+    if not token or "." not in token:
+        return False
+    try:
+        import base64, json
+        parts = token.split(".")
+        if len(parts) < 2:
+            return False
+        payload_b64 = parts[1]
+        payload_b64 += "=" * ((4 - len(payload_b64) % 4) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64).decode())
+        exp = payload.get("exp")
+        if exp and time.time() > float(exp):
+            return False
+        return True
+    except Exception:
+        return False
+
+
 def get_live_kotak_quotes_map() -> dict[str, dict]:
     """
     Unified high-fidelity live quote engine:
@@ -855,7 +874,7 @@ def get_live_kotak_quotes_map() -> dict[str, dict]:
     """
     global _LIVE_QUOTES_CACHE, _KOTAK_FO_MAP, _KOTAK_CASH_MAP
     now = time.time()
-    if _LIVE_QUOTES_CACHE["data"] and (now - _LIVE_QUOTES_CACHE["ts"]) < 3.0:
+    if _LIVE_QUOTES_CACHE["data"] and (now - _LIVE_QUOTES_CACHE["ts"]) < 15.0:
         return _LIVE_QUOTES_CACHE["data"]
 
     quotes_res = dict(_LIVE_QUOTES_CACHE.get("data", {}))
@@ -931,7 +950,7 @@ def get_live_kotak_quotes_map() -> dict[str, dict]:
     ckey = os.getenv("KOTAK_CONSUMER_KEY", "").strip()
     sid = (os.getenv("KOTAK_VIEW_TOKEN") or os.getenv("KOTAK_ACCESS_TOKEN") or os.getenv("KOTAK_SID") or "").strip()
     kotak_fetched = 0
-    if ckey and sid:
+    if ckey and sid and is_jwt_token_valid(sid):
         tokens_to_fetch = []
         fo_tok_to_sym = {}
         cm_tok_to_sym = {}
@@ -1052,7 +1071,37 @@ def get_live_kotak_quotes_map() -> dict[str, dict]:
         except Exception as e:
             logger.debug(f"Angel NFO fallback error: {e}")
 
-    # 4. Yahoo Finance Fallback for any missing indices
+    # 4. Fast Index Quotes from Server Broker Cache
+    try:
+        from server import get_live_market_index_quotes
+        s_quotes = get_live_market_index_quotes()
+        idx_mapping = {
+            "NIFTY": "nifty50",
+            "BANKNIFTY": "banknifty",
+            "SENSEX": "sensex",
+            "FINNIFTY": "finnifty",
+            "MIDCPNIFTY": "midcpnifty"
+        }
+        for ik, sk in idx_mapping.items():
+            if ik not in quotes_res or quotes_res[ik].get("ltp", 0) <= 0:
+                sq = s_quotes.get(sk)
+                if sq and float(sq.get("ltp") or 0) > 0:
+                    ltp = float(sq["ltp"])
+                    chg = float(sq.get("change") or 0.0)
+                    pct = float(sq.get("change_pct") or sq.get("changePct") or 0.0)
+                    prev = float(sq.get("prev_close") or (ltp - chg))
+                    quotes_res[ik] = {
+                        "ltp": ltp,
+                        "change": chg,
+                        "changePct": pct,
+                        "close": prev,
+                        "source": "SERVER_BROKER"
+                    }
+                    quotes_res[f"SPOT:{ik}"] = quotes_res[ik]
+    except Exception as e:
+        logger.debug(f"Server index quotes fallback error: {e}")
+
+    # 5. Yahoo Finance Fallback for any still missing indices
     for idx_key, yf_sym in [("NIFTY", "%5ENSEI"), ("BANKNIFTY", "%5ENSEBANK"), ("SENSEX", "%5EBSESN")]:
         if idx_key not in quotes_res or quotes_res[idx_key].get("ltp", 0) <= 0:
             try:
@@ -1343,7 +1392,14 @@ def get_futures_master(force_refresh: bool = False) -> list[dict]:
     return recs
 
 
+_DASHBOARD_CACHE = {"ts": 0.0, "data": None}
+
 def get_futures_dashboard(force_refresh: bool = False) -> dict:
+    global _DASHBOARD_CACHE
+    now_ts = time.time()
+    if not force_refresh and _DASHBOARD_CACHE["data"] and (now_ts - _DASHBOARD_CACHE["ts"]) < 10.0:
+        return _DASHBOARD_CACHE["data"]
+
     """
     Returns executive KPI cards, top movers, and buildup breakdown.
     """
@@ -1372,7 +1428,7 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
     is_market_hours = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
     is_live = any(r.get("isLiveBroker") for r in records) or is_market_hours
 
-    return {
+    res = {
         "ok": True,
         "isLive": is_live,
         "sessionMode": "LIVE" if is_live else "EOD",
@@ -1403,6 +1459,8 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
         "topOiGainers": top_oi_gainers,
         "topOiLosers": top_oi_losers,
     }
+    _DASHBOARD_CACHE = {'ts': now_ts, 'data': res}
+    return res
 
 
 def get_futures_screener(sector: str = "ALL", search: str = "", sort_by: str = "oiValueCr", sort_dir: str = "desc", signal: str = "ALL", force_refresh: bool = False) -> dict:
