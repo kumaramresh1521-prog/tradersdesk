@@ -3657,49 +3657,10 @@
 
 
 
-// 6-Dot Mobile & Desktop App Launcher Directory
-window.openMobileDotMenu = function() {
-  const modal = document.getElementById("mobileDotMenuModal");
-  if (modal) {
-    modal.style.display = "flex";
-    document.body.style.overflow = "hidden";
-  }
-};
+// ============================================================
+// PAGE 2: MOBILE & DESKTOP NAVIGATION & PLATFORM DIRECTORY DRAWER
+// ============================================================
 
-window.closeMobileDotMenu = function() {
-  const modal = document.getElementById("mobileDotMenuModal");
-  if (modal) {
-    modal.style.display = "none";
-    document.body.style.overflow = "";
-  }
-};
-
-window.dotNavClick = function(e, key, subview) {
-  closeMobileDotMenu();
-  if (window.instNavClick && typeof window.instNavClick === "function") {
-    return window.instNavClick(e, key, subview);
-  } else if (window.activateSuite && typeof window.activateSuite === "function") {
-    if (key === "straddle") {
-      activateSuite("straddle");
-      return false;
-    } else if (key === "contribution") {
-      activateSuite("contribution");
-      return false;
-    }
-    return true;
-  }
-  return true;
-};
-
-// Close on Escape key
-document.addEventListener("keydown", function(e) {
-  if (e.key === "Escape") {
-    if (window.closeMobileDotMenu) window.closeMobileDotMenu();
-  }
-});
-
-
-// Page 2: Mobile Dropdown Toggle Handler & Modal Directory
 window.openMobileDotMenu = function(focusSection) {
   const modal = document.getElementById("mobileDotMenuModal");
   if (modal) {
@@ -3714,7 +3675,7 @@ window.openMobileDotMenu = function(focusSection) {
           target.classList.add("dot-section-highlight");
           setTimeout(function() { target.classList.remove("dot-section-highlight"); }, 1500);
         }
-      }, 60);
+      }, 50);
     }
   }
 };
@@ -3728,60 +3689,73 @@ window.closeMobileDotMenu = function() {
 };
 
 window.closeAllMobileDropdowns = function() {
-  document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(item) {
-    item.classList.remove("mobile-open");
-  });
+  const nav = document.getElementById("mainInstNav") || document.querySelector(".inst-nav");
+  if (nav) {
+    nav.querySelectorAll(".has-dropdown.mobile-open").forEach(function(item) {
+      item.classList.remove("mobile-open");
+    });
+  }
 };
 
+// Navigation Click Handler for Links inside the Mobile Drawer & App Launcher
+window.dotNavClick = function(e, key, subview) {
+  if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
+    return true;
+  }
+  window.closeMobileDotMenu();
+
+  if (key === "straddle") {
+    if (typeof activateSuite === "function") {
+      if (e && e.preventDefault) e.preventDefault();
+      activateSuite("straddle");
+      return false;
+    }
+  } else if (key === "contribution") {
+    if (typeof activateSuite === "function") {
+      if (e && e.preventDefault) e.preventDefault();
+      activateSuite("contribution");
+      return false;
+    }
+  }
+
+  // If navigating to another desk outside page2, let the anchor href handle it or navigate
+  return true;
+};
+
+// Close on Escape key
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") {
+    if (window.closeMobileDotMenu) window.closeMobileDotMenu();
+  }
+});
+
+// Mobile Header Navigation: On mobile, clicking a desk with submenus opens the Mobile Drawer
 document.addEventListener("DOMContentLoaded", function() {
   const nav = document.getElementById("mainInstNav") || document.querySelector(".inst-nav");
   if (!nav) return;
 
   nav.querySelectorAll(".has-dropdown").forEach(function(item) {
     const btn = item.querySelector(".inst-nav-btn");
-    const dropdown = item.querySelector(".inst-dropdown");
-    if (btn && dropdown) {
+    if (btn) {
       btn.addEventListener("click", function(e) {
-        const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
-        if (!isMobile) return;
+        const isMobile = window.innerWidth <= 860;
+        if (!isMobile) return; // On desktop, let CSS hover dropdowns work naturally
 
-        const isAlreadyOpen = item.classList.contains("mobile-open");
+        if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) return;
+        if (e && e.preventDefault) e.preventDefault();
+        if (e && e.stopPropagation) e.stopPropagation();
 
-        // Close any other open dropdown
-        document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(other) {
-          if (other !== item) other.classList.remove("mobile-open");
-        });
-
-        if (!isAlreadyOpen) {
-          if (e && e.preventDefault) e.preventDefault();
-          if (e && e.stopPropagation) e.stopPropagation();
-
-          const header = document.querySelector(".page2-header") || document.querySelector(".inst-header");
-          const headerBottom = header ? Math.round(header.getBoundingClientRect().bottom) : 100;
-          dropdown.style.setProperty("--mobile-dropdown-top", (headerBottom + 4) + "px");
-          dropdown.style.top = (headerBottom + 4) + "px";
-          dropdown.style.maxHeight = "calc(100vh - " + (headerBottom + 20) + "px)";
-
-          item.classList.add("mobile-open");
+        const btnText = (btn.textContent || "").toLowerCase();
+        if (btnText.indexOf("future") !== -1) {
+          window.openMobileDotMenu("futures");
+        } else if (btnText.indexOf("option") !== -1) {
+          window.openMobileDotMenu("options");
+        } else if (btnText.indexOf("fii") !== -1) {
+          window.openMobileDotMenu("fiidii");
         } else {
-          item.classList.remove("mobile-open");
+          window.openMobileDotMenu();
         }
       });
     }
-
-    item.querySelectorAll(".inst-dd-item").forEach(function(subItem) {
-      subItem.addEventListener("click", function() {
-        item.classList.remove("mobile-open");
-      });
-    });
   });
-
-  document.addEventListener("click", function(e) {
-    if (window.innerWidth <= 860 || ("ontouchstart" in window)) {
-      const openItem = document.querySelector(".has-dropdown.mobile-open");
-      if (openItem && !openItem.contains(e.target)) {
-        openItem.classList.remove("mobile-open");
-      }
-    }
-  }, true);
 });

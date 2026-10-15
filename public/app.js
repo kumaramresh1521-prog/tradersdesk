@@ -12878,65 +12878,10 @@ if (document.readyState === "loading") {
 window.initDynamicFooter = initDynamicFooter;
 
 
-// Close mobile dropdowns when tapping outside
-document.addEventListener('click', function(e) {
-  if (window.innerWidth <= 860 || ('ontouchstart' in window)) {
-    const nav = document.getElementById('mainInstNav') || document.querySelector('.inst-nav');
-    if (nav && !nav.contains(e.target)) {
-      nav.querySelectorAll('.has-dropdown.mobile-open').forEach(function(item) {
-        item.classList.remove('mobile-open');
-      });
-    }
-  }
-}, true);
-window.closeAllMobileDropdowns = function() {
-  const nav = document.getElementById('mainInstNav') || document.querySelector('.inst-nav');
-  if (nav) nav.querySelectorAll('.has-dropdown.mobile-open').forEach(function(item) { item.classList.remove('mobile-open'); });
-};
+// ============================================================
+// MOBILE & DESKTOP NAVIGATION & PLATFORM DIRECTORY DRAWER
+// ============================================================
 
-
-// 6-Dot Mobile & Desktop App Launcher Directory
-window.openMobileDotMenu = function() {
-  const modal = document.getElementById("mobileDotMenuModal");
-  if (modal) {
-    modal.style.display = "flex";
-    document.body.style.overflow = "hidden";
-  }
-};
-
-window.closeMobileDotMenu = function() {
-  const modal = document.getElementById("mobileDotMenuModal");
-  if (modal) {
-    modal.style.display = "none";
-    document.body.style.overflow = "";
-  }
-};
-
-window.dotNavClick = function(e, key, subview) {
-  closeMobileDotMenu();
-  if (window.instNavClick && typeof window.instNavClick === "function") {
-    return window.instNavClick(e, key, subview);
-  } else if (window.activateSuite && typeof window.activateSuite === "function") {
-    if (key === "straddle") {
-      activateSuite("straddle");
-      return false;
-    } else if (key === "contribution") {
-      activateSuite("contribution");
-      return false;
-    }
-    return true;
-  }
-  return true;
-};
-
-// Close on Escape key
-document.addEventListener("keydown", function(e) {
-  if (e.key === "Escape") {
-    if (window.closeMobileDotMenu) window.closeMobileDotMenu();
-  }
-});
-
-// 6-Dot Mobile & Desktop App Launcher Directory Modal
 window.openMobileDotMenu = function(focusSection) {
   const modal = document.getElementById("mobileDotMenuModal");
   if (modal) {
@@ -12951,7 +12896,7 @@ window.openMobileDotMenu = function(focusSection) {
           target.classList.add("dot-section-highlight");
           setTimeout(function() { target.classList.remove("dot-section-highlight"); }, 1500);
         }
-      }, 60);
+      }, 50);
     }
   }
 };
@@ -12965,62 +12910,99 @@ window.closeMobileDotMenu = function() {
 };
 
 window.closeAllMobileDropdowns = function() {
-  document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(item) {
-    item.classList.remove("mobile-open");
-  });
+  const nav = document.getElementById('mainInstNav') || document.querySelector('.inst-nav');
+  if (nav) {
+    nav.querySelectorAll('.has-dropdown.mobile-open').forEach(function(item) {
+      item.classList.remove('mobile-open');
+    });
+  }
 };
 
-// Institutional Navigation Click Handler with Mobile Dropdown Positioning
+// Institutional Navigation Click Handler
 window.instNavClick = function(e, key, subview) {
   if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
-    return true; // Let browser open in new tab
+    return true; // Allow opening in new tab
   }
 
-  const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
+  const isMobile = window.innerWidth <= 860;
   if (isMobile) {
-    const target = e ? (e.target || e.srcElement) : null;
-    const btn = target ? (target.classList.contains("inst-nav-btn") ? target : target.closest(".inst-nav-btn")) : null;
-    const navItem = btn ? btn.closest(".has-dropdown") : null;
-
-    if (navItem && btn) {
-      const dropdown = navItem.querySelector(".inst-dropdown");
-      const isAlreadyOpen = navItem.classList.contains("mobile-open");
-
-      // Close all other open dropdowns first
-      window.closeAllMobileDropdowns();
-
-      if (!isAlreadyOpen && dropdown) {
-        if (e && e.preventDefault) e.preventDefault();
-        if (e && e.stopPropagation) e.stopPropagation();
-
-        // Calculate dynamic header bottom position to guarantee zero clipping/overlapping
-        const header = document.querySelector(".inst-header") || document.getElementById("instHeader");
-        const headerBottom = header ? Math.round(header.getBoundingClientRect().bottom) : 100;
-        dropdown.style.setProperty("--mobile-dropdown-top", (headerBottom + 4) + "px");
-        dropdown.style.top = (headerBottom + 4) + "px";
-        dropdown.style.maxHeight = "calc(100vh - " + (headerBottom + 20) + "px)";
-
-        navItem.classList.add("mobile-open");
-        return false;
-      }
-      // If it was already open and user taps the header button again, close it and navigate to desk
-      navItem.classList.remove("mobile-open");
+    // On mobile, if user taps any desk with submenus, open the full-screen mobile drawer
+    // scrolled directly to that desk's submenus so zero menus are ever hidden or clipped!
+    if (key === 'futures') {
+      if (e && e.preventDefault) e.preventDefault();
+      window.openMobileDotMenu('futures');
+      return false;
+    }
+    if (key === 'options' || key === 'upstoxChain') {
+      if (e && e.preventDefault) e.preventDefault();
+      window.openMobileDotMenu('options');
+      return false;
+    }
+    if (key === 'smartmoney' || key === 'fiidii' || key === 'fii') {
+      if (e && e.preventDefault) e.preventDefault();
+      window.openMobileDotMenu('fiidii');
+      return false;
+    }
+    if (key === 'delivery') {
+      if (e && e.preventDefault) e.preventDefault();
+      window.openMobileDotMenu('delivery');
+      return false;
     }
   }
 
   if (e && e.preventDefault) e.preventDefault();
   window.closeAllMobileDropdowns();
   if (window.closeMobileDotMenu) window.closeMobileDotMenu();
-  instNav(key, subview);
+  if (typeof instNav === 'function') {
+    instNav(key, subview);
+  } else if (typeof window._realInstNav === 'function') {
+    window._realInstNav(key, subview);
+  }
   return false;
 };
 
-// Dismiss open mobile dropdown when clicking outside
-document.addEventListener("click", function(e) {
-  if (window.innerWidth <= 860 || ("ontouchstart" in window)) {
-    const openItem = document.querySelector(".has-dropdown.mobile-open");
-    if (openItem && !openItem.contains(e.target)) {
-      openItem.classList.remove("mobile-open");
-    }
+// Navigation Click Handler for Links inside the Mobile Drawer & App Launcher
+window.dotNavClick = function(e, key, subview) {
+  if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
+    return true;
   }
-}, true);
+  window.closeMobileDotMenu();
+
+  if (key === 'straddle') {
+    if (window.activateSuite && typeof window.activateSuite === 'function') {
+      if (e && e.preventDefault) e.preventDefault();
+      window.activateSuite('straddle');
+      return false;
+    }
+    window.location.href = '/page2.html?suite=straddle';
+    return false;
+  }
+  if (key === 'contribution') {
+    if (window.activateSuite && typeof window.activateSuite === 'function') {
+      if (e && e.preventDefault) e.preventDefault();
+      window.activateSuite('contribution');
+      return false;
+    }
+    window.location.href = '/page2.html?suite=contribution';
+    return false;
+  }
+
+  if (typeof instNav === 'function') {
+    if (e && e.preventDefault) e.preventDefault();
+    instNav(key, subview);
+    return false;
+  } else if (typeof window._realInstNav === 'function') {
+    if (e && e.preventDefault) e.preventDefault();
+    window._realInstNav(key, subview);
+    return false;
+  }
+
+  return true;
+};
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (window.closeMobileDotMenu) window.closeMobileDotMenu();
+  }
+});

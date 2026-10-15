@@ -83,8 +83,15 @@
           if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
             return true; // Let browser open in new tab!
           }
+          if (window.innerWidth <= 860 && typeof window.openMobileDotMenu === "function") {
+            if (key === 'futures' || key === 'options' || key === 'smartmoney' || key === 'delivery') {
+              if (e && e.preventDefault) e.preventDefault();
+              window.openMobileDotMenu(key === 'smartmoney' ? 'fiidii' : key);
+              return false;
+            }
+          }
           if (e && e.preventDefault) e.preventDefault();
-          window.instNav(key, subview);
+          if (typeof window.instNav === "function") window.instNav(key, subview);
           return false;
         };
 

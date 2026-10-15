@@ -1909,57 +1909,41 @@
       }
     };
 
-    // Mobile in-header dropdown handler
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        if (window.closeMobileDotMenu) window.closeMobileDotMenu();
+      }
+    });
+
+    // Mobile Header Navigation: On mobile, clicking a desk with submenus opens the Mobile Drawer
     document.addEventListener("DOMContentLoaded", function() {
       const nav = document.getElementById("mainInstNav") || document.querySelector(".inst-nav");
       if (!nav) return;
 
       nav.querySelectorAll(".has-dropdown").forEach(function(item) {
         const btn = item.querySelector(".inst-nav-btn");
-        const dropdown = item.querySelector(".inst-dropdown");
-        if (btn && dropdown) {
+        if (btn) {
           btn.addEventListener("click", function(e) {
-            const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
+            const isMobile = window.innerWidth <= 860;
             if (!isMobile) return;
 
-            const isAlreadyOpen = item.classList.contains("mobile-open");
+            if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) return;
+            if (e && e.preventDefault) e.preventDefault();
+            if (e && e.stopPropagation) e.stopPropagation();
 
-            document.querySelectorAll(".has-dropdown.mobile-open").forEach(function(other) {
-              if (other !== item) other.classList.remove("mobile-open");
-            });
-
-            if (!isAlreadyOpen) {
-              if (e && e.preventDefault) e.preventDefault();
-              if (e && e.stopPropagation) e.stopPropagation();
-
-              const header = document.querySelector(".inst-header") || document.getElementById("instHeader");
-              const headerBottom = header ? Math.round(header.getBoundingClientRect().bottom) : 100;
-              dropdown.style.setProperty("--mobile-dropdown-top", (headerBottom + 4) + "px");
-              dropdown.style.top = (headerBottom + 4) + "px";
-              dropdown.style.maxHeight = "calc(100vh - " + (headerBottom + 20) + "px)";
-
-              item.classList.add("mobile-open");
+            const btnText = (btn.textContent || "").toLowerCase();
+            if (btnText.indexOf("future") !== -1) {
+              window.openMobileDotMenu("futures");
+            } else if (btnText.indexOf("option") !== -1) {
+              window.openMobileDotMenu("options");
+            } else if (btnText.indexOf("fii") !== -1) {
+              window.openMobileDotMenu("fiidii");
             } else {
-              item.classList.remove("mobile-open");
+              window.openMobileDotMenu();
             }
           });
         }
-
-        item.querySelectorAll(".inst-dd-item").forEach(function(subItem) {
-          subItem.addEventListener("click", function() {
-            item.classList.remove("mobile-open");
-          });
-        });
       });
-
-      document.addEventListener("click", function(e) {
-        if (window.innerWidth <= 860 || ("ontouchstart" in window)) {
-          const openItem = document.querySelector(".has-dropdown.mobile-open");
-          if (openItem && !openItem.contains(e.target)) {
-            openItem.classList.remove("mobile-open");
-          }
-        }
-      }, true);
     });
   </script>
 </body>
