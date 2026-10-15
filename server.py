@@ -7798,12 +7798,11 @@ INDEX_YF_MAP = {
     "indiavix": "%5EINDIAVIX",
 }
 
-def get_live_market_index_quotes() -> dict[str, dict]:
+_LIVE_INDEX_BG_RUNNING = False
+
+def _sync_live_market_index_quotes() -> dict[str, dict]:
     global _LIVE_INDEX_CACHE
     now = time.time()
-    if _LIVE_INDEX_CACHE["data"] and (now - _LIVE_INDEX_CACHE["timestamp"]) < 5.0:
-        return _LIVE_INDEX_CACHE["data"]
-
     # 1. First priority: Direct Real-Time Exchange Feed via Angel SmartAPI
     try:
         ac = AngelClient()
@@ -7873,6 +7872,35 @@ def get_live_market_index_quotes() -> dict[str, dict]:
     except Exception:
         pass
     return _LIVE_INDEX_CACHE.get("data", {})
+
+
+def get_live_market_index_quotes() -> dict[str, dict]:
+    global _LIVE_INDEX_CACHE, _LIVE_INDEX_BG_RUNNING
+    now = time.time()
+    cached = _LIVE_INDEX_CACHE.get("data", {})
+    age = now - _LIVE_INDEX_CACHE.get("timestamp", 0.0)
+
+    # Return cached immediately if fresh
+    if cached and age < 5.0:
+        return cached
+
+    # Stale-while-revalidate: return cached immediately & update in background
+    if cached:
+        if not _LIVE_INDEX_BG_RUNNING:
+            def _bg():
+                global _LIVE_INDEX_BG_RUNNING
+                try:
+                    _LIVE_INDEX_BG_RUNNING = True
+                    _sync_live_market_index_quotes()
+                except Exception:
+                    pass
+                finally:
+                    _LIVE_INDEX_BG_RUNNING = False
+            threading.Thread(target=_bg, daemon=True).start()
+        return cached
+
+    # Cold start: fetch synchronously
+    return _sync_live_market_index_quotes()
 
 
 def get_market_pulse() -> dict:
@@ -8354,6 +8382,7 @@ def build_indices_overview(payload: dict) -> dict:
     data = _compute_indices_overview_worker(date_val)
     _INDICES_OVERVIEW_CACHE["data"] = data
     _INDICES_OVERVIEW_CACHE["timestamp"] = time.time()
+    return data
 _BREADTH_CONTRIB_CACHE = {}
 _BREADTH_CONTRIB_CACHE_VERSION = 2
 _BREADTH_RECOMPUTE_LOCK = threading.Lock()

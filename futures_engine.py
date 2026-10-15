@@ -246,7 +246,7 @@ FO_UNIVERSE = [
 
 # In-Memory Cache
 _FUTURES_CACHE: Dict[str, Any] = {}
-_CACHE_TTL = 1.5  # seconds
+_CACHE_TTL = 6.0  # seconds (guarantees sub-millisecond response while keeping data live)
 
 
 def generate_totp_code(secret: str, interval: int = 30, digits: int = 6) -> str:
