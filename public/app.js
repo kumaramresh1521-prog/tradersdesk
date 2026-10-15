@@ -12987,3 +12987,62 @@ document.addEventListener("click", function(e) {
     }
   }
 });
+
+
+// Smart Navigation Handler: On mobile, clicking a dropdown item opens the directory focused on that category
+window.openMobileDotMenu = function(focusSection) {
+  const modal = document.getElementById("mobileDotMenuModal");
+  if (modal) {
+    modal.style.display = "flex";
+    document.body.style.overflow = "hidden";
+
+    if (focusSection) {
+      setTimeout(function() {
+        const target = modal.querySelector('[data-dot-section="' + focusSection + '"]');
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          target.classList.add("dot-section-highlight");
+          setTimeout(function() { target.classList.remove("dot-section-highlight"); }, 1500);
+        }
+      }, 60);
+    }
+  }
+};
+
+window.closeMobileDotMenu = function() {
+  const modal = document.getElementById("mobileDotMenuModal");
+  if (modal) {
+    modal.style.display = "none";
+    document.body.style.overflow = "";
+  }
+};
+
+window.instNavClick = function(e, key, subview) {
+  if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) {
+    return true; // Let browser open in new tab!
+  }
+
+  const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
+  if (isMobile) {
+    // If user clicked any dropdown parent on mobile, open the full-screen clean directory focused on it!
+    const dropdownSections = {
+      futures: "futures",
+      options: "options",
+      smartmoney: "fiidii",
+      fiidii: "fiidii",
+      fii: "fiidii"
+    };
+
+    if (dropdownSections[key]) {
+      if (e && e.preventDefault) e.preventDefault();
+      if (e && e.stopPropagation) e.stopPropagation();
+      openMobileDotMenu(dropdownSections[key]);
+      return false;
+    }
+  }
+
+  if (e && e.preventDefault) e.preventDefault();
+  closeMobileDotMenu();
+  instNav(key, subview);
+  return false;
+};

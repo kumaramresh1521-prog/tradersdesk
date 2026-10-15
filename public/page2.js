@@ -3740,3 +3740,53 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 });
+
+
+// Page 2: Smart Mobile Dropdown Delegation
+window.openMobileDotMenu = function(focusSection) {
+  const modal = document.getElementById("mobileDotMenuModal");
+  if (modal) {
+    modal.style.display = "flex";
+    document.body.style.overflow = "hidden";
+
+    if (focusSection) {
+      setTimeout(function() {
+        const target = modal.querySelector('[data-dot-section="' + focusSection + '"]');
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          target.classList.add("dot-section-highlight");
+          setTimeout(function() { target.classList.remove("dot-section-highlight"); }, 1500);
+        }
+      }, 60);
+    }
+  }
+};
+
+window.closeMobileDotMenu = function() {
+  const modal = document.getElementById("mobileDotMenuModal");
+  if (modal) {
+    modal.style.display = "none";
+    document.body.style.overflow = "";
+  }
+};
+
+document.addEventListener("DOMContentLoaded", function() {
+  const nav = document.getElementById("mainInstNav") || document.querySelector(".inst-nav");
+  if (!nav) return;
+
+  nav.querySelectorAll(".has-dropdown .inst-nav-btn").forEach(function(btn) {
+    btn.addEventListener("click", function(e) {
+      const isMobile = window.innerWidth <= 860 || ("ontouchstart" in window);
+      if (!isMobile) return;
+
+      const href = btn.getAttribute("href") || "";
+      let sec = "futures";
+      if (href.indexOf("option") >= 0 || href.indexOf("straddle") >= 0) sec = "options";
+      else if (href.indexOf("fii") >= 0) sec = "fiidii";
+
+      e.preventDefault();
+      e.stopPropagation();
+      openMobileDotMenu(sec);
+    });
+  });
+});
