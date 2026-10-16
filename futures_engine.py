@@ -865,6 +865,47 @@ def is_jwt_token_valid(token: str) -> bool:
         return False
 
 
+_ANGEL_FO_MAP: dict[str, dict] = {}
+_ANGEL_FO_MAP_TS: float = 0.0
+
+
+def get_angel_fo_map() -> dict[str, dict]:
+    global _ANGEL_FO_MAP, _ANGEL_FO_MAP_TS
+    now = time.time()
+    if _ANGEL_FO_MAP and (now - _ANGEL_FO_MAP_TS) < 3600:
+        return _ANGEL_FO_MAP
+    try:
+        from server import fetch_instrument_master
+        insts = fetch_instrument_master()
+        today = datetime.now().date()
+        futs = [i for i in insts if i.get("exch_seg") == "NFO" and i.get("instrumenttype") in ("FUTSTK", "FUTIDX")]
+        near_map = {}
+        for f in futs:
+            name = f.get("name")
+            if not name:
+                continue
+            exp_str = f.get("expiry", "")
+            try:
+                exp_dt = datetime.strptime(exp_str, "%d%b%Y").date()
+            except Exception:
+                try:
+                    exp_dt = datetime.strptime(exp_str, "%d-%b-%Y").date()
+                except Exception:
+                    exp_dt = None
+            if exp_dt and exp_dt < today:
+                continue
+            if name not in near_map:
+                near_map[name] = {**f, "_exp_dt": exp_dt}
+            elif exp_dt and near_map[name].get("_exp_dt") and exp_dt < near_map[name]["_exp_dt"]:
+                near_map[name] = {**f, "_exp_dt": exp_dt}
+        _ANGEL_FO_MAP = near_map
+        _ANGEL_FO_MAP_TS = now
+        return _ANGEL_FO_MAP
+    except Exception as e:
+        logger.debug(f"Error building Angel FO map: {e}")
+        return _ANGEL_FO_MAP
+
+
 def get_live_kotak_quotes_map() -> dict[str, dict]:
     """
     Unified high-fidelity live quote engine:
@@ -1034,42 +1075,62 @@ def get_live_kotak_quotes_map() -> dict[str, dict]:
         except Exception as e:
             logger.debug(f"Kotak batch fetch error: {e}")
 
-    # 3. Angel One SmartAPI Fallback for NFO if Kotak returned 0 or missing
+    # 3. Angel One SmartAPI Fallback for NFO (Exchange Live Feed)
     if kotak_fetched == 0:
         try:
             from server import AngelClient, Instrument
             ac = AngelClient()
             if ac.is_configured():
                 ac.ensure_session()
-                nfo_insts = []
-                for sym, c_info in list(_KOTAK_FO_MAP.items())[:60]:
-                    tok = c_info.get("token")
-                    ref_key = c_info.get("ref_key", f"{sym}29SEP26FUT")
-                    if tok:
-                        nfo_insts.append(Instrument(symbol=sym, trading_symbol=ref_key, token=str(tok), exchange='NFO'))
-                a_res = ac.quote(nfo_insts, mode='FULL')
-                for f in a_res.get('fetched', []):
-                    tok = str(f.get('symbolToken') or '')
-                    sym = next((s for s, inf in _KOTAK_FO_MAP.items() if inf.get("token") == tok), None)
-                    ltp = float(f.get('ltp') or 0.0)
-                    if sym and ltp > 0:
-                        chg = float(f.get('netChange') or 0.0)
-                        pct = float(f.get('percentChange') or 0.0)
-                        quotes_res[f"FUT:{sym}"] = {
-                            "ltp": ltp,
-                            "change": chg,
-                            "changePct": pct,
-                            "open": float(f.get('open') or ltp),
-                            "high": float(f.get('high') or ltp),
-                            "low": float(f.get('low') or ltp),
-                            "close": float(f.get('close') or (ltp - chg)),
-                            "volume": int(float(f.get('tradeVolume') or 0)),
-                            "oi": int(float(f.get('opnInterest') or 0)),
-                            "vwap": float(f.get('avgPrice') or ltp),
-                            "source": "ANGEL_NFO"
-                        }
+                angel_map = get_angel_fo_map()
+                if angel_map:
+                    all_syms = [item["symbol"] for item in FO_UNIVERSE]
+                    for extra_sym in _KOTAK_FO_MAP.keys():
+                        if extra_sym not in all_syms:
+                            all_syms.append(extra_sym)
+
+                    inst_list = []
+                    tok_to_sym = {}
+                    for sym in all_syms:
+                        f_info = angel_map.get(sym)
+                        if f_info and f_info.get("token"):
+                            tok = str(f_info["token"])
+                            tok_to_sym[tok] = sym
+                            inst_list.append(Instrument(
+                                symbol=sym,
+                                trading_symbol=f_info.get("symbol", f"{sym}FUT"),
+                                token=tok,
+                                exchange="NFO"
+                            ))
+                    # Batch quote in chunks of 50
+                    for c_idx in range(0, min(len(inst_list), 250), 50):
+                        chunk = inst_list[c_idx:c_idx + 50]
+                        try:
+                            a_res = ac.quote(chunk, mode="FULL")
+                            for f in a_res.get("fetched", []):
+                                tok = str(f.get("symbolToken") or "")
+                                sym = tok_to_sym.get(tok)
+                                ltp = float(f.get("ltp") or 0.0)
+                                if sym and ltp > 0:
+                                    chg = float(f.get("netChange") or 0.0)
+                                    pct = float(f.get("percentChange") or 0.0)
+                                    quotes_res[f"FUT:{sym}"] = {
+                                        "ltp": ltp,
+                                        "change": chg,
+                                        "changePct": pct,
+                                        "open": float(f.get("open") or ltp),
+                                        "high": float(f.get("high") or ltp),
+                                        "low": float(f.get("low") or ltp),
+                                        "close": float(f.get("close") or (ltp - chg)),
+                                        "volume": int(float(f.get("tradeVolume") or 0)),
+                                        "oi": int(float(f.get("opnInterest") or 0)),
+                                        "vwap": float(f.get("avgPrice") or ltp),
+                                        "source": "ANGEL_NFO"
+                                    }
+                        except Exception:
+                            pass
         except Exception as e:
-            logger.debug(f"Angel NFO fallback error: {e}")
+            logger.debug(f"Angel NFO batch fallback error: {e}")
 
     # 4. Fast Index Quotes from Server Broker Cache
     try:
@@ -1425,16 +1486,23 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
     _, bhav_date_str = _load_latest_bhavcopy_data(force=force_refresh)
 
     now_dt = datetime.now()
+    today_display = now_dt.strftime("%d-%b-%Y")
     is_market_hours = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
     is_live = any(r.get("isLiveBroker") for r in records) or is_market_hours
+
+    # If live broker feed is active or today is a trading day post-market open (09:15), session belongs to TODAY
+    if is_live or (now_dt.hour >= 9 and now_dt.weekday() < 5):
+        as_of_date = today_display
+    else:
+        as_of_date = bhav_date_str or today_display
 
     res = {
         "ok": True,
         "isLive": is_live,
         "sessionMode": "LIVE" if is_live else "EOD",
         "timestamp": now_dt.strftime("%H:%M:%S"),
-        "date": now_dt.strftime("%d-%b-%Y"),
-        "asOfDate": bhav_date_str or now_dt.strftime("%d-%b-%Y"),
+        "date": today_display,
+        "asOfDate": as_of_date,
         "activeExpiry": "27-Oct-2026",
         "tickSeq": int(time.time() / 3),
         "totalTurnoverCr": round(total_turnover, 2),
