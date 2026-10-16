@@ -21,7 +21,7 @@ DEFAULT_SEO_CONFIG = {
     "keywords": "TradersDesk, tradersdesk.in, option chain, nifty option chain, bank nifty option chain, options greeks, max pain, pcr ratio, market breadth, fii dii activity, atm straddle, open interest analysis",
     "canonical_url": "https://tradersdesk.in/",
     "google_site_verification": "",
-    "google_analytics_id": "",
+    "google_analytics_id": "G-Y0MDT0BZD8",
     "og_title": "TradersDesk.in | Institutional Derivatives & Options Analytics Terminal",
     "og_description": "Sub-second Indian Option Chain Pro, Black-Scholes Greeks, Max Pain, ATM Straddles, and Live Market Breadth.",
     "author": "TradersDesk.in Quantitative Analytics",
@@ -377,9 +377,21 @@ def load_seo_config() -> dict:
             data = json.loads(SEO_CONFIG_FILE.read_text(encoding="utf-8"))
             merged = DEFAULT_SEO_CONFIG.copy()
             merged.update(data)
+            if not merged.get("google_analytics_id"):
+                merged["google_analytics_id"] = "G-Y0MDT0BZD8"
             return merged
         except Exception:
             pass
+    # Backup cache fallback
+    try:
+        cache_backup = ROOT / "cache" / "seo_config_backup.json"
+        if cache_backup.exists():
+            data = json.loads(cache_backup.read_text(encoding="utf-8"))
+            merged = DEFAULT_SEO_CONFIG.copy()
+            merged.update(data)
+            return merged
+    except Exception:
+        pass
     return DEFAULT_SEO_CONFIG.copy()
 
 def save_seo_config(updates: dict) -> bool:
@@ -387,6 +399,12 @@ def save_seo_config(updates: dict) -> bool:
         current = load_seo_config()
         current.update(updates)
         SEO_CONFIG_FILE.write_text(json.dumps(current, indent=2), encoding="utf-8")
+        try:
+            cache_backup = ROOT / "cache" / "seo_config_backup.json"
+            cache_backup.parent.mkdir(parents=True, exist_ok=True)
+            cache_backup.write_text(json.dumps(current, indent=2), encoding="utf-8")
+        except Exception:
+            pass
         apply_seo_to_index_html(current)
         return True
     except Exception as e:
@@ -689,8 +707,16 @@ def inject_seo_metadata(html: str, path: str) -> str:
         html = re.sub(r'<meta\s+name=["\']twitter:description["\']\s+content=["\'].*?["\']\s*/?>',
                       f'<meta name="twitter:description" content="{desc}">', html, count=1, flags=re.IGNORECASE)
 
-    # 8. Google Site Verification
+    # 8. Google Site Verification (with HTML auto-sanitizer)
     g_verify = global_cfg.get("google_site_verification", "").strip()
+    # If user accidentally pasted full Google Tag script or HTML into site verification, extract GA ID and clean g_verify
+    if "<script" in g_verify.lower() or "<!--" in g_verify or "googletagmanager" in g_verify.lower():
+        extracted_ga = re.search(r'G-[A-Z0-9]{8,14}', g_verify)
+        if extracted_ga and not global_cfg.get("google_analytics_id"):
+            global_cfg["google_analytics_id"] = extracted_ga.group(0)
+        m_c = re.search(r'content=["\']([a-zA-Z0-9_-]{20,60})["\']', g_verify)
+        g_verify = m_c.group(1) if m_c else ""
+
     if g_verify:
         if "google-site-verification" in html:
             html = re.sub(r'<meta\s+name=["\']google-site-verification["\']\s+content=["\'].*?["\']\s*/?>',
@@ -700,9 +726,9 @@ def inject_seo_metadata(html: str, path: str) -> str:
 
     # 9. Google Analytics 4 (GA4) / GTM Script Injection
     import os
-    ga_id = (global_cfg.get("google_analytics_id", "") or os.getenv("GOOGLE_ANALYTICS_ID", "")).strip()
+    ga_id = (global_cfg.get("google_analytics_id", "") or os.getenv("GOOGLE_ANALYTICS_ID", "G-Y0MDT0BZD8")).strip()
     if ga_id:
-        if ga_id not in html and "googletagmanager.com/gtag/js" not in html:
+        if f"id={ga_id}" not in html:
             ga_snippet = (
                 f'\n  <!-- Google tag (gtag.js) -->\n'
                 f'  <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'

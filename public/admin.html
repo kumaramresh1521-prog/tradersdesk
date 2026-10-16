@@ -1126,6 +1126,9 @@
                 <small style="color:var(--adm-muted); font-size:11px; margin-top:4px; display:block;">Automatically streams pageview events to Google Analytics for all visitors.</small>
               </div>
             </div>
+            <div style="margin-top:14px; display:flex; justify-content:flex-end;">
+              <button type="button" class="btn-adm-primary" style="background:#10b981; padding:8px 18px; font-size:12.5px;" onclick="saveSeoConfig()">💾 Save Verification &amp; Tracking</button>
+            </div>
           </div>
 
           <!-- 3. Global Meta Defaults -->
@@ -1150,6 +1153,9 @@
                 <label>Canonical Base URL</label>
                 <input type="text" id="admSeoCanonical" class="adm-input" />
               </div>
+            </div>
+            <div style="margin-top:14px; display:flex; justify-content:flex-end;">
+              <button type="button" class="btn-adm-primary" style="background:#10b981; padding:8px 18px; font-size:12.5px;" onclick="saveSeoConfig()">💾 Save Global Meta Defaults</button>
             </div>
           </div>
         </section>
@@ -1398,7 +1404,7 @@
     </div>
 
     <script>
-      let adminSecretKey = sessionStorage.getItem('bl_admin_secret') || '';
+      let adminSecretKey = localStorage.getItem('bl_admin_secret') || sessionStorage.getItem('bl_admin_secret') || '';
 
       function getAuthHeaders() {
         return {
@@ -1436,6 +1442,7 @@
           const data = await res.json();
           if (data.ok) {
             adminSecretKey = key;
+            localStorage.setItem('bl_admin_secret', key);
             sessionStorage.setItem('bl_admin_secret', key);
             document.getElementById('adminLockOverlay').style.display = 'none';
             document.getElementById('adminLayout').style.display = 'flex';
@@ -1455,6 +1462,7 @@
 
       function logoutAdmin() {
         adminSecretKey = '';
+        localStorage.removeItem('bl_admin_secret');
         sessionStorage.removeItem('bl_admin_secret');
         document.getElementById('adminLayout').style.display = 'none';
         document.getElementById('adminLockOverlay').style.display = 'flex';
@@ -2056,13 +2064,35 @@
       let currentSeoCatFilter = 'all';
 
       async function loadSeoConfig() {
+        // Step 1: Pre-fill from local vault immediately if available so inputs are never blank
+        try {
+          const cached = localStorage.getItem('td_admin_seo_vault');
+          if (cached) {
+            const cSeo = JSON.parse(cached);
+            if (cSeo) {
+              if (cSeo.google_site_verification) document.getElementById('admSeoGoogleVerify').value = cSeo.google_site_verification;
+              if (cSeo.google_analytics_id) document.getElementById('admSeoGoogleAnalytics').value = cSeo.google_analytics_id;
+              if (cSeo.site_title) document.getElementById('admSeoTitle').value = cSeo.site_title;
+              if (cSeo.meta_description) document.getElementById('admSeoDesc').value = cSeo.meta_description;
+              if (cSeo.keywords) document.getElementById('admSeoKeywords').value = cSeo.keywords;
+              if (cSeo.canonical_url) document.getElementById('admSeoCanonical').value = cSeo.canonical_url;
+            }
+          }
+        } catch(e) {}
+
+        // Fallback GA ID default if still blank
+        if (!document.getElementById('admSeoGoogleAnalytics').value) {
+          document.getElementById('admSeoGoogleAnalytics').value = 'G-Y0MDT0BZD8';
+        }
+
         try {
           const res = await fetch('/api/admin/seo', { headers: getAuthHeaders() });
           if (res.ok) {
             const data = await res.json();
             if (data.ok && data.seo) {
+              const finalGaId = data.seo.google_analytics_id || document.getElementById('admSeoGoogleAnalytics').value || 'G-Y0MDT0BZD8';
               document.getElementById('admSeoGoogleVerify').value = data.seo.google_site_verification || '';
-              document.getElementById('admSeoGoogleAnalytics').value = data.seo.google_analytics_id || '';
+              document.getElementById('admSeoGoogleAnalytics').value = finalGaId;
               document.getElementById('admSeoTitle').value = data.seo.site_title || '';
               document.getElementById('admSeoDesc').value = data.seo.meta_description || '';
               document.getElementById('admSeoKeywords').value = data.seo.keywords || '';
@@ -2073,21 +2103,67 @@
                 mEl.textContent = data.seo.robots_indexing ? 'ACTIVE' : 'NOINDEX (BLOCKED)';
                 mEl.style.color = data.seo.robots_indexing ? '#34d399' : '#f87171';
               }
+
+              // Update local vault
+              localStorage.setItem('td_admin_seo_vault', JSON.stringify({
+                google_site_verification: data.seo.google_site_verification || '',
+                google_analytics_id: finalGaId,
+                site_title: data.seo.site_title || '',
+                meta_description: data.seo.meta_description || '',
+                keywords: data.seo.keywords || '',
+                canonical_url: data.seo.canonical_url || ''
+              }));
+
+              // If server was missing GA ID, auto-heal sync back to server
+              if (!data.seo.google_analytics_id && finalGaId) {
+                saveSeoConfig(true);
+              }
             }
           }
         } catch(e) {}
         await loadSeoRoutes();
       }
 
-      async function saveSeoConfig() {
+      async function saveSeoConfig(silent = false) {
+        let gVerify = (document.getElementById('admSeoGoogleVerify')?.value || '').trim();
+        let gaId = (document.getElementById('admSeoGoogleAnalytics')?.value || '').trim();
+
+        // Sanitize: If user pasted full script snippet into gaId or gVerify, extract G- ID
+        const gaMatchVerify = gVerify.match(/G-[A-Z0-9]+/i);
+        const gaMatchGa = gaId.match(/G-[A-Z0-9]+/i);
+
+        if (gaMatchGa) {
+          gaId = gaMatchGa[0];
+          document.getElementById('admSeoGoogleAnalytics').value = gaId;
+        } else if (gaMatchVerify && !gaId) {
+          gaId = gaMatchVerify[0];
+          document.getElementById('admSeoGoogleAnalytics').value = gaId;
+        }
+
+        // If gVerify contains script tags, strip them cleanly
+        if (gVerify.includes('<script') || gVerify.includes('googletagmanager')) {
+          gVerify = gVerify.replace(/<[^>]+>/g, '').trim();
+          document.getElementById('admSeoGoogleVerify').value = gVerify;
+        }
+
+        if (!gaId) {
+          gaId = 'G-Y0MDT0BZD8';
+          document.getElementById('admSeoGoogleAnalytics').value = gaId;
+        }
+
         const payload = {
-          google_site_verification: document.getElementById('admSeoGoogleVerify').value.trim(),
-          google_analytics_id: document.getElementById('admSeoGoogleAnalytics').value.trim(),
-          site_title: document.getElementById('admSeoTitle').value.trim(),
-          meta_description: document.getElementById('admSeoDesc').value.trim(),
-          keywords: document.getElementById('admSeoKeywords').value.trim(),
-          canonical_url: document.getElementById('admSeoCanonical').value.trim()
+          google_site_verification: gVerify,
+          google_analytics_id: gaId,
+          site_title: (document.getElementById('admSeoTitle')?.value || '').trim(),
+          meta_description: (document.getElementById('admSeoDesc')?.value || '').trim(),
+          keywords: (document.getElementById('admSeoKeywords')?.value || '').trim(),
+          canonical_url: (document.getElementById('admSeoCanonical')?.value || '').trim()
         };
+
+        // Persist to local vault immediately
+        try {
+          localStorage.setItem('td_admin_seo_vault', JSON.stringify(payload));
+        } catch(e) {}
 
         try {
           const res = await fetch('/api/admin/seo', {
@@ -2097,12 +2173,12 @@
           });
           const result = await res.json();
           if (result.ok) {
-            showAdmAlert('✓ Global SEO configuration updated and applied live!', 'success');
+            if (!silent) showAdmAlert('✓ Global SEO & Tracking configuration updated and applied live!', 'success');
           } else {
-            showAdmAlert('Failed to update SEO: ' + (result.message || ''), 'error');
+            if (!silent) showAdmAlert('Failed to update SEO: ' + (result.message || ''), 'error');
           }
         } catch(e) {
-          showAdmAlert('Error: ' + e.message, 'error');
+          if (!silent) showAdmAlert('Error: ' + e.message, 'error');
         }
       }
 
@@ -2477,6 +2553,7 @@
           const result = await res.json();
           if (result.ok) {
             adminSecretKey = newPin;
+            localStorage.setItem('bl_admin_secret', newPin);
             sessionStorage.setItem('bl_admin_secret', newPin);
             alert('✓ Admin PIN updated successfully! Remember your new PIN.');
             document.getElementById('admNewPin').value = '';
@@ -2656,19 +2733,29 @@
           renderFooterAdmin();
           return;
         }
+        // Try local vault first
+        try {
+          const cached = localStorage.getItem('td_admin_footer_vault');
+          if (cached && !admFooterState) {
+            admFooterState = JSON.parse(cached);
+            renderFooterAdmin();
+          }
+        } catch(e) {}
+
         const container = document.getElementById('admFooterColsContainer');
-        if (container) container.innerHTML = `<div style="grid-column:1/-1; padding:30px; text-align:center; color:var(--adm-muted);">⏳ Fetching footer link configuration...</div>`;
+        if (container && !admFooterState) container.innerHTML = `<div style="grid-column:1/-1; padding:30px; text-align:center; color:var(--adm-muted);">⏳ Fetching footer link configuration...</div>`;
         try {
           const res = await fetch('/api/admin/footer-links', { headers: getAuthHeaders() });
           const data = await res.json();
           if (data && data.columns) {
             admFooterState = JSON.parse(JSON.stringify(data));
+            localStorage.setItem('td_admin_footer_vault', JSON.stringify(admFooterState));
             renderFooterAdmin();
-          } else {
+          } else if (!admFooterState) {
             showFooterAlert('Failed to load footer links from backend', 'fail');
           }
         } catch (e) {
-          showFooterAlert('Error loading footer: ' + e.message, 'fail');
+          if (!admFooterState) showFooterAlert('Error loading footer: ' + e.message, 'fail');
         }
       }
 
@@ -2799,6 +2886,7 @@
       async function saveFooterAdmin() {
         if (!admFooterState) return;
         try {
+          localStorage.setItem('td_admin_footer_vault', JSON.stringify(admFooterState));
           const res = await fetch('/api/admin/footer-links', {
             method: 'POST',
             headers: getAuthHeaders(),
@@ -2831,8 +2919,10 @@
         }
       }
 
-      // Auto-unlock if session key exists
+      // Auto-unlock if session or local key exists
       if (adminSecretKey) {
+        const inp = document.getElementById('adminSecretInput');
+        if (inp) inp.value = adminSecretKey;
         fetch('/api/admin/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2847,6 +2937,11 @@
             loadSeoConfig();
             fetchAdminLogs();
             toggleLogsAutoRefresh();
+          } else {
+            // Clear invalid key
+            localStorage.removeItem('bl_admin_secret');
+            sessionStorage.removeItem('bl_admin_secret');
+            adminSecretKey = '';
           }
         }).catch(() => {});
       }

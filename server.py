@@ -9768,6 +9768,8 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         if path in ("/api/footer-links", "/api/admin/footer-links"):
             footer_file = CACHE_DIR / "footer_links.json"
+            if not footer_file.exists():
+                footer_file = ROOT / "footer_links.json"
             if footer_file.exists():
                 try:
                     data = json.loads(footer_file.read_text(encoding="utf-8"))
@@ -10473,9 +10475,14 @@ class RequestHandler(BaseHTTPRequestHandler):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 payload = self.read_body()
                 footer_file = CACHE_DIR / "footer_links.json"
+                root_footer = ROOT / "footer_links.json"
                 try:
                     CACHE_DIR.mkdir(parents=True, exist_ok=True)
                     footer_file.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                    try:
+                        root_footer.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                    except Exception:
+                        pass
                     return self.send_json(200, {"ok": True, "message": "Footer configuration saved successfully", "data": payload})
                 except Exception as exc:
                     return self.send_json(500, {"ok": False, "message": str(exc)})
