@@ -406,10 +406,23 @@ SAMPLE_SECTORS = [
 ]
 
 
+SYSTEM_VAULT_FILE = ROOT / "data" / "system_vault.json"
 CONFIG_BACKUP_FILE = CACHE_DIR / "broker_config.json"
 
 
 def load_dotenv() -> None:
+    # Priority 1: Persistent Git-tracked system vault (Never lost on Cloud Run container recreations)
+    if SYSTEM_VAULT_FILE.exists():
+        try:
+            vault_data = json.loads(SYSTEM_VAULT_FILE.read_text(encoding="utf-8"))
+            if isinstance(vault_data, dict):
+                for k, v in vault_data.items():
+                    if v and (k not in os.environ or not os.environ[k]):
+                        os.environ[k] = str(v)
+        except Exception:
+            pass
+
+    # Priority 2: Local .env file
     if ENV_FILE.exists():
         try:
             for raw_line in ENV_FILE.read_text(encoding="utf-8").splitlines():
@@ -419,11 +432,12 @@ def load_dotenv() -> None:
                 key, value = line.split("=", 1)
                 key = key.strip()
                 value = value.strip().strip('"').strip("'")
-                os.environ.setdefault(key, value)
+                if key and value:
+                    os.environ[key] = value
         except Exception:
             pass
 
-    # Fallback 1: Persistent local cache file
+    # Priority 3: Persistent local cache file
     if CONFIG_BACKUP_FILE.exists():
         try:
             backup_data = json.loads(CONFIG_BACKUP_FILE.read_text(encoding="utf-8"))
@@ -434,7 +448,7 @@ def load_dotenv() -> None:
         except Exception:
             pass
 
-    # Fallback 2: Restore from Supabase cloud vault if container restarted fresh on Cloud Run
+    # Priority 4: Restore from Supabase cloud vault if available
     try:
         sb_res = supabase_engine.load_user_workspace("master_broker_vault")
         if sb_res.get("ok") and isinstance(sb_res.get("workspace"), dict):
@@ -455,7 +469,7 @@ load_dotenv()
 
 
 def save_dotenv(updates: dict[str, str]) -> None:
-    """Updates key-value pairs in .env, persistent backup, Supabase cloud vault, and os.environ."""
+    """Updates key-value pairs in .env, persistent backup, data/system_vault.json, and os.environ."""
     existing_lines = []
     if ENV_FILE.exists():
         try:
@@ -487,6 +501,20 @@ def save_dotenv(updates: dict[str, str]) -> None:
     except Exception:
         pass
 
+    # Save to data/system_vault.json (git-tracked permanent storage for Cloud Run)
+    try:
+        SYSTEM_VAULT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        cur_vault = {}
+        if SYSTEM_VAULT_FILE.exists():
+            try:
+                cur_vault = json.loads(SYSTEM_VAULT_FILE.read_text(encoding="utf-8"))
+            except Exception:
+                cur_vault = {}
+        cur_vault.update(updates)
+        SYSTEM_VAULT_FILE.write_text(json.dumps(cur_vault, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
     backup = {}
     try:
         ensure_cache()
@@ -507,7 +535,7 @@ def save_dotenv(updates: dict[str, str]) -> None:
         except Exception:
             pass
 
-    # Async sync to Supabase cloud vault so ephemeral Cloud Run restarts never lose broker config
+    # Async sync to Supabase cloud vault
     def _sync_vault_bg(vault_data: dict):
         try:
             supabase_engine.save_user_workspace("master_broker_vault", vault_data)
@@ -764,20 +792,44 @@ class AngelClient(brokers.BaseBrokerClient):
             headers["Authorization"] = token if token.lower().startswith("bearer ") else f"Bearer {token}"
         return headers
 
+    def renew_token(self) -> bool:
+        """Silently renews expired JWT token using refreshToken without requiring TOTP."""
+        if not self.refresh_token:
+            return False
+        try:
+            url = self.root + "/rest/secure/angelbroking/jwt/v1/generateTokens"
+            headers = self.headers(auth=False)
+            headers["Authorization"] = f"Bearer {self.refresh_token}"
+            body = {"refreshToken": self.refresh_token}
+            result = http_json(url, method="POST", body=body, headers=headers, timeout=15)
+            if (result.get("status") or result.get("success")) and (result.get("data") or {}).get("jwtToken"):
+                self.save_session(result)
+                log_system_event("SUCCESS", "ANGEL", "SmartAPI JWT token renewed seamlessly using refreshToken.")
+                return True
+        except Exception:
+            pass
+        return False
+
     def load_session(self) -> bool:
         data = read_json(self.session_path, {})
         created = data.get("created_at", "")
         if not created:
             return False
+        self.jwt_token = data.get("jwtToken", "")
+        self.refresh_token = data.get("refreshToken", "")
+        self.feed_token = data.get("feedToken", "")
+        if not self.jwt_token:
+            return False
         try:
             created_at = datetime.fromisoformat(created)
         except Exception:
             return False
-        if now_ist() - created_at > timedelta(hours=10):
-            return False
-        self.jwt_token = data.get("jwtToken", "")
-        self.refresh_token = data.get("refreshToken", "")
-        self.feed_token = data.get("feedToken", "")
+        # If older than 8 hours, try silent renewal first
+        if now_ist() - created_at > timedelta(hours=8):
+            if self.refresh_token and self.renew_token():
+                return True
+            if now_ist() - created_at > timedelta(hours=18):
+                return False
         return bool(self.jwt_token)
 
     def save_session(self, response_data) -> None:
@@ -810,6 +862,10 @@ class AngelClient(brokers.BaseBrokerClient):
             raise RuntimeError("Angel SmartAPI is not configured. Copy .env.example to .env first.")
         if self.load_session():
             return
+        # If refresh token exists, try renewal before full TOTP login
+        if self.refresh_token and self.renew_token():
+            return
+
         elapsed_since_fail = time.time() - self._login_failed_at
         if not self.manual_totp and self._login_failed_at > 0 and elapsed_since_fail < self._login_cooldown_sec:
             remaining = int(self._login_cooldown_sec - elapsed_since_fail)

@@ -10800,7 +10800,7 @@ async function loadBrokerSettings() {
     // Fetch secure masked configuration from server
     let serverSettings = null;
     try {
-      const adminKey = sessionStorage.getItem("bl_admin_secret") || localStorage.getItem("breadthlab_admin_secret") || "";
+      const adminKey = localStorage.getItem("bl_admin_secret") || sessionStorage.getItem("bl_admin_secret") || localStorage.getItem("breadthlab_admin_secret") || "";
       const resp = await fetch("/api/settings", {
         headers: adminKey ? { "X-Admin-Secret": adminKey } : {}
       });
@@ -10965,7 +10965,7 @@ async function saveBrokerSettings() {
   });
 
   try {
-    const adminKey = sessionStorage.getItem("bl_admin_secret") || localStorage.getItem("breadthlab_admin_secret") || "";
+    const adminKey = localStorage.getItem("bl_admin_secret") || sessionStorage.getItem("bl_admin_secret") || localStorage.getItem("breadthlab_admin_secret") || "";
     const response = await fetch("/api/settings", {
       method: "POST",
       headers: {

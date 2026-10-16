@@ -20,7 +20,7 @@ gcloud run deploy ${SERVICE_NAME} \
   --memory 1Gi \
   --cpu 1 \
   --cpu-throttling \
-  --min-instances 0 \
+  --min-instances 1 \
   --max-instances 10 \
   --concurrency 80
 
