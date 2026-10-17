@@ -1321,8 +1321,13 @@
 
       const rawSessions = data.sessions || data.timeline || [];
       const sessions = rawSessions.map(s => {
-        let dtObj = new Date(s.dt);
-        if (isNaN(dtObj.getTime())) dtObj = new Date();
+        let dtObj = null;
+        if (s.date && typeof s.date === 'string' && s.date.length === 8) {
+          dtObj = new Date(Number(s.date.slice(0, 4)), Number(s.date.slice(4, 6)) - 1, Number(s.date.slice(6, 8)));
+        } else if (s.dt) {
+          dtObj = new Date(s.dt);
+        }
+        if (!dtObj || isNaN(dtObj.getTime())) dtObj = new Date();
         return {
           dt: dtObj,
           o: Number(s.o || 0),
@@ -1500,8 +1505,8 @@
     mx += pd;
 
     const vm = Math.max(1, ...vis.map(d => d.v)) * 1.05;
-    const omn = Math.min(...vis.map(d => d.oi)) * 0.92;
-    const omx = Math.max(1, ...vis.map(d => d.oi)) * 1.02;
+    const omn = 0;
+    const omx = Math.max(1, ...vis.map(d => d.oi)) * 1.08;
 
     const Y = (v, r, a, b) => {
       const span = b - a || 1;
@@ -1533,9 +1538,9 @@
 
     // OI axis labels (right)
     [0, 0.5, 1].forEach(frac => {
-      const val = omn + (omx - omn) * frac;
-      const valStr = val >= 1e7 ? (val / 1e7).toFixed(2) + 'Cr' : (val / 1e6).toFixed(1) + 'M';
-      cx.fillText(valStr, x1 + 6, Y(val, PN[2], omn, omx) + 4);
+      const val = omx * frac;
+      const valStr = val >= 1e7 ? (val / 1e7).toFixed(1) + 'Cr' : (val / 1e6).toFixed(0) + 'M';
+      cx.fillText(valStr, x1 + 6, Y(val, PN[2], 0, omx) + 4);
     });
 
     // Date X-axis labels

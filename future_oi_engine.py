@@ -128,6 +128,7 @@ def _load_bhavcopy_eod_data(force: bool = False):
             dates_found.append(dt_str)
         is_latest = (idx == len(files_to_parse) - 1)
 
+        day_fut: Dict[str, list] = {}
         try:
             with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 reader = csv.DictReader(f)
@@ -148,22 +149,15 @@ def _load_bhavcopy_eod_data(force: bool = False):
                             l = float(r.get("LwPric") or min(o, c))
                             v = int(float(r.get("TtlTradgVol") or 0))
                             oi = int(float(r.get("OpnIntrst") or 0))
+                            xpry = (r.get("XpryDt") or "").strip().replace("-", "")
 
-                            if sym not in symbols_data:
-                                symbols_data[sym] = []
-
-                            existing_today = [x for x in symbols_data[sym] if x["date"] == dt_str]
-                            if not existing_today:
-                                symbols_data[sym].append({
-                                    "date": dt_str,
-                                    "o": o,
-                                    "h": h,
-                                    "l": l,
-                                    "c": c,
-                                    "v": v,
-                                    "oi": oi,
-                                    "isIndex": (tp in ("IDF", "FUTIDX")),
-                                })
+                            if sym not in day_fut:
+                                day_fut[sym] = []
+                            day_fut[sym].append({
+                                "xpry": xpry,
+                                "o": o, "h": h, "l": l, "c": c, "v": v, "oi": oi,
+                                "isIndex": (tp in ("IDF", "FUTIDX"))
+                            })
                         except Exception:
                             pass
 
@@ -185,8 +179,38 @@ def _load_bhavcopy_eod_data(force: bool = False):
                                 latest_options[sym][k]["p"] += oi
                         except Exception:
                             pass
+
+            for sym, contracts in day_fut.items():
+                if not contracts:
+                    continue
+                # Sort contracts by expiry date ascending
+                contracts.sort(key=lambda x: x["xpry"])
+                # Near-month contract active on or after trade date
+                near = next((c for c in contracts if c["xpry"] >= dt_str), contracts[0])
+                tot_oi = sum(c["oi"] for c in contracts)
+                tot_vol = sum(c["v"] for c in contracts)
+
+                if sym not in symbols_data:
+                    symbols_data[sym] = []
+
+                # Remove any existing point for dt_str and append clean aggregate
+                symbols_data[sym] = [x for x in symbols_data[sym] if x["date"] != dt_str]
+                symbols_data[sym].append({
+                    "date": dt_str,
+                    "o": near["o"],
+                    "h": near["h"],
+                    "l": near["l"],
+                    "c": near["c"],
+                    "v": tot_vol,
+                    "oi": tot_oi,
+                    "isIndex": near["isIndex"],
+                })
         except Exception:
             continue
+
+    # Ensure all symbols are sorted chronologically
+    for sym in symbols_data:
+        symbols_data[sym].sort(key=lambda x: x["date"])
 
     dates_found = sorted(dates_found)
     _BHAV_SESSIONS_CACHE = {
@@ -359,8 +383,12 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
         master_list = master_list or []
         m_rec = next((r for r in master_list if r.get("symbol") == sym), None)
         if m_rec and m_rec.get("futPrice", 0) > 0:
-            today_str = datetime.now().strftime("%Y%m%d")
-            if cleaned_sessions and cleaned_sessions[-1]["date"] != today_str:
+            now_dt = datetime.now()
+            today_str = now_dt.strftime("%Y%m%d")
+            is_trading_day = now_dt.weekday() < 5
+            market_started = (now_dt.hour > 9 or (now_dt.hour == 9 and now_dt.minute >= 15))
+
+            if is_trading_day and market_started and cleaned_sessions and cleaned_sessions[-1]["date"] != today_str:
                 live_c = float(m_rec.get("futPrice") or m_rec.get("ltp"))
                 live_h = float(m_rec.get("dayHigh") or live_c)
                 live_l = float(m_rec.get("dayLow") or live_c)
@@ -370,7 +398,7 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
                 live_iv = float(m_rec.get("iv") or (14.5 if is_idx else 32.0))
                 cleaned_sessions.append({
                     "date": today_str,
-                    "dt": datetime.now().strftime("%d-%b-%Y"),
+                    "dt": now_dt.strftime("%d-%b-%Y"),
                     "o": round(live_o, 2),
                     "h": round(live_h, 2),
                     "l": round(live_l, 2),
@@ -381,12 +409,13 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
                     "dv": 50.0,
                     "pcr": round(float(m_rec.get("pcr") or 1.0), 2),
                 })
-            elif cleaned_sessions:
+            elif is_trading_day and market_started and cleaned_sessions and cleaned_sessions[-1]["date"] == today_str:
                 # Update today's bar with live tick
                 cleaned_sessions[-1]["c"] = round(float(m_rec.get("futPrice") or m_rec.get("ltp")), 2)
                 cleaned_sessions[-1]["h"] = round(max(cleaned_sessions[-1]["h"], cleaned_sessions[-1]["c"]), 2)
                 cleaned_sessions[-1]["l"] = round(min(cleaned_sessions[-1]["l"], cleaned_sessions[-1]["c"]), 2)
-                cleaned_sessions[-1]["oi"] = int(m_rec.get("openInterest") or cleaned_sessions[-1]["oi"])
+                if m_rec.get("openInterest"):
+                    cleaned_sessions[-1]["oi"] = int(m_rec.get("openInterest"))
     except Exception:
         pass
 
