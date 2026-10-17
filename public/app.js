@@ -437,6 +437,7 @@ const els = {
   inspectDelivPer: document.getElementById("inspectDelivPer"),
   inspectAvg5dPer: document.getElementById("inspectAvg5dPer"),
   inspectDelivVal: document.getElementById("inspectDelivVal"),
+  inspectTurnover: document.getElementById("inspectTurnover"),
   inspectShock: document.getElementById("inspectShock"),
   inspectViewHistoryBtn: document.getElementById("inspectViewHistoryBtn"),
 
@@ -4932,7 +4933,7 @@ function renderSecurityDeliveryTable(stocks) {
 
   if (!stocks.length) {
     if (delivSearchQuery) {
-      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:28px; color:var(--text-muted);">
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:28px; color:var(--text-muted);">
         <div style="font-size:13.5px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Stock "<strong>${delivSearchQuery.toUpperCase()}</strong>" not found in selected index universe.</div>
         <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:10px;">
           <button type="button" class="ctrl-btn primary" onclick="inspectDeliveryStock('${delivSearchQuery}')" style="padding:6px 16px; font-size:12px; font-weight:700; cursor:pointer;">⚡ Inspect Official Delivery Data</button>
@@ -4940,7 +4941,7 @@ function renderSecurityDeliveryTable(stocks) {
         </div>
       </td></tr>`;
     } else {
-      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:24px; color:var(--text-muted);">No stocks found matching the criteria.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:24px; color:var(--text-muted);">No stocks found matching the criteria.</td></tr>`;
     }
     return;
   }
@@ -4951,14 +4952,6 @@ function renderSecurityDeliveryTable(stocks) {
 
     // Delivery % Progress Bar
     const delivFillClass = s.delivPer >= 60 ? "high" : (s.delivPer >= 40 ? "med" : "low");
-
-    // Shock Badge
-    let shockHtml = `<span style="color:var(--text-muted); font-family:monospace;">${s.shockRatio}x</span>`;
-    if (s.shockRatio >= 2.0) {
-      shockHtml = `<span class="shock-badge extreme">⚡ ${s.shockRatio}x</span>`;
-    } else if (s.shockRatio >= 1.3) {
-      shockHtml = `<span class="shock-badge surge">⚡ ${s.shockRatio}x</span>`;
-    }
 
     return `
       <tr onclick="inspectDeliveryStock('${s.symbol}')" style="cursor:pointer;" title="Click to inspect ${s.symbol} delivery details">
@@ -4977,8 +4970,6 @@ function renderSecurityDeliveryTable(stocks) {
         </td>
         <td style="color:var(--text-muted); font-size:11px;">${s.avg5dQty ? Number(s.avg5dQty).toLocaleString("en-IN") : '--'}</td>
         <td style="color:var(--text-muted); font-weight:700;">${s.avgDelivPer5D}%</td>
-        <td>${shockHtml}</td>
-        <td>₹${s.turnoverCr.toLocaleString("en-IN")} Cr</td>
         <td style="color:#16a34a; font-weight:800;">₹${s.delivTurnoverCr.toLocaleString("en-IN")} Cr</td>
         <td>
           <button type="button" class="drilldown-btn" onclick="event.stopPropagation(); openDeliveryDrilldown('${s.symbol}')">📅 History</button>
@@ -5057,8 +5048,18 @@ async function inspectDeliveryStock(symbol) {
     if (els.inspectDelivQty) els.inspectDelivQty.textContent = Number(cur.delivQty || 0).toLocaleString("en-IN");
     if (els.inspectDelivPer) els.inspectDelivPer.textContent = `${cur.delivPer}%`;
     if (els.inspectAvg5dPer) els.inspectAvg5dPer.textContent = `5D Avg: ${data.avg5dPer}%`;
-    if (els.inspectDelivVal) els.inspectDelivVal.textContent = `₹${Number(cur.delivTurnoverCr || 0).toLocaleString("en-IN")} Cr`;
-    if (els.inspectShock) els.inspectShock.textContent = `Volume Shock: ${data.shockRatio}x`;
+    if (els.inspectTurnover) {
+      els.inspectTurnover.textContent = `₹${Number(cur.turnoverCr || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
+    }
+    if (els.inspectDelivVal) els.inspectDelivVal.textContent = `₹${Number(cur.delivTurnoverCr || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
+    if (els.inspectShock) {
+      const shockVal = Number(data.shockRatio || 1.0);
+      els.inspectShock.innerHTML = shockVal >= 2.0
+        ? `<span class="shock-badge extreme" style="font-size:13px; padding:2px 8px;">⚡ ${shockVal.toFixed(2)}x EXTREME</span>`
+        : (shockVal >= 1.3
+          ? `<span class="shock-badge surge" style="font-size:13px; padding:2px 8px;">⚡ ${shockVal.toFixed(2)}x SURGE</span>`
+          : `<span style="font-size:16px; font-weight:800;">${shockVal.toFixed(2)}x</span>`);
+    }
 
     if (els.inspectViewHistoryBtn) {
       els.inspectViewHistoryBtn.onclick = () => openDeliveryDrilldown(data.symbol);
@@ -5144,6 +5145,15 @@ function renderDrilldownRows() {
       ? `${Number(h.close || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} pts`
       : `₹${Number(h.close || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
+    // Shock Badge for history row
+    const shockVal = Number(h.shockRatio || 1.0);
+    let shockHtml = `<span style="color:var(--text-muted); font-family:monospace;">${shockVal.toFixed(2)}x</span>`;
+    if (shockVal >= 2.0) {
+      shockHtml = `<span class="shock-badge extreme">⚡ ${shockVal.toFixed(2)}x</span>`;
+    } else if (shockVal >= 1.3) {
+      shockHtml = `<span class="shock-badge surge">⚡ ${shockVal.toFixed(2)}x</span>`;
+    }
+
     return `
       <tr>
         <td><strong>${h.date}</strong></td>
@@ -5159,7 +5169,9 @@ function renderDrilldownRows() {
             </div>
           </div>
         </td>
-        <td style="color:#16a34a; font-weight:700; text-align:right;">₹${Number(h.delivTurnoverCr || 0).toLocaleString("en-IN")} Cr</td>
+        <td style="text-align:center;">${shockHtml}</td>
+        <td style="text-align:right;">₹${Number(h.turnoverCr || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr</td>
+        <td style="color:#16a34a; font-weight:700; text-align:right;">₹${Number(h.delivTurnoverCr || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr</td>
         <td style="text-align:right;">${Number(h.trades || 0).toLocaleString("en-IN")}</td>
       </tr>
     `;
@@ -5172,7 +5184,7 @@ async function openDeliveryDrilldown(symbol) {
   if (els.drilldownTitle) els.drilldownTitle.textContent = `${symbol} - Date-Wise Deliveries`;
   if (els.drilldownSubtitle) els.drilldownSubtitle.textContent = `Fetching historical sessions for ${symbol}...`;
   if (els.drilldownTableBody) {
-    els.drilldownTableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:24px;">⏳ Loading official NSE date-wise sessions...</td></tr>`;
+    els.drilldownTableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:24px;">⏳ Loading official NSE date-wise sessions...</td></tr>`;
   }
 
   try {
@@ -5200,7 +5212,7 @@ async function openDeliveryDrilldown(symbol) {
     renderDrilldownRows();
   } catch (err) {
     if (els.drilldownTableBody) {
-      els.drilldownTableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#dc2626; padding:20px;">Failed to load history: ${err.message}</td></tr>`;
+      els.drilldownTableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:#dc2626; padding:20px;">Failed to load history: ${err.message}</td></tr>`;
     }
   }
 }

@@ -6844,6 +6844,14 @@ def build_index_delivery_analytics(index_key: str, display_label: str, session_m
         history.append(h)
         cur_price = p_prev
 
+    for idx_h, h_item in enumerate(history):
+        past_5 = [p["delivQty"] for p in history[idx_h + 1 : idx_h + 6]]
+        if past_5:
+            avg_past = sum(past_5) / len(past_5)
+            h_item["shockRatio"] = round(h_item["delivQty"] / avg_past, 2) if avg_past > 0 else 1.0
+        else:
+            h_item["shockRatio"] = 1.0
+
     current_rec = history[0] if history else None
     hist_qtys = [h["delivQty"] for h in history[1:6]]
     hist_pers = [h["delivPer"] for h in history[1:6]]
@@ -6989,6 +6997,15 @@ def build_delivery_analytics(payload: dict) -> dict:
                     "delivTurnoverCr": rec["delivTurnoverCr"],
                     "trades": rec["trades"],
                 })
+
+        for idx_h, h_item in enumerate(history):
+            past_5 = [p["delivQty"] for p in history[idx_h + 1 : idx_h + 6]]
+            if past_5:
+                avg_past = sum(past_5) / len(past_5)
+                h_item["shockRatio"] = round(h_item["delivQty"] / avg_past, 2) if avg_past > 0 else 1.0
+            else:
+                h_item["shockRatio"] = 1.0
+
         current_rec = history[0] if history else None
         hist_qtys = [h["delivQty"] for h in history[1:6]]
         hist_pers = [h["delivPer"] for h in history[1:6]]
