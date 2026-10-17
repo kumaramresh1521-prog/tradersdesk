@@ -1665,9 +1665,10 @@ async function runBreadth(options = {}) {
   } catch (error) {
     latestData = null;
     drawChart([]);
-    renderSectorHeatmap([]);
-    setMessage([`<strong>Error:</strong> ${escapeHtml(error.message)}`]);
-    setRefreshState("Failed");
+    const isBusy = (error.message || "").includes("503") || (error.message || "").includes("Unavailable") || (error.message || "").includes("Failed to fetch") || (error.message || "").includes("JSON");
+    const msg = isBusy ? "Exchange analytics engine is syncing market sessions. Please refresh in a moment." : escapeHtml(error.message);
+    setMessage([`<strong>Market Notice:</strong> ${msg}`]);
+    setRefreshState(isBusy ? "Syncing" : "Failed");
   } finally {
     setBusy(false);
   }

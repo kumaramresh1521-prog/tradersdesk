@@ -1009,7 +1009,7 @@ def build_semantic_crawler_html(path: str, snapshot: dict) -> str:
 
     return f"""
     <!-- Dedicated Dynamic Live SEO & Crawler Pre-Render Section -->
-    <section id="seoDynamicCrawlContent" class="seo-crawler-content" style="max-width:1440px; margin:40px auto 20px; padding:24px 20px; background:#0b111e; border:1px solid rgba(255,255,255,0.07); border-radius:12px; color:#94a3b8; font-size:13px; line-height:1.6;">
+    <section id="seoDynamicCrawlContent" class="seo-crawler-content" style="display:none !important;" aria-hidden="true">
       <header style="margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
           <h2 style="font-size:17px; font-weight:800; color:#f1f5f9; margin:0 0 4px;">TradersDesk.in Live Market Intelligence &amp; Quantitative Terminal</h2>

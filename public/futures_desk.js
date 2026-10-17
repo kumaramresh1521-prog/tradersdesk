@@ -1369,7 +1369,10 @@
       if (helpMsg) helpMsg.textContent = `💡 ${sessions.length} sessions loaded. Drag = Pan • Scroll = Zoom`;
     } catch (err) {
       console.error('Error loading OI data:', err);
-      if (helpMsg) helpMsg.textContent = `⚠️ Error loading ${symbol}: ${err.message}`;
+      if (helpMsg) {
+        const isBusy = (err.message || '').includes('503') || (err.message || '').includes('Unavailable') || (err.message || '').includes('Failed to fetch') || (err.message || '').includes('JSON');
+        helpMsg.textContent = isBusy ? `⏳ Exchange data service syncing session data. Please retry in a moment.` : `⚠️ Notice: ${err.message}`;
+      }
     } finally {
       oiState.isLoading = false;
     }

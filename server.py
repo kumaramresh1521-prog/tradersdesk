@@ -7161,10 +7161,12 @@ _FNO_SYMBOL_CACHE = {"timestamp": 0.0, "symbols": set()}
 
 
 def _mtf_date_from_code(date_code: str) -> date | None:
-    try:
-        return datetime.strptime(date_code, "%d%m%y").date()
-    except ValueError:
-        return None
+    for fmt in ("%d%m%y", "%d%m%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(date_code, fmt).date()
+        except ValueError:
+            pass
+    return None
 
 
 def _mtf_recent_sessions(count: int = 5) -> list[date]:

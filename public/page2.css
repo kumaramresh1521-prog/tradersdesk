@@ -4032,3 +4032,44 @@ body.light-theme .inst-dot-menu-btn:hover {
     flex-shrink: 0 !important;
   }
 }
+
+
+/* SEO Crawler Pre-Render Element: Never render visually below footer */
+#seoDynamicCrawlContent,
+.seo-crawler-content {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+
+/* Institutional Standard Terminal Footer Styles */
+.terminal-footer {
+  margin-top: 40px;
+  padding: 40px 24px 24px 24px;
+  background: var(--bg-card, #0b1329);
+  border-top: 1px solid var(--border-default, rgba(255,255,255,0.08));
+  border-radius: 12px 12px 0 0;
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+}
+[data-theme="dark"] .terminal-footer {
+  background: #0d121d !important;
+  border-color: #1e293b !important;
+}
+.terminal-footer a {
+  color: var(--text-muted, #94a3b8);
+  text-decoration: none;
+  font-size: 12.5px;
+  transition: color 0.15s ease;
+}
+.terminal-footer a:hover {
+  color: #38bdf8 !important;
+}
+@media (max-width: 768px) {
+  .terminal-footer {
+    padding: 24px 16px 16px !important;
+  }
+}

@@ -22392,3 +22392,13 @@ body[data-theme="light"] .inst-dot-menu-btn:hover {
 [data-theme="dark"] .fii-kpi-sub strong {
   color: #cbd5e1;
 }
+
+
+/* SEO Crawler Pre-Render Element: Never render visually below footer */
+#seoDynamicCrawlContent,
+.seo-crawler-content {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}

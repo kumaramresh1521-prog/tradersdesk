@@ -6,7 +6,6 @@
   "use strict";
 
   // Zero interference with right-click or normal user clicks
-  // All user interactions, context menus, and links work 100% natively without blocking
   try {
     if (typeof console !== "undefined" && console.log) {
       console.log(
@@ -16,4 +15,33 @@
       );
     }
   } catch (e) {}
+
+  // Resilient Fetch & Response.prototype.json Guard
+  // Prevents SyntaxError: Unexpected token 'S', "Service Unavailable" is not valid JSON
+  // across all network fetch calls when endpoints return 503, 502, 504, or non-JSON HTML/text
+  try {
+    if (typeof Response !== "undefined" && Response.prototype && Response.prototype.json) {
+      const originalJson = Response.prototype.json;
+      Response.prototype.json = async function () {
+        try {
+          return await originalJson.call(this);
+        } catch (err) {
+          if (!this.ok) {
+            return {
+              ok: false,
+              status: this.status,
+              error: "HTTP " + this.status + ": Service temporarily unavailable (" + (this.statusText || 'Server Busy') + ")",
+              message: "HTTP " + this.status + ": Service temporarily unavailable"
+            };
+          }
+          return {
+            ok: false,
+            status: this.status,
+            error: err.message || "Failed to parse JSON response",
+            message: "Invalid response format"
+          };
+        }
+      };
+    }
+  } catch (_) {}
 })();
