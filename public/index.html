@@ -1386,40 +1386,6 @@
                 <div id="futBuildupRatioBar" class="fut-ratio-bar"></div>
               </div>
             </div>
-
-            <!-- Opstra-Style Derivatives Buzzers & Movers Matrix Hub -->
-            <div class="fut-movers-section" id="futMoversSection">
-              <div class="fut-movers-header">
-                <div class="fut-movers-title-box">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="fut-movers-badge">OPSTRA RADAR</span>
-                    <h3 class="fut-movers-title">⚡ High-Velocity F&amp;O Movers &amp; Buzzers</h3>
-                  </div>
-                  <span class="fut-movers-subtitle">Live institutional scans: Price Momentum, OI Surges, Volume Anomalies &amp; IV Volatility</span>
-                </div>
-                <div class="fut-movers-actions">
-                  <!-- Category Filter Switcher -->
-                  <div class="fut-movers-pills" id="futMoversCategoryPills">
-                    <button type="button" class="fut-mover-pill active" data-cat="all">🌟 All 7 Buzzers</button>
-                    <button type="button" class="fut-mover-pill" data-cat="price">📈 Price Movers</button>
-                    <button type="button" class="fut-mover-pill" data-cat="oi">📊 OI Spikes</button>
-                    <button type="button" class="fut-mover-pill" data-cat="volume">⚡ Volume Buzzers</button>
-                    <button type="button" class="fut-mover-pill" data-cat="iv">🌊 IV Volatility</button>
-                  </div>
-                  <!-- Rows Limit Toggle (5 vs 10) -->
-                  <div class="fut-movers-limit-wrap">
-                    <button type="button" class="fut-limit-btn active" id="futMoversLimit5" title="Show Top 5 per category">Top 5</button>
-                    <button type="button" class="fut-limit-btn" id="futMoversLimit10" title="Show Top 10 per category">Top 10</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Dynamic Mover Cards Grid -->
-              <div class="fut-movers-grid" id="futMoversGrid">
-                <!-- Dynamically populated via renderFuturesMovers() -->
-              </div>
-            </div>
-
             <!-- Master Table -->
             <div class="fut-table-wrap">
               <table class="fut-table" id="futMatrixTable">
@@ -1494,6 +1460,39 @@
                   <span id="futBuildupQuadCountText"></span>
                 </div>
                 <div id="futBuildupQuadRatioBar" class="fut-ratio-bar"></div>
+              </div>
+            </div>
+
+            <!-- Opstra-Style Derivatives Buzzers & Movers Matrix Hub -->
+            <div class="fut-movers-section" id="futMoversSection">
+              <div class="fut-movers-header">
+                <div class="fut-movers-title-box">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="fut-movers-badge">OPSTRA RADAR</span>
+                    <h3 class="fut-movers-title">⚡ High-Velocity F&amp;O Movers &amp; Buzzers</h3>
+                  </div>
+                  <span class="fut-movers-subtitle">Live institutional scans: Price Momentum, OI Surges, Volume Anomalies &amp; IV Volatility</span>
+                </div>
+                <div class="fut-movers-actions">
+                  <!-- Category Filter Switcher -->
+                  <div class="fut-movers-pills" id="futMoversCategoryPills">
+                    <button type="button" class="fut-mover-pill active" data-cat="all">🌟 All 7 Buzzers</button>
+                    <button type="button" class="fut-mover-pill" data-cat="price">📈 Price Movers</button>
+                    <button type="button" class="fut-mover-pill" data-cat="oi">📊 OI Spikes</button>
+                    <button type="button" class="fut-mover-pill" data-cat="volume">⚡ Volume Buzzers</button>
+                    <button type="button" class="fut-mover-pill" data-cat="iv">🌊 IV Volatility</button>
+                  </div>
+                  <!-- Rows Limit Toggle (5 vs 10) -->
+                  <div class="fut-movers-limit-wrap">
+                    <button type="button" class="fut-limit-btn active" id="futMoversLimit5" title="Show Top 5 per category">Top 5</button>
+                    <button type="button" class="fut-limit-btn" id="futMoversLimit10" title="Show Top 10 per category">Top 10</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dynamic Mover Cards Grid -->
+              <div class="fut-movers-grid" id="futMoversGrid">
+                <!-- Dynamically populated via renderFuturesMovers() -->
               </div>
             </div>
 
@@ -1621,7 +1620,7 @@
                 <div class="fut-oi-bar" id="futOiRangeBar">
                   <button type="button" class="fut-oi-b" data-n="22">1M (22D)</button>
                   <button type="button" class="fut-oi-b" data-n="66">3M (66D)</button>
-                  <button type="button" class="fut-oi-b on" data-n="9999">6M (All)</button>
+                  <button type="button" class="fut-oi-b on" data-n="9999">All (66D+)</button>
                 </div>
               </div>
 
@@ -4922,7 +4921,7 @@
             </div>
             <!-- Cross-Desk Jump Buttons -->
             <div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:12px;flex-wrap:wrap;">
-              <button type="button" class="btn btn-compact" onclick="mtaJumpToDesk('options')" title="Open in Upstox Option Chain Pro" style="font-size:11px;padding:5px 11px;font-weight:800;background:#10b981;color:#040814;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 0 10px rgba(16,185,129,0.3);">⚡ Upstox Options Pro</button>
+              <button type="button" class="btn btn-compact" onclick="mtaJumpToDesk('options')" title="Open Option Chain" style="font-size:11px;padding:5px 11px;font-weight:800;background:#10b981;color:#040814;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 0 10px rgba(16,185,129,0.3);">⚡ Option Chain</button>
               <button type="button" class="btn btn-compact" onclick="mtaJumpToDesk('delivery')" title="View Delivery Accumulation" style="font-size:11px;padding:5px 11px;font-weight:700;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;">📦 Delivery Desk</button>
             </div>
             <button type="button" onclick="mtaCloseStockModal()" style="background:none;border:none;font-size:24px;color:var(--text-muted);cursor:pointer;padding:2px 8px;line-height:1;border-radius:4px;" aria-label="Close modal">&times;</button>
@@ -5554,7 +5553,7 @@
               ⚡ Derivatives &amp; Options
             </h4>
             <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
-              <a href="/option-chain-pro" onclick="return navigateDesk('upstoxChain', '', '/option-chain-pro', event);">Upstox Option Chain Pro</a>
+              <a href="/option-chain-pro" onclick="return navigateDesk('upstoxChain', '', '/option-chain-pro', event);">Option Chain Pro</a>
               <a href="/futures" onclick="return navigateDesk('futures', 'matrix', '/futures', event);">Future Marketwatch Matrix</a>
               <a href="/straddle" onclick="return navigateDesk('', '', '/straddle', event);">Straddle Analytics Engine</a>
               <a href="/futures/buildup" onclick="return navigateDesk('futures', 'buildup', '/futures/buildup', event);">Future Buildup Quadrants</a>

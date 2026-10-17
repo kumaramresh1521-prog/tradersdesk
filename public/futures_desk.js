@@ -667,7 +667,7 @@
     }
   }
 
-  // --- Sub-Tab 3: Future Buildup Quadrants ---
+  // --- Sub-Tab 3: Future Buildup Quadrants & Institutional Movers ---
   async function loadBuildupView(forceRefresh = false) {
     try {
       const url = forceRefresh ? `/api/futures/buildup?refresh=true&_t=${Date.now()}` : '/api/futures/buildup';
@@ -675,6 +675,15 @@
       if (resB.ok) {
         const dataB = await resB.json();
         renderQuadrants(dataB);
+      }
+      // Also render High-Velocity Market Movers & Buzzers in Buildup view
+      if (state.dashboardData && state.dashboardData.marketMovers) {
+        renderFuturesMovers(state.dashboardData.marketMovers);
+      } else {
+        const dUrl = forceRefresh ? `/api/futures/dashboard?refresh=true&_t=${Date.now()}` : '/api/futures/dashboard';
+        fetch(dUrl).then(r => r.json()).then(d => {
+          if (d && d.marketMovers) renderFuturesMovers(d.marketMovers);
+        }).catch(() => {});
       }
     } catch (err) {
       console.warn('Buildup view load error:', err);

@@ -13,6 +13,7 @@ Provides:
 
 import os
 import csv
+import json
 import glob
 import math
 import time
@@ -64,10 +65,12 @@ SYMBOL_CONFIG = {
 }
 
 
+EOD_CACHE_FILE = CACHE_DIR / "fo_bhav_eod_master.json"
+
 def _load_bhavcopy_eod_data(force: bool = False):
     """
-    Parses all cached Bhavcopy CSV files once and indexes by symbol.
-    Sub-millisecond access thereafter.
+    Parses all cached official NSE Bhavcopy CSV files and indexes by symbol.
+    Persists to disk cache (fo_bhav_eod_master.json) for sub-10ms instantaneous queries.
     """
     global _BHAV_SESSIONS_CACHE
     now = time.time()
@@ -78,6 +81,30 @@ def _load_bhavcopy_eod_data(force: bool = False):
     if not csv_files:
         _BHAV_SESSIONS_CACHE["ts"] = now
         return _BHAV_SESSIONS_CACHE
+
+    latest_csv_mtime = max(p.stat().st_mtime for p in csv_files)
+
+    # Check fast disk JSON cache
+    if not force and EOD_CACHE_FILE.exists() and EOD_CACHE_FILE.stat().st_size > 1000 and EOD_CACHE_FILE.stat().st_mtime >= latest_csv_mtime:
+        try:
+            with open(EOD_CACHE_FILE, "r", encoding="utf-8") as f:
+                cached_disk = json.load(f)
+                if cached_disk.get("symbols_data") and cached_disk.get("dates"):
+                    # Cast string strike keys back to float in latest_options
+                    raw_opts = cached_disk.get("latest_options", {})
+                    restored_opts = {}
+                    for sym_k, strike_map in raw_opts.items():
+                        restored_opts[sym_k] = {float(k): v for k, v in strike_map.items()}
+
+                    _BHAV_SESSIONS_CACHE = {
+                        "ts": now,
+                        "symbols_data": cached_disk["symbols_data"],
+                        "dates": cached_disk["dates"],
+                        "latest_options": restored_opts,
+                    }
+                    return _BHAV_SESSIONS_CACHE
+        except Exception:
+            pass
 
     symbols_data: Dict[str, List[dict]] = {}
     latest_options: Dict[str, Dict[float, dict]] = {}
@@ -97,9 +124,8 @@ def _load_bhavcopy_eod_data(force: bool = False):
                         continue
                     tp = (r.get("FinInstrmTp") or "").strip().upper()
 
-                    # Futures record (IDF, STF, FUTIDX, FUTSTK)
+                    # Futures record (IDF, STF, FUTSTK, FUTIDX)
                     if tp in ("STF", "IDF", "FUTSTK", "FUTIDX"):
-                        # Keep nearest expiry if multiple
                         try:
                             c = float(r.get("ClsPric") or r.get("LastPric") or r.get("SttlmPric") or 0.0)
                             if c <= 0:
@@ -113,7 +139,7 @@ def _load_bhavcopy_eod_data(force: bool = False):
                             if sym not in symbols_data:
                                 symbols_data[sym] = []
 
-                            # Only one futures record per symbol per date (near month)
+                            # Only one near-month futures record per symbol per date
                             existing_today = [x for x in symbols_data[sym] if x["date"] == dt_str]
                             if not existing_today:
                                 symbols_data[sym].append({
@@ -156,79 +182,30 @@ def _load_bhavcopy_eod_data(force: bool = False):
         "dates": dates_found,
         "latest_options": latest_options,
     }
+
+    # Save to disk cache atomically for future instant loads
+    try:
+        tmp_file = EOD_CACHE_FILE.with_suffix(".tmp")
+        with open(tmp_file, "w", encoding="utf-8") as f:
+            json.dump(_BHAV_SESSIONS_CACHE, f)
+        tmp_file.replace(EOD_CACHE_FILE)
+    except Exception:
+        pass
+
     return _BHAV_SESSIONS_CACHE
 
 
-def _generate_synthetic_history(sym: str, base_price: float, is_idx: bool, target_sessions: int = 132) -> List[dict]:
-    """
-    Generates realistic 6-month historical daily candles for symbol calibrated
-    around its official base price, real volatility & open interest baseline.
-    """
-    s = sum((i + 1) * ord(ch) for i, ch in enumerate(sym)) * 31 + 7
-    def rnd():
-        nonlocal s
-        s = (s * 16807) % 2147483647
-        return s / 2147483647.0
-
-    end_dt = datetime.now().date()
-    # Collect trading dates
-    trading_days = []
-    cur = end_dt - timedelta(days=int(target_sessions * 1.55))
-    while cur <= end_dt:
-        if cur.weekday() < 5:  # Monday to Friday
-            trading_days.append(cur)
-        cur += timedelta(days=1)
-    trading_days = trading_days[-target_sessions:]
-
-    res = []
-    price = base_price * (0.88 + rnd() * 0.15)
-    base_oi = (15000000 if is_idx else 1800000) * (0.8 + rnd() * 0.5)
-    oi = base_oi
-    iv = 14.5 if is_idx else 32.0
-
-    for i, dt in enumerate(trading_days):
-        pct_shock = (rnd() - 0.49) * (0.016 if is_idx else 0.032)
-        c = round(max(1.0, price * (1.0 + pct_shock)), 2)
-        o = round(price * (1.0 + (rnd() - 0.5) * 0.005), 2)
-        h = round(max(o, c) * (1.0 + rnd() * (0.006 if is_idx else 0.014)), 2)
-        l = round(min(o, c) * (1.0 - rnd() * (0.006 if is_idx else 0.014)), 2)
-        vol = int((100000 if is_idx else 50000) * (0.7 + rnd() * 1.5 + abs(c - o) / o * 40))
-
-        # OI dynamics
-        dp = c - o
-        oi_chg = ((1 if dp >= 0 else -1) * (rnd() - 0.35) * 0.04 + (rnd() - 0.5) * 0.03) * oi
-        oi = int(max(base_oi * 0.35, min(base_oi * 2.8, oi + oi_chg)))
-
-        # IV dynamics
-        iv = round(max(8.0, min(95.0, iv * 0.88 + (12.0 + abs(c - o) / o * 500 + (3.0 if c < o else 0.0) + rnd() * 2.0) * 0.12)), 2)
-        # Delivery % (for equities)
-        dv = round(max(20.0, min(80.0, 48.0 + (5.0 if c > o else -3.0) + (rnd() - 0.5) * 20.0)), 1)
-        # PCR
-        pcr = round(max(0.5, min(1.7, 1.0 + (c - price) / price * 12.0 + (rnd() - 0.5) * 0.2)), 2)
-
-        res.append({
-            "date": dt.strftime("%Y%m%d"),
-            "dt": dt.strftime("%d-%b-%Y"),
-            "o": o,
-            "h": h,
-            "l": l,
-            "c": c,
-            "v": vol,
-            "oi": oi,
-            "iv": iv,
-            "dv": dv,
-            "pcr": pcr,
-            "isIndex": is_idx
-        })
-        price = c
-
-    return res
-
+_SYMBOLS_CACHE: Dict[str, Any] = {"ts": 0.0, "data": []}
 
 def get_all_futures_symbols() -> List[dict]:
     """
     Returns full list of available F&O stocks & indices (NSE + BSE).
     """
+    global _SYMBOLS_CACHE
+    now = time.time()
+    if _SYMBOLS_CACHE["data"] and (now - _SYMBOLS_CACHE["ts"]) < 120.0:
+        return _SYMBOLS_CACHE["data"]
+
     bhav = _load_bhavcopy_eod_data()
     symbols_data = bhav["symbols_data"]
 
@@ -240,7 +217,7 @@ def get_all_futures_symbols() -> List[dict]:
     # Also import from futures_engine master list if available
     try:
         import futures_engine
-        master = futures_engine.get_futures_master()
+        master = futures_engine._FUTURES_CACHE.get("master") or []
         for r in master:
             sym_set.add(r["symbol"])
     except Exception:
@@ -283,7 +260,9 @@ def get_all_futures_symbols() -> List[dict]:
             return (0, INDEX_ORDER.index(s))
         return (1, s)
 
-    return sorted(res, key=_sort_key)
+    sorted_res = sorted(res, key=_sort_key)
+    _SYMBOLS_CACHE = {"ts": now, "data": sorted_res}
+    return sorted_res
 
 
 def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions: int = 132, force_refresh: bool = False) -> dict:
@@ -302,31 +281,19 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
     is_idx = sym_info.get("isIndex", False) or sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX")
     strike_step = sym_info.get("st", 50 if is_idx else 20)
 
-    # 2. Historical EOD Sessions Assembly
+    # 2. Historical EOD Sessions Assembly - 100% Real Official Exchange Data
     raw_bhav_sessions = bhav.get("symbols_data", {}).get(sym, [])
-    base_price = sym_info.get("c", 1000.0)
+    if not raw_bhav_sessions:
+        clean_alias = sym.replace("50", "").replace(" ", "")
+        raw_bhav_sessions = bhav.get("symbols_data", {}).get(clean_alias, [])
 
-    # If Bhavcopy has fewer than 132 sessions, backfill with smoothly aligned synthetic sessions
-    if len(raw_bhav_sessions) < range_sessions:
-        needed = range_sessions - len(raw_bhav_sessions)
-        synth = _generate_synthetic_history(sym, base_price=base_price, is_idx=is_idx, target_sessions=needed)
-        # Adjust synth dates to precede raw_bhav_sessions
-        if raw_bhav_sessions:
-            first_bhav_date_str = raw_bhav_sessions[0]["date"]
-            try:
-                first_dt = datetime.strptime(first_bhav_date_str, "%Y%m%d").date()
-                for i in range(len(synth)):
-                    rev_idx = len(synth) - 1 - i
-                    s_dt = first_dt - timedelta(days=int((i + 1) * 1.5))
-                    while s_dt.weekday() >= 5:
-                        s_dt -= timedelta(days=1)
-                    synth[rev_idx]["date"] = s_dt.strftime("%Y%m%d")
-                    synth[rev_idx]["dt"] = s_dt.strftime("%d-%b-%Y")
-            except Exception:
-                pass
-        timeline_sessions = synth + raw_bhav_sessions
-    else:
+    # Order chronologically by date
+    raw_bhav_sessions = sorted(raw_bhav_sessions, key=lambda x: x.get("date", ""))
+
+    if range_sessions and range_sessions > 0 and len(raw_bhav_sessions) > range_sessions:
         timeline_sessions = raw_bhav_sessions[-range_sessions:]
+    else:
+        timeline_sessions = list(raw_bhav_sessions)
 
     # Convert all sessions to uniform dicts
     cleaned_sessions = []
@@ -344,7 +311,13 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
         l = float(s_item.get("l", min(o, c)))
         v = int(s_item.get("v", 0))
         oi = int(s_item.get("oi", 0))
-        iv = float(s_item.get("iv", 16.0 if is_idx else 32.0))
+
+        # Real daily Parkinson volatility from actual exchange high/low
+        if h > l and l > 0:
+            iv = round(max(8.0, min(95.0, math.sqrt((math.log(h / l) ** 2) / (4.0 * math.log(2))) * math.sqrt(252.0) * 100.0)), 2)
+        else:
+            iv = 14.5 if is_idx else 32.0
+
         dv = float(s_item.get("dv", 50.0))
         pcr = float(s_item.get("pcr", 1.0))
 
@@ -365,16 +338,21 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
     # 3. Append Current Live Session if market is live or today's quote is updated
     try:
         import futures_engine
-        master_list = futures_engine.get_futures_master(force_refresh=force_refresh)
-        m_rec = next((r for r in master_list if r["symbol"] == sym), None)
+        master_list = futures_engine._FUTURES_CACHE.get("master")
+        if not master_list and force_refresh:
+            master_list = futures_engine.get_futures_master(force_refresh=False)
+        master_list = master_list or []
+        m_rec = next((r for r in master_list if r.get("symbol") == sym), None)
         if m_rec and m_rec.get("futPrice", 0) > 0:
             today_str = datetime.now().strftime("%Y%m%d")
             if cleaned_sessions and cleaned_sessions[-1]["date"] != today_str:
-                # Append today's live session
                 live_c = float(m_rec.get("futPrice") or m_rec.get("ltp"))
                 live_h = float(m_rec.get("dayHigh") or live_c)
                 live_l = float(m_rec.get("dayLow") or live_c)
                 live_o = float(m_rec.get("prevClose") or live_c)
+                live_v = int(float(m_rec.get("volumeContracts") or m_rec.get("volume") or 0))
+                live_oi = int(float(m_rec.get("openInterest") or m_rec.get("oiContracts") or 0))
+                live_iv = float(m_rec.get("iv") or (14.5 if is_idx else 32.0))
                 cleaned_sessions.append({
                     "date": today_str,
                     "dt": datetime.now().strftime("%d-%b-%Y"),
@@ -382,11 +360,11 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
                     "h": round(live_h, 2),
                     "l": round(live_l, 2),
                     "c": round(live_c, 2),
-                    "v": int(m_rec.get("volumeContracts", 0)),
-                    "oi": int(m_rec.get("openInterest", 0)),
-                    "iv": float(m_rec.get("iv", 16.0 if is_idx else 32.0)),
-                    "dv": 52.0,
-                    "pcr": 1.05,
+                    "v": live_v,
+                    "oi": live_oi,
+                    "iv": round(live_iv, 2),
+                    "dv": 50.0,
+                    "pcr": round(float(m_rec.get("pcr") or 1.0), 2),
                 })
             elif cleaned_sessions:
                 # Update today's bar with live tick
