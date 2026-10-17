@@ -1215,6 +1215,14 @@ def _build_master_futures_records() -> list[dict]:
     except Exception:
         baseline_oi = {}
 
+    # Load official NSE MWPL map
+    mwpl_map = {}
+    try:
+        import mwpl_engine
+        mwpl_map = mwpl_engine.get_mwpl_map()
+    except Exception as e:
+        logger.debug(f"Error loading mwpl_map: {e}")
+
     new_baseline_needed = False
 
     # Merge symbols: FO_UNIVERSE + any remaining active contracts in _KOTAK_FO_MAP
@@ -1358,16 +1366,16 @@ def _build_master_futures_records() -> list[dict]:
 
         buildup_name, buildup_cls, buildup_code = classify_buildup(fut_chg_pct, oi_chg_pct)
 
-        # MWPL calculation
-        mwpl_base = item.get("mwplBase", 55.0)
-        mwpl_cur = round(min(99.0, max(15.0, mwpl_base + (oi_chg_pct * 0.3))), 1)
-        if mwpl_cur >= 95.0:
-            mwpl_status = "BANNED"
-            mwpl_badge = "status-banned"
-        elif mwpl_cur >= 80.0:
-            mwpl_status = "ALERT"
-            mwpl_badge = "status-alert"
+        # Real official NSE MWPL calculation
+        mwpl_info = mwpl_map.get(sym)
+        if mwpl_info:
+            mwpl_limit = int(mwpl_info.get("mwplLimit", 0) or 0)
+            mwpl_cur = float(mwpl_info.get("mwplPct", 0.0) or 0.0)
+            mwpl_status = mwpl_info.get("status", "NORMAL")
+            mwpl_badge = "status-banned" if mwpl_status == "BANNED" else ("status-alert" if mwpl_status == "ALERT" else "status-normal")
         else:
+            mwpl_limit = 0
+            mwpl_cur = 0.0
             mwpl_status = "NORMAL"
             mwpl_badge = "status-normal"
 
@@ -1427,6 +1435,7 @@ def _build_master_futures_records() -> list[dict]:
             "mwplPct": mwpl_cur,
             "mwplStatus": mwpl_status,
             "mwplBadge": mwpl_badge,
+            "limitOi": mwpl_limit,
             "iv": est_iv,
             "ivChange": iv_change,
             "ivChangePct": iv_change_pct,
@@ -1709,40 +1718,54 @@ def get_futures_heatmap(sector: str = "ALL", force_refresh: bool = False) -> dic
 
 def get_mwpl_data(force_refresh: bool = False) -> dict:
     """
-    Returns Market Wide Position Limit analysis:
-    - Banned stocks (>95%)
+    Returns official NSE Market Wide Position Limit analysis:
+    - Banned stocks (in official ban period or >95%)
     - Alert Zone (80% - 95%)
     - Safe Zone (<80%)
+    100% official exchange data from NSE CombineOI & fo_secban reports.
     """
-    records = get_futures_master(force_refresh=force_refresh)
-    stocks = [r for r in records if not r.get("isIndex")]
+    try:
+        import mwpl_engine
+        records = _FUTURES_CACHE.get("master")
+        now_dt = datetime.now()
+        is_market_hours = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
+        if not records and is_market_hours:
+            try:
+                records = get_futures_master(force_refresh=False)
+            except Exception:
+                records = None
+        return mwpl_engine.get_mwpl_analysis(force_refresh=force_refresh, live_records=records)
+    except Exception as e:
+        logger.error(f"Error generating mwpl_data from mwpl_engine: {e}")
+        records = get_futures_master(force_refresh=force_refresh)
+        stocks = [r for r in records if not r.get("isIndex")]
 
-    for s in stocks:
-        mwpl_pct = float(s.get("mwplPct") or 0.0)
-        cur_oi = int(s.get("openInterest") or s.get("oiContracts") or 0)
-        limit_oi = int(round(cur_oi / (mwpl_pct / 100.0))) if mwpl_pct > 0 and cur_oi > 0 else max(cur_oi * 2, 250000)
-        s["limitOi"] = limit_oi
-        s["currentOi"] = cur_oi
-        s["price"] = float(s.get("futPrice") or s.get("ltp") or s.get("spotPrice") or 0.0)
-        st = s.get("mwplStatus") or ("BANNED" if mwpl_pct >= 95.0 else ("ALERT" if mwpl_pct >= 80.0 else "NORMAL"))
-        s["status"] = st
+        for s in stocks:
+            mwpl_pct = float(s.get("mwplPct") or 0.0)
+            cur_oi = int(s.get("openInterest") or s.get("oiContracts") or 0)
+            limit_oi = s.get("limitOi") or (int(round(cur_oi / (mwpl_pct / 100.0))) if mwpl_pct > 0 and cur_oi > 0 else 0)
+            s["limitOi"] = limit_oi
+            s["currentOi"] = cur_oi
+            s["price"] = float(s.get("futPrice") or s.get("ltp") or s.get("spotPrice") or 0.0)
+            st = s.get("mwplStatus") or ("BANNED" if mwpl_pct >= 95.0 else ("ALERT" if mwpl_pct >= 80.0 else "NORMAL"))
+            s["status"] = st
 
-    banned = sorted([r for r in stocks if r.get("mwplStatus") == "BANNED" or r.get("mwplPct", 0) >= 95.0], key=lambda x: x.get("mwplPct", 0), reverse=True)
-    alert = sorted([r for r in stocks if (r.get("mwplStatus") == "ALERT" or (80.0 <= r.get("mwplPct", 0) < 95.0))], key=lambda x: x.get("mwplPct", 0), reverse=True)
-    normal = sorted([r for r in stocks if r not in banned and r not in alert], key=lambda x: x.get("mwplPct", 0), reverse=True)
+        banned = sorted([r for r in stocks if r.get("mwplStatus") == "BANNED" or r.get("mwplPct", 0) >= 95.0], key=lambda x: x.get("mwplPct", 0), reverse=True)
+        alert = sorted([r for r in stocks if (r.get("mwplStatus") == "ALERT" or (80.0 <= r.get("mwplPct", 0) < 95.0))], key=lambda x: x.get("mwplPct", 0), reverse=True)
+        normal = sorted([r for r in stocks if r not in banned and r not in alert], key=lambda x: x.get("mwplPct", 0), reverse=True)
 
-    return {
-        "ok": True,
-        "timestamp": datetime.now().strftime("%H:%M:%S"),
-        "bannedCount": len(banned),
-        "alertCount": len(alert),
-        "normalCount": len(normal),
-        "banned": banned,
-        "bannedStocks": banned,
-        "alertZone": alert,
-        "alertStocks": alert,
-        "allStocks": banned + alert + normal,
-    }
+        return {
+            "ok": True,
+            "timestamp": datetime.now().strftime("%H:%M:%S"),
+            "bannedCount": len(banned),
+            "alertCount": len(alert),
+            "normalCount": len(normal),
+            "banned": banned,
+            "bannedStocks": banned,
+            "alertZone": alert,
+            "alertStocks": alert,
+            "allStocks": banned + alert + normal,
+        }
 
 
 # =====================================================================

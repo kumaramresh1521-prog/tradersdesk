@@ -902,24 +902,31 @@
       // Ban Banner
       const banBox = document.getElementById('futMwplBanBanner');
       const bannedList = data.bannedStocks || data.banned || [];
+      const asOf = data.asOfDate ? `NSE Official &bull; ${data.asOfDate}` : 'NSE Official';
       if (banBox) {
         if (bannedList.length > 0) {
           banBox.innerHTML = `
             <div style="background:rgba(239,68,68,0.15); border:1px solid #ef4444; border-radius:8px; padding:12px 16px;">
-              <strong style="color:#ef4444; font-size:13px;">🚫 ${bannedList.length} Securities in Official F&O Ban Period (&gt;95% Limit)</strong>
-              <p style="margin:4px 0 8px 0; font-size:11.5px; color:#fca5a5;">Exchange prohibited fresh position creation. Intraday squaring-off permitted only.</p>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:6px;">
+                <strong style="color:#ef4444; font-size:13.5px;">🚫 ${bannedList.length} Securities in Official NSE F&amp;O Ban Period (&gt;95% Limit)</strong>
+                <span style="font-size:11px; color:#fca5a5; font-family:'JetBrains Mono',monospace;">${asOf}</span>
+              </div>
+              <p style="margin:2px 0 10px 0; font-size:11.5px; color:#fca5a5;">Exchange prohibited fresh position creation. Intraday squaring-off permitted only.</p>
               <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 ${bannedList.map(s => `
-                  <span class="fut-badge fut-badge-sb" style="font-size:11px; padding:4px 9px;">${s.symbol}: ${s.mwplPct}% MWPL</span>
+                  <span class="fut-badge fut-badge-sb" style="font-size:11.5px; padding:5px 10px; font-weight:700;">${s.symbol}: ${s.mwplPct}% MWPL</span>
                 `).join('')}
               </div>
             </div>
           `;
         } else {
           banBox.innerHTML = `
-            <div style="background:rgba(16,185,129,0.1); border:1px solid #10b981; border-radius:8px; padding:10px 14px; font-size:12px; color:#34d399; display:flex; align-items:center; gap:8px;">
-              <span style="font-size:15px;">✅</span>
-              <span><strong>Zero Securities currently in F&O Ban.</strong> All ~200 NSE F&O contracts open for fresh trading positions.</span>
+            <div style="background:rgba(16,185,129,0.1); border:1px solid #10b981; border-radius:8px; padding:10px 14px; font-size:12px; color:#34d399; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:15px;">✅</span>
+                <span><strong>Zero Securities currently in F&amp;O Ban.</strong> All ~213 NSE F&amp;O contracts open for fresh trading positions.</span>
+              </div>
+              <span style="font-size:11px; color:#6ee7b7; font-family:'JetBrains Mono',monospace;">${asOf}</span>
             </div>
           `;
         }
@@ -930,18 +937,21 @@
       const alertList = data.alertStocks || data.alertZone || [];
       if (alertBox) {
         if (alertList.length > 0) {
-          alertBox.innerHTML = alertList.map(s => `
-            <div class="fut-alert-card" style="border:1px solid #f59e0b; border-radius:6px; padding:10px 12px; background:rgba(245,158,11,0.06);">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <strong class="fut-alert-sym" style="font-size:13px; color:var(--text-primary, #f8fafc);">${s.symbol}</strong>
-                <span style="color:#f59e0b; font-weight:800; font-family:'JetBrains Mono',monospace;">${s.mwplPct}%</span>
+          alertBox.innerHTML = alertList.map(s => {
+            const hrStr = s.headroom || (s.headroomLots ? `${fmtQty(s.headroomLots)} lots` : `~${Math.max(50, Math.round((95 - s.mwplPct) * 120))} lots`);
+            return `
+              <div class="fut-alert-card" style="border:1px solid #f59e0b; border-radius:6px; padding:10px 12px; background:rgba(245,158,11,0.06);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <strong class="fut-alert-sym" style="font-size:13px; color:var(--text-primary, #f8fafc);">${s.symbol}</strong>
+                  <span style="color:#f59e0b; font-weight:800; font-family:'JetBrains Mono',monospace;">${s.mwplPct}%</span>
+                </div>
+                <div style="font-size:10.5px; color:var(--text-muted, #94a3b8); margin:4px 0;">Lot: ${s.lot || '--'} &bull; Headroom: ${hrStr}</div>
+                <div class="fut-mwpl-pbar" style="margin-top:6px;">
+                  <div class="fut-mwpl-pfill" style="width:${s.mwplPct}%; background:#f59e0b;"></div>
+                </div>
               </div>
-              <div style="font-size:10.5px; color:var(--text-muted, #94a3b8); margin:4px 0;">Lot: ${s.lot || '--'} &bull; Headroom: ~${Math.max(50, Math.round((95 - s.mwplPct) * 120))} lots</div>
-              <div class="fut-mwpl-pbar" style="margin-top:6px;">
-                <div class="fut-mwpl-pfill" style="width:${s.mwplPct}%; background:#f59e0b;"></div>
-              </div>
-            </div>
-          `).join('');
+            `;
+          }).join('');
         } else {
           alertBox.innerHTML = `
             <div style="grid-column:1/-1; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px 16px; font-size:12px; color:var(--text-muted, #94a3b8);">
@@ -960,7 +970,7 @@
           const col = mwpl >= 95 ? '#ef4444' : (mwpl >= 80 ? '#f59e0b' : '#10b981');
           const pr = s.price || s.futPrice || s.ltp || s.spotPrice || 0;
           const curOi = s.currentOi || s.openInterest || s.oiContracts || 0;
-          const limOi = s.limitOi || (curOi && mwpl ? Math.round(curOi * 100 / mwpl) : '--');
+          const limOi = s.limitOi || s.mwplLimit || (curOi && mwpl ? Math.round(curOi * 100 / mwpl) : '--');
           const st = s.status || s.mwplStatus || (mwpl >= 95 ? 'BANNED' : (mwpl >= 80 ? 'ALERT' : 'NORMAL'));
           return `
             <tr>

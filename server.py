@@ -9855,6 +9855,18 @@ class RequestHandler(BaseHTTPRequestHandler):
             futures_engine.invalidate_caches()
             return self.send_json(200, res)
 
+        if path in ("/api/futures/sync-mwpl", "/api/futures/mwpl/sync"):
+            import mwpl_engine
+            records, banned, as_of = mwpl_engine.sync_latest_mwpl_data(force=True)
+            futures_engine.invalidate_caches()
+            return self.send_json(200, {
+                "ok": True,
+                "asOfDate": as_of,
+                "totalSecurities": len(records),
+                "bannedCount": len(banned),
+                "bannedSymbols": list(banned),
+            })
+
         if path in ("/api/footer-links", "/api/admin/footer-links"):
             footer_file = CACHE_DIR / "footer_links.json"
             if not footer_file.exists():
@@ -10550,6 +10562,18 @@ class RequestHandler(BaseHTTPRequestHandler):
                 res = fo_bhavcopy_engine.sync_latest_fo_bhavcopy(days_back=7, force_today=force_today)
                 futures_engine.invalidate_caches()
                 return self.send_json(200, res)
+
+            if parsed.path in ("/api/futures/sync-mwpl", "/api/futures/mwpl/sync"):
+                import mwpl_engine
+                records, banned, as_of = mwpl_engine.sync_latest_mwpl_data(force=True)
+                futures_engine.invalidate_caches()
+                return self.send_json(200, {
+                    "ok": True,
+                    "asOfDate": as_of,
+                    "totalSecurities": len(records),
+                    "bannedCount": len(banned),
+                    "bannedSymbols": list(banned),
+                })
 
             if parsed.path == "/api/kotak/test-connection":
                 payload = self.read_body()
