@@ -30,7 +30,9 @@ CACHE_DIR = ROOT / "cache"
 MWPL_DIR = CACHE_DIR / "mwpl"
 MWPL_DIR.mkdir(parents=True, exist_ok=True)
 
-LATEST_MWPL_JSON = CACHE_DIR / "mwpl_latest.json"
+LATEST_MWPL_JSON = ROOT / "data" / "mwpl_official.json"
+if not LATEST_MWPL_JSON.exists():
+    LATEST_MWPL_JSON = CACHE_DIR / "mwpl_latest.json"
 
 INDIA_TZ = timezone(timedelta(hours=5, minutes=30))
 
@@ -298,16 +300,18 @@ def sync_latest_mwpl_data(force: bool = False) -> tuple[dict[str, dict], set[str
             "bannedSymbols": found_banned,
         }
         # Persist to JSON cache
-        try:
-            with open(LATEST_MWPL_JSON, "w", encoding="utf-8") as f:
-                json.dump({
-                    "ts": now,
-                    "asOfDate": as_of_date_str,
-                    "records": found_records,
-                    "bannedSymbols": list(found_banned),
-                }, f, indent=2)
-        except Exception as e:
-            logger.debug(f"Error writing {LATEST_MWPL_JSON}: {e}")
+        for p in (ROOT / "data" / "mwpl_official.json", CACHE_DIR / "mwpl_latest.json"):
+            try:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                with open(p, "w", encoding="utf-8") as f:
+                    json.dump({
+                        "ts": now,
+                        "asOfDate": as_of_date_str,
+                        "records": found_records,
+                        "bannedSymbols": list(found_banned),
+                    }, f, indent=2)
+            except Exception as e:
+                logger.debug(f"Error writing {p}: {e}")
 
     return found_records, found_banned, as_of_date_str
 
