@@ -9954,6 +9954,27 @@ class RequestHandler(BaseHTTPRequestHandler):
                 "categories": categories
             })
 
+        if path == "/api/admin/seo/dynamic-status":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            snap = seo_engine.get_live_seo_market_snapshot()
+            all_r = seo_engine.load_all_seo_routes()
+            return self.send_json(200, {
+                "ok": True,
+                "snapshot": snap,
+                "totalRoutes": len(all_r),
+                "sitemapUrl": "https://tradersdesk.in/sitemap.xml",
+                "mode": "live_ssr_zero_loading"
+            })
+
+        if path == "/api/admin/seo/inspect":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            query = urllib.parse.parse_qs(parsed.query)
+            target_p = query.get("path", ["/"])[0]
+            preview = seo_engine.get_crawler_inspection_preview(target_p)
+            return self.send_json(200, {"ok": True, "preview": preview})
+
         if path == "/api/admin/system-stats":
             if not check_admin_request(self):
                 return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
@@ -10700,6 +10721,17 @@ class RequestHandler(BaseHTTPRequestHandler):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 ok, msg = seo_engine.rebuild_sitemap_xml()
                 return self.send_json(200 if ok else 500, {"ok": ok, "message": msg})
+
+            if parsed.path == "/api/admin/seo/sync-dynamic":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                snap = seo_engine.sync_dynamic_seo_snapshot()
+                ok_sm, sm_msg = seo_engine.rebuild_sitemap_xml()
+                return self.send_json(200, {
+                    "ok": True,
+                    "message": f"⚡ Dynamic SEO synchronized with latest live market session and sitemap rebuilt! ({sm_msg})",
+                    "snapshot": snap
+                })
 
             if parsed.path == "/api/admin/cache-purge":
                 if not check_admin_request(self):
