@@ -4745,20 +4745,12 @@ function renderDeliveryDashboard(data) {
 
           <div class="deliv-card-mid">
             <span class="deliv-hero-pct">${dailyPct.toFixed(1)}%</span>
-            <span class="deliv-hero-cr">₹${Math.round(dailyCr).toLocaleString('en-IN')} Cr</span>
             <span class="deliv-bm-delta ${deltaBadgeClass}">${deltaSign}${deltaVsMonth}%</span>
           </div>
 
-          <div class="deliv-progress-container" title="Delivery: ${dailyPct.toFixed(1)}% | 30D Avg: ${monthPct.toFixed(1)}%">
-            <div class="deliv-progress-track">
-              <div class="deliv-progress-fill" style="width:${progressPct}%; background:${progressColor};"></div>
-              <div class="deliv-progress-pin" style="left:${monthBenchmarkPct}%;" title="30D Benchmark: ${monthPct.toFixed(1)}%"></div>
-            </div>
-          </div>
-
           <div class="deliv-card-subline">
-            <span>30D: <strong>${monthPct.toFixed(1)}%</strong></span>
-            <span>Prev: <strong>${prevPct.toFixed(1)}%</strong></span>
+            <span class="deliv-hero-cr">₹${Math.round(dailyCr).toLocaleString('en-IN')} Cr</span>
+            <span class="deliv-30d-lbl">30D: <strong>${monthPct.toFixed(1)}%</strong></span>
           </div>
         </div>
       `;

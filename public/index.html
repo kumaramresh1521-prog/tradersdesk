@@ -3241,10 +3241,11 @@
         </section>
 
         <!-- FII / DII Desk Sub-Navigation Tabs -->
-        <div class="fii-dii-subtabs" style="display:flex; gap:10px; margin-bottom:14px; border-bottom:1px solid var(--border-subtle); padding-bottom:10px; flex-wrap:wrap;">
-          <button type="button" id="btnFiiSubtabCash" class="ctrl-btn fii-dii-subtab-btn active" style="font-weight:700; font-size:12px; padding:7px 16px; cursor:pointer;">💵 Cash Market Flow</button>
-          <button type="button" id="btnFiiSubtabDeriv" class="ctrl-btn fii-dii-subtab-btn" style="font-weight:700; font-size:12px; padding:7px 16px; cursor:pointer;">⚡ F&amp;O Institutional Flow</button>
-          <button type="button" id="btnFiiSubtabOi" class="ctrl-btn fii-dii-subtab-btn" style="font-weight:700; font-size:12px; padding:7px 16px; cursor:pointer;">📋 Open Interest Matrix</button>
+        <!-- FII / DII Desk Sub-Navigation Tabs -->
+        <div class="fii-dii-subtabs">
+          <button type="button" id="btnFiiSubtabCash" class="fii-dii-subtab-btn active">Cash Market Flow</button>
+          <button type="button" id="btnFiiSubtabDeriv" class="fii-dii-subtab-btn">F&amp;O Institutional Flow</button>
+          <button type="button" id="btnFiiSubtabOi" class="fii-dii-subtab-btn">Open Interest Matrix</button>
         </div>
 
         <!-- ================================================================
@@ -3253,25 +3254,25 @@
         <div id="p1FiiSubtabCash" class="fii-dii-subpanel" style="display:block;">
 
           <!-- Controls Bar: Period Switcher, View Switcher & Range -->
-          <div class="sm-card" style="margin-bottom: 14px; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 12px 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <div class="fii-period-switcher" id="p1FiiPeriodGroup" style="display: inline-flex; border: 1px solid var(--border-default); border-radius: 6px; overflow: hidden;">
-                  <button type="button" class="fii-period-btn active" data-period="daily" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; border: none; background: #2563eb; color: #fff; cursor: pointer;">DAILY</button>
-                  <button type="button" class="fii-period-btn" data-period="monthly" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; border: none; background: transparent; color: var(--text-secondary); cursor: pointer;">MONTHLY</button>
-                  <button type="button" class="fii-period-btn" data-period="yearly" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; border: none; background: transparent; color: var(--text-secondary); cursor: pointer;">YEARLY</button>
+          <div class="fii-controls-card">
+            <div class="fii-controls-inner">
+              <div class="fii-controls-left">
+                <div class="fii-period-switcher" id="p1FiiPeriodGroup">
+                  <button type="button" class="fii-period-btn active" data-period="daily">DAILY</button>
+                  <button type="button" class="fii-period-btn" data-period="monthly">MONTHLY</button>
+                  <button type="button" class="fii-period-btn" data-period="yearly">YEARLY</button>
                 </div>
-                <div class="fii-view-switcher" id="p1FiiViewGroup" style="display: inline-flex; border: 1px solid var(--border-default); border-radius: 6px; overflow: hidden;">
-                  <button type="button" class="fii-view-btn active" data-view="net" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; border: none; background: #2563eb; color: #fff; cursor: pointer;">NET FLOW</button>
-                  <button type="button" class="fii-view-btn" data-view="fii" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; border: none; background: transparent; color: var(--text-secondary); cursor: pointer;">FII ONLY</button>
-                  <button type="button" class="fii-view-btn" data-view="dii" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; border: none; background: transparent; color: var(--text-secondary); cursor: pointer;">DII ONLY</button>
+                <div class="fii-view-switcher" id="p1FiiViewGroup">
+                  <button type="button" class="fii-view-btn active" data-view="net">NET FLOW</button>
+                  <button type="button" class="fii-view-btn" data-view="fii">FII ONLY</button>
+                  <button type="button" class="fii-view-btn" data-view="dii">DII ONLY</button>
                 </div>
               </div>
 
-              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <label style="font-size: 11.5px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+              <div class="fii-controls-right">
+                <label class="fii-range-label">
                   <span>Sessions:</span>
-                  <select id="p1FiiRangeSelect" class="ctrl-select" style="font-size: 11.5px; padding: 4px 10px; font-weight: 600;">
+                  <select id="p1FiiRangeSelect" class="fii-ctrl-select">
                     <option value="15">Last 15 Sessions</option>
                     <option value="30" selected>Last 30 Sessions</option>
                     <option value="60">Last 60 Sessions</option>
@@ -3283,41 +3284,41 @@
           </div>
 
           <!-- 4 Summary KPI Cards Strip -->
-          <div class="p1-fii-kpi-row" id="p1FiiKpiRow" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 14px;">
-            <div class="sm-card" style="background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 12px 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">TOTAL INSTITUTIONAL NET</span>
-                <span id="p1FiiBadgeTotal" style="font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: rgba(16,185,129,0.15); color: #10b981;">INFLOW</span>
+          <div class="p1-fii-kpi-row" id="p1FiiKpiRow">
+            <div class="fii-kpi-card">
+              <div class="fii-kpi-head">
+                <span class="fii-kpi-lbl">TOTAL INSTITUTIONAL NET</span>
+                <span id="p1FiiBadgeTotal" class="fii-kpi-pill bullish">INFLOW</span>
               </div>
-              <div id="p1FiiValTotal" style="font-size: 18px; font-weight: 900; color: #10b981; font-family: 'JetBrains Mono', monospace;">+₹0.00 Cr</div>
-              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;" id="p1FiiSubTotal">Combined FII + DII Net</div>
+              <div id="p1FiiValTotal" class="fii-kpi-val">+₹0.00 Cr</div>
+              <div class="fii-kpi-sub" id="p1FiiSubTotal">Combined FII + DII Net</div>
             </div>
 
-            <div class="sm-card" style="background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 12px 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">FII / FPI CASH NET</span>
-                <span id="p1FiiBadgeFii" style="font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: rgba(56,189,248,0.15); color: #38bdf8;">BUYERS</span>
+            <div class="fii-kpi-card">
+              <div class="fii-kpi-head">
+                <span class="fii-kpi-lbl">FII / FPI CASH NET</span>
+                <span id="p1FiiBadgeFii" class="fii-kpi-pill bullish">BUYERS</span>
               </div>
-              <div id="p1FiiValFii" style="font-size: 18px; font-weight: 900; color: #10b981; font-family: 'JetBrains Mono', monospace;">+₹0.00 Cr</div>
-              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;">Buy: <strong id="p1FiiBuyVal">₹0 Cr</strong> | Sell: <strong id="p1FiiSellVal">₹0 Cr</strong></div>
+              <div id="p1FiiValFii" class="fii-kpi-val">+₹0.00 Cr</div>
+              <div class="fii-kpi-sub">Buy: <strong id="p1FiiBuyVal">₹0 Cr</strong> · Sell: <strong id="p1FiiSellVal">₹0 Cr</strong></div>
             </div>
 
-            <div class="sm-card" style="background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 12px 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">DII DOMESTIC CASH NET</span>
-                <span id="p1FiiBadgeDii" style="font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: rgba(56,189,248,0.15); color: #38bdf8;">BUYERS</span>
+            <div class="fii-kpi-card">
+              <div class="fii-kpi-head">
+                <span class="fii-kpi-lbl">DII DOMESTIC CASH NET</span>
+                <span id="p1FiiBadgeDii" class="fii-kpi-pill bullish">BUYERS</span>
               </div>
-              <div id="p1FiiValDii" style="font-size: 18px; font-weight: 900; color: #10b981; font-family: 'JetBrains Mono', monospace;">+₹0.00 Cr</div>
-              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;">Buy: <strong id="p1DiiBuyVal">₹0 Cr</strong> | Sell: <strong id="p1DiiSellVal">₹0 Cr</strong></div>
+              <div id="p1FiiValDii" class="fii-kpi-val">+₹0.00 Cr</div>
+              <div class="fii-kpi-sub">Buy: <strong id="p1DiiBuyVal">₹0 Cr</strong> · Sell: <strong id="p1DiiSellVal">₹0 Cr</strong></div>
             </div>
 
-            <div class="sm-card" style="background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 12px 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">NIFTY 50 BENCHMARK</span>
-                <span id="p1FiiBadgeNifty" style="font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: rgba(16,185,129,0.15); color: #10b981;">SPOT</span>
+            <div class="fii-kpi-card">
+              <div class="fii-kpi-head">
+                <span class="fii-kpi-lbl">NIFTY 50 BENCHMARK</span>
+                <span id="p1FiiBadgeNifty" class="fii-kpi-pill neutral">SPOT</span>
               </div>
-              <div id="p1FiiValNifty" style="font-size: 18px; font-weight: 900; color: var(--text-primary); font-family: 'JetBrains Mono', monospace;">--</div>
-              <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;" id="p1FiiSubNifty">Session Change: --</div>
+              <div id="p1FiiValNifty" class="fii-kpi-val">--</div>
+              <div class="fii-kpi-sub" id="p1FiiSubNifty">Session Change: --</div>
             </div>
           </div>
 
@@ -3325,7 +3326,7 @@
           <div class="sm-card sm-table-card" style="margin-bottom: 16px; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 14px;">
             <div class="sm-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; margin-bottom: 12px;">
               <div>
-                <h4 style="margin: 0; font-size: 14.5px; font-weight: 800; color: var(--text-primary);">📊 FII / FPI &amp; DII Cash Market Daily Net Flow</h4>
+                <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.2px;">FII / FPI &amp; DII Cash Market Daily Net Flow</h4>
                 <span class="matrix-subtitle" style="font-size: 11.5px; color: var(--text-muted);">Official daily turnover figures in ₹ Crores reported by NSE</span>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -3362,55 +3363,55 @@
         <div id="p1FiiSubtabDeriv" class="fii-dii-subpanel" style="display:none;">
           
           <!-- F&O Summary KPI Cards -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 16px;">
+          <div class="fii-deriv-kpi-grid">
             <!-- Card 1: FII Index Futures Flow -->
-            <div class="sm-card" style="background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 14px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; margin-bottom: 10px;">
-                <span style="font-size: 12px; font-weight: 800; color: var(--text-primary);">📊 FII INDEX FUTURES NET</span>
-                <span class="stats-badge bearish" id="p1FiiFutBadge">SELLERS</span>
+            <div class="fii-kpi-card">
+              <div class="fii-kpi-head">
+                <span class="fii-kpi-lbl">FII INDEX FUTURES NET</span>
+                <span class="fii-kpi-pill bearish" id="p1FiiFutBadge">SELLERS</span>
               </div>
-              <div id="p1FiiFutNetVal" style="font-size: 20px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--red);">-₹328.08 Cr</div>
-              <div id="p1FiiFutSub" style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Buy: ₹1,816 Cr | Sell: ₹2,144 Cr</div>
+              <div id="p1FiiFutNetVal" class="fii-kpi-val bearish">-₹328.08 Cr</div>
+              <div id="p1FiiFutSub" class="fii-kpi-sub">Buy: ₹1,816 Cr · Sell: ₹2,144 Cr</div>
             </div>
 
             <!-- Card 2: FII Stock Futures Flow -->
-            <div class="sm-card" style="background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 14px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; margin-bottom: 10px;">
-                <span style="font-size: 12px; font-weight: 800; color: var(--text-primary);">📈 FII STOCK FUTURES NET</span>
-                <span class="stats-badge bullish" id="p1FiiStkBadge">BUYERS</span>
+            <div class="fii-kpi-card">
+              <div class="fii-kpi-head">
+                <span class="fii-kpi-lbl">FII STOCK FUTURES NET</span>
+                <span class="fii-kpi-pill bullish" id="p1FiiStkBadge">BUYERS</span>
               </div>
-              <div id="p1FiiStkNetVal" style="font-size: 20px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--green);">+₹15.65 Cr</div>
-              <div id="p1FiiStkSub" style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Buy: ₹13,876 Cr | Sell: ₹13,860 Cr</div>
+              <div id="p1FiiStkNetVal" class="fii-kpi-val bullish">+₹15.65 Cr</div>
+              <div id="p1FiiStkSub" class="fii-kpi-sub">Buy: ₹13,876 Cr · Sell: ₹13,860 Cr</div>
             </div>
 
             <!-- Card 3: FII Index Options Flow -->
-            <div class="sm-card" style="background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 14px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; margin-bottom: 10px;">
-                <span style="font-size: 12px; font-weight: 800; color: var(--text-primary);">⚡ FII INDEX OPTIONS NET</span>
-                <span class="stats-badge bullish" id="p1FiiOptBadge">INFLOW</span>
+            <div class="fii-kpi-card">
+              <div class="fii-kpi-head">
+                <span class="fii-kpi-lbl">FII INDEX OPTIONS NET</span>
+                <span class="fii-kpi-pill bullish" id="p1FiiOptBadge">INFLOW</span>
               </div>
-              <div id="p1FiiOptNetVal" style="font-size: 20px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--green);">+₹2,589.69 Cr</div>
-              <div id="p1FiiOptSub" style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Nifty: +₹2,442 Cr | BankNifty: +₹40 Cr</div>
+              <div id="p1FiiOptNetVal" class="fii-kpi-val bullish">+₹2,589.69 Cr</div>
+              <div id="p1FiiOptSub" class="fii-kpi-sub">Nifty: +₹2,442 Cr · BankNifty: +₹40 Cr</div>
             </div>
 
             <!-- Card 4: DII Option Hedging Stance -->
-            <div class="sm-card" style="background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 14px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; margin-bottom: 10px;">
-                <span style="font-size: 12px; font-weight: 800; color: var(--text-primary);">🛡️ DII DERIVATIVES HEDGE</span>
-                <span class="stats-badge bullish" id="p1DiiHedgeBadge">PE BUYERS</span>
+            <div class="fii-kpi-card">
+              <div class="fii-kpi-head">
+                <span class="fii-kpi-lbl">DII DERIVATIVES HEDGE</span>
+                <span class="fii-kpi-pill bullish" id="p1DiiHedgeBadge">PE BUYERS</span>
               </div>
-              <div id="p1DiiHedgeNetVal" style="font-size: 20px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--green);">+12,275 Puts</div>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Downside Protection &amp; Risk Hedging</div>
+              <div id="p1DiiHedgeNetVal" class="fii-kpi-val bullish">+12,275 Puts</div>
+              <div class="fii-kpi-sub">Downside Protection &amp; Risk Hedging</div>
             </div>
           </div>
 
           <!-- F&O Desk Internal Sub-Tab Switcher -->
-          <div class="fii-deriv-subtabs" style="display:flex; gap:10px; margin-bottom:14px; border-bottom:1px solid var(--border-subtle); padding-bottom:10px; flex-wrap:wrap;">
-            <button type="button" id="btnFiiDerivSubIndex" class="ctrl-btn active" style="font-weight:700; font-size:12px; padding:8px 18px; cursor:pointer; border-radius:6px;" onclick="switchFiiDerivSubtab('index')">
-              🏛️ 1. Index-Wise FII F&amp;O Turnover Breakdown
+          <div class="fii-deriv-subtabs">
+            <button type="button" id="btnFiiDerivSubIndex" class="fii-deriv-subtab-btn active" onclick="switchFiiDerivSubtab('index')">
+              Index-Wise FII F&amp;O Turnover
             </button>
-            <button type="button" id="btnFiiDerivSubAction" class="ctrl-btn" style="font-weight:700; font-size:12px; padding:8px 18px; cursor:pointer; border-radius:6px;" onclick="switchFiiDerivSubtab('action')">
-              🎯 2. Participant-Wise Daily Trading Action (Calls vs Puts Volume Flow)
+            <button type="button" id="btnFiiDerivSubAction" class="fii-deriv-subtab-btn" onclick="switchFiiDerivSubtab('action')">
+              Participant Daily Trading Action
             </button>
           </div>
 
@@ -3536,10 +3537,10 @@
         <div class="delivery-subtabs-wrap">
           <div class="delivery-subtabs" role="tablist" aria-label="Delivery Desk Views">
             <button type="button" id="btnDelivSubtabScan" class="deliv-subtab-btn active" role="tab" aria-selected="true">
-              <span class="deliv-subtab-icon">📊</span> <span>Scan Delivery Screener</span>
+              <span>Scan Delivery Screener</span>
             </button>
             <button type="button" id="btnDelivSubtabInspect" class="deliv-subtab-btn" role="tab" aria-selected="false">
-              <span class="deliv-subtab-icon">🔍</span> <span>Inspect Stock Delivery</span>
+              <span>Inspect Stock Delivery</span>
             </button>
           </div>
           <div class="delivery-desk-tagline">
@@ -3556,9 +3557,8 @@
               <div class="deliv-field-box">
                 <label for="delivSessionSelect" class="deliv-field-label">TRADING SESSION</label>
                 <div class="deliv-field-inner">
-                  <span class="deliv-field-icon">📅</span>
                   <select id="delivSessionSelect" class="deliv-ctrl-select">
-                    <option value="" disabled selected>⏳ Loading sessions...</option>
+                    <option value="" disabled selected>Loading sessions...</option>
                   </select>
                 </div>
               </div>
@@ -3579,25 +3579,23 @@
               <div class="deliv-field-box deliv-universe-box">
                 <label for="delivUniverseSelect" class="deliv-field-label">UNIVERSE / INDEX</label>
                 <div class="deliv-field-inner">
-                  <span class="deliv-field-icon">🌐</span>
                   <select id="delivUniverseSelect" class="deliv-ctrl-select">
                     <option value="nifty50" selected>Nifty 50 Constituents</option>
-                    <option value="banknifty">Bank Nifty (12 Banking Leaders)</option>
+                    <option value="banknifty">Bank Nifty (12 Banks)</option>
                     <option value="niftyit">Nifty IT (Tech Leaders)</option>
-                    <option value="niftyauto">Nifty Auto (Automobile Giants)</option>
+                    <option value="niftyauto">Nifty Auto (Automobiles)</option>
                     <option value="niftyfmcg">Nifty FMCG (Consumer Goods)</option>
-                    <option value="niftymetal">Nifty Metal (Steel &amp; Mining)</option>
+                    <option value="niftymetal">Nifty Metal (Metals &amp; Mining)</option>
                     <option value="niftypharma">Nifty Pharma (Healthcare)</option>
-                    <option value="niftyenergy">Nifty Energy (Oil/Gas &amp; Power)</option>
-                    <option value="finnifty">FinNifty (Financial Services)</option>
-                    <option value="fno">F&amp;O Liquid Equities</option>
+                    <option value="niftyenergy">Nifty Energy (Power &amp; Energy)</option>
+                    <option value="finnifty">FinNifty (Financials)</option>
+                    <option value="fno">F&amp;O Equities</option>
                     <option value="all">All Listed Equities (1800+)</option>
                   </select>
                 </div>
               </div>
 
               <button id="delivRefreshBtn" class="deliv-primary-action-btn" type="button" title="Rescan NSE Cash Deliveries">
-                <span class="deliv-btn-icon">🔄</span>
                 <span>Scan Deliveries</span>
               </button>
             </div>
@@ -3608,9 +3606,9 @@
             <div class="deliv-search-container">
               <div class="deliv-search-input-group">
                 <span class="deliv-search-lens">🔍</span>
-                <input type="text" id="delivSearchInput" class="deliv-search-field" placeholder="Search any Stock or Index (e.g. RELIANCE, TCS, NIFTY 50)..." autocomplete="off">
+                <input type="text" id="delivSearchInput" class="deliv-search-field" placeholder="Search any Stock or Index (e.g. RELIANCE, TCS, INFY)..." autocomplete="off">
                 <button id="delivInspectBtn" class="deliv-inspect-action-btn" type="button">
-                  <span>⚡ Inspect Delivery</span>
+                  <span>Inspect</span>
                 </button>
               </div>
 
@@ -3619,7 +3617,7 @@
             </div>
 
             <div class="deliv-status-container">
-              <span class="deliv-verified-badge" id="delivStatusBadge">🟢 NSE Cash Delivery Bhavcopy Active</span>
+              <span class="deliv-verified-badge" id="delivStatusBadge">● NSE Cash Delivery Verified</span>
             </div>
           </div>
         </section>
@@ -3628,35 +3626,33 @@
         <div class="deliv-indices-strip-card">
           <div class="deliv-indices-header">
             <div class="deliv-indices-title-wrap">
-              <span class="deliv-sector-badge">SECTOR BENCHMARKS</span>
-              <h4 class="deliv-indices-title">Major Indices Cash Delivery Absorption (EOD)</h4>
+              <span class="deliv-sector-badge">BENCHMARKS</span>
+              <h4 class="deliv-indices-title">Major Indices Delivery Absorption (EOD)</h4>
             </div>
-            <div class="deliv-indices-hint-pill">
-              <span>💡</span> Click an index card to filter stock matrix below
-            </div>
+            <div class="deliv-indices-hint-pill">Click index to filter stock matrix</div>
           </div>
           <div class="deliv-indices-grid" id="delivIndicesGrid">
             <!-- Populated dynamically -->
           </div>
         </div>
 
-          <!-- Filter Presets Bar -->
-          <div class="deliv-filter-bar" style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
-            <div class="filter-pill-group" id="delivFilterGroup" style="display:flex; gap:6px; flex-wrap:wrap;">
-              <button type="button" class="filter-pill active" data-filter="all">All Stocks</button>
-              <button type="button" class="filter-pill" data-filter="shocks">⚡ Volume Shocks (&gt;1.3x)</button>
-              <button type="button" class="filter-pill" data-filter="extreme_shocks">🚀 Extreme Surge (&gt;2.0x)</button>
-              <button type="button" class="filter-pill" data-filter="accumulation">🟢 Strong Accumulation</button>
-              <button type="button" class="filter-pill" data-filter="distribution">🔴 Heavy Distribution</button>
-              <button type="button" class="filter-pill" data-filter="high_deliv">💎 Ultra-High Deliv (&ge;60%)</button>
-              <button type="button" class="filter-pill" data-filter="turnover_leaders">🔥 Value Leaders (&gt;₹100 Cr)</button>
-              <button type="button" class="filter-pill" data-filter="bullish_deliv">📈 Price Up + Deliv Up</button>
-              <button type="button" class="filter-pill" data-filter="bearish_deliv">📉 Price Down + Deliv Up</button>
-            </div>
-            <div id="delivQuickSearchNotice" style="font-size:11.5px; color:#64748b; font-weight:600;">
-              💡 Tip: Click any column header to sort (▲/▼). Use quick filter chips above for instant screening.
-            </div>
+        <!-- Filter Presets Bar -->
+        <div class="deliv-filter-bar">
+          <div class="filter-pill-group" id="delivFilterGroup">
+            <button type="button" class="filter-pill active" data-filter="all">All Stocks</button>
+            <button type="button" class="filter-pill" data-filter="shocks">Volume Shocks (&gt;1.3x)</button>
+            <button type="button" class="filter-pill" data-filter="extreme_shocks">Extreme Surge (&gt;2.0x)</button>
+            <button type="button" class="filter-pill" data-filter="accumulation"><span class="pill-dot green"></span>Strong Accumulation</button>
+            <button type="button" class="filter-pill" data-filter="distribution"><span class="pill-dot red"></span>Heavy Distribution</button>
+            <button type="button" class="filter-pill" data-filter="high_deliv">High Delivery (&ge;60%)</button>
+            <button type="button" class="filter-pill" data-filter="turnover_leaders">Value Leaders (&gt;₹100 Cr)</button>
+            <button type="button" class="filter-pill" data-filter="bullish_deliv">Price ↑ + Delivery ↑</button>
+            <button type="button" class="filter-pill" data-filter="bearish_deliv">Price ↓ + Delivery ↑</button>
           </div>
+          <div id="delivQuickSearchNotice" class="deliv-hint-text">
+            Click column headers to sort · Click filter chips to screen
+          </div>
+        </div>
 
           <!-- NSE Official Stock Delivery Inspector Card -->
           <div class="nse-stock-inspector" id="stockInspectorCard" style="display:none; margin-bottom:16px; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.06);">
