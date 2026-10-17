@@ -9784,6 +9784,17 @@ class RequestHandler(BaseHTTPRequestHandler):
             dash = futures_engine.get_futures_dashboard(force_refresh=force)
             return self.send_json(200, {"ok": True, "movers": dash.get("marketMovers", {}), "date": dash.get("date"), "asOfDate": dash.get("asOfDate"), "isLive": dash.get("isLive")})
 
+        if path == "/api/futures/open-interest":
+            import future_oi_engine
+            query = urllib.parse.parse_qs(parsed.query)
+            sym = query.get("symbol", ["NIFTY"])[0].strip().upper()
+            force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
+            return self.send_json(200, future_oi_engine.compute_future_open_interest_analytics(sym, force_refresh=force))
+
+        if path == "/api/futures/open-interest/symbols":
+            import future_oi_engine
+            return self.send_json(200, {"ok": True, "symbols": future_oi_engine.get_all_futures_symbols()})
+
         if path == "/api/futures/screener":
             query = urllib.parse.parse_qs(parsed.query)
             sector = query.get("sector", ["ALL"])[0]
@@ -10447,6 +10458,17 @@ class RequestHandler(BaseHTTPRequestHandler):
                 force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
                 dash = futures_engine.get_futures_dashboard(force_refresh=force)
                 return self.send_json(200, {"ok": True, "movers": dash.get("marketMovers", {}), "date": dash.get("date"), "asOfDate": dash.get("asOfDate"), "isLive": dash.get("isLive")})
+
+            if parsed.path == "/api/futures/open-interest":
+                import future_oi_engine
+                payload = self.read_body()
+                sym = str(payload.get("symbol", "NIFTY")).strip().upper()
+                force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
+                return self.send_json(200, future_oi_engine.compute_future_open_interest_analytics(sym, force_refresh=force))
+
+            if parsed.path == "/api/futures/open-interest/symbols":
+                import future_oi_engine
+                return self.send_json(200, {"ok": True, "symbols": future_oi_engine.get_all_futures_symbols()})
 
             if parsed.path == "/api/futures/screener":
                 payload = self.read_body()

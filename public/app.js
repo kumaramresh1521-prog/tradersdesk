@@ -11648,6 +11648,18 @@ const ROUTE_CONFIG = {
     title: "Futures Rollover Matrix - Expiry Rollover Tracker | TradersDesk",
     desc: "Institutional expiry rollover matrix, rollover percentage, and rollover cost tracking."
   },
+  "/futures/open-interest": {
+    desk: "futures",
+    subview: "openInterest",
+    title: "Future Open Interest & Buildup Analytics | TradersDesk",
+    desc: "Interactive EOD and real-time multi-panel futures candlestick charts, open interest buildup, delivery %, RSI, and Option Chain Max Pain."
+  },
+  "/futures/oi": {
+    desk: "futures",
+    subview: "openInterest",
+    title: "Future Open Interest & Buildup Analytics | TradersDesk",
+    desc: "Interactive EOD and real-time multi-panel futures candlestick charts, open interest buildup, delivery %, RSI, and Option Chain Max Pain."
+  },
   "/market-breadth": {
     desk: "breadth",
     title: "Market Breadth & Point and Figure (PnF) Analytics Desk | TradersDesk",

@@ -86,6 +86,13 @@
       desc: "Cash-futures basis spread, cost of carry & multi-expiry rollover term structure for benchmark indices.",
       showSearch: false
     },
+    openInterest: {
+      title: "FUTURE OPEN INTEREST & BUILDUP",
+      countBadge: "260+ CONTRACTS",
+      icon: "⚡",
+      desc: "Interactive EOD & real-time multi-panel futures chart, open interest buildup dynamics & option chain max pain.",
+      showSearch: false
+    },
     buildup: {
       title: "FUTURE BUILDUP QUADRANTS",
       countBadge: "4 QUADRANTS",
@@ -121,6 +128,7 @@
     // Aliases for compatibility
     if (tabName === 'dashboard' || tabName === 'screener' || tabName === 'marketwatch') tabName = 'matrix';
     if (tabName === 'termstructure' || tabName === 'basis') tabName = 'indices';
+    if (tabName === 'openinterest' || tabName === 'open-interest' || tabName === 'oi' || tabName === 'future-oi' || tabName === 'future-open-interest') tabName = 'openInterest';
 
     state.activeSubTab = tabName;
 
@@ -141,7 +149,7 @@
       btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    const views = ['matrix', 'indices', 'buildup', 'heatmap', 'mwpl', 'rollover'];
+    const views = ['matrix', 'openInterest', 'indices', 'buildup', 'heatmap', 'mwpl', 'rollover'];
     views.forEach(v => {
       const el = document.getElementById(`futView_${v}`);
       if (el) {
@@ -154,7 +162,7 @@
     // Sync clean URL when navigating within Futures Desk
     try {
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/futures")) {
-        const futSubUrl = tabName === "matrix" ? "/futures" : `/futures/${tabName}`;
+        const futSubUrl = tabName === "matrix" ? "/futures" : (tabName === "openInterest" ? "/futures/open-interest" : `/futures/${tabName}`);
         if (window.location.pathname !== futSubUrl && typeof history !== "undefined" && history.pushState) {
           history.pushState({ desk: "futures", subview: tabName }, document.title, futSubUrl);
         }
@@ -166,6 +174,7 @@
     const p1 = loadBenchmarkRibbon(forceRefresh);
     let p2;
     if (state.activeSubTab === 'matrix') p2 = loadMatrix(forceRefresh);
+    else if (state.activeSubTab === 'openInterest') p2 = loadFutureOpenInterestView(forceRefresh);
     else if (state.activeSubTab === 'indices') p2 = loadIndicesDetailView(forceRefresh);
     else if (state.activeSubTab === 'buildup') p2 = loadBuildupView(forceRefresh);
     else if (state.activeSubTab === 'heatmap') p2 = loadHeatmapView(forceRefresh);
@@ -1180,6 +1189,1177 @@
     URL.revokeObjectURL(url);
   }
 
+  // =========================================================================
+  // --- SUBTAB: FUTURE OPEN INTEREST & CANVAS TERMINAL ENGINE ---
+  // =========================================================================
+
+  const oiState = {
+    currentSymbol: 'NIFTY',
+    symbolMeta: { s: 'NIFTY', n: 'Nifty 50 Futures', k: 'Index', st: 100 },
+    symbolsList: [],
+    allBars: [],
+    visibleStart: 0,
+    visibleCount: 9999,
+    hoverX: -1,
+    hoverY: -1,
+    drag: null,
+    optionChain: [],
+    atmStrike: 0,
+    maxPain: 0,
+    chainPcr: 1.0,
+    indicators: {
+      line: false,
+      m20: true,
+      m50: false,
+      bb: false,
+      sr: true,
+      rsi: true,
+      iv: true,
+      dv: true,
+      pcr: true
+    },
+    hiddenCategories: [false, false, false, false],
+    isLoading: false,
+    initializedEvents: false,
+    analyticsData: null
+  };
+
+  const OI_COLORS = ['#10b981', '#ef4444', '#06b6d4', '#f59e0b']; // LB (green), SB (red), SC (cyan), LU (amber)
+  const OI_NAMES = ['Long Buildup', 'Short Buildup', 'Short Covering', 'Long Unwinding'];
+
+  function getOiColor(k) {
+    const isLight = document.body.classList.contains('light-theme') || document.documentElement.getAttribute('data-theme') === 'light';
+    switch (k) {
+      case '--bg': return isLight ? '#ffffff' : '#0e1117';
+      case '--card': return isLight ? '#f4f5f8' : '#171b24';
+      case '--tx': return isLight ? '#1e293b' : '#f1f5f9';
+      case '--mu': return isLight ? '#64748b' : '#94a3b8';
+      case '--gr': return isLight ? '#e2e8f0' : '#1e293b';
+      case '--up': return '#10b981';
+      case '--dn': return '#ef4444';
+      case '--lu': return '#06b6d4';
+      case '--lw': return '#f59e0b';
+      case '--vol': return '#6366f1';
+      case '--ac': return '#38bdf8';
+      default: return '#94a3b8';
+    }
+  }
+
+  function formatOiDate(d) {
+    if (!d || !(d instanceof Date) || isNaN(d.getTime())) return '--';
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function formatOiDateShort(d) {
+    if (!d || !(d instanceof Date) || isNaN(d.getTime())) return '--';
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  }
+
+  async function loadFutureOpenInterestView(forceRefresh = false) {
+    initFutureOiEvents();
+    if (!oiState.symbolsList || oiState.symbolsList.length === 0) {
+      await fetchFutureOiSymbols();
+    }
+    await fetchFutureOiData(oiState.currentSymbol, forceRefresh);
+  }
+
+  async function fetchFutureOiSymbols() {
+    try {
+      const res = await fetch('/api/futures/open-interest/symbols');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.symbols) {
+        oiState.symbolsList = data.symbols;
+        renderFutureOiWatchlist();
+      }
+    } catch (err) {
+      console.warn('Error fetching OI symbols:', err);
+    }
+  }
+
+  async function fetchFutureOiData(symbol, forceRefresh = false) {
+    if (oiState.isLoading) return;
+    oiState.isLoading = true;
+    oiState.currentSymbol = symbol;
+
+    const helpMsg = document.getElementById('futOiHelpMsg');
+    if (helpMsg) helpMsg.textContent = '⏳ Loading analytics for ' + symbol + '...';
+
+    try {
+      const url = `/api/futures/open-interest?symbol=${encodeURIComponent(symbol)}${forceRefresh ? '&refresh=true&_t=' + Date.now() : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!data || !data.ok) throw new Error(data ? data.error || 'Failed to compute analytics' : 'No data');
+
+      oiState.analyticsData = data;
+      oiState.symbolMeta = {
+        s: data.symbol,
+        n: data.name || data.symbol,
+        k: data.kind || (['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 'NIFTYNXT50', 'SENSEX', 'BANKEX'].includes(data.symbol) ? 'Index' : 'Stock'),
+        st: data.strikeStep || 50
+      };
+
+      const sessions = (data.sessions || []).map(s => {
+        let dtObj = new Date(s.dt);
+        if (isNaN(dtObj.getTime())) dtObj = new Date();
+        return {
+          dt: dtObj,
+          o: Number(s.o || 0),
+          h: Number(s.h || 0),
+          l: Number(s.l || 0),
+          c: Number(s.c || 0),
+          v: Number(s.v || 0),
+          oi: Number(s.oi || 0),
+          iv: s.iv !== null && s.iv !== undefined ? Number(s.iv) : 15.0,
+          dv: s.dv !== null && s.dv !== undefined ? Number(s.dv) : 50.0,
+          pcr: s.pcr !== null && s.pcr !== undefined ? Number(s.pcr) : 1.0,
+          m20: s.m20 !== null && s.m20 !== undefined ? Number(s.m20) : null,
+          m50: s.m50 !== null && s.m50 !== undefined ? Number(s.m50) : null,
+          bu: s.bu !== null && s.bu !== undefined ? Number(s.bu) : null,
+          bl: s.bl !== null && s.bl !== undefined ? Number(s.bl) : null,
+          rsi: s.rsi !== null && s.rsi !== undefined ? Number(s.rsi) : null,
+          cat: s.cat !== null && s.cat !== undefined ? Number(s.cat) : 0
+        };
+      });
+
+      oiState.allBars = sessions;
+      oiState.optionChain = data.optionChain || [];
+      oiState.atmStrike = data.atmStrike || 0;
+      oiState.maxPain = data.maxPain || 0;
+      oiState.chainPcr = data.pcr || 1.0;
+
+      oiState.visibleCount = Math.min(oiState.visibleCount || 9999, sessions.length);
+      oiState.visibleStart = Math.max(0, sessions.length - oiState.visibleCount);
+
+      const ttlEl = document.getElementById('futOiTitle');
+      if (ttlEl) ttlEl.textContent = `${data.symbol} · ${data.name || 'Futures Analytics & OI Buildup'}`;
+      const kindBadge = document.getElementById('futOiKindBadge');
+      if (kindBadge) kindBadge.textContent = oiState.symbolMeta.k.toUpperCase();
+
+      renderFutureOiWatchlist();
+      drawFutureOiCanvas();
+      drawFutureOiOcCanvas();
+
+      if (helpMsg) helpMsg.textContent = `💡 ${sessions.length} sessions loaded. Drag = Pan • Scroll = Zoom`;
+    } catch (err) {
+      console.error('Error loading OI data:', err);
+      if (helpMsg) helpMsg.textContent = `⚠️ Error loading ${symbol}: ${err.message}`;
+    } finally {
+      oiState.isLoading = false;
+    }
+  }
+
+  function renderFutureOiWatchlist() {
+    const ribbon = document.getElementById('futOiWatchlistRibbon');
+    if (!ribbon) return;
+
+    const defaultSymbols = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'RELIANCE', 'TCS', 'HDFCBANK', 'ICICIBANK', 'INFY', 'SBIN', 'BHARTIARTL', 'LT', 'AXISBANK', 'TATAMOTORS', 'TATASTEEL'];
+    
+    const list = defaultSymbols.map(sym => {
+      const found = (oiState.symbolsList || []).find(x => x.symbol === sym);
+      return found || { symbol: sym, ltp: 0, changePct: 0 };
+    });
+
+    ribbon.innerHTML = list.map(item => {
+      const isSel = (oiState.currentSymbol === item.symbol);
+      const isPos = (item.changePct || 0) >= 0;
+      const chgColor = isSel ? '#ffffff' : (isPos ? '#10b981' : '#ef4444');
+      const sign = isPos ? '+' : '';
+      const priceStr = item.ltp ? ` ₹${fmtNum(item.ltp, 1)}` : '';
+      const chgStr = item.changePct ? ` <span style="color:${chgColor}; font-weight:700;">${sign}${fmtNum(item.changePct, 2)}%</span>` : '';
+
+      return `
+        <button type="button" class="fut-oi-b ${isSel ? 'on' : ''}" data-s="${item.symbol}">
+          <b>${item.symbol}</b>${priceStr}${chgStr}
+        </button>
+      `;
+    }).join('');
+  }
+
+  function getOiSupportResistance(vis, lastClose) {
+    const m = vis.length;
+    if (m < 10) return [];
+    const P = [];
+    for (let i = 4; i < m - 4; i++) {
+      const w = vis.slice(i - 4, i + 5);
+      if (vis[i].h === Math.max(...w.map(d => d.h))) P.push(vis[i].h);
+      if (vis[i].l === Math.min(...w.map(d => d.l))) P.push(vis[i].l);
+    }
+    P.sort((a, b) => a - b);
+    const L = [];
+    P.forEach(p => {
+      const q = L[L.length - 1];
+      if (q && Math.abs(p - q.p) / q.p < 0.005) {
+        q.p = (q.p * q.n + p) / (q.n + 1);
+        q.n++;
+      } else {
+        L.push({ p, n: 1 });
+      }
+    });
+    return [
+      ...L.filter(x => x.p < lastClose).slice(-2),
+      ...L.filter(x => x.p >= lastClose).slice(0, 2)
+    ].map(x => ({ p: x.p, r: x.p >= lastClose }));
+  }
+
+  function drawFutureOiCanvas() {
+    const cv = document.getElementById('futOiCanvas');
+    if (!cv) return;
+    const cx = cv.getContext('2d');
+    if (!cx) return;
+
+    if (!oiState.allBars || oiState.allBars.length === 0) {
+      cx.clearRect(0, 0, cv.width, cv.height);
+      return;
+    }
+
+    const dpr = window.devicePixelRatio || 1;
+    const isStock = oiState.symbolMeta.k === 'Stock';
+    const exPanels = [
+      oiState.indicators.rsi,
+      oiState.indicators.dv && isStock,
+      oiState.indicators.iv,
+      oiState.indicators.pcr
+    ].filter(Boolean).length;
+
+    const baseH = 430 + exPanels * 90;
+    cv.style.height = baseH + 'px';
+    const W = cv.clientWidth || 800;
+    const H = cv.clientHeight || baseH;
+    cv.width = W * dpr;
+    cv.height = H * dpr;
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const PL = 60, PR = 65, PT = 8;
+    const wt = [
+      5.0, // 0: Price Candles/Line
+      1.2, // 1: Volume
+      1.5, // 2: OI Bars
+      oiState.indicators.rsi ? 1.3 : 0, // 3: RSI
+      (oiState.indicators.dv && isStock) ? 1.3 : 0, // 4: Delivery %
+      oiState.indicators.iv ? 1.3 : 0, // 5: IV
+      oiState.indicators.pcr ? 1.3 : 0 // 6: PCR
+    ];
+    const tw = wt.reduce((a, b) => a + b, 0);
+    const f = wt.map(x => x / tw);
+    const availableH = H - PT - 24 - 12 - wt.filter(Boolean).length * 4;
+    let currY = PT;
+    const PN = f.map(x => {
+      const r = [currY, currY + x * availableH];
+      currY += x * availableH + (x > 0 ? 4 : 0);
+      return r;
+    });
+
+    const vis = oiState.allBars.slice(oiState.visibleStart, oiState.visibleStart + oiState.visibleCount);
+    if (!vis.length) return;
+    const m = vis.length;
+    const x0 = PL, x1 = W - PR;
+    const bw = Math.max(1, (x1 - x0) / m);
+    const X = i => x0 + bw * (i + 0.5);
+
+    cx.clearRect(0, 0, W, H);
+    cx.font = '11px system-ui, -apple-system, sans-serif';
+
+    const grCol = getOiColor('--gr');
+    const muCol = getOiColor('--mu');
+    const txCol = getOiColor('--tx');
+    const bgCol = getOiColor('--bg');
+    const cardCol = getOiColor('--card');
+
+    let mn = Math.min(...vis.map(d => d.l));
+    let mx = Math.max(...vis.map(d => d.h));
+    if (oiState.indicators.bb) {
+      vis.forEach(d => {
+        if (d.bu) mx = Math.max(mx, d.bu);
+        if (d.bl) mn = Math.min(mn, d.bl);
+      });
+    }
+    const pd = Math.max(1, (mx - mn) * 0.05);
+    mn -= pd;
+    mx += pd;
+
+    const vm = Math.max(1, ...vis.map(d => d.v)) * 1.05;
+    const omn = Math.min(...vis.map(d => d.oi)) * 0.92;
+    const omx = Math.max(1, ...vis.map(d => d.oi)) * 1.02;
+
+    const Y = (v, r, a, b) => {
+      const span = b - a || 1;
+      return r[1] - ((v - a) / span) * (r[1] - r[0]);
+    };
+    const yp = v => Y(v, PN[0], mn, mx);
+
+    // Grid lines and price axis labels
+    cx.strokeStyle = grCol;
+    cx.fillStyle = muCol;
+    cx.textAlign = 'right';
+    for (let k = 0; k <= 4; k++) {
+      const v = mn + ((mx - mn) * k) / 4;
+      const y = yp(v);
+      cx.beginPath();
+      cx.moveTo(x0, y);
+      cx.lineTo(x1, y);
+      cx.stroke();
+      cx.fillText(fmtNum(v, (v < 100 ? 2 : (v < 1000 ? 1 : 0))), x0 - 6, y + 4);
+    }
+
+    // Volume axis labels (right)
+    cx.textAlign = 'left';
+    [0, 1].forEach(frac => {
+      const val = vm * frac;
+      const valStr = val >= 1e7 ? (val / 1e7).toFixed(1) + 'Cr' : (val / 1e6).toFixed(1) + 'M';
+      cx.fillText(valStr, x1 + 6, Y(val, PN[1], 0, vm) + 4);
+    });
+
+    // OI axis labels (right)
+    [0, 0.5, 1].forEach(frac => {
+      const val = omn + (omx - omn) * frac;
+      const valStr = val >= 1e7 ? (val / 1e7).toFixed(2) + 'Cr' : (val / 1e6).toFixed(1) + 'M';
+      cx.fillText(valStr, x1 + 6, Y(val, PN[2], omn, omx) + 4);
+    });
+
+    // Date X-axis labels
+    cx.textAlign = 'center';
+    let lk = -1;
+    const stStep = Math.max(1, Math.round(m / 8));
+    vis.forEach((d, i) => {
+      const k = Math.floor(i / stStep);
+      if (k !== lk) {
+        lk = k;
+        cx.fillText(formatOiDateShort(d.dt), X(i), H - 6);
+      }
+    });
+
+    // Support and Resistance Lines
+    if (oiState.indicators.sr) {
+      const srLines = getOiSupportResistance(vis, vis[vis.length - 1].c);
+      srLines.forEach(l => {
+        const y = yp(l.p);
+        if (y < PN[0][0] || y > PN[0][1]) return;
+        cx.strokeStyle = l.r ? '#ef4444' : '#10b981';
+        cx.setLineDash([6, 4]);
+        cx.beginPath();
+        cx.moveTo(x0, y);
+        cx.lineTo(x1, y);
+        cx.stroke();
+        cx.setLineDash([]);
+        cx.fillStyle = l.r ? '#ef4444' : '#10b981';
+        cx.textAlign = 'left';
+        cx.fillText((l.r ? 'R ' : 'S ') + fmtNum(l.p, 0), x0 + 4, y - 3);
+      });
+    }
+
+    const drawLineSeries = (key, col, width = 1.5) => {
+      cx.strokeStyle = col;
+      cx.lineWidth = width;
+      cx.beginPath();
+      let hasStarted = false;
+      vis.forEach((d, i) => {
+        if (d[key] === null || d[key] === undefined) return;
+        const y = yp(d[key]);
+        if (!hasStarted) {
+          cx.moveTo(X(i), y);
+          hasStarted = true;
+        } else {
+          cx.lineTo(X(i), y);
+        }
+      });
+      cx.stroke();
+      cx.lineWidth = 1;
+    };
+
+    // Bollinger Bands
+    if (oiState.indicators.bb) {
+      cx.fillStyle = 'rgba(99, 102, 241, 0.08)';
+      cx.beginPath();
+      let hasStarted = false;
+      vis.forEach((d, i) => {
+        if (d.bu === null || d.bu === undefined) return;
+        const y = yp(d.bu);
+        if (!hasStarted) {
+          cx.moveTo(X(i), y);
+          hasStarted = true;
+        } else {
+          cx.lineTo(X(i), y);
+        }
+      });
+      for (let i = m - 1; i >= 0; i--) {
+        if (vis[i].bl !== null && vis[i].bl !== undefined) {
+          cx.lineTo(X(i), yp(vis[i].bl));
+        }
+      }
+      cx.fill();
+      drawLineSeries('bu', '#6366f1', 1);
+      drawLineSeries('bl', '#6366f1', 1);
+    }
+
+    // Main Price Candles / Line
+    const bd = Math.max(1, bw * 0.7);
+    if (oiState.indicators.line) {
+      drawLineSeries('c', '#38bdf8', 2);
+    }
+
+    vis.forEach((d, i) => {
+      const x = X(i);
+      const isUp = d.c >= d.o;
+      const candleCol = isUp ? '#10b981' : '#ef4444';
+
+      cx.globalAlpha = oiState.hiddenCategories[d.cat] ? 0.15 : 1;
+      if (!oiState.indicators.line) {
+        cx.strokeStyle = candleCol;
+        cx.fillStyle = candleCol;
+        cx.beginPath();
+        cx.moveTo(x, yp(d.h));
+        cx.lineTo(x, yp(d.l));
+        cx.stroke();
+
+        const topY = yp(Math.max(d.o, d.c));
+        const botY = yp(Math.min(d.o, d.c));
+        cx.fillRect(x - bd / 2, topY, bd, Math.max(1, botY - topY));
+      }
+
+      if (oiState.hiddenCategories[d.cat]) {
+        cx.globalAlpha = 1;
+        return;
+      }
+
+      // Volume Bar
+      cx.globalAlpha = 0.75;
+      cx.fillStyle = '#6366f1';
+      const vy = Y(d.v, PN[1], 0, vm);
+      cx.fillRect(x - bd / 2, vy, bd, PN[1][1] - vy);
+
+      // OI Bar
+      cx.fillStyle = OI_COLORS[d.cat] || '#38bdf8';
+      const oiy = Y(d.oi, PN[2], omn, omx);
+      cx.fillRect(x - bd / 2, oiy, bd, PN[2][1] - oiy);
+      cx.globalAlpha = 1;
+    });
+
+    if (oiState.indicators.m20) drawLineSeries('m20', '#f59e0b', 1.5);
+    if (oiState.indicators.m50) drawLineSeries('m50', '#ec4899', 1.5);
+
+    // RSI Sub-panel
+    if (oiState.indicators.rsi && PN[3]) {
+      const r = PN[3];
+      const ry = v => Y(v, r, 0, 100);
+      cx.strokeStyle = grCol;
+      [30, 70].forEach(v => {
+        cx.setLineDash([3, 3]);
+        cx.beginPath();
+        cx.moveTo(x0, ry(v));
+        cx.lineTo(x1, ry(v));
+        cx.stroke();
+        cx.setLineDash([]);
+        cx.fillStyle = muCol;
+        cx.textAlign = 'left';
+        cx.fillText(v, x1 + 6, ry(v) + 4);
+      });
+
+      cx.strokeStyle = '#38bdf8';
+      cx.lineWidth = 1.5;
+      cx.beginPath();
+      let hasStarted = false;
+      vis.forEach((d, i) => {
+        if (d.rsi === null || d.rsi === undefined) return;
+        const y = ry(d.rsi);
+        if (!hasStarted) {
+          cx.moveTo(X(i), y);
+          hasStarted = true;
+        } else {
+          cx.lineTo(X(i), y);
+        }
+      });
+      cx.stroke();
+      cx.lineWidth = 1;
+    }
+
+    const drawSubPanel = (panelIdx, key, lo, hi, col, isBar, refVal) => {
+      const r = PN[panelIdx];
+      if (!r || r[1] - r[0] < 8) return;
+      const yy = v => Y(v, r, lo, hi);
+      cx.strokeStyle = grCol;
+      cx.fillStyle = muCol;
+      cx.textAlign = 'left';
+
+      [lo, (lo + hi) / 2, hi].forEach(v => {
+        cx.beginPath();
+        cx.moveTo(x0, yy(v));
+        cx.lineTo(x1, yy(v));
+        cx.stroke();
+        cx.fillText(v.toFixed(v % 1 ? 1 : 0), x1 + 6, yy(v) + 4);
+      });
+
+      if (refVal !== null && refVal !== undefined) {
+        cx.setLineDash([4, 3]);
+        cx.strokeStyle = '#f59e0b';
+        cx.beginPath();
+        cx.moveTo(x0, yy(refVal));
+        cx.lineTo(x1, yy(refVal));
+        cx.stroke();
+        cx.setLineDash([]);
+      }
+
+      if (isBar) {
+        cx.fillStyle = col;
+        cx.globalAlpha = 0.7;
+        vis.forEach((d, j) => {
+          const val = d[key] !== null && d[key] !== undefined ? d[key] : 0;
+          const y = yy(val);
+          cx.fillRect(X(j) - bd / 2, y, bd, r[1] - y);
+        });
+        cx.globalAlpha = 1;
+      } else {
+        cx.strokeStyle = col;
+        cx.lineWidth = 1.5;
+        cx.beginPath();
+        let hasStarted = false;
+        vis.forEach((d, j) => {
+          if (d[key] === null || d[key] === undefined) return;
+          const y = yy(d[key]);
+          if (!hasStarted) {
+            cx.moveTo(X(j), y);
+            hasStarted = true;
+          } else {
+            cx.lineTo(X(j), y);
+          }
+        });
+        cx.stroke();
+        cx.lineWidth = 1;
+      }
+    };
+
+    if (oiState.indicators.dv && isStock && PN[4]) {
+      drawSubPanel(4, 'dv', 0, 100, '#6366f1', true, 50);
+    }
+    if (oiState.indicators.iv && PN[5]) {
+      const ivVals = vis.map(d => d.iv).filter(v => !isNaN(v));
+      const ivMin = Math.floor(Math.min(...ivVals, 10));
+      const ivMax = Math.ceil(Math.max(...ivVals, 30));
+      drawSubPanel(5, 'iv', ivMin, ivMax + (ivMin === ivMax ? 1 : 0), '#ec4899', false);
+    }
+    if (oiState.indicators.pcr && PN[6]) {
+      drawSubPanel(6, 'pcr', 0.4, 1.6, '#38bdf8', false, 1.0);
+    }
+
+    const panelHeaders = [
+      [0, `${oiState.symbolMeta.s} · Futures Price (${oiState.indicators.line ? 'Line' : 'Candlestick'}) + Overlays`],
+      [1, 'Futures Volume'],
+      [2, 'Open Interest (Bar color = Institutional Buildup Flow)'],
+      [3, 'RSI (14) · Momentum'],
+      [4, 'Delivery % · Delivery Qty / Total Traded Qty (50% Benchmark)'],
+      [5, 'ATM Implied Volatility (IV %)'],
+      [6, 'Put-Call Ratio (PCR) · 1.0 = Balanced']
+    ];
+
+    panelHeaders.forEach(([idx, title]) => {
+      const r = PN[idx];
+      if (!r || r[1] - r[0] < 8) return;
+      cx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+      const textW = cx.measureText(title).width;
+      cx.globalAlpha = 0.88;
+      cx.fillStyle = cardCol;
+      cx.fillRect(x0 + 2, r[0] + 2, textW + 12, 18);
+      cx.globalAlpha = 1;
+      cx.fillStyle = txCol;
+      cx.textAlign = 'left';
+      cx.fillText(title, x0 + 8, r[0] + 15);
+      cx.font = '11px system-ui, -apple-system, sans-serif';
+    });
+
+    if (oiState.hoverX >= 0 && oiState.hoverX < m) {
+      const x = X(oiState.hoverX);
+      cx.strokeStyle = muCol;
+      cx.setLineDash([4, 4]);
+      cx.beginPath();
+      cx.moveTo(x, PT);
+      cx.lineTo(x, H - 22);
+      cx.stroke();
+
+      if (oiState.hoverY >= PN[0][0] && oiState.hoverY <= PN[0][1]) {
+        cx.beginPath();
+        cx.moveTo(x0, oiState.hoverY);
+        cx.lineTo(x1, oiState.hoverY);
+        cx.stroke();
+        cx.setLineDash([]);
+
+        const crossPrice = mn + ((PN[0][1] - oiState.hoverY) / (PN[0][1] - PN[0][0])) * (mx - mn);
+        cx.fillStyle = txCol;
+        cx.fillRect(x1 + 1, oiState.hoverY - 8, PR - 2, 16);
+        cx.fillStyle = bgCol;
+        cx.textAlign = 'left';
+        cx.fillText(fmtNum(crossPrice, 1), x1 + 5, oiState.hoverY + 4);
+      }
+      cx.setLineDash([]);
+    }
+
+    renderFutureOiPanels(vis);
+  }
+
+  function renderFutureOiPanels(vis) {
+    if (!vis || !vis.length) return;
+    const a = vis[0];
+    const b = vis[vis.length - 1];
+    const chg = b.c - a.c;
+    const chgPct = a.c ? (chg / a.c) * 100 : 0;
+    const isPos = chg >= 0;
+
+    const rngEl = document.getElementById('futOiDateRange');
+    if (rngEl) rngEl.textContent = `${formatOiDate(a.dt)} – ${formatOiDate(b.dt)} · ${vis.length} sessions`;
+
+    const ltpEl = document.getElementById('futOiLtp');
+    if (ltpEl) ltpEl.textContent = `₹${fmtNum(b.c, (b.c < 100 ? 2 : (b.c < 1000 ? 1 : 0)))}`;
+
+    const chgEl = document.getElementById('futOiChg');
+    if (chgEl) {
+      chgEl.textContent = `${isPos ? '▲ +' : '▼ '}${fmtNum(chg, 2)} (${isPos ? '+' : ''}${fmtNum(chgPct, 2)}%)`;
+      chgEl.style.color = isPos ? '#10b981' : '#ef4444';
+    }
+
+    const cnt = [0, 0, 0, 0];
+    vis.forEach(d => { cnt[d.cat]++; });
+
+    const av = vis.reduce((t, d) => t + d.v, 0) / vis.length;
+    const doi = a.oi ? ((b.oi / a.oi) - 1) * 100 : 0;
+
+    const ivs = oiState.allBars.map(d => d.iv).filter(v => !isNaN(v));
+    const imn = Math.min(...ivs, 10);
+    const imx = Math.max(...ivs, 40);
+    const ivr = oiState.analyticsData?.ivRank ?? ((b.iv - imn) / (imx - imn || 1) * 100);
+    const ivp = oiState.analyticsData?.ivPercentile ?? (ivs.filter(x => x < b.iv).length / (ivs.length || 1) * 100);
+
+    const adv = vis.reduce((t, d) => t + d.dv, 0) / vis.length;
+    const apc = vis.reduce((t, d) => t + d.pcr, 0) / vis.length;
+
+    let peak = a.h, maxDd = 0;
+    vis.forEach(d => {
+      peak = Math.max(peak, d.h);
+      maxDd = Math.min(maxDd, (d.l - peak) / peak);
+    });
+
+    const rets = vis.slice(1).map((d, i) => Math.log(d.c / (vis[i].c || 1)));
+    const mr = rets.length ? rets.reduce((t, x) => t + x, 0) / rets.length : 0;
+    const vol = rets.length ? Math.sqrt(rets.reduce((t, x) => t + (x - mr) ** 2, 0) / rets.length) * Math.sqrt(252) * 100 : 15;
+
+    const statsGrid = document.getElementById('futOiStatsGrid');
+    if (statsGrid) {
+      const statsList = [
+        ['Range High', `₹${fmtNum(Math.max(...vis.map(d => d.h)))}`],
+        ['Range Low', `₹${fmtNum(Math.min(...vis.map(d => d.l)))}`],
+        ['Avg Volume', av >= 1e7 ? (av / 1e7).toFixed(2) + ' Cr' : (av / 1e6).toFixed(1) + ' M'],
+        ['OI Change', `${doi >= 0 ? '+' : ''}${fmtNum(doi, 1)}%`],
+        ['Max Drawdown', `${fmtNum(maxDd * 100, 1)}%`],
+        ['Ann. Volatility', `${fmtNum(vol, 1)}%`],
+        ['RSI (14)', b.rsi ? fmtNum(b.rsi, 0) : '--'],
+        ['ATM IV', `${fmtNum(b.iv, 1)}%`],
+        ['IV Rank', `${fmtNum(ivr, 0)}%`],
+        ['IV Percentile', `${fmtNum(ivp, 0)}%`],
+        ['IV − HV', `${(b.iv - vol) >= 0 ? '+' : ''}${fmtNum(b.iv - vol, 1)}`],
+        oiState.symbolMeta.k === 'Stock' ? ['Avg Delivery', `${fmtNum(adv, 0)}%`] : ['Avg PCR', fmtNum(apc, 2)]
+      ];
+
+      statsGrid.innerHTML = statsList.map(([lbl, val]) => `
+        <div class="fut-oi-stat">
+          <span>${lbl}</span>
+          <b>${val}</b>
+        </div>
+      `).join('');
+    }
+
+    const distEl = document.getElementById('futOiBuildupDist');
+    if (distEl) {
+      distEl.innerHTML = cnt.map((c, i) => {
+        const pct = vis.length ? (c / vis.length * 100).toFixed(0) : 0;
+        return `
+          <div class="fut-oi-row">
+            <span>${OI_NAMES[i]}</span>
+            <div class="t"><i style="width:${pct}%; background:${OI_COLORS[i]};"></i></div>
+            <span>${pct}%</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const L = oiState.allBars[oiState.allBars.length - 1] || b;
+    const reasons = [];
+    let sc = 0;
+
+    const addFactor = (v, t) => {
+      sc += v;
+      reasons.push(`<li style="list-style:none; margin-bottom:4px;">${v > 0 ? '🟢 ' : v < 0 ? '🔴 ' : '⚪ '}${t}</li>`);
+    };
+
+    addFactor(
+      L.m50 === null ? 0 : (L.c > L.m50 ? 1 : -1),
+      L.m50 === null ? 'MA50 data accumulating' : (L.c > L.m50 ? 'Price above MA50 benchmark (bullish)' : 'Price below MA50 benchmark (bearish)')
+    );
+
+    addFactor(
+      L.m50 === null ? 0 : (L.m20 > L.m50 ? 1 : -1),
+      L.m50 === null ? 'MA cross: n/a' : (L.m20 > L.m50 ? 'MA20 > MA50 Golden Cross' : 'MA20 < MA50 Death Cross')
+    );
+
+    addFactor(
+      L.rsi > 55 ? 1 : (L.rsi < 45 ? -1 : 0),
+      `RSI ${L.rsi ? fmtNum(L.rsi, 0) : '--'} ${L.rsi > 70 ? '(Overbought)' : (L.rsi < 30 ? '(Oversold)' : '(Neutral)')}`
+    );
+
+    const l5 = oiState.allBars.slice(-5).reduce((t, d) => t + (d.cat === 0 || d.cat === 2 ? 1 : -1), 0);
+    addFactor(
+      l5 >= 2 ? 1 : (l5 <= -2 ? -1 : 0),
+      `Last 5 sessions flow: ${l5 > 0 ? 'Bullish accumulation' : (l5 < 0 ? 'Bearish distribution' : 'Mixed / Consolidating')}`
+    );
+
+    const chainPcr = oiState.chainPcr || 1.0;
+    addFactor(
+      chainPcr > 1.1 ? 1 : (chainPcr < 0.8 ? -1 : 0),
+      `Option Chain PCR ${fmtNum(chainPcr, 2)} (${chainPcr > 1.1 ? 'Put writing support' : (chainPcr < 0.8 ? 'Call writing resistance' : 'Neutral')})`
+    );
+
+    const biasEl = document.getElementById('futOiBias');
+    const gaugePtr = document.getElementById('futOiGaugePointer');
+    const reasonsList = document.getElementById('futOiBiasReasons');
+
+    const biasText = sc >= 3 ? 'BULLISH' : (sc >= 1 ? 'MILDLY BULLISH' : (sc <= -3 ? 'BEARISH' : (sc <= -1 ? 'MILDLY BEARISH' : 'NEUTRAL')));
+    const biasCol = sc > 0 ? '#10b981' : (sc < 0 ? '#ef4444' : '#f59e0b');
+
+    if (biasEl) {
+      biasEl.textContent = biasText;
+      biasEl.style.color = biasCol;
+    }
+    if (gaugePtr) {
+      gaugePtr.style.left = Math.max(5, Math.min(95, 50 + sc * 9)) + '%';
+    }
+    if (reasonsList) {
+      reasonsList.innerHTML = reasons.join('');
+    }
+
+    renderFutureOiTraderPanel(b, ivr, vol, adv);
+  }
+
+  function renderFutureOiTraderPanel(b, ivr, vol, adv) {
+    const optPanel = document.getElementById('futOiTraderPanel');
+    if (!optPanel) return;
+
+    const sp = b.c;
+    const mv = sp * (b.iv / 100) * Math.sqrt(7 / 365);
+    const maxPain = oiState.maxPain || sp;
+    const dist = sp ? ((maxPain / sp) - 1) * 100 : 0;
+    const isStock = oiState.symbolMeta.k === 'Stock';
+
+    const row = (k, v) => `
+      <div style="display:flex; justify-content:space-between; font-size:12px; margin:5px 0;">
+        <span style="color:var(--text-muted, #94a3b8);">${k}</span>
+        <b style="color:var(--text-primary, #f8fafc);">${v}</b>
+      </div>
+    `;
+
+    const ivt = ivr > 60
+      ? 'IV elevated (>60%): Favourable for premium selling (Credit Spread / Strangle / Iron Condor).'
+      : (ivr < 30
+        ? 'IV compressed (<30%): Favourable for option buying (Long Straddle / Debit Spread).'
+        : 'IV balanced (30–60%): Directional vertical spreads optimal.');
+
+    const dt = isStock
+      ? (adv > 55 ? 'Cash Delivery high (>55%): Strong institutional holding & absorption.' : (adv < 42 ? 'Cash Delivery low (<42%): Predominantly intraday speculative churn.' : 'Delivery within normal range.'))
+      : '';
+
+    optPanel.innerHTML = `
+      ${row('ATM Implied Vol (IV)', `${fmtNum(b.iv, 1)}%`)}
+      ${row('IV Rank', `${fmtNum(ivr, 0)}%`)}
+      ${row('IV vs Realized HV', b.iv > vol ? 'IV > HV (Options expensive)' : 'IV < HV (Options discounted)')}
+      ${row('Weekly 1σ Range', `₹${fmtNum(sp - mv, 0)} – ₹${fmtNum(sp + mv, 0)}`)}
+      ${row('ATM Straddle Cost', `~₹${fmtNum(mv * 0.8, 1)} pts`)}
+      ${row('Max Pain Strike', `₹${fmtNum(maxPain, 0)} (${dist >= 0 ? '+' : ''}${fmtNum(dist, 1)}%)`)}
+      ${row('Option Chain PCR', fmtNum(oiState.chainPcr, 2))}
+      <div style="font-size:11.5px; color:#94a3b8; margin-top:10px; line-height:1.4; border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;">
+        💡 ${ivt} ${dt}
+      </div>
+    `;
+  }
+
+  function drawFutureOiOcCanvas() {
+    const cv = document.getElementById('futOiOcCanvas');
+    if (!cv || !oiState.optionChain || !oiState.optionChain.length) return;
+    const g = cv.getContext('2d');
+    if (!g) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const w = cv.clientWidth || 300;
+    const h = cv.clientHeight || 190;
+    cv.width = w * dpr;
+    cv.height = h * dpr;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const K = oiState.optionChain;
+    const mx = Math.max(...K.map(x => Math.max(x.callOi || x.c || 0, x.putOi || x.p || 0))) || 1;
+    const bw = w / K.length;
+    g.font = '10px system-ui, -apple-system, sans-serif';
+    g.textAlign = 'center';
+
+    const muCol = getOiColor('--mu');
+
+    K.forEach((x, i) => {
+      const cx0 = i * bw;
+      const cVal = x.callOi || x.c || 0;
+      const pVal = x.putOi || x.p || 0;
+      const hc = (cVal / mx) * (h - 32);
+      const hp = (pVal / mx) * (h - 32);
+
+      g.fillStyle = '#ef4444';
+      g.fillRect(cx0 + bw * 0.1, h - 18 - hc, bw * 0.38, hc);
+
+      g.fillStyle = '#10b981';
+      g.fillRect(cx0 + bw * 0.52, h - 18 - hp, bw * 0.38, hp);
+
+      const strike = x.strike || x.k;
+      if (i % 3 === 0 || strike === oiState.atmStrike) {
+        g.fillStyle = (strike === oiState.atmStrike) ? '#38bdf8' : muCol;
+        g.font = (strike === oiState.atmStrike) ? 'bold 10px system-ui' : '10px system-ui';
+        g.fillText(strike, cx0 + bw / 2, h - 4);
+      }
+      if (strike === oiState.maxPain) {
+        g.fillStyle = '#f59e0b';
+        g.font = 'bold 9px system-ui';
+        g.fillText('MaxPain', cx0 + bw / 2, 10);
+      }
+    });
+
+    const pcrEl = document.getElementById('futOiPcrText');
+    if (pcrEl) {
+      pcrEl.textContent = `PCR ${oiState.chainPcr ? oiState.chainPcr.toFixed(2) : '--'} · Max Pain ₹${fmtNum(oiState.maxPain, 0)}`;
+    }
+  }
+
+  function showFutureOiTip(e, i) {
+    const tip = document.getElementById('futOiTip');
+    const cv = document.getElementById('futOiCanvas');
+    if (!tip || !cv || !oiState.allBars || !oiState.allBars.length) return;
+
+    const vis = oiState.allBars.slice(oiState.visibleStart, oiState.visibleStart + oiState.visibleCount);
+    const d = vis[i];
+    if (!d) return;
+
+    const fullIdx = oiState.allBars.indexOf(d);
+    const prev = fullIdx > 0 ? oiState.allBars[fullIdx - 1] : d;
+    const cg = prev && prev.c ? ((d.c / prev.c) - 1) * 100 : 0;
+    const r = cv.getBoundingClientRect();
+
+    const volStr = d.v >= 1e7 ? (d.v / 1e7).toFixed(2) + ' Cr' : (d.v / 1e6).toFixed(1) + ' M';
+    const oiStr = d.oi >= 1e7 ? (d.oi / 1e7).toFixed(2) + ' Cr' : (d.oi / 1e6).toFixed(1) + ' M';
+    const isStock = oiState.symbolMeta.k === 'Stock';
+
+    tip.innerHTML = `
+      <div style="font-weight:700; color:#38bdf8; margin-bottom:3px;">${formatOiDate(d.dt)}</div>
+      <div>O ₹${fmtNum(d.o, 1)} &bull; H ₹${fmtNum(d.h, 1)}</div>
+      <div>L ₹${fmtNum(d.l, 1)} &bull; C ₹${fmtNum(d.c, 1)} <span style="color:${cg >= 0 ? '#10b981' : '#ef4444'}; font-weight:700;">(${cg >= 0 ? '+' : ''}${fmtNum(cg, 2)}%)</span></div>
+      <div>Vol: ${volStr} &bull; OI: ${oiStr}</div>
+      <div>IV: ${fmtNum(d.iv, 1)}% &bull; PCR: ${fmtNum(d.pcr, 2)}${isStock ? ` &bull; Deliv: ${fmtNum(d.dv, 0)}%` : ''}</div>
+      <div style="margin-top:4px; font-weight:700; color:${OI_COLORS[d.cat]};">● ${OI_NAMES[d.cat]}</div>
+    `;
+
+    tip.style.display = 'block';
+    const tipW = 200;
+    const tipX = Math.min(e.clientX - r.left + 16, (cv.clientWidth || 800) - tipW);
+    const tipY = Math.max(10, e.clientY - r.top - 20);
+    tip.style.left = tipX + 'px';
+    tip.style.top = tipY + 'px';
+  }
+
+  function handleFutureOiCsvUpload(file) {
+    if (!file) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const lines = rd.result.trim().split(/\r?\n/);
+        const D = lines.map(l => l.split(',')).filter(a => a.length >= 7 && !isNaN(Number(a[4]))).map(a => {
+          return {
+            dt: new Date(a[0]),
+            o: Number(a[1]),
+            h: Number(a[2]),
+            l: Number(a[3]),
+            c: Number(a[4]),
+            v: Number(a[5]),
+            oi: Number(a[6]),
+            iv: a[7] ? Number(a[7]) : 15.0,
+            dv: a[8] ? Number(a[8]) : 50.0,
+            pcr: a[9] ? Number(a[9]) : 1.0,
+            cat: 0
+          };
+        }).filter(d => !isNaN(d.dt.getTime())).sort((a, b) => a.dt - b.dt);
+
+        if (D.length < 5) throw new Error('CSV must have at least 5 valid data rows');
+
+        D.forEach((d, i) => {
+          const p = D[i - 1] || d;
+          const dp = d.c - p.c;
+          const dO = d.oi - p.oi;
+          d.cat = dp >= 0 ? (dO >= 0 ? 0 : 2) : (dO >= 0 ? 1 : 3);
+        });
+
+        oiState.currentSymbol = 'CSV_DATA';
+        oiState.symbolMeta = { s: 'CSV', n: file.name, k: 'Stock', st: Math.max(1, Math.round(D[D.length - 1].c / 200)) };
+        oiState.allBars = D;
+        oiState.visibleCount = D.length;
+        oiState.visibleStart = 0;
+
+        const ttl = document.getElementById('futOiTitle');
+        if (ttl) ttl.textContent = `Custom CSV · ${file.name}`;
+        const helpMsg = document.getElementById('futOiHelpMsg');
+        if (helpMsg) helpMsg.textContent = `✅ Successfully loaded ${D.length} rows from CSV`;
+
+        drawFutureOiCanvas();
+      } catch (err) {
+        alert('Invalid CSV format: ' + err.message);
+      }
+    };
+    rd.readAsText(file);
+  }
+
+  function initFutureOiEvents() {
+    if (oiState.initializedEvents) return;
+    oiState.initializedEvents = true;
+
+    const cv = document.getElementById('futOiCanvas');
+    const tip = document.getElementById('futOiTip');
+
+    if (cv) {
+      cv.addEventListener('pointerdown', e => {
+        oiState.drag = { x: e.clientX, vs: oiState.visibleStart };
+        cv.setPointerCapture(e.pointerId);
+      });
+
+      cv.addEventListener('pointerup', () => {
+        oiState.drag = null;
+      });
+
+      cv.addEventListener('pointermove', e => {
+        if (!oiState.allBars || !oiState.allBars.length) return;
+        const r = cv.getBoundingClientRect();
+        oiState.hoverY = e.clientY - r.top;
+
+        const PL = 60, PR = 65;
+        const W = cv.clientWidth || 800;
+        const bw = (W - PL - PR) / (oiState.visibleCount || 1);
+
+        if (oiState.drag) {
+          const deltaBars = Math.round((e.clientX - oiState.drag.x) / bw);
+          oiState.visibleStart = Math.max(0, Math.min(oiState.allBars.length - oiState.visibleCount, oiState.drag.vs - deltaBars));
+          oiState.hoverX = -1;
+          if (tip) tip.style.display = 'none';
+          drawFutureOiCanvas();
+          return;
+        }
+
+        const i = Math.floor((e.clientX - r.left - PL) / bw);
+        if (i < 0 || i >= oiState.visibleCount) {
+          oiState.hoverX = -1;
+          if (tip) tip.style.display = 'none';
+          drawFutureOiCanvas();
+          return;
+        }
+        oiState.hoverX = i;
+        drawFutureOiCanvas();
+        showFutureOiTip(e, i);
+      });
+
+      cv.addEventListener('pointerleave', () => {
+        oiState.hoverX = -1;
+        if (tip) tip.style.display = 'none';
+        drawFutureOiCanvas();
+      });
+
+      cv.addEventListener('wheel', e => {
+        if (!oiState.allBars || !oiState.allBars.length) return;
+        e.preventDefault();
+        const r = cv.getBoundingClientRect();
+        const PL = 60, PR = 65;
+        const W = cv.clientWidth || 800;
+        const fr = Math.max(0, Math.min(1, (e.clientX - r.left - PL) / (W - PL - PR)));
+        const anchor = oiState.visibleStart + fr * oiState.visibleCount;
+
+        const factor = e.deltaY > 0 ? 1.15 : 0.87;
+        oiState.visibleCount = Math.max(10, Math.min(oiState.allBars.length, Math.round(oiState.visibleCount * factor)));
+        oiState.visibleStart = Math.max(0, Math.min(oiState.allBars.length - oiState.visibleCount, Math.round(anchor - fr * oiState.visibleCount)));
+
+        // Remove active class from range bar
+        document.querySelectorAll('#futOiRangeBar button').forEach(b => b.classList.remove('on'));
+        drawFutureOiCanvas();
+      }, { passive: false });
+    }
+
+    // Range Bar Buttons (1M, 3M, 6M)
+    const rangeBar = document.getElementById('futOiRangeBar');
+    if (rangeBar) {
+      rangeBar.addEventListener('click', e => {
+        const btn = e.target.closest('button[data-n]');
+        if (!btn || !oiState.allBars || !oiState.allBars.length) return;
+        const n = Number(btn.dataset.n);
+        oiState.visibleCount = Math.min(n, oiState.allBars.length);
+        oiState.visibleStart = Math.max(0, oiState.allBars.length - oiState.visibleCount);
+        rangeBar.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
+        drawFutureOiCanvas();
+      });
+    }
+
+    // Indicator Toolbar Buttons
+    const indBar = document.getElementById('futOiIndicatorBar');
+    if (indBar) {
+      indBar.addEventListener('click', e => {
+        const btn = e.target.closest('button[data-k]');
+        if (!btn) return;
+        const k = btn.dataset.k;
+        if (oiState.indicators[k] !== undefined) {
+          oiState.indicators[k] = !oiState.indicators[k];
+          btn.classList.toggle('on', !!oiState.indicators[k]);
+          drawFutureOiCanvas();
+        }
+      });
+    }
+
+    // Buildup Legend Filter Buttons
+    const legEl = document.getElementById('futOiLegend');
+    if (legEl) {
+      legEl.addEventListener('click', e => {
+        const btn = e.target.closest('button[data-c]');
+        if (!btn) return;
+        const c = Number(btn.dataset.c);
+        if (c >= 0 && c <= 3) {
+          oiState.hiddenCategories[c] = !oiState.hiddenCategories[c];
+          btn.classList.toggle('off', !!oiState.hiddenCategories[c]);
+          drawFutureOiCanvas();
+        }
+      });
+    }
+
+    // Watchlist Ribbon Clicks
+    const wlRibbon = document.getElementById('futOiWatchlistRibbon');
+    if (wlRibbon) {
+      wlRibbon.addEventListener('click', e => {
+        const btn = e.target.closest('button[data-s]');
+        if (btn && btn.dataset.s) {
+          selectOiSymbol(btn.dataset.s);
+        }
+      });
+    }
+
+    // CSV File Input
+    const csvInput = document.getElementById('futOiCsvInput');
+    if (csvInput) {
+      csvInput.addEventListener('change', e => {
+        if (e.target.files && e.target.files[0]) {
+          handleFutureOiCsvUpload(e.target.files[0]);
+        }
+      });
+    }
+
+    // Search Autocomplete
+    const sInput = document.getElementById('futOiSearchInput');
+    const sDropdown = document.getElementById('futOiSearchDropdown');
+    let highlightIdx = 0;
+    let filteredSymbols = [];
+
+    const renderDropdown = () => {
+      if (!sDropdown) return;
+      if (!filteredSymbols.length) {
+        sDropdown.innerHTML = `<div style="padding:10px 12px; color:#94a3b8; font-size:12px;">No matching symbol found. (260+ F&O stocks & indices)</div>`;
+        sDropdown.style.display = 'block';
+        return;
+      }
+
+      sDropdown.innerHTML = filteredSymbols.slice(0, 15).map((item, idx) => {
+        const isSel = (idx === highlightIdx);
+        const isPos = (item.changePct || 0) >= 0;
+        const chgCol = isPos ? '#10b981' : '#ef4444';
+        const sign = isPos ? '+' : '';
+        const priceStr = item.ltp ? `₹${fmtNum(item.ltp, 1)}` : '';
+        const chgStr = item.changePct ? ` (${sign}${fmtNum(item.changePct, 2)}%)` : '';
+
+        return `
+          <div class="fut-oi-search-row ${isSel ? 'hi' : ''}" data-idx="${idx}">
+            <span>
+              <strong style="color:var(--text-primary, #f8fafc);">${item.symbol}</strong>
+              <span style="color:#94a3b8; font-size:11px; margin-left:6px;">${item.name || ''}</span>
+            </span>
+            <span style="text-align:right;">
+              <span style="color:${chgCol}; font-weight:700;">${priceStr}${chgStr}</span>
+              <span class="fut-badge ${item.kind === 'Index' ? 'fut-badge-sb' : 'fut-badge-neutral'}" style="margin-left:6px; font-size:9px;">${(item.kind || 'STOCK').toUpperCase()}</span>
+            </span>
+          </div>
+        `;
+      }).join('');
+      sDropdown.style.display = 'block';
+    };
+
+    const filterSymbols = () => {
+      if (!sInput) return;
+      const term = sInput.value.trim().toUpperCase();
+      filteredSymbols = (oiState.symbolsList || []).filter(item => {
+        if (!term) return true;
+        return item.symbol.toUpperCase().includes(term) || (item.name && item.name.toUpperCase().includes(term));
+      });
+      highlightIdx = 0;
+      renderDropdown();
+    };
+
+    if (sInput && sDropdown) {
+      sInput.addEventListener('input', filterSymbols);
+      sInput.addEventListener('focus', filterSymbols);
+      sInput.addEventListener('blur', () => {
+        setTimeout(() => { if (sDropdown) sDropdown.style.display = 'none'; }, 200);
+      });
+
+      sInput.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          highlightIdx = Math.min(Math.min(filteredSymbols.length, 15) - 1, highlightIdx + 1);
+          renderDropdown();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          highlightIdx = Math.max(0, highlightIdx - 1);
+          renderDropdown();
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (filteredSymbols[highlightIdx]) {
+            selectOiSymbol(filteredSymbols[highlightIdx].symbol);
+            sInput.value = '';
+            sDropdown.style.display = 'none';
+          }
+        } else if (e.key === 'Escape') {
+          sDropdown.style.display = 'none';
+        }
+      });
+
+      sDropdown.addEventListener('mousedown', e => {
+        const row = e.target.closest('[data-idx]');
+        if (row) {
+          const idx = Number(row.dataset.idx);
+          if (filteredSymbols[idx]) {
+            selectOiSymbol(filteredSymbols[idx].symbol);
+            sInput.value = '';
+            sDropdown.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      if (state.activeSubTab === 'openInterest') {
+        drawFutureOiCanvas();
+        drawFutureOiOcCanvas();
+      }
+    });
+  }
+
+  function selectOiSymbol(symbol) {
+    if (!symbol) return;
+    oiState.currentSymbol = symbol.toUpperCase();
+    if (state.activeSubTab !== 'openInterest') {
+      switchSubTab('openInterest');
+    }
+    fetchFutureOiData(oiState.currentSymbol, false);
+  }
+
   // --- Auto-Refresh Engine ---
   function setAutoRefresh(seconds) {
     state.autoRefreshSec = seconds;
@@ -1470,6 +2650,8 @@
     const initPath = (window.location.pathname || '').toLowerCase();
     if (initPath.includes('/rollover')) {
       state.activeSubTab = 'rollover';
+    } else if (initPath.includes('/open-interest') || initPath.includes('/oi') || initPath.includes('/future-oi')) {
+      state.activeSubTab = 'openInterest';
     } else if (initPath.includes('/buildup')) {
       state.activeSubTab = 'buildup';
     } else if (initPath.includes('/heatmap')) {
@@ -1528,6 +2710,8 @@
     refreshCurrentSubTab,
     filterBySymbol,
     inspectContract,
+    selectOiSymbol,
+    loadFutureOpenInterestView,
     loadBenchmarkRibbon,
     loadMatrix,
     loadBuildupView,

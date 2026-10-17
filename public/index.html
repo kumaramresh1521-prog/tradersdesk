@@ -270,6 +270,14 @@
                     <span class="dd-sub">Long/short buildup quadrants &amp; unwinding signals</span>
                   </div>
                 </a>
+                <!-- Submenu 4: Future Open Interest -->
+                <a href="/futures/open-interest" class="inst-dd-item" onclick="return window.instNavClick(event, 'futures', 'openInterest')">
+                  <span class="dd-icon">📈</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future Open Interest <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
+                    <span class="dd-sub">Interactive EOD &amp; Live multi-panel chart, OI Buildup &amp; Option Chain</span>
+                  </div>
+                </a>
               </div>
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">F&amp;O Analytics &amp; Risk</span>
@@ -1313,6 +1321,7 @@
           <!-- In-Desk Sub-Views Navigation Ribbon -->
           <div class="fut-subtabs-nav" style="display:flex; gap:6px; margin:0 0 14px 0; padding:6px; border-radius:8px; overflow-x:auto;">
             <a href="/futures" class="fut-tab-btn active" data-tab="matrix" onclick="return window.futuresDeskTabClick(event, 'matrix')">📊 Marketwatch</a>
+            <a href="/futures/open-interest" class="fut-tab-btn" data-tab="openInterest" onclick="return window.futuresDeskTabClick(event, 'openInterest')">⚡ Future Open Interest</a>
             <a href="/futures/indices" class="fut-tab-btn" data-tab="indices" onclick="return window.futuresDeskTabClick(event, 'indices')">📈 Index Term Structure</a>
             <a href="/futures/buildup" class="fut-tab-btn" data-tab="buildup" onclick="return window.futuresDeskTabClick(event, 'buildup')">⚡ Buildup Quadrants</a>
             <a href="/futures/heatmap" class="fut-tab-btn" data-tab="heatmap" onclick="return window.futuresDeskTabClick(event, 'heatmap')">🗺️ Heatmap</a>
@@ -1587,6 +1596,128 @@
                   </thead>
                   <tbody id="futMwplTableBody"></tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================================================================
+               VIEW 7: FUTURE OPEN INTEREST, BUILDUP & OPTION CHAIN TERMINAL
+               ================================================================ -->
+          <div id="futView_openInterest" class="fut-view-panel" style="display:none;">
+            <div class="fut-oi-wrap">
+              <!-- Top Header -->
+              <div class="fut-oi-header">
+                <div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="fut-movers-badge" id="futOiKindBadge">INDEX</span>
+                    <h2 class="fut-oi-ttl" id="futOiTitle">NIFTY · Futures Analytics &amp; OI Buildup</h2>
+                  </div>
+                  <div class="fut-oi-sub" id="futOiDateRange">Loading multi-session EOD data...</div>
+                  <div style="display:flex; align-items:baseline; margin-top:4px;">
+                    <span class="fut-oi-px" id="futOiLtp">--</span>
+                    <span class="fut-oi-chg" id="futOiChg">--</span>
+                  </div>
+                </div>
+                <div class="fut-oi-bar" id="futOiRangeBar">
+                  <button type="button" class="fut-oi-b" data-n="22">1M (22D)</button>
+                  <button type="button" class="fut-oi-b" data-n="66">3M (66D)</button>
+                  <button type="button" class="fut-oi-b on" data-n="9999">6M (All)</button>
+                </div>
+              </div>
+
+              <!-- Symbol Search & Auto-complete -->
+              <div class="fut-oi-srch">
+                <input id="futOiSearchInput" placeholder="🔍 Search all 260+ F&amp;O stocks &amp; indices (e.g. RELIANCE, TCS, BANKNIFTY, SENSEX)..." autocomplete="off" />
+                <div id="futOiSearchDropdown"></div>
+              </div>
+
+              <!-- Watchlist Quick-Pill Ribbon -->
+              <div class="fut-oi-wl" id="futOiWatchlistRibbon">
+                <!-- Dynamically populated -->
+              </div>
+
+              <!-- Indicator Toolbar -->
+              <div class="fut-oi-bar" id="futOiIndicatorBar">
+                <button type="button" class="fut-oi-b" data-k="line">Line</button>
+                <span class="sep"></span>
+                <button type="button" class="fut-oi-b on" data-k="m20">MA20</button>
+                <button type="button" class="fut-oi-b" data-k="m50">MA50</button>
+                <button type="button" class="fut-oi-b" data-k="bb">Bollinger</button>
+                <button type="button" class="fut-oi-b on" data-k="sr">Support/Resistance</button>
+                <button type="button" class="fut-oi-b on" data-k="rsi">RSI</button>
+                <button type="button" class="fut-oi-b on" data-k="iv">IV</button>
+                <button type="button" class="fut-oi-b on" data-k="dv">Delivery %</button>
+                <button type="button" class="fut-oi-b on" data-k="pcr">PCR</button>
+                <span class="sep"></span>
+                <label class="fut-oi-b" style="cursor:pointer">
+                  📁 Load CSV
+                  <input id="futOiCsvInput" type="file" accept=".csv" hidden />
+                </label>
+                <span class="fut-oi-sub" id="futOiHelpMsg" style="margin-left:8px;">💡 Drag = Pan &bull; Scroll = Zoom</span>
+              </div>
+
+              <!-- Key Statistics Grid -->
+              <div class="fut-oi-stats" id="futOiStatsGrid">
+                <!-- Dynamically populated -->
+              </div>
+
+              <!-- Interactive Multi-Panel Canvas Box -->
+              <div class="fut-oi-box" id="futOiCanvasBox">
+                <canvas id="futOiCanvas"></canvas>
+                <div id="futOiTip"></div>
+              </div>
+
+              <!-- Interactive Buildup Legend -->
+              <div class="fut-oi-leg" id="futOiLegend">
+                <button type="button" class="fut-oi-lb" data-c="0"><i style="background:#10b981;"></i>Long Buildup (P↑ OI↑)</button>
+                <button type="button" class="fut-oi-lb" data-c="1"><i style="background:#ef4444;"></i>Short Buildup (P↓ OI↑)</button>
+                <button type="button" class="fut-oi-lb" data-c="2"><i style="background:#06b6d4;"></i>Short Covering (P↑ OI↓)</button>
+                <button type="button" class="fut-oi-lb" data-c="3"><i style="background:#f59e0b;"></i>Long Unwinding (P↓ OI↓)</button>
+                <span style="align-self:center; font-size:11px; color:#64748b;">← Click pill to toggle visibility on chart</span>
+              </div>
+
+              <!-- Bottom Intelligence 4-Card Grid -->
+              <div class="fut-oi-grid">
+                <!-- Card 1: Market Bias (auto-signal) -->
+                <div class="fut-oi-card">
+                  <h3>🎯 Market Bias (auto-signal)</h3>
+                  <div class="fut-oi-big" id="futOiBias">--</div>
+                  <div class="fut-oi-gauge">
+                    <i id="futOiGaugePointer" style="left:50%;"></i>
+                  </div>
+                  <ul id="futOiBiasReasons" style="margin:8px 0 0; padding-left:0; font-size:11.5px; color:#94a3b8; list-style:none;">
+                    <li>Analyzing indicator parameters...</li>
+                  </ul>
+                </div>
+
+                <!-- Card 2: Buildup Distribution (visible range) -->
+                <div class="fut-oi-card">
+                  <h3>📊 Buildup Distribution (visible range)</h3>
+                  <div id="futOiBuildupDist">
+                    <!-- Progress bars -->
+                  </div>
+                </div>
+
+                <!-- Card 3: Option Chain OI Distribution -->
+                <div class="fut-oi-card">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <h3 style="margin:0;">⚡ Option Chain OI</h3>
+                    <span id="futOiPcrText" style="font-size:11px; font-weight:700; color:#38bdf8; font-family:'JetBrains Mono',monospace;">--</span>
+                  </div>
+                  <canvas id="futOiOcCanvas" style="width:100%; height:190px;"></canvas>
+                </div>
+
+                <!-- Card 4: Options Trader Panel (IV · Range · Max Pain) -->
+                <div class="fut-oi-card">
+                  <h3>🧠 Options Trader Panel (IV &bull; Range &bull; Max Pain)</h3>
+                  <div id="futOiTraderPanel">
+                    <!-- Metrics and actionable commentary -->
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin-top:12px; font-size:11px; color:#64748b; font-style:italic;">
+                * Official EOD sessions synced from NSE Derivatives Bhavcopy archives after market close (15:35+ IST). Intraday candle reflects live broker tick. For external custom backtests, use "📁 Load CSV".
               </div>
             </div>
           </div>
