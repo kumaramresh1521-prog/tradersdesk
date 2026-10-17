@@ -108,8 +108,7 @@
 
       gmCachedData = json;
 
-      // Update Moneycontrol Hero Ribbons
-      updateGiftNiftyHero(json.openingCue, json.headlineMetrics);
+      // Update Global Sentiment Card & Category Counts
       updateGlobalSentimentCard(json.categorySummary, json.sections);
       updateCategoryCounts(json.categorySummary, json.totalAssets);
 
@@ -130,7 +129,8 @@
   }
 
   function updateGiftNiftyHero(cue, metrics) {
-    if (!cue && !metrics) return;
+    const elCard = document.getElementById("gmGiftHeroCard");
+    if (!elCard) return;
     const gData = (metrics && metrics.giftNifty) || {};
     const ltp = gData.ltp || cue.giftLtp || 22450.0;
     const chg = gData.change !== undefined ? gData.change : (cue.gapPoints || 0.0);
@@ -141,7 +141,6 @@
     const elChg = document.getElementById("gmHeroGiftChg");
     const elCue = document.getElementById("gmGiftCueTag");
     const elBadge = document.getElementById("gmGiftBadge");
-    const elCard = document.getElementById("gmGiftHeroCard");
     const elSpot = document.getElementById("gmHeroNiftySpot");
 
     if (elLtp) elLtp.textContent = Number(ltp).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

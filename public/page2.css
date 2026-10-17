@@ -2313,15 +2313,9 @@ body.theme-light .gm-table-range-track {
    ========================================================================== */
 .gm-hero-container {
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
+  grid-template-columns: 1fr;
   gap: 14px;
   margin-bottom: 20px;
-}
-
-@media (max-width: 900px) {
-  .gm-hero-container {
-    grid-template-columns: 1fr;
-  }
 }
 
 .gm-hero-gift-card {
