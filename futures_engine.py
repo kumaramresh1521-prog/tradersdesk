@@ -1371,6 +1371,24 @@ def _build_master_futures_records() -> list[dict]:
             mwpl_status = "NORMAL"
             mwpl_badge = "status-normal"
 
+        # Implied Volatility (IV) estimation (Parkinson High-Low Volatility + Price Shock Momentum)
+        if day_high > day_low > 0:
+            hl_ratio = day_high / day_low
+            parkinson_vol = math.sqrt((math.log(hl_ratio) ** 2) / (4.0 * math.log(2.0))) * math.sqrt(252.0) * 100.0
+        else:
+            parkinson_vol = 0.0
+
+        base_vol = 14.5 if is_idx else 32.0
+        abs_return_vol = (abs(fut_chg_pct) / 100.0) * math.sqrt(252.0) * 50.0
+        est_iv = round(max(8.0, min(120.0, base_vol * 0.45 + parkinson_vol * 0.35 + abs_return_vol * 0.20)), 2)
+
+        intraday_range_pct = ((day_high - day_low) / prev_close) * 100.0 if prev_close > 0 else abs(fut_chg_pct)
+        normal_range_pct = 1.1 if is_idx else 2.2
+        iv_change = round((intraday_range_pct - normal_range_pct) * 1.5 + (abs(fut_chg_pct) * 0.3) - 0.3, 2)
+        if fut_chg_pct < -1.5:
+            iv_change += round(abs(fut_chg_pct) * 0.5, 2)
+        iv_change_pct = round((iv_change / est_iv) * 100.0, 2) if est_iv > 0 else 0.0
+
         rec = {
             "symbol": sym,
             "name": item.get("name", sym),
@@ -1409,6 +1427,9 @@ def _build_master_futures_records() -> list[dict]:
             "mwplPct": mwpl_cur,
             "mwplStatus": mwpl_status,
             "mwplBadge": mwpl_badge,
+            "iv": est_iv,
+            "ivChange": iv_change,
+            "ivChangePct": iv_change_pct,
             "isLiveBroker": is_live_broker,
             "sparkline": [
                 round(prev_close + (fut_price - prev_close) * (i / 9.0), 2)
@@ -1475,10 +1496,27 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
     sc_list = [r for r in stocks if r["buildupCode"] == "SC"]
     lu_list = [r for r in stocks if r["buildupCode"] == "LU"]
 
-    top_gainers = sorted(stocks, key=lambda x: x["priceChangePct"], reverse=True)[:5]
-    top_losers = sorted(stocks, key=lambda x: x["priceChangePct"])[:5]
-    top_oi_gainers = sorted(stocks, key=lambda x: x["oiChangePct"], reverse=True)[:5]
-    top_oi_losers = sorted(stocks, key=lambda x: x["oiChangePct"])[:5]
+    valid_stocks = [r for r in stocks if r.get("futPrice", 0) > 0 and r.get("volumeContracts", 0) > 0]
+    if len(valid_stocks) < 30:
+        valid_stocks = [r for r in stocks if r.get("futPrice", 0) > 0]
+
+    top_gainers = sorted(valid_stocks, key=lambda x: x["priceChangePct"], reverse=True)[:10]
+    top_losers = sorted(valid_stocks, key=lambda x: x["priceChangePct"])[:10]
+    top_oi_gainers = sorted(valid_stocks, key=lambda x: x["oiChangePct"], reverse=True)[:10]
+    top_oi_losers = sorted(valid_stocks, key=lambda x: x["oiChangePct"])[:10]
+    top_volume_buzzers = sorted(valid_stocks, key=lambda x: x.get("volumeValueCr", 0.0), reverse=True)[:10]
+    top_iv_gainers = sorted(valid_stocks, key=lambda x: x.get("ivChangePct", 0.0), reverse=True)[:10]
+    top_iv_losers = sorted(valid_stocks, key=lambda x: x.get("ivChangePct", 0.0))[:10]
+
+    market_movers = {
+        "topGainers": top_gainers,
+        "topLosers": top_losers,
+        "topOiGainers": top_oi_gainers,
+        "topOiLosers": top_oi_losers,
+        "topVolumeBuzzers": top_volume_buzzers,
+        "topIvGainers": top_iv_gainers,
+        "topIvLosers": top_iv_losers,
+    }
 
     # Indices
     indices_list = [r for r in records if r["isIndex"]]
@@ -1526,6 +1564,10 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
         "topLosers": top_losers,
         "topOiGainers": top_oi_gainers,
         "topOiLosers": top_oi_losers,
+        "topVolumeBuzzers": top_volume_buzzers,
+        "topIvGainers": top_iv_gainers,
+        "topIvLosers": top_iv_losers,
+        "marketMovers": market_movers,
     }
     _DASHBOARD_CACHE = {'ts': now_ts, 'data': res}
     return res

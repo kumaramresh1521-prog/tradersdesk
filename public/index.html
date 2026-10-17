@@ -1378,6 +1378,39 @@
               </div>
             </div>
 
+            <!-- Opstra-Style Derivatives Buzzers & Movers Matrix Hub -->
+            <div class="fut-movers-section" id="futMoversSection">
+              <div class="fut-movers-header">
+                <div class="fut-movers-title-box">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="fut-movers-badge">OPSTRA RADAR</span>
+                    <h3 class="fut-movers-title">⚡ High-Velocity F&amp;O Movers &amp; Buzzers</h3>
+                  </div>
+                  <span class="fut-movers-subtitle">Live institutional scans: Price Momentum, OI Surges, Volume Anomalies &amp; IV Volatility</span>
+                </div>
+                <div class="fut-movers-actions">
+                  <!-- Category Filter Switcher -->
+                  <div class="fut-movers-pills" id="futMoversCategoryPills">
+                    <button type="button" class="fut-mover-pill active" data-cat="all">🌟 All 7 Buzzers</button>
+                    <button type="button" class="fut-mover-pill" data-cat="price">📈 Price Movers</button>
+                    <button type="button" class="fut-mover-pill" data-cat="oi">📊 OI Spikes</button>
+                    <button type="button" class="fut-mover-pill" data-cat="volume">⚡ Volume Buzzers</button>
+                    <button type="button" class="fut-mover-pill" data-cat="iv">🌊 IV Volatility</button>
+                  </div>
+                  <!-- Rows Limit Toggle (5 vs 10) -->
+                  <div class="fut-movers-limit-wrap">
+                    <button type="button" class="fut-limit-btn active" id="futMoversLimit5" title="Show Top 5 per category">Top 5</button>
+                    <button type="button" class="fut-limit-btn" id="futMoversLimit10" title="Show Top 10 per category">Top 10</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dynamic Mover Cards Grid -->
+              <div class="fut-movers-grid" id="futMoversGrid">
+                <!-- Dynamically populated via renderFuturesMovers() -->
+              </div>
+            </div>
+
             <!-- Master Table -->
             <div class="fut-table-wrap">
               <table class="fut-table" id="futMatrixTable">

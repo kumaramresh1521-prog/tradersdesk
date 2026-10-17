@@ -33,6 +33,8 @@
     rolloverTier: 'ALL',
     rolloverSortBy: 'symbol',
     rolloverSortDir: 'asc',
+    moversCategory: 'all',
+    moversLimit: 5,
     lastPrices: {},
     initialized: false
   };
@@ -305,9 +307,224 @@
         }).join('');
       }
 
+      // Render Opstra-Style Market Movers & Buzzers
+      renderFuturesMovers(data.marketMovers || {});
+
     } catch (err) {
       console.warn('Futures ribbon load error:', err);
     }
+  }
+
+  // --- Opstra-Style Derivatives Buzzers & Movers Matrix Definitions ---
+  const MOVER_CARDS_DEF = [
+    {
+      id: 'gainers',
+      cat: 'price',
+      title: 'Top Price Gainers',
+      icon: '🚀',
+      badge: 'BULLISH',
+      badgeCls: 'fut-card-badge-bull',
+      borderAccent: '#10b981',
+      dataKey: 'topGainers',
+      metricHeader: 'Day Chg %',
+      renderMetric: (r) => {
+        const chg = r.priceChangePct ?? r.changePct ?? 0;
+        return `<span class="fut-mover-val-pill fut-pill-pos">+${fmtNum(chg)}%</span>`;
+      },
+      renderSub: (r) => `₹${fmtNum(r.volumeValueCr, 1)} Cr Vol`
+    },
+    {
+      id: 'losers',
+      cat: 'price',
+      title: 'Top Price Losers',
+      icon: '🔻',
+      badge: 'BEARISH',
+      badgeCls: 'fut-card-badge-bear',
+      borderAccent: '#ef4444',
+      dataKey: 'topLosers',
+      metricHeader: 'Day Chg %',
+      renderMetric: (r) => {
+        const chg = r.priceChangePct ?? r.changePct ?? 0;
+        return `<span class="fut-mover-val-pill fut-pill-neg">${fmtNum(chg)}%</span>`;
+      },
+      renderSub: (r) => `₹${fmtNum(r.volumeValueCr, 1)} Cr Vol`
+    },
+    {
+      id: 'oiGainers',
+      cat: 'oi',
+      title: 'Top OI Gainers',
+      icon: '🟢',
+      badge: 'OI SPIKE',
+      badgeCls: 'fut-card-badge-oi-up',
+      borderAccent: '#06b6d4',
+      dataKey: 'topOiGainers',
+      metricHeader: 'OI Surge %',
+      renderMetric: (r) => {
+        const chg = r.oiChangePct ?? 0;
+        const sign = chg >= 0 ? '+' : '';
+        return `<span class="fut-mover-val-pill fut-pill-pos">${sign}${fmtNum(chg)}%</span>`;
+      },
+      renderSub: (r) => `₹${fmtNum(r.oiValueCr, 0)} Cr OI`
+    },
+    {
+      id: 'oiLosers',
+      cat: 'oi',
+      title: 'Top OI Losers',
+      icon: '🔴',
+      badge: 'UNWINDING',
+      badgeCls: 'fut-card-badge-oi-down',
+      borderAccent: '#f59e0b',
+      dataKey: 'topOiLosers',
+      metricHeader: 'OI Drop %',
+      renderMetric: (r) => {
+        const chg = r.oiChangePct ?? 0;
+        return `<span class="fut-mover-val-pill fut-pill-warn">${fmtNum(chg)}%</span>`;
+      },
+      renderSub: (r) => `₹${fmtNum(r.oiValueCr, 0)} Cr OI`
+    },
+    {
+      id: 'volume',
+      cat: 'volume',
+      title: 'Top Volume Buzzers',
+      icon: '⚡',
+      badge: 'SURGE',
+      badgeCls: 'fut-card-badge-vol',
+      borderAccent: '#3b82f6',
+      dataKey: 'topVolumeBuzzers',
+      metricHeader: 'Turnover',
+      renderMetric: (r) => {
+        const volCr = r.volumeValueCr ?? 0;
+        return `<span class="fut-mover-val-pill fut-pill-blue">₹${fmtNum(volCr, 1)} Cr</span>`;
+      },
+      renderSub: (r) => `${fmtQty(r.volumeContracts)} Lots`
+    },
+    {
+      id: 'ivGainers',
+      cat: 'iv',
+      title: 'Top IV Gainers',
+      icon: '🌊',
+      badge: 'VOL SPIKE',
+      badgeCls: 'fut-card-badge-iv-up',
+      borderAccent: '#a855f7',
+      dataKey: 'topIvGainers',
+      metricHeader: 'IV / IV Chg',
+      renderMetric: (r) => {
+        const ivChg = r.ivChangePct ?? 0;
+        const sign = ivChg >= 0 ? '+' : '';
+        return `<span class="fut-mover-val-pill fut-pill-purple">IV ${fmtNum(r.iv || 0, 1)}% (${sign}${fmtNum(ivChg, 1)}%)</span>`;
+      },
+      renderSub: (r) => {
+        const chg = r.priceChangePct ?? 0;
+        const sign = chg >= 0 ? '+' : '';
+        return `${sign}${fmtNum(chg, 1)}% Price`;
+      }
+    },
+    {
+      id: 'ivLosers',
+      cat: 'iv',
+      title: 'Top IV Losers',
+      icon: '📉',
+      badge: 'VOL CRUSH',
+      badgeCls: 'fut-card-badge-iv-down',
+      borderAccent: '#14b8a6',
+      dataKey: 'topIvLosers',
+      metricHeader: 'IV / IV Crush',
+      renderMetric: (r) => {
+        const ivChg = r.ivChangePct ?? 0;
+        return `<span class="fut-mover-val-pill fut-pill-teal">IV ${fmtNum(r.iv || 0, 1)}% (${fmtNum(ivChg, 1)}%)</span>`;
+      },
+      renderSub: (r) => {
+        const chg = r.priceChangePct ?? 0;
+        const sign = chg >= 0 ? '+' : '';
+        return `${sign}${fmtNum(chg, 1)}% Price`;
+      }
+    }
+  ];
+
+  function renderFuturesMovers(moversData) {
+    const grid = document.getElementById('futMoversGrid');
+    if (!grid) return;
+    if (!moversData || Object.keys(moversData).length === 0) {
+      if (state.dashboardData && state.dashboardData.marketMovers) {
+        moversData = state.dashboardData.marketMovers;
+      } else {
+        return;
+      }
+    }
+
+    const currentCat = state.moversCategory || 'all';
+    const limit = state.moversLimit || 5;
+
+    // Filter cards by category
+    const activeDefs = MOVER_CARDS_DEF.filter(d => {
+      if (currentCat === 'all') return true;
+      return d.cat === currentCat;
+    });
+
+    // Update grid column class based on active category
+    grid.className = `fut-movers-grid cat-${currentCat}`;
+
+    grid.innerHTML = activeDefs.map(def => {
+      const items = (moversData[def.dataKey] || []).slice(0, limit);
+      
+      let rowsHtml = '';
+      if (items.length === 0) {
+        rowsHtml = `<div class="fut-mover-empty">No active contracts found for this scan.</div>`;
+      } else {
+        rowsHtml = items.map((r, idx) => {
+          const rank = idx + 1;
+          const pChg = r.priceChangePct ?? r.changePct ?? 0;
+          const bCode = r.buildupCode || (pChg >= 0 ? 'LB' : 'SB');
+          const bBadgeCls = bCode === 'LB' ? 'fut-badge-lb' : (bCode === 'SB' ? 'fut-badge-sb' : (bCode === 'SC' ? 'fut-badge-sc' : 'fut-badge-lu'));
+          const sec = r.sector && r.sector !== 'Others' ? r.sector : '';
+
+          return `
+            <div class="fut-mover-row" onclick="window.futuresDesk.filterBySymbol('${r.symbol}')" title="Click to inspect ${r.symbol} in Master Matrix">
+              <span class="fut-mover-rank">${rank}</span>
+              <div class="fut-mover-sym-col">
+                <span class="fut-mover-sym">${r.symbol}</span>
+                ${sec ? `<span class="fut-mover-sec">${sec}</span>` : ''}
+              </div>
+              <div class="fut-mover-ltp-col">
+                <span class="fut-mover-ltp">₹${fmtNum(r.futPrice || r.ltp)}</span>
+              </div>
+              <div class="fut-mover-metric-col">
+                ${def.renderMetric(r)}
+                <span class="fut-mover-metric-sub">${def.renderSub(r)}</span>
+              </div>
+              <div class="fut-mover-tag-col">
+                <span class="fut-badge ${bBadgeCls}" style="padding:2px 5px; font-size:9px;">${bCode}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      return `
+        <div class="fut-mover-card" style="border-top: 3px solid ${def.borderAccent};">
+          <div class="fut-mover-card-head">
+            <div class="fut-mover-card-title-box">
+              <span class="fut-mover-card-icon">${def.icon}</span>
+              <div>
+                <span class="fut-mover-card-title">${def.title}</span>
+                <span class="fut-mover-card-sub">${items.length} Active Contracts</span>
+              </div>
+            </div>
+            <span class="fut-card-badge ${def.badgeCls}">${def.badge}</span>
+          </div>
+          <div class="fut-mover-card-cols-hdr">
+            <span style="width:18px;">#</span>
+            <span style="flex:1.2;">Contract</span>
+            <span style="flex:1; text-align:right;">LTP (₹)</span>
+            <span style="flex:1.4; text-align:right;">${def.metricHeader}</span>
+            <span style="width:28px; text-align:center;">Flow</span>
+          </div>
+          <div class="fut-mover-rows-wrap">
+            ${rowsHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   // --- Sub-Tab 1: All F&O Market Watch Matrix ---
@@ -1019,6 +1236,12 @@
       sInput.value = sym;
       state.search = sym.toUpperCase();
       switchSubTab('matrix');
+      setTimeout(() => {
+        const tblWrap = document.querySelector('.fut-table-wrap');
+        if (tblWrap) {
+          tblWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 60);
     }
   }
 
@@ -1062,6 +1285,34 @@
         refreshCurrentSubTab();
       });
     });
+
+    // Opstra Mover Category Pills Listener
+    document.querySelectorAll('#futMoversCategoryPills .fut-mover-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('#futMoversCategoryPills .fut-mover-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        state.moversCategory = pill.dataset.cat || 'all';
+        renderFuturesMovers();
+      });
+    });
+
+    // Opstra Mover Rows Limit Toggle (5 vs 10)
+    const btnLim5 = document.getElementById('futMoversLimit5');
+    const btnLim10 = document.getElementById('futMoversLimit10');
+    if (btnLim5 && btnLim10) {
+      btnLim5.addEventListener('click', () => {
+        btnLim5.classList.add('active');
+        btnLim10.classList.remove('active');
+        state.moversLimit = 5;
+        renderFuturesMovers();
+      });
+      btnLim10.addEventListener('click', () => {
+        btnLim10.classList.add('active');
+        btnLim5.classList.remove('active');
+        state.moversLimit = 10;
+        renderFuturesMovers();
+      });
+    }
 
     // Search Input Listener
     const searchInput = document.getElementById('futSearchInput');

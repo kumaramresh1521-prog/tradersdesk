@@ -9778,6 +9778,12 @@ class RequestHandler(BaseHTTPRequestHandler):
             force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
             return self.send_json(200, futures_engine.get_futures_dashboard(force_refresh=force))
 
+        if path == "/api/futures/movers":
+            query = urllib.parse.parse_qs(parsed.query)
+            force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
+            dash = futures_engine.get_futures_dashboard(force_refresh=force)
+            return self.send_json(200, {"ok": True, "movers": dash.get("marketMovers", {}), "date": dash.get("date"), "asOfDate": dash.get("asOfDate"), "isLive": dash.get("isLive")})
+
         if path == "/api/futures/screener":
             query = urllib.parse.parse_qs(parsed.query)
             sector = query.get("sector", ["ALL"])[0]
@@ -10435,6 +10441,12 @@ class RequestHandler(BaseHTTPRequestHandler):
                 payload = self.read_body()
                 force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
                 return self.send_json(200, futures_engine.get_futures_dashboard(force_refresh=force))
+
+            if parsed.path == "/api/futures/movers":
+                payload = self.read_body()
+                force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
+                dash = futures_engine.get_futures_dashboard(force_refresh=force)
+                return self.send_json(200, {"ok": True, "movers": dash.get("marketMovers", {}), "date": dash.get("date"), "asOfDate": dash.get("asOfDate"), "isLive": dash.get("isLive")})
 
             if parsed.path == "/api/futures/screener":
                 payload = self.read_body()
