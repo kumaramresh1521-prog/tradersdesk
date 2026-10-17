@@ -1300,7 +1300,8 @@
         st: data.strikeStep || 50
       };
 
-      const sessions = (data.sessions || []).map(s => {
+      const rawSessions = data.sessions || data.timeline || [];
+      const sessions = rawSessions.map(s => {
         let dtObj = new Date(s.dt);
         if (isNaN(dtObj.getTime())) dtObj = new Date();
         return {
@@ -1324,10 +1325,10 @@
       });
 
       oiState.allBars = sessions;
-      oiState.optionChain = data.optionChain || [];
-      oiState.atmStrike = data.atmStrike || 0;
-      oiState.maxPain = data.maxPain || 0;
-      oiState.chainPcr = data.pcr || 1.0;
+      oiState.optionChain = (data.optionChain && data.optionChain.strikes) ? data.optionChain.strikes : (Array.isArray(data.optionChain) ? data.optionChain : []);
+      oiState.atmStrike = data.atmStrike || (data.optionChain && data.optionChain.atm) || 0;
+      oiState.maxPain = data.maxPain || (data.optionChain && data.optionChain.maxPain) || 0;
+      oiState.chainPcr = data.pcr || (data.optionChain && data.optionChain.pcr) || 1.0;
 
       oiState.visibleCount = Math.min(oiState.visibleCount || 9999, sessions.length);
       oiState.visibleStart = Math.max(0, sessions.length - oiState.visibleCount);
