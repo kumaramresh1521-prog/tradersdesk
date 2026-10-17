@@ -65,55 +65,68 @@ SYMBOL_CONFIG = {
 }
 
 
-EOD_CACHE_FILE = CACHE_DIR / "fo_bhav_eod_master.json"
+EOD_CACHE_FILE = ROOT / "data" / "fo_bhav_eod_master.json"
+if not EOD_CACHE_FILE.exists():
+    EOD_CACHE_FILE = CACHE_DIR / "fo_bhav_eod_master.json"
 
 def _load_bhavcopy_eod_data(force: bool = False):
     """
-    Parses all cached official NSE Bhavcopy CSV files and indexes by symbol.
-    Persists to disk cache (fo_bhav_eod_master.json) for sub-10ms instantaneous queries.
+    Parses cached official NSE Bhavcopy CSV files and indexes by symbol.
+    Persists to disk cache (data/fo_bhav_eod_master.json) for sub-10ms instantaneous queries.
+    Preserves all historical sessions and incrementally appends newly downloaded dates.
     """
     global _BHAV_SESSIONS_CACHE
     now = time.time()
     if not force and _BHAV_SESSIONS_CACHE["ts"] > 0 and (now - _BHAV_SESSIONS_CACHE["ts"]) < 300:
         return _BHAV_SESSIONS_CACHE
 
-    csv_files = sorted(FO_BHAV_DIR.glob("BhavCopy_NSE_FO_*.csv"))
-    if not csv_files:
-        _BHAV_SESSIONS_CACHE["ts"] = now
-        return _BHAV_SESSIONS_CACHE
-
-    latest_csv_mtime = max(p.stat().st_mtime for p in csv_files)
-
-    # Check fast disk JSON cache
-    if not force and EOD_CACHE_FILE.exists() and EOD_CACHE_FILE.stat().st_size > 1000 and EOD_CACHE_FILE.stat().st_mtime >= latest_csv_mtime:
-        try:
-            with open(EOD_CACHE_FILE, "r", encoding="utf-8") as f:
-                cached_disk = json.load(f)
-                if cached_disk.get("symbols_data") and cached_disk.get("dates"):
-                    # Cast string strike keys back to float in latest_options
-                    raw_opts = cached_disk.get("latest_options", {})
-                    restored_opts = {}
-                    for sym_k, strike_map in raw_opts.items():
-                        restored_opts[sym_k] = {float(k): v for k, v in strike_map.items()}
-
-                    _BHAV_SESSIONS_CACHE = {
-                        "ts": now,
-                        "symbols_data": cached_disk["symbols_data"],
-                        "dates": cached_disk["dates"],
-                        "latest_options": restored_opts,
-                    }
-                    return _BHAV_SESSIONS_CACHE
-        except Exception:
-            pass
+    # 1. First, load existing base master cache from disk
+    cached_disk = None
+    for cache_path in (ROOT / "data" / "fo_bhav_eod_master.json", CACHE_DIR / "fo_bhav_eod_master.json"):
+        if cache_path.exists() and cache_path.stat().st_size > 1000:
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    cached_disk = json.load(f)
+                    if cached_disk.get("symbols_data") and cached_disk.get("dates"):
+                        break
+            except Exception:
+                cached_disk = None
 
     symbols_data: Dict[str, List[dict]] = {}
     latest_options: Dict[str, Dict[float, dict]] = {}
     dates_found = []
 
-    for idx, path in enumerate(csv_files):
+    if cached_disk:
+        symbols_data = cached_disk.get("symbols_data", {})
+        dates_found = list(cached_disk.get("dates", []))
+        raw_opts = cached_disk.get("latest_options", {})
+        for sym_k, strike_map in raw_opts.items():
+            try:
+                latest_options[sym_k] = {float(k): v for k, v in strike_map.items()}
+            except Exception:
+                pass
+
+    # 2. Check if there are newly downloaded Bhavcopy CSVs not yet in dates_found
+    csv_files = sorted(FO_BHAV_DIR.glob("BhavCopy_NSE_FO_*.csv")) if FO_BHAV_DIR.exists() else []
+    new_csvs = [p for p in csv_files if p.stem.replace("BhavCopy_NSE_FO_", "") not in dates_found]
+
+    if not new_csvs and symbols_data and dates_found:
+        _BHAV_SESSIONS_CACHE = {
+            "ts": now,
+            "symbols_data": symbols_data,
+            "dates": dates_found,
+            "latest_options": latest_options,
+        }
+        return _BHAV_SESSIONS_CACHE
+
+    # 3. If no cache existed, parse all CSVs; if cache existed, parse ONLY new_csvs
+    files_to_parse = csv_files if not dates_found else new_csvs
+
+    for idx, path in enumerate(files_to_parse):
         dt_str = path.stem.replace("BhavCopy_NSE_FO_", "")
-        dates_found.append(dt_str)
-        is_latest = (idx == len(csv_files) - 1)
+        if dt_str not in dates_found:
+            dates_found.append(dt_str)
+        is_latest = (idx == len(files_to_parse) - 1)
 
         try:
             with open(path, "r", encoding="utf-8", errors="ignore") as f:
@@ -139,7 +152,6 @@ def _load_bhavcopy_eod_data(force: bool = False):
                             if sym not in symbols_data:
                                 symbols_data[sym] = []
 
-                            # Only one near-month futures record per symbol per date
                             existing_today = [x for x in symbols_data[sym] if x["date"] == dt_str]
                             if not existing_today:
                                 symbols_data[sym].append({
@@ -176,6 +188,7 @@ def _load_bhavcopy_eod_data(force: bool = False):
         except Exception:
             continue
 
+    dates_found = sorted(dates_found)
     _BHAV_SESSIONS_CACHE = {
         "ts": now,
         "symbols_data": symbols_data,
@@ -183,14 +196,16 @@ def _load_bhavcopy_eod_data(force: bool = False):
         "latest_options": latest_options,
     }
 
-    # Save to disk cache atomically for future instant loads
-    try:
-        tmp_file = EOD_CACHE_FILE.with_suffix(".tmp")
-        with open(tmp_file, "w", encoding="utf-8") as f:
-            json.dump(_BHAV_SESSIONS_CACHE, f)
-        tmp_file.replace(EOD_CACHE_FILE)
-    except Exception:
-        pass
+    # Save to disk caches atomically for future instant loads
+    for out_path in (ROOT / "data" / "fo_bhav_eod_master.json", CACHE_DIR / "fo_bhav_eod_master.json"):
+        try:
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp_file = out_path.with_suffix(".tmp")
+            with open(tmp_file, "w", encoding="utf-8") as f:
+                json.dump(_BHAV_SESSIONS_CACHE, f)
+            tmp_file.replace(out_path)
+        except Exception:
+            pass
 
     return _BHAV_SESSIONS_CACHE
 

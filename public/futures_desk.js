@@ -2415,6 +2415,22 @@
     if (cdText) cdText.textContent = state.countdownSec + 's';
 
     state.countdownTimer = setInterval(() => {
+      // Pause if browser tab is hidden/minimized
+      if (document.hidden) return;
+
+      // Check Indian market hours (Mon-Fri 09:15 to 15:35 IST)
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      const ist = new Date(utc + 3600000 * 5.5);
+      const day = ist.getDay();
+      const mins = ist.getHours() * 60 + ist.getMinutes();
+      const isMarketOpen = (day >= 1 && day <= 5) && (mins >= 555 && mins <= 935);
+
+      if (!isMarketOpen) {
+        if (cdText) cdText.textContent = 'EOD Mode';
+        return;
+      }
+
       state.countdownSec -= 1;
       if (state.countdownSec <= 0) {
         state.countdownSec = seconds;
