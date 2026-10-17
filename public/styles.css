@@ -19603,98 +19603,90 @@ body[data-theme="light"] .ghub-card-desc {
 .deliv-indices-strip-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 16px 18px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.05);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
 }
 
 .deliv-indices-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .deliv-indices-title-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-.deliv-indices-icon-box {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+.deliv-sector-badge {
   background: rgba(37, 99, 235, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
+  color: #2563eb;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
 }
 
 .deliv-indices-title {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.2px;
 }
 
-.deliv-indices-subtitle {
-  margin: 2px 0 0 0;
-  font-size: 11.5px;
-  color: #64748b;
-}
-
 .deliv-indices-hint-pill {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-  color: #475569;
-  background: #f1f5f9;
-  padding: 4px 10px;
-  border-radius: 20px;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 3px 8px;
+  border-radius: 12px;
   border: 1px solid #e2e8f0;
 }
 
 .deliv-indices-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
 }
 
-/* Institutional Index Benchmark Card */
+/* Institutional Compact Index Benchmark Card */
 .deliv-benchmark-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: 7px 9px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s ease;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   position: relative;
-  overflow: hidden;
 }
 
 .deliv-benchmark-card:hover {
-  transform: translateY(-2px);
-  border-color: #93c5fd;
-  box-shadow: 0 8px 18px -4px rgba(37, 99, 235, 0.12);
+  transform: translateY(-1px);
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.12);
 }
 
 .deliv-benchmark-card.selected {
-  border: 2px solid #2563eb;
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.01) 100%);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.18);
+  border: 1.5px solid #2563eb;
+  background: rgba(37, 99, 235, 0.04);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
 }
 
 .deliv-benchmark-card.nifty-flag:not(.selected) {
-  border-color: #60a5fa;
-  background: rgba(59, 130, 246, 0.02);
+  border-color: #93c5fd;
+  background: rgba(59, 130, 246, 0.015);
 }
 
 .deliv-card-top {
@@ -19704,129 +19696,68 @@ body[data-theme="light"] .ghub-card-desc {
 }
 
 .deliv-card-title {
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 800;
   color: #0f172a;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .deliv-star {
   color: #f59e0b;
-  font-size: 12px;
+  font-size: 10.5px;
 }
 
 .deliv-stance-pill {
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  letter-spacing: 0.3px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.2px;
 }
 
 .deliv-stance-pill.accum {
   background: #dcfce7;
   color: #15803d;
-  border: 1px solid #bbf7d0;
 }
 
 .deliv-stance-pill.distrib {
   background: #fee2e2;
   color: #b91c1c;
-  border: 1px solid #fecaca;
 }
 
 .deliv-stance-pill.neutral {
   background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
+  color: #64748b;
 }
 
-.deliv-card-hero {
+.deliv-card-mid {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px;
 }
 
 .deliv-hero-pct {
-  font-size: 18px;
+  font-size: 14.5px;
   font-weight: 900;
   color: #2563eb;
   font-family: 'JetBrains Mono', monospace;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 }
 
 .deliv-hero-cr {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #10b981;
 }
 
-/* Delivery Progress Track */
-.deliv-progress-container {
-  width: 100%;
-}
-
-.deliv-progress-track {
-  width: 100%;
-  height: 5px;
-  background: #e2e8f0;
-  border-radius: 4px;
-  position: relative;
-  overflow: visible;
-}
-
-.deliv-progress-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.4s ease;
-}
-
-.deliv-progress-pin {
-  position: absolute;
-  top: -2px;
-  width: 2px;
-  height: 9px;
-  background: #7c3aed;
-  border-radius: 1px;
-  transform: translateX(-50%);
-}
-
-/* Benchmarks Row */
-.deliv-card-benchmarks {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 4px;
-  padding-top: 6px;
-  border-top: 1px solid #f1f5f9;
-}
-
-.deliv-bm-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.deliv-bm-label {
-  font-size: 9px;
-  color: #64748b;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.deliv-bm-val {
-  font-size: 11px;
-  font-weight: 700;
-  color: #334155;
-  font-family: 'JetBrains Mono', monospace;
-}
-
 .deliv-bm-delta {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
   font-family: 'JetBrains Mono', monospace;
 }
@@ -19843,41 +19774,50 @@ body[data-theme="light"] .ghub-card-desc {
   color: #64748b;
 }
 
-/* Footer Action */
-.deliv-card-footer {
-  margin-top: 2px;
+/* Delivery Progress Track */
+.deliv-progress-container {
+  width: 100%;
+}
+
+.deliv-progress-track {
+  width: 100%;
+  height: 3px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  position: relative;
+}
+
+.deliv-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.deliv-progress-pin {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 7px;
+  background: #7c3aed;
+  border-radius: 1px;
+  transform: translateX(-50%);
+}
+
+.deliv-card-subline {
   display: flex;
-  justify-content: flex-end;
-}
-
-.deliv-card-hist-btn {
-  display: inline-flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  font-size: 10.5px;
+  font-size: 9.5px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.deliv-card-subline strong {
+  color: #334155;
   font-weight: 700;
-  background: rgba(37, 99, 235, 0.06);
-  color: #2563eb;
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  font-family: 'JetBrains Mono', monospace;
 }
 
-.deliv-card-hist-btn:hover {
-  background: #2563eb;
-  color: #ffffff;
-  border-color: #2563eb;
-}
-
-.deliv-arrow {
-  transition: transform 0.15s ease;
-}
-
-.deliv-card-hist-btn:hover .deliv-arrow {
-  transform: translateX(2px);
-}
 
 /* Dark Theme Overrides */
 [data-theme="dark"] .delivery-subtabs {
@@ -20002,12 +19942,12 @@ body[data-theme="light"] .ghub-card-desc {
   background: #1e293b;
 }
 
-[data-theme="dark"] .deliv-card-benchmarks {
-  border-top-color: #1e293b;
+[data-theme="dark"] .deliv-card-subline {
+  color: #94a3b8;
 }
 
-[data-theme="dark"] .deliv-bm-val {
-  color: #cbd5e1;
+[data-theme="dark"] .deliv-card-subline strong {
+  color: #f1f5f9;
 }
 
 [data-theme="dark"] .deliv-stance-pill.neutral {
@@ -20026,17 +19966,6 @@ body[data-theme="light"] .ghub-card-desc {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
   border-color: rgba(239, 68, 68, 0.3);
-}
-
-[data-theme="dark"] .deliv-card-hist-btn {
-  background: rgba(59, 130, 246, 0.12);
-  color: #60a5fa;
-  border-color: rgba(59, 130, 246, 0.25);
-}
-
-[data-theme="dark"] .deliv-card-hist-btn:hover {
-  background: #2563eb;
-  color: #ffffff;
 }
 
 

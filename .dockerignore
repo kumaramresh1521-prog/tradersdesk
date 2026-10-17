@@ -1,5 +1,12 @@
 .cache/
-cache/
+cache/*
+!cache/futures_rollover_official.json
+!cache/latest_fo_bhav_rollover.json
+!cache/fo_bhav/
+!cache/fo_bhav/**
+!cache/delivery_bhav/
+!cache/delivery_bhav/**
+!cache/kotak_*.json
 .env
 __pycache__/
 *.pyc

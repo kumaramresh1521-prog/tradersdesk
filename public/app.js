@@ -4738,46 +4738,26 @@ function renderDeliveryDashboard(data) {
       return `
         <div class="deliv-benchmark-card ${cardSelectedClass}" onclick="selectDeliveryUniverse('${idx.key}')" title="Click to filter universe by ${idx.label}">
           <div class="deliv-card-top">
-            <div class="deliv-card-title">
-              ${isNifty50 ? '<span class="deliv-star">★</span> ' : ''}<span>${idx.label}</span>
-            </div>
-            <span class="deliv-stance-pill ${stanceClass}">
-              ${stanceLabel}
-            </span>
+            <span class="deliv-card-title">${isNifty50 ? '<span class="deliv-star">★</span> ' : ''}${idx.label}</span>
+            <span class="deliv-stance-pill ${stanceClass}">${stanceLabel}</span>
           </div>
 
-          <div class="deliv-card-hero">
-            <div class="deliv-hero-pct">${dailyPct.toFixed(1)}%</div>
-            <div class="deliv-hero-cr">₹${Math.round(dailyCr).toLocaleString('en-IN')} Cr</div>
+          <div class="deliv-card-mid">
+            <span class="deliv-hero-pct">${dailyPct.toFixed(1)}%</span>
+            <span class="deliv-hero-cr">₹${Math.round(dailyCr).toLocaleString('en-IN')} Cr</span>
+            <span class="deliv-bm-delta ${deltaBadgeClass}">${deltaSign}${deltaVsMonth}%</span>
           </div>
 
-          <div class="deliv-progress-container" title="Delivery: ${dailyPct.toFixed(1)}% (30D Avg: ${monthPct.toFixed(1)}%)">
+          <div class="deliv-progress-container" title="Delivery: ${dailyPct.toFixed(1)}% | 30D Avg: ${monthPct.toFixed(1)}%">
             <div class="deliv-progress-track">
               <div class="deliv-progress-fill" style="width:${progressPct}%; background:${progressColor};"></div>
               <div class="deliv-progress-pin" style="left:${monthBenchmarkPct}%;" title="30D Benchmark: ${monthPct.toFixed(1)}%"></div>
             </div>
           </div>
 
-          <div class="deliv-card-benchmarks">
-            <div class="deliv-bm-item">
-              <span class="deliv-bm-label">Prev Day</span>
-              <span class="deliv-bm-val">${prevPct.toFixed(1)}%</span>
-            </div>
-            <div class="deliv-bm-item">
-              <span class="deliv-bm-label">30D Avg</span>
-              <span class="deliv-bm-val">${monthPct.toFixed(1)}%</span>
-            </div>
-            <div class="deliv-bm-item text-right">
-              <span class="deliv-bm-label">vs Avg</span>
-              <span class="deliv-bm-delta ${deltaBadgeClass}">${deltaSign}${deltaVsMonth}%</span>
-            </div>
-          </div>
-
-          <div class="deliv-card-footer">
-            <button type="button" class="deliv-card-hist-btn" onclick="event.stopPropagation(); inspectDeliveryStock('${idx.label}')" title="Inspect ${idx.label} Historical Delivery Data">
-              <span>📊 History</span>
-              <span class="deliv-arrow">→</span>
-            </button>
+          <div class="deliv-card-subline">
+            <span>30D: <strong>${monthPct.toFixed(1)}%</strong></span>
+            <span>Prev: <strong>${prevPct.toFixed(1)}%</strong></span>
           </div>
         </div>
       `;

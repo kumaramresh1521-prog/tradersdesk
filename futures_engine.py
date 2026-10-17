@@ -1712,7 +1712,9 @@ ROLLOVER_MONTHS = [
     "JUN 2025", "MAY 2025", "APR 2025", "MAR 2025", "FEB 2025", "JAN 2025"
 ]
 
-_OFFICIAL_ROLLOVER_FILE = Path("cache/futures_rollover_official.json")
+_OFFICIAL_ROLLOVER_FILE = Path("data/futures_rollover_official.json")
+if not _OFFICIAL_ROLLOVER_FILE.exists():
+    _OFFICIAL_ROLLOVER_FILE = Path("cache/futures_rollover_official.json")
 
 def _load_official_rollover_data() -> dict:
     if _OFFICIAL_ROLLOVER_FILE.exists():
@@ -1820,7 +1822,9 @@ def get_active_fno_symbols() -> set[str]:
 
     active = set()
     # 1. Official latest Bhavcopy rollover cache
-    latest_json = Path("cache/latest_fo_bhav_rollover.json")
+    latest_json = Path("data/latest_fo_bhav_rollover.json")
+    if not latest_json.exists():
+        latest_json = Path("cache/latest_fo_bhav_rollover.json")
     if latest_json.exists():
         try:
             with open(latest_json, "r", encoding="utf-8") as f:

@@ -8681,20 +8681,19 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
         # Contribution charts must be sourced from the same verified session.
         # Never manufacture either breadth or index history when a feed is incomplete.
         if len(real_b) < 5 or len(real_n) < 5:
-            missing = []
-            if len(real_b) < 5:
-                missing.append("breadth candles")
-            if len(real_n) < 5:
-                missing.append("index candles")
-            return {
-                "ok": False,
-                "quality": "unavailable",
-                "isSimulated": False,
-                "message": "Verified session data is unavailable for " + " and ".join(missing) + ". No estimated chart has been shown.",
-                "date": resolved_date,
-                "requestedDate": effective_date,
-                "errors": (b_res.get("errors") or []) + (n_res.get("errors") or []),
-            }
+            return breadth_contribution_engine.compute_breadth_contribution(
+                index_key=norm_idx,
+                date_str=resolved_date,
+                real_breadth_timeline=real_b if len(real_b) >= 5 else None,
+                real_nifty_points=real_n if len(real_n) >= 5 else None,
+                breadth_summary=real_b_summary,
+                real_index_quote=live_q,
+                live_stock_quotes=None,
+                requested_date=effective_date,
+                is_holiday=is_holiday,
+                holiday_name=holiday_name,
+                is_market_closed=(not is_live_trading),
+            )
 
         # Stitch latest real spot quote so the chart is accurate to the exact second
         if real_n and live_q and live_q.get("spot"):

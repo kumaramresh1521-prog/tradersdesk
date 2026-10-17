@@ -26,8 +26,13 @@ CACHE_DIR = ROOT / "cache"
 FO_BHAV_DIR = CACHE_DIR / "fo_bhav"
 FO_BHAV_DIR.mkdir(parents=True, exist_ok=True)
 
-LATEST_ROLLOVER_FILE = CACHE_DIR / "latest_fo_bhav_rollover.json"
-OFFICIAL_ROLLOVER_FILE = CACHE_DIR / "futures_rollover_official.json"
+LATEST_ROLLOVER_FILE = ROOT / "data" / "latest_fo_bhav_rollover.json"
+if not LATEST_ROLLOVER_FILE.exists():
+    LATEST_ROLLOVER_FILE = CACHE_DIR / "latest_fo_bhav_rollover.json"
+
+OFFICIAL_ROLLOVER_FILE = ROOT / "data" / "futures_rollover_official.json"
+if not OFFICIAL_ROLLOVER_FILE.exists():
+    OFFICIAL_ROLLOVER_FILE = CACHE_DIR / "futures_rollover_official.json"
 
 INDIA_TZ = timezone(timedelta(hours=5, minutes=30))
 
