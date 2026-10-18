@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+data/system_vault.json
 *.pem
 *.key
 *.cert

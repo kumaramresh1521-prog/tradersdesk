@@ -2,6 +2,7 @@
 !.cache/participant_oi/
 !.cache/participant_oi/**
 .env
+data/system_vault.json
 __pycache__/
 *.pyc
 *.pyo

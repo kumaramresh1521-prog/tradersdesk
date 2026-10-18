@@ -42,6 +42,7 @@ import upstox_engine
 import futures_engine
 import calendar_engine
 import options_math
+import secret_manager_engine
 
 
 
@@ -437,23 +438,22 @@ SAMPLE_SECTORS = [
 ]
 
 
-SYSTEM_VAULT_FILE = ROOT / "data" / "system_vault.json"
 CONFIG_BACKUP_FILE = CACHE_DIR / "broker_config.json"
+SECRET_BACKED_ENV_KEYS = frozenset({
+    "ADMIN_SECRET_KEY", "DATA_BROKER",
+    "ANGEL_API_KEY", "ANGEL_CLIENT_CODE", "ANGEL_PIN", "ANGEL_TOTP_SECRET", "ANGEL_TOTP_CODE", "ANGEL_BASE_URL",
+    "UPSTOX_ACCESS_TOKEN", "UPSTOX_API_KEY", "UPSTOX_API_SECRET", "UPSTOX_MOBILE", "UPSTOX_PIN", "UPSTOX_TOTP_SECRET", "UPSTOX_REDIRECT_URI",
+    "KOTAK_ACCESS_TOKEN", "KOTAK_CONSUMER_KEY", "KOTAK_CONSUMER_SECRET", "KOTAK_UCC", "KOTAK_MOBILE_NO", "KOTAK_MPIN", "KOTAK_TOTP_SECRET", "KOTAK_VIEW_TOKEN", "KOTAK_SID",
+    "FYERS_APP_ID", "FYERS_ACCESS_TOKEN",
+    "SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY",
+})
 
 
 def load_dotenv() -> None:
-    # Priority 1: Persistent Git-tracked system vault (Never lost on Cloud Run container recreations)
-    if SYSTEM_VAULT_FILE.exists():
-        try:
-            vault_data = json.loads(SYSTEM_VAULT_FILE.read_text(encoding="utf-8"))
-            if isinstance(vault_data, dict):
-                for k, v in vault_data.items():
-                    if v and (k not in os.environ or not os.environ[k]):
-                        os.environ[k] = str(v)
-        except Exception:
-            pass
+    # Priority 1: Cloud Run environment variables (injected from Secret Manager)
+    # are already present in os.environ and must never be overwritten.
 
-    # Priority 2: Local .env file
+    # Priority 2: Local .env file for local development only.
     if ENV_FILE.exists():
         try:
             for raw_line in ENV_FILE.read_text(encoding="utf-8").splitlines():
@@ -463,7 +463,7 @@ def load_dotenv() -> None:
                 key, value = line.split("=", 1)
                 key = key.strip()
                 value = value.strip().strip('"').strip("'")
-                if key and value:
+                if key and value and (key not in os.environ or not os.environ[key]):
                     os.environ[key] = value
         except Exception:
             pass
@@ -479,28 +479,15 @@ def load_dotenv() -> None:
         except Exception:
             pass
 
-    # Priority 4: Restore from Supabase cloud vault if available
-    try:
-        sb_res = supabase_engine.load_user_workspace("master_broker_vault")
-        if sb_res.get("ok") and isinstance(sb_res.get("workspace"), dict):
-            cloud_vault = sb_res["workspace"]
-            restored_any = False
-            for k, v in cloud_vault.items():
-                if v and (k not in os.environ or not os.environ[k]):
-                    os.environ[k] = str(v)
-                    restored_any = True
-            if restored_any:
-                ensure_cache()
-                CONFIG_BACKUP_FILE.write_text(json.dumps(cloud_vault, indent=2), encoding="utf-8")
-    except Exception:
-        pass
+    # Broker credentials intentionally do not restore from Supabase or a
+    # repository file. In production they come only from Secret Manager.
 
 
 load_dotenv()
 
 
 def save_dotenv(updates: dict[str, str]) -> None:
-    """Updates key-value pairs in .env, persistent backup, data/system_vault.json, and os.environ."""
+    """Updates the current instance and securely persists supported values on Cloud Run."""
     existing_lines = []
     if ENV_FILE.exists():
         try:
@@ -532,20 +519,6 @@ def save_dotenv(updates: dict[str, str]) -> None:
     except Exception:
         pass
 
-    # Save to data/system_vault.json (git-tracked permanent storage for Cloud Run)
-    try:
-        SYSTEM_VAULT_FILE.parent.mkdir(parents=True, exist_ok=True)
-        cur_vault = {}
-        if SYSTEM_VAULT_FILE.exists():
-            try:
-                cur_vault = json.loads(SYSTEM_VAULT_FILE.read_text(encoding="utf-8"))
-            except Exception:
-                cur_vault = {}
-        cur_vault.update(updates)
-        SYSTEM_VAULT_FILE.write_text(json.dumps(cur_vault, indent=2), encoding="utf-8")
-    except Exception:
-        pass
-
     backup = {}
     try:
         ensure_cache()
@@ -566,15 +539,16 @@ def save_dotenv(updates: dict[str, str]) -> None:
         except Exception:
             pass
 
-    # Async sync to Supabase cloud vault
-    def _sync_vault_bg(vault_data: dict):
-        try:
-            supabase_engine.save_user_workspace("master_broker_vault", vault_data)
-        except Exception:
-            pass
+    secret_updates = {k: str(v) for k, v in updates.items() if k in SECRET_BACKED_ENV_KEYS and str(v).strip()}
+    if secret_updates and secret_manager_engine.is_cloud_run():
+        def _persist_secrets_bg(values: dict[str, str]) -> None:
+            result = secret_manager_engine.upsert_environment_secrets(values)
+            if not result.get("ok"):
+                log_system_event("ERROR", "SECRETS", "Cloud Secret Manager persistence failed.", result.get("message", "Unknown error"))
+            else:
+                log_system_event("SUCCESS", "SECRETS", f"Persisted {result.get('count', 0)} configuration value(s) to Secret Manager.")
 
-    if backup:
-        threading.Thread(target=_sync_vault_bg, args=(dict(backup),), daemon=True).start()
+        threading.Thread(target=_persist_secrets_bg, args=(secret_updates,), daemon=True).start()
 
 
 
