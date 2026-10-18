@@ -6,6 +6,10 @@ cache/*
 !cache/fo_bhav/**
 !cache/delivery_bhav/
 !cache/delivery_bhav/**
+!cache/participant_oi/
+!cache/participant_oi/**
+!.cache/participant_oi/
+!.cache/participant_oi/**
 !cache/kotak_*.json
 .env
 __pycache__/

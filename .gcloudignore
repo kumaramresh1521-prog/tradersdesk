@@ -1,4 +1,6 @@
 .cache/
+!.cache/participant_oi/
+!.cache/participant_oi/**
 .env
 __pycache__/
 *.pyc

@@ -3840,7 +3840,7 @@ function _renderPoiSignalCards(data, fiiM, trapRadar) {
   `;
 }
 
-let _poiViewMode = "dayChange"; // "dayChange" (default: Trendlyne Intraday Day Change) | "cumulative" (EOD Positions) | "detailed" (with %)
+let _poiViewMode = "cumulative"; // "cumulative" (default: Trendlyne EOD Total OI) | "dayChange" | "detailed"
 
 /* ─── Trendlyne-style transposed matrix ────────────────────────────────────
    ROWS  = instrument types  (Future Index Long, Short, Net, ...)

@@ -6090,7 +6090,7 @@ def parse_participant_csv(csv_text: str) -> dict:
 def get_available_participant_sessions() -> list[tuple[date, pathlib.Path]]:
     sessions = []
     seen_dates = set()
-    for directory in (PARTICIPANT_CACHE_DIR, ROOT / "data"):
+    for directory in (ROOT / "data", PARTICIPANT_CACHE_DIR):
         if not directory.exists():
             continue
         for f in sorted(directory.glob("fao_participant_oi_*.csv")):
