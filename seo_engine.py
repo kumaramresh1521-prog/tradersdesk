@@ -299,49 +299,49 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
         "title": "Quantitative Model Methodologies & Architecture | TradersDesk",
         "desc": "Learn about TradersDesk's Black-Scholes Greeks engines, Point & Figure market breadth calculations, and institutional data pipelines.",
         "keywords": "about tradersdesk, quantitative models, black scholes engine, market breadth methodology",
-        "canonical": "https://tradersdesk.in/about.html",
+        "canonical": "https://tradersdesk.in/about",
     },
     "/about.html": {
         "title": "Quantitative Model Methodologies & Architecture | TradersDesk",
         "desc": "Learn about TradersDesk's Black-Scholes Greeks engines, Point & Figure market breadth calculations, and institutional data pipelines.",
         "keywords": "about tradersdesk, quantitative models, black scholes engine, market breadth methodology",
-        "canonical": "https://tradersdesk.in/about.html",
+        "canonical": "https://tradersdesk.in/about",
     },
     "/disclaimer": {
         "title": "SEBI Regulatory & Compliance Disclaimer | TradersDesk",
         "desc": "Important regulatory disclosures, SEBI compliance notices, and research terms for TradersDesk institutional analytics platform.",
         "keywords": "sebi disclaimer, regulatory disclosure, compliance notice, educational research only",
-        "canonical": "https://tradersdesk.in/disclaimer.html",
+        "canonical": "https://tradersdesk.in/disclaimer",
     },
     "/disclaimer.html": {
         "title": "SEBI Regulatory & Compliance Disclaimer | TradersDesk",
         "desc": "Important regulatory disclosures, SEBI compliance notices, and research terms for TradersDesk institutional analytics platform.",
         "keywords": "sebi disclaimer, regulatory disclosure, compliance notice, educational research only",
-        "canonical": "https://tradersdesk.in/disclaimer.html",
+        "canonical": "https://tradersdesk.in/disclaimer",
     },
     "/privacy": {
         "title": "Privacy Policy & Data Governance | TradersDesk",
         "desc": "TradersDesk privacy policy detailing data protection, broker credential safety, encryption standards, and user governance.",
         "keywords": "privacy policy, data governance, broker security, credential encryption",
-        "canonical": "https://tradersdesk.in/privacy.html",
+        "canonical": "https://tradersdesk.in/privacy",
     },
     "/privacy.html": {
         "title": "Privacy Policy & Data Governance | TradersDesk",
         "desc": "TradersDesk privacy policy detailing data protection, broker credential safety, encryption standards, and user governance.",
         "keywords": "privacy policy, data governance, broker security, credential encryption",
-        "canonical": "https://tradersdesk.in/privacy.html",
+        "canonical": "https://tradersdesk.in/privacy",
     },
     "/terms": {
         "title": "Terms of Institutional Service | TradersDesk",
         "desc": "Terms and conditions governing the use of the TradersDesk institutional market intelligence terminal and APIs.",
         "keywords": "terms of service, institutional terms, platform usage rules",
-        "canonical": "https://tradersdesk.in/terms.html",
+        "canonical": "https://tradersdesk.in/terms",
     },
     "/terms.html": {
         "title": "Terms of Institutional Service | TradersDesk",
         "desc": "Terms and conditions governing the use of the TradersDesk institutional market intelligence terminal and APIs.",
         "keywords": "terms of service, institutional terms, platform usage rules",
-        "canonical": "https://tradersdesk.in/terms.html",
+        "canonical": "https://tradersdesk.in/terms",
     },
 }
 
@@ -592,7 +592,7 @@ def auto_discover_pages() -> tuple[list[dict], int]:
     return discovered, len(all_r)
 
 def rebuild_sitemap_xml() -> tuple[bool, str]:
-    """Generates a clean, valid XML sitemap based on all active indexed SEO routes."""
+    """Generates a clean, valid XML sitemap based on all active indexed SEO routes with strict canonical deduplication."""
     try:
         all_r = load_all_seo_routes()
         lines = ['<?xml version="1.0" encoding="UTF-8"?>']
@@ -602,12 +602,18 @@ def rebuild_sitemap_xml() -> tuple[bool, str]:
         # Sort routes: root first, then by priority desc
         sorted_routes = sorted(all_r.values(), key=lambda x: (0 if x["path"] == "/" else 1, -float(x.get("priority", 0.5))))
         
+        seen_canonicals = set()
         count = 0
         for r in sorted_routes:
             # Skip noindex
             if "noindex" in r.get("robots", "").lower():
                 continue
-            canonical = r.get("canonical") or f"https://tradersdesk.in{r['path'] if r['path'] != '/' else ''}"
+            canonical = (r.get("canonical") or f"https://tradersdesk.in{r['path'] if r['path'] != '/' else ''}").rstrip("/")
+            if canonical == "https://tradersdesk.in":
+                canonical = "https://tradersdesk.in/"
+            if canonical in seen_canonicals:
+                continue
+            seen_canonicals.add(canonical)
             prio = r.get("priority", "0.8")
             freq = r.get("changefreq", "daily")
             lines.append("  <url>")
@@ -621,7 +627,7 @@ def rebuild_sitemap_xml() -> tuple[bool, str]:
         lines.append("</urlset>")
         sitemap_path = ROOT / "public" / "sitemap.xml"
         sitemap_path.write_text("\n".join(lines), encoding="utf-8")
-        return True, f"Successfully rebuilt sitemap.xml with {count} indexed URLs!"
+        return True, f"Successfully rebuilt sitemap.xml with {count} unique indexed URLs!"
     except Exception as e:
         return False, f"Failed to rebuild sitemap: {e}"
 
@@ -814,30 +820,30 @@ def get_dynamic_meta_for_path(path: str, snapshot: dict) -> dict:
     top_gainers_summary = ", ".join(f"{g['symbol']} (+{g['pct']:.1f}%)" for g in top_gainers[:3]) if top_gainers else "TECHM (+8.0%), WIPRO (+6.7%), TCS (+4.0%)"
 
     if clean_p in ("/", "/dashboard"):
-        base_meta["title"] = f"TradersDesk.in | {nifty_str} | Institutional Derivatives Terminal"
-        base_meta["desc"] = f"TradersDesk.in — Institutional-grade Indian derivatives terminal. Live {nifty_str}, Bank Nifty {snapshot.get('banknifty_spot', 55918.0):,.2f}. Institutional Smart Money: FII Cash ₹{fii_net:+,.1f} Cr, DII Cash ₹{dii_net:+,.1f} Cr. Real-time Option Chain Pro with Greeks, Max Pain, PCR & Market Breadth."
+        base_meta["title"] = f"TradersDesk | NIFTY {nifty_spot:,.0f} ({sign}{nifty_pct:.1f}%) | Derivatives Terminal"
+        base_meta["desc"] = f"Live Indian derivatives terminal: Option Chain Pro with Greeks, Max Pain, PCR, Market Breadth & FII/DII Smart Money flow on NSE ({date_str})."
     elif clean_p.startswith("/futures"):
-        base_meta["title"] = f"Futures Buildup & Screener | Top Movers: {top_gainers_summary} | TradersDesk"
-        base_meta["desc"] = f"Track real-time NSE Open Interest, Long Buildup, Short Covering & MWPL Ban radar across 220+ equities ({date_str}). Top session leaders: {top_gainers_summary}. Direct exchange analytics & contract matrix."
+        base_meta["title"] = "Futures Intelligence Desk - Live OI Buildup & Ban Radar | TradersDesk"
+        base_meta["desc"] = f"Track real-time NSE Open Interest buildup, Long & Short unwinding, Cost of Carry, and MWPL Ban radar across all F&O equities ({date_str})."
     elif clean_p.startswith("/fii") or clean_p.startswith("/smart-money"):
-        base_meta["title"] = f"FII / DII Smart Money Flow | Latest FII Cash: ₹{fii_net:+,.1f} Cr, DII: ₹{dii_net:+,.1f} Cr | TradersDesk"
-        base_meta["desc"] = f"Real-time institutional flow & participant positioning. Latest FII Net Cash ₹{fii_net:+,.2f} Cr, DII Net Cash ₹{dii_net:+,.2f} Cr, Index Futures FII Net ₹{snapshot.get('fii_index_fut_cr', 1024.71):+,.1f} Cr on {date_str}. Historical cash & derivatives trends."
+        base_meta["title"] = "FII DII Smart Money Flow | Participant Derivatives Positioning | TradersDesk"
+        base_meta["desc"] = f"Real-time institutional cash market buying/selling, participant derivatives open interest, and historical flow charts on NSE ({date_str})."
     elif clean_p.startswith("/option") or clean_p.startswith("/straddle"):
         atm_strike = int(round(nifty_spot / 50.0) * 50)
-        base_meta["title"] = f"Option Chain Pro - Live Option Greeks, PCR & Multi-Strike OI Scanner | TradersDesk"
-        base_meta["desc"] = f"Streaming Option Chain Pro for Nifty 50 (ATM {atm_strike}) & Bank Nifty with real-time Delta, Gamma, Theta, Vega, IV Skew, Put-Call Ratio (PCR) and Max Pain for active expiries."
+        base_meta["title"] = "Option Chain Pro - Live Option Greeks, PCR & Max Pain | TradersDesk"
+        base_meta["desc"] = f"Streaming Option Chain Pro for Nifty & Bank Nifty with real-time Delta, Gamma, Theta, Vega, IV Skew, PCR, and Max Pain strikes ({date_str})."
     elif clean_p.startswith("/delivery"):
-        base_meta["title"] = f"Delivery Analytics Desk - High Delivery Volume & Institutional Accumulation | TradersDesk"
-        base_meta["desc"] = f"Screen 1800+ NSE & BSE equities for delivery volume shocks (>1.3x 5D avg), delivery percentage spikes (>60%), and institutional cash accumulation on {date_str}."
+        base_meta["title"] = "Cash Delivery Analytics - Volume Shocks & Accumulation | TradersDesk"
+        base_meta["desc"] = f"Screen 1800+ NSE & BSE equities for high-conviction delivery percentage spikes (>60%) and institutional accumulation on {date_str}."
     elif clean_p.startswith("/mtf") or clean_p.startswith("/compare"):
-        base_meta["title"] = f"MTF Analytics - Margin Trading Facility Book & Stock Leverage Tracker | TradersDesk"
-        base_meta["desc"] = f"Comprehensive Margin Trading Facility (MTF) loan book analytics across NSE & BSE equities, category leverage distribution, and SEBI regulatory disclosures ({date_str})."
+        base_meta["title"] = "MTF Analytics - Margin Trading Facility Book & Stock Leverage | TradersDesk"
+        base_meta["desc"] = f"Comprehensive Margin Trading Facility (MTF) loan book analytics, category leverage distribution, and SEBI regulatory disclosures ({date_str})."
     elif clean_p.startswith("/breadth") or clean_p.startswith("/contribution"):
-        base_meta["title"] = f"Market Breadth & Point and Figure (PnF) Analytics Desk | TradersDesk"
-        base_meta["desc"] = f"Institutional Market Breadth engine with Point & Figure (PnF) column matrices, advance-decline ratios, and heavyweight point contribution to Nifty 50."
+        base_meta["title"] = "Market Breadth Pro - Point & Figure Advance-Decline Engine | TradersDesk"
+        base_meta["desc"] = f"Institutional Indian market breadth with Point & Figure (PnF) matrices, advance-decline momentum, and heavyweight point contribution."
     elif clean_p.startswith("/global"):
-        base_meta["title"] = f"Global Markets Desk - World Indices Macro Radar & Sentiment | TradersDesk"
-        base_meta["desc"] = f"Real-time US markets (S&P 500, Nasdaq, Dow), Asian & European indices, Brent Crude, US 10Y Yield, and global macro pulse."
+        base_meta["title"] = "Global Markets Desk - GIFT Nifty & World Indices Macro Radar | TradersDesk"
+        base_meta["desc"] = f"Real-time GIFT Nifty, US markets (S&P 500, Nasdaq), Asian & European indices, Brent Crude, US 10Y Yield, and global macro pulse."
 
     base_meta["og_title"] = base_meta["title"]
     base_meta["og_desc"] = base_meta["desc"]
@@ -942,8 +948,10 @@ def generate_dynamic_json_ld(path: str, snapshot: dict) -> str:
     }
     return json.dumps(schema_graph, indent=2)
 
-def build_semantic_crawler_html(path: str, snapshot: dict) -> str:
+def build_semantic_crawler_html(path: str, snapshot: dict = None) -> str:
     """Builds a rich semantic HTML summary with real stocks and numbers for web crawlers."""
+    if not snapshot:
+        snapshot = get_live_seo_market_snapshot()
     clean_p = ("/" + path.strip("/")).lower() if path != "/" else "/"
     date_str = snapshot.get("date", "16-Oct-2026")
     nifty = snapshot.get("nifty_spot", 23146.15)
@@ -1008,8 +1016,8 @@ def build_semantic_crawler_html(path: str, snapshot: dict) -> str:
         """
 
     return f"""
-    <!-- Dedicated Dynamic Live SEO & Crawler Pre-Render Section -->
-    <section id="seoDynamicCrawlContent" class="seo-crawler-content" style="display:none !important;" aria-hidden="true">
+    <!-- Dedicated Dynamic Live SEO & Crawler Overview Section (Compliant, No Cloaking) -->
+    <section id="seoDynamicCrawlContent" class="seo-crawler-content" aria-label="Live Market Intelligence Summary" style="max-width:1440px; margin:24px auto 16px; padding:20px; background:rgba(15,23,42,0.6); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:#94a3b8; font-size:12px;">
       <header style="margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div>
           <h2 style="font-size:17px; font-weight:800; color:#f1f5f9; margin:0 0 4px;">TradersDesk.in Live Market Intelligence &amp; Quantitative Terminal</h2>
@@ -1142,10 +1150,37 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
                 break
 
     if target_panel and target_panel != "panelDashboard":
-        # Remove active from panelDashboard
-        html = re.sub(r'id=["\']panelDashboard["\']\s+class=["\']tab-panel active["\']', 'id="panelDashboard" class="tab-panel"', html)
+        # Remove active from panelDashboard and hide it
+        html = re.sub(r'(id=["\']panelDashboard["\'][^>]*class=["\'][^"\']*)\bactive\b([^"\']*["\'])', r'\1\2 style="display:none;"', html)
+        html = html.replace('class="tab-panel inst-dashboard-panel "', 'class="tab-panel inst-dashboard-panel"')
+
         # Add active and block display to target panel
-        html = re.sub(rf'id=["\']{target_panel}["\']\s+class=["\']tab-panel["\']', f'id="{target_panel}" class="tab-panel active" style="display:block;"', html)
+        def _activate_panel(m):
+            tag = m.group(0)
+            tag = re.sub(r'style=["\'][^"\']*display\s*:\s*none[^"\']*["\']', '', tag)
+            if 'class="' in tag:
+                tag = re.sub(r'class=["\']([^"\']*)["\']', r'class="\1 active" style="display:block;"', tag)
+            elif "class='" in tag:
+                tag = re.sub(r"class=[']([^']*)[']", r'class="\1 active" style="display:block;"', tag)
+            else:
+                tag = tag.replace('>', ' class="tab-panel active" style="display:block;">')
+            return tag
+
+        html = re.sub(rf'<div[^>]*id=["\']{target_panel}["\'][^>]*>', _activate_panel, html, count=1)
+
+    # 4. Desk-specific <h1> injection for 100% on-page heading alignment
+    desk_h1_map = {
+        "panelUpstoxChain": "Option Chain Pro &amp; Real-Time Option Greeks Terminal",
+        "panelFutures": "Futures Intelligence &amp; Open Interest (OI) Buildup Desk",
+        "panelSmartMoney": "Institutional Smart Money Flow &amp; Participant OI Radar",
+        "panelDelivery": "Cash Delivery Volume Absorption &amp; Accumulation Scanner",
+        "panelMtf": "Margin Trading Facility (MTF) &amp; Systemic Leverage Book",
+        "panelBreadth": "Market Breadth &amp; Point and Figure Analytics Desk",
+        "panelGlobalMarkets": "Real-Time Global Markets &amp; World Indices Macro Radar",
+    }
+    target_h1 = desk_h1_map.get(target_panel)
+    if target_h1:
+        html = re.sub(r'<h1[^>]*>.*?</h1>', f'<h1>{target_h1}</h1>', html, count=1, flags=re.DOTALL | re.IGNORECASE)
 
     # 4. Inject semantic crawler section before </body>
     if "id=\"seoDynamicCrawlContent\"" not in html and "</body>" in html:
