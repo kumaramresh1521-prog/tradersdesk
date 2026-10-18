@@ -1,4 +1,4 @@
-# 🚀 Breadth Lab - Cloud Publishing & Deployment Guide
+# 🚀 TradersDesk - Cloud Publishing & Deployment Guide
 
 Is project ko internet par live publish karne ke liye sabhi jaruri files configure kar di gayi hain:
 - ✅ **`Dockerfile`** (Python 3.11 optimized container)

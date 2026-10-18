@@ -11136,7 +11136,7 @@ def main() -> None:
     server = ThreadingHTTPServer((host, port), RequestHandler)
     server.daemon_threads = True
     display_host = "localhost" if host == "0.0.0.0" else host
-    print(f"Breadth Lab running at http://{display_host}:{port}")
+    print(f"TradersDesk running at http://{display_host}:{port}")
     print("Press Ctrl+C to stop.")
     try:
         server.serve_forever()

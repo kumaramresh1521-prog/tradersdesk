@@ -128,7 +128,7 @@
     },
 
     /**
-     * Clear all Breadth Lab caches
+     * Clear all TradersDesk caches
      */
     clearAll() {
       try {

@@ -22,6 +22,6 @@ def start_server(name, cwd, port):
     print(f"[WARN] {name} process started, waiting on port {port}...")
 
 if __name__ == "__main__":
-    start_server("Breadth Lab (Main)", r"C:\Users\Admin\Desktop\app breadth 2", 8000)
+    start_server("TradersDesk (Main)", r"C:\Users\Admin\Desktop\app breadth 2", 8000)
     start_server("Kotak Algo Engine", r"C:\Users\Admin\Desktop\kotak-algo", 8001)
     print("\nAll servers checked. Ready!")

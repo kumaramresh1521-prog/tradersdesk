@@ -69,7 +69,7 @@ def http_json(
 
 
 class BaseBrokerClient:
-    """Standard interface for all broker adapters in Breadth Lab."""
+    """Standard interface for all broker adapters in TradersDesk."""
 
     @property
     def broker_name(self) -> str:

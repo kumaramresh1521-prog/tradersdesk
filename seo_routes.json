@@ -781,11 +781,11 @@
   },
   "/admin": {
     "path": "/admin",
-    "title": "Breadth Lab | Executive Admin Command Center",
+    "title": "TradersDesk | Executive Admin Command Center",
     "desc": "Institutional analytics and trading intelligence for admin on TradersDesk.in.",
     "keywords": "admin, tradersdesk, indian stock market, nse analytics",
     "canonical": "https://tradersdesk.in/admin",
-    "og_title": "Breadth Lab | Executive Admin Command Center",
+    "og_title": "TradersDesk | Executive Admin Command Center",
     "og_desc": "Institutional analytics and trading intelligence for admin on TradersDesk.in.",
     "robots": "index, follow",
     "category": "tools",
