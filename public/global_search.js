@@ -303,15 +303,16 @@
       });
     }
 
-    // 5. Curated F&O Stock List (fallback & cold-boot boost)
+    // 5. Curated Stock List (fallback & cold-boot boost)
     CURATED_STOCKS.forEach(stk => {
       const sym = stk.symbol.toUpperCase();
+      const isFno = window.isFnOSymbol ? window.isFnOSymbol(sym) : !!stk.isFnO;
       const existing = pool.find(p => p.symbol === sym);
       if (existing) {
         if (!existing.sector || existing.sector === "Equities") existing.sector = stk.sector;
         if (!existing.name || existing.name.includes("Listed Equity")) existing.name = stk.name;
-        existing.isFnO = true;
-        if (!existing.badge || existing.badge === "NSE EQ") {
+        existing.isFnO = isFno;
+        if (isFno) {
           existing.badge = "F&O";
           existing.badgeClass = "badge-fno";
         }
@@ -323,9 +324,9 @@
           name: stk.name,
           sector: stk.sector,
           type: "stock",
-          badge: "F&O",
-          badgeClass: "badge-fno",
-          isFnO: true
+          badge: isFno ? "F&O" : "NSE EQ",
+          badgeClass: isFno ? "badge-fno" : "badge-eq",
+          isFnO: isFno
         });
       }
     });
@@ -497,10 +498,13 @@
         badgeHtml = `<span class="gs-badge gs-badge-index">INDEX</span>`;
       } else if (isDesk) {
         badgeHtml = `<span class="gs-badge gs-badge-desk">DESK</span>`;
-      } else if (item.isFnO) {
-        badgeHtml = `<span class="gs-badge gs-badge-fno">F&amp;O</span>`;
       } else {
-        badgeHtml = `<span class="gs-badge gs-badge-eq">NSE EQ</span>`;
+        const isFno = isIndex || Boolean(item.isFnO || (window.isFnOSymbol && window.isFnOSymbol(item.symbol)));
+        if (isFno) {
+          badgeHtml = `<span class="gs-badge gs-badge-fno">F&amp;O</span>`;
+        } else {
+          badgeHtml = `<span class="gs-badge gs-badge-eq">NSE EQ</span>`;
+        }
       }
 
       // Quick Action Buttons Strip
@@ -514,6 +518,7 @@
           </div>
         `;
       } else {
+        const isFno = isIndex || Boolean(item.isFnO || (window.isFnOSymbol && window.isFnOSymbol(item.symbol)));
         const optTitle = isIndex ? `Open ${item.symbol} Option Chain Pro` : `Inspect ${item.symbol} Greeks & Strike OI`;
         const delivTitle = isIndex ? `Inspect ${item.symbol} Constituent Delivery Absorption` : `Inspect ${item.symbol} Security Delivery`;
         const mtfTitle = `Check ${item.symbol} Broker Margin Book & Pledged Exposure`;
@@ -521,9 +526,11 @@
 
         actionsHtml = `
           <div class="gs-actions-strip" onclick="event.stopPropagation();">
+            ${isFno ? `
             <button type="button" class="gs-action-btn opt-jump" onclick="globalJumpToDesk('options', '${item.symbol}')" title="${optTitle}">
               ⚡ Options
             </button>
+            ` : ''}
             <button type="button" class="gs-action-btn deliv-jump" onclick="globalJumpToDesk('delivery', '${item.symbol}')" title="${delivTitle}">
               📦 Delivery
             </button>
@@ -532,9 +539,11 @@
               💳 MTF
             </button>
             ` : ''}
+            ${isFno ? `
             <button type="button" class="gs-action-btn fut-jump" onclick="globalJumpToDesk('futures', '${item.symbol}')" title="${futTitle}">
               📈 Futures
             </button>
+            ` : ''}
           </div>
         `;
       }
@@ -613,6 +622,14 @@
   function globalJumpToDesk(desk, symbol) {
     if (!symbol) return;
     const cleanSym = String(symbol).trim().toUpperCase();
+
+    const isIndex = cleanSym.includes("NIFTY") || cleanSym.includes("SENSEX") || cleanSym.includes("BANKEX");
+    if ((desk === "options" || desk === "futures") && !isIndex) {
+      if (window.isFnOSymbol && !window.isFnOSymbol(cleanSym)) {
+        alert(`"${cleanSym}" is a cash market equity security and is not traded in the F&O derivatives segment.`);
+        return;
+      }
+    }
 
     closeGlobalSearch();
     closeGlobalStockHub();
@@ -721,11 +738,15 @@
     const pool = getSearchPool();
     const item = itemData || pool.find(p => p.symbol === cleanSym) || { symbol: cleanSym, name: cleanSym, sector: "Equities" };
 
+    const isFno = isIndex || Boolean(item.isFnO || (window.isFnOSymbol && window.isFnOSymbol(cleanSym)));
+
     const symEl = document.getElementById("gHubSymbol");
     const nameEl = document.getElementById("gHubName");
     const badgeEl = document.getElementById("gHubBadge");
     const sectorEl = document.getElementById("gHubSector");
     const mtfCard = document.getElementById("gHubMtfCard");
+    const optCard = document.getElementById("gHubOptCard") || modal.querySelector(".opt-card");
+    const futCard = document.getElementById("gHubFutCard") || modal.querySelector(".fut-card");
 
     if (symEl) symEl.textContent = item.label || item.symbol;
     if (nameEl) nameEl.textContent = item.name || `${cleanSym} Listed Security`;
@@ -737,7 +758,7 @@
         badgeEl.className = "mta-badge";
         badgeEl.style.background = "#ede9fe";
         badgeEl.style.color = "#6d28d9";
-      } else if (item.isFnO) {
+      } else if (isFno) {
         badgeEl.textContent = "F&O";
         badgeEl.className = "mta-badge mta-badge-fno";
       } else {
@@ -751,25 +772,33 @@
       mtfCard.style.display = isIndex ? "none" : "flex";
     }
 
+    // Show Option Chain and Futures cards ONLY for genuine F&O securities
+    if (optCard) {
+      optCard.style.display = isFno ? "flex" : "none";
+    }
+    if (futCard) {
+      futCard.style.display = isFno ? "flex" : "none";
+    }
+
     // Populate quick snapshot metrics strip
     const metricsWrap = document.getElementById("gHubMetrics");
     if (metricsWrap) {
       metricsWrap.innerHTML = `
         <div class="ghub-metric-box">
           <span class="ghub-m-lbl">Security Type</span>
-          <strong class="ghub-m-val">${isIndex ? "Index Derivative" : "Cash & Derivative"}</strong>
+          <strong class="ghub-m-val">${isIndex ? "Index Derivative" : (isFno ? "Cash & F&O Derivative" : "Cash Market Equity")}</strong>
         </div>
         <div class="ghub-metric-box">
           <span class="ghub-m-lbl">Exchange Segment</span>
-          <strong class="ghub-m-val" style="color:#2563eb;">NSE / NFO</strong>
+          <strong class="ghub-m-val" style="color:#2563eb;">${isIndex ? "NSE / NFO" : (isFno ? "NSE EQ & NFO" : "NSE Capital Market (Cash)")}</strong>
         </div>
         <div class="ghub-metric-box">
           <span class="ghub-m-lbl">Lot Size</span>
-          <strong class="ghub-m-val" style="color:#10b981;">${item.lot || (item.isFnO ? "F&O Active" : "1 (Equity)")}</strong>
+          <strong class="ghub-m-val" style="color:#10b981;">${item.lot || (isFno ? "F&O Active" : "1 Share (Cash)")}</strong>
         </div>
         <div class="ghub-metric-box">
           <span class="ghub-m-lbl">Primary Analytics</span>
-          <strong class="ghub-m-val" style="color:#7c3aed;">All 4 Desks Linked</strong>
+          <strong class="ghub-m-val" style="color:#7c3aed;">${isFno ? "All 4 Desks Linked" : "Delivery & MTF Margin Desk"}</strong>
         </div>
       `;
     }

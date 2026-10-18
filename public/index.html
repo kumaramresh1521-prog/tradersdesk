@@ -4946,9 +4946,9 @@
             </div>
             <!-- Cross-Desk Jump Buttons -->
             <div style="display:flex;align-items:center;gap:6px;margin-left:auto;margin-right:12px;flex-wrap:wrap;">
-              <button type="button" class="btn btn-compact" onclick="mtaJumpToDesk('options')" title="Open Option Chain" style="font-size:11px;padding:5px 11px;font-weight:800;background:#10b981;color:#040814;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 0 10px rgba(16,185,129,0.3);">⚡ Option Chain</button>
-              <button type="button" class="btn btn-compact" onclick="mtaJumpToDesk('futures')" title="Open Futures Matrix" style="font-size:11px;padding:5px 11px;font-weight:700;background:#0284c7;color:#fff;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">📈 Futures</button>
-              <button type="button" class="btn btn-compact" onclick="mtaJumpToDesk('delivery')" title="View Delivery Accumulation" style="font-size:11px;padding:5px 11px;font-weight:700;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;">📦 Delivery Desk</button>
+              <button type="button" id="mtaModalOptBtn" class="btn btn-compact" onclick="mtaJumpToDesk('options')" title="Open Option Chain" style="font-size:11px;padding:5px 11px;font-weight:800;background:#10b981;color:#040814;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 0 10px rgba(16,185,129,0.3);">⚡ Option Chain</button>
+              <button type="button" id="mtaModalFutBtn" class="btn btn-compact" onclick="mtaJumpToDesk('futures')" title="Open Futures Matrix" style="font-size:11px;padding:5px 11px;font-weight:700;background:#0284c7;color:#fff;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">📈 Futures</button>
+              <button type="button" id="mtaModalDelivBtn" class="btn btn-compact" onclick="mtaJumpToDesk('delivery')" title="View Delivery Accumulation" style="font-size:11px;padding:5px 11px;font-weight:700;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;">📦 Delivery Desk</button>
             </div>
             <button type="button" onclick="mtaCloseStockModal()" style="background:none;border:none;font-size:24px;color:var(--text-muted);cursor:pointer;padding:2px 8px;line-height:1;border-radius:4px;" aria-label="Close modal">&times;</button>
           </div>
@@ -5954,7 +5954,7 @@
         <!-- 4 Big Distinct Action Destination Cards -->
         <div class="gsearch-hub-cards-grid">
           <!-- Card 1: Option Chain Pro -->
-          <div class="gsearch-hub-action-card opt-card" onclick="globalJumpToDesk('options', window._gHubActiveSymbol)">
+          <div class="gsearch-hub-action-card opt-card" id="gHubOptCard" onclick="globalJumpToDesk('options', window._gHubActiveSymbol)">
             <div class="ghub-card-top">
               <span class="ghub-card-icon">⚡</span>
               <span class="ghub-card-badge">OPTIONS PRO</span>
@@ -5965,7 +5965,7 @@
           </div>
 
           <!-- Card 2: Delivery Desk -->
-          <div class="gsearch-hub-action-card deliv-card" onclick="globalJumpToDesk('delivery', window._gHubActiveSymbol)">
+          <div class="gsearch-hub-action-card deliv-card" id="gHubDelivCard" onclick="globalJumpToDesk('delivery', window._gHubActiveSymbol)">
             <div class="ghub-card-top">
               <span class="ghub-card-icon">📦</span>
               <span class="ghub-card-badge">CASH DELIVERY</span>
@@ -5987,7 +5987,7 @@
           </div>
 
           <!-- Card 4: Futures Dashboard -->
-          <div class="gsearch-hub-action-card fut-card" onclick="globalJumpToDesk('futures', window._gHubActiveSymbol)">
+          <div class="gsearch-hub-action-card fut-card" id="gHubFutCard" onclick="globalJumpToDesk('futures', window._gHubActiveSymbol)">
             <div class="ghub-card-top">
               <span class="ghub-card-icon">📈</span>
               <span class="ghub-card-badge">FUTURES DESK</span>
@@ -6000,11 +6000,11 @@
       </div>
     </div>
 
-    <script src="/global_markets_desk.js?v=20261018_v5" defer></script>
-    <script src="/upstox_chain.js?v=20261018_v5" defer></script>
-    <script src="/futures_desk.js?v=20261018_v5" defer></script>
-    <script src="/app.js?v=20261018_v5" defer></script>
-    <script src="/global_search.js?v=20261018_v5" defer></script>
-    <script src="/auth_sync.js?v=20261018_v5" defer></script>
+    <script src="/global_markets_desk.js?v=20261018_v6" defer></script>
+    <script src="/upstox_chain.js?v=20261018_v6" defer></script>
+    <script src="/futures_desk.js?v=20261018_v6" defer></script>
+    <script src="/app.js?v=20261018_v6" defer></script>
+    <script src="/global_search.js?v=20261018_v6" defer></script>
+    <script src="/auth_sync.js?v=20261018_v6" defer></script>
   </body>
 </html>

@@ -4929,17 +4929,54 @@ function applyDeliveryFilterAndRender() {
   renderSecurityDeliveryTable(sortedList);
 }
 
+const FNO_MASTER_UNIVERSE = [
+  "NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50", "SENSEX", "BANKEX",
+  "NIFTY 50", "BANK NIFTY", "BSE SENSEX", "BSE BANKEX",
+  "AARTIIND", "ABB", "ABBOTINDIA", "ACC", "ADANIENT", "ADANIGREEN", "ADANIPORTS", "ADANIPOWER",
+  "ALKEM", "AMBUJACEM", "ANGELONE", "APOLLOHOSP", "APOLLOTYRE", "ASHOKLEY", "ASIANPAINT",
+  "ASTRAL", "ATGL", "ATUL", "AUBANK", "AUROPHARMA", "AXISBANK", "BAJAJ-AUTO", "BAJAJFINSV",
+  "BAJFINANCE", "BALKRISIND", "BANDHANBNK", "BANKBARODA", "BDL", "BEL", "BERGEPAINT",
+  "BHARATFORG", "BHARTIARTL", "BHEL", "BIOCON", "BLUESTARCO", "BOSCHLTD", "BPCL", "BRIGADE",
+  "BRITANNIA", "BSE", "CANBK", "CDSL", "CESC", "CHAMBLFERT", "CHOLAFIN", "CIPLA", "COALINDIA",
+  "COCHINSHIP", "COFORGE", "COLPAL", "CONCOR", "COROMANDEL", "CUMMINSIND", "DABUR", "DALBHARAT",
+  "DEEPAKNTR", "DELHIVERY", "DEVYANI", "DIVISLAB", "DIXON", "DLF", "DMART", "DRREDDY",
+  "EICHERMOT", "EXIDEIND", "FEDERALBNK", "GAIL", "GLENMARK", "GODREJCP", "GODREJPROP",
+  "GRANULES", "GRASIM", "GUJGASLTD", "HAL", "HAVELLS", "HCLTECH", "HDFCAMC", "HDFCBANK",
+  "HDFCLIFE", "HEROMOTOCO", "HINDALCO", "HINDCOPPER", "HINDUNILVR", "HINDZINC", "HPCL",
+  "ICICIBANK", "ICICIGI", "ICICIPRULI", "IDEA", "IDFCFIRSTB", "IGL", "INDIGO", "INDUSINDBK",
+  "INDUSTOWER", "INFY", "IOC", "IPCA", "IRCTC", "ITC", "JINDALSTEL", "JSL", "JSWENERGY",
+  "JSWSTEEL", "JUBLFOOD", "KEI", "KOTAKBANK", "KPITTECH", "L&TFH", "LAURUSLABS", "LICHSGFIN",
+  "LT", "LTIM", "LTTS", "LUPIN", "M&M", "M&MFIN", "MANAPPURAM", "MARICO", "MARUTI",
+  "MAXHEALTH", "MAZDOCK", "MCDOWELL-N", "MCX", "MGL", "MOTHERSON", "MPHASIS", "MRF",
+  "MUTHOOTFIN", "NAM-INDIA", "NATIONALUM", "NAUKRI", "NAVINFLUOR", "NBCC", "NESTLEIND",
+  "NHPC", "NMDC", "NTPC", "NYKAA", "OBEROIRLTY", "OFSS", "OIL", "ONGC", "PERSISTENT",
+  "PETRONET", "PFC", "PHOENIXLTD", "PIDILITIND", "PIIND", "PNB", "POLYCAB", "POWERGRID",
+  "PRESTIGE", "PVRINOX", "RADICO", "RAMCOCEM", "RBLBANK", "RECLTD", "RELIANCE", "SAIL",
+  "SBICARD", "SBILIFE", "SBIN", "SHREECEM", "SHRIRAMFIN", "SIEMENS", "SRF", "SUNPHARMA",
+  "SUNTV", "SYNGENE", "TATACHEM", "TATACONSUM", "TATAELXSI", "TATAMOTORS", "TATAPOWER",
+  "TATASTEEL", "TCS", "TECHM", "TIINDIA", "TORNTPHARM", "TORNTPOWER", "TRENT", "TVSMOTOR",
+  "UBL", "ULTRACEMCO", "UNIONBANK", "UPL", "VBL", "VEDL", "VOLTAS", "WIPRO", "ZEEL",
+  "ZOMATO", "ZYDUSLIFE"
+];
+
+if (!window._fnoSymbolsSet) {
+  window._fnoSymbolsSet = new Set();
+  FNO_MASTER_UNIVERSE.forEach(s => {
+    const u = s.toUpperCase().trim();
+    window._fnoSymbolsSet.add(u);
+    window._fnoSymbolsSet.add(u.replace(/[\s-]/g, ''));
+  });
+}
+
 function isFnOSymbol(symbol) {
   if (!symbol) return false;
-  const sym = String(symbol).trim().toUpperCase();
-  if (window._fnoSymbolsSet && window._fnoSymbolsSet.has(sym)) return true;
+  const raw = String(symbol).trim().toUpperCase();
+  const clean = raw.replace(/^NSE_EQ\||^NSE_INDEX\||^BSE_INDEX\|/i, '').replace(/[\s-]/g, '');
+  if (clean.includes("NIFTY") || clean.includes("SENSEX") || clean.includes("BANKEX")) return true;
+  if (window._fnoSymbolsSet && (window._fnoSymbolsSet.has(raw) || window._fnoSymbolsSet.has(clean))) return true;
   if (window.mtaData && Array.isArray(window.mtaData.stockScreener)) {
-    const found = window.mtaData.stockScreener.find(x => x.symbol === sym);
+    const found = window.mtaData.stockScreener.find(x => x.symbol === raw || x.symbol === clean);
     if (found && found.isFnO !== undefined) return Boolean(found.isFnO);
-  }
-  if (typeof SEARCH_INDEX_DATA !== 'undefined' && Array.isArray(SEARCH_INDEX_DATA)) {
-    const item = SEARCH_INDEX_DATA.find(x => x.symbol === sym);
-    if (item && item.isFnO !== undefined) return Boolean(item.isFnO);
   }
   return false;
 }
@@ -6696,10 +6733,17 @@ async function inspectStock(symbol) {
     exchEl.className = 'mta-badge ' + (stock.exchange === 'BSE' ? 'mta-badge-bse' : 'mta-badge-nse');
   }
 
+  const isInitialFno = Boolean(stock.isFnO || isFnOSymbol(symbol));
+
+  const optBtn = document.getElementById('mtaModalOptBtn');
+  const futBtn = document.getElementById('mtaModalFutBtn');
+  if (optBtn) optBtn.style.display = isInitialFno ? 'inline-flex' : 'none';
+  if (futBtn) futBtn.style.display = isInitialFno ? 'inline-flex' : 'none';
+
   const segEl = document.getElementById('mtaModalSegment');
   if (segEl) {
-    segEl.textContent = stock.isFnO ? 'F&O' : 'Cash';
-    segEl.className = 'mta-badge ' + (stock.isFnO ? 'mta-badge-fno' : 'mta-badge-cash');
+    segEl.textContent = isInitialFno ? 'F&O' : 'Cash';
+    segEl.className = 'mta-badge ' + (isInitialFno ? 'mta-badge-fno' : 'mta-badge-cash');
   }
 
   const secEl = document.getElementById('mtaModalSector');
@@ -6763,11 +6807,15 @@ async function inspectStock(symbol) {
           exchEl.textContent = 'NSE';
           exchEl.className = 'mta-badge mta-badge-nse';
         }
+        const isF = (historyData.info.isFnO !== undefined)
+          ? Boolean(historyData.info.isFnO)
+          : isFnOSymbol(symbol);
         if (segEl) {
-          const isF = historyData.info.isFnO;
           segEl.textContent = isF ? 'F&O' : 'Cash';
           segEl.className = 'mta-badge ' + (isF ? 'mta-badge-fno' : 'mta-badge-cash');
         }
+        if (optBtn) optBtn.style.display = isF ? 'inline-flex' : 'none';
+        if (futBtn) futBtn.style.display = isF ? 'inline-flex' : 'none';
         if (secEl && historyData.info.sector) {
           secEl.textContent = historyData.info.sector;
         }
@@ -6969,6 +7017,14 @@ function mtaCloseStockModal() {
 function mtaJumpToDesk(desk) {
   const sym = mtaCurrentModalSymbol;
   if (!sym) return;
+
+  if (desk === 'options' || desk === 'futures') {
+    if (!isFnOSymbol(sym)) {
+      alert(`"${sym}" is a cash market equity security and is not traded in the F&O derivatives segment.`);
+      return;
+    }
+  }
+
   mtaCloseStockModal();
 
   if (desk === 'options') {
