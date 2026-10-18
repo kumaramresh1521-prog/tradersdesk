@@ -1280,8 +1280,8 @@
       <p class="modal-p">Calendar Studio connects via your <strong style="color:var(--accent-blue-bright)">Admin Panel</strong> master credentials. No separate API key needed here.</p>
       <div class="modal-info-grid">
         <div class="modal-info-row">
-          <span class="modal-info-label">Active Broker:</span>
-          <span class="modal-info-val" id="modalActiveBrokerName" style="color:var(--accent-blue-bright)">Angel One / Upstox</span>
+          <span class="modal-info-label">Active Feed:</span>
+          <span class="modal-info-val" id="modalActiveBrokerName" style="color:var(--accent-blue-bright)">Direct Exchange Gateway</span>
         </div>
         <div class="modal-info-row">
           <span class="modal-info-label">Feed Status:</span>
@@ -3046,13 +3046,13 @@
           const modalBroker = document.getElementById('modalActiveBrokerName');
           const modalStatus = document.getElementById('modalBrokerStatusTag');
 
-          if (modalBroker) modalBroker.textContent = d.brokerName || (d.upstoxConfigured ? 'Upstox API v2' : (d.angelConfigured ? 'Angel One SmartAPI' : 'Math Greeks Engine'));
+          if (modalBroker) modalBroker.textContent = d.isLive ? 'Direct Exchange Gateway' : 'Quantitative Engine';
 
           if (d.isLive) {
             if (btn) { btn.className = 'cs-hbtn api-btn'; }
             if (dot) { dot.style.background = 'var(--accent-green)'; dot.style.boxShadow = '0 0 8px var(--accent-green)'; }
-            if (txt) txt.innerHTML = `🟢 <strong>${d.upstoxConfigured ? 'Upstox' : 'Angel One'}</strong>`;
-            if (modalStatus) modalStatus.innerHTML = `<span style="color:var(--accent-green)">🟢 Live Exchange Connected (${d.brokerName})</span>`;
+            if (txt) txt.innerHTML = `🟢 <strong>Live Exchange</strong>`;
+            if (modalStatus) modalStatus.innerHTML = `<span style="color:var(--accent-green)">🟢 Live Exchange Connected</span>`;
           } else {
             if (dot) { dot.style.background = 'var(--accent-amber)'; dot.style.boxShadow = 'none'; }
             if (txt) txt.innerHTML = `⚙️ Configure in Admin`;

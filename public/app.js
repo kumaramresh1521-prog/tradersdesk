@@ -9650,45 +9650,29 @@ async function loadStatus() {
 
   const bName = (data.activeBroker || "ANGEL").toUpperCase();
   window.__activeBroker = bName;
-  const brokerDisplayName = {
-    ANGEL: "Angel One (SmartAPI)",
-    UPSTOX: "Upstox API v2",
-    KOTAK: "Kotak Neo API",
-    KOTAK_NEO: "Kotak Neo API",
-    FYERS: "Fyers API v3",
-  }[bName] || bName;
-
-  const brokerLabels = {
-    ANGEL: `Angel SmartAPI: Connected (${data.clientCode || 'Active'})`,
-    UPSTOX: `Upstox API v2: Connected`,
-    KOTAK: `Kotak Neo API: Connected`,
-    KOTAK_NEO: `Kotak Neo API: Connected`,
-    FYERS: `Fyers API v3: Connected`,
-  };
 
   if (els.dataSource) {
     const brokerOpt = Array.from(els.dataSource.options).find(o => o.value === "broker" || o.value === "angel");
     if (brokerOpt) {
       brokerOpt.value = "broker";
-      brokerOpt.textContent = `⚡ Active Broker: ${brokerDisplayName}`;
+      brokerOpt.textContent = `⚡ Live Exchange Feed`;
     }
   }
 
   const isConnected = Boolean(data.brokerConnected || data.angelConnected);
 
   if (isConnected) {
-    const label = brokerLabels[bName] || `${bName}: Connected`;
-    els.apiStatus.textContent = `🟢 ${label}`;
+    els.apiStatus.textContent = `🟢 Live Exchange Feed: Connected`;
     els.apiStatus.className = "status ready";
     els.dataSource.value = "broker";
     applyDataSourceDefaults("broker");
   } else if (data.brokerConfigured || data.angelConfigured) {
-    els.apiStatus.textContent = `🟡 ${brokerDisplayName}: Session Offline (Bhavcopy Ready)`;
+    els.apiStatus.textContent = `🟡 Live Feed: Offline (Bhavcopy Ready)`;
     els.apiStatus.className = "status idle";
     els.dataSource.value = "bhavcopy";
     applyDataSourceDefaults("bhavcopy");
   } else {
-    els.apiStatus.textContent = "⚪ Broker Offline (Bhavcopy Mode)";
+    els.apiStatus.textContent = "⚪ Exchange Feed: Offline (Bhavcopy Mode)";
     els.apiStatus.className = "status not-configured";
     els.dataSource.value = "bhavcopy";
     applyDataSourceDefaults("bhavcopy");
