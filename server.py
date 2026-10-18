@@ -7054,6 +7054,7 @@ def build_delivery_analytics(payload: dict) -> dict:
         }
 
     stock_list = []
+    fno_symbols = _get_fno_symbols(fetch_remote=False)
     tot_traded_cr = 0.0
     tot_deliv_cr = 0.0
     sum_deliv_pct = 0.0
@@ -7117,6 +7118,7 @@ def build_delivery_analytics(payload: dict) -> dict:
             "delivTurnoverCr": st["delivTurnoverCr"],
             "trades": st["trades"],
             "signal": signal,
+            "isFnO": sym in fno_symbols,
         }
 
         if filter_mode == "shocks" and shock_ratio < 1.3:
@@ -7240,7 +7242,11 @@ def _get_fno_symbols(fetch_remote: bool = False) -> set[str]:
             pass
 
     # Never show an empty F&O filter merely because NSE's lot-size file is temporarily unavailable.
-    fallback = set(NIFTY_50_SYMBOLS)
+    try:
+        import futures_engine
+        fallback = {str(x["symbol"]).upper() for x in futures_engine.FO_UNIVERSE if not x.get("isIndex")}
+    except Exception:
+        fallback = set(NIFTY_50_SYMBOLS)
     _FNO_SYMBOL_CACHE.update({"timestamp": now, "symbols": fallback})
     return fallback
 
@@ -7317,14 +7323,17 @@ def _load_mtf_json(file_path: Path, fno_symbols: set[str]) -> list[dict]:
             symbol = str(item.get("symbol") or "").upper().strip()
             if not symbol:
                 continue
-            amount_lakh = float(item.get("amtFinancedLakhs") or 0)
+            amt_cr = float(item.get("amtFinancedCrore") or 0.0)
+            amt_lakh = float(item.get("amtFinancedLakhs") or (amt_cr * 100.0))
+            if not amt_cr and amt_lakh:
+                amt_cr = amt_lakh / 100.0
             stocks.append(
                 {
                     "symbol": symbol,
                     "name": str(item.get("name") or symbol),
                     "qtyFinanced": int(float(item.get("qtyFinanced") or 0)),
-                    "amtFinancedLakhs": round(amount_lakh, 2),
-                    "amtFinancedCrore": round(amount_lakh / 100.0, 2),
+                    "amtFinancedLakhs": round(amt_lakh, 2),
+                    "amtFinancedCrore": round(amt_cr, 2),
                     "isFnO": symbol in fno_symbols,
                 }
             )
@@ -7834,22 +7843,25 @@ def build_mtf(payload: dict) -> dict:
     return base_data
 
 
-def build_mtf_stock_history(symbol: str) -> dict:
-    sym = (symbol or "").upper().strip()
-    if not sym:
-        return {"ok": False, "message": "Symbol required"}
-    sessions = get_available_mtf_sessions()
-    raw_history = []
-    fno_symbols = _get_fno_symbols(fetch_remote=False)
-    stock_info = None
+_MTF_ALL_SESSIONS_CACHE: dict = {"timestamp": 0.0, "by_symbol": {}, "info_map": {}}
 
-    # Load up to 15 sessions (newest first)
-    for s_date, s_code, s_file in sessions[:15]:
+def _get_cached_mtf_all_sessions() -> dict:
+    global _MTF_ALL_SESSIONS_CACHE
+    now = time.time()
+    if _MTF_ALL_SESSIONS_CACHE["by_symbol"] and (now - _MTF_ALL_SESSIONS_CACHE["timestamp"] < 300):
+        return _MTF_ALL_SESSIONS_CACHE
+
+    sessions = get_available_mtf_sessions()
+    fno_symbols = _get_fno_symbols(fetch_remote=False)
+    by_symbol: dict[str, list[dict]] = {}
+    stock_info_map: dict[str, dict] = {}
+
+    for s_date, s_code, s_file in sessions:
         stocks = _load_mtf_json(s_file, fno_symbols)
-        match = next((s for s in stocks if s["symbol"] == sym), None)
-        if match:
-            if not stock_info:
-                stock_info = {
+        for match in stocks:
+            sym_key = match["symbol"].upper().strip()
+            if sym_key not in stock_info_map:
+                stock_info_map[sym_key] = {
                     "symbol": match["symbol"],
                     "name": match["name"],
                     "isFnO": match["isFnO"],
@@ -7858,34 +7870,67 @@ def build_mtf_stock_history(symbol: str) -> dict:
             qty = int(match.get("qtyFinanced") or 0)
             amt = float(match.get("amtFinancedCrore") or 0.0)
             est_debt = round((amt * 1e7) / qty, 1) if qty > 0 else 0.0
-            raw_history.append({
+            entry = {
                 "date": s_date.isoformat(),
                 "dateFormatted": s_date.strftime("%d %b %Y"),
                 "amtFinancedCrore": amt,
                 "qtyFinanced": qty,
                 "estPrice": est_debt,
-            })
+            }
+            if sym_key not in by_symbol:
+                by_symbol[sym_key] = []
+            by_symbol[sym_key].append(entry)
 
-    # Calculate session-on-session deltas (raw_history is newest first, i+1 is prior session)
-    for i in range(len(raw_history)):
-        if i + 1 < len(raw_history):
-            prev = raw_history[i + 1]
-            p_amt = prev["amtFinancedCrore"]
-            d_amt = round(raw_history[i]["amtFinancedCrore"] - p_amt, 2)
-            d_pct = round((d_amt / p_amt) * 100, 2) if p_amt > 0 else 0.0
-            raw_history[i]["deltaAmtCrore"] = d_amt
-            raw_history[i]["deltaPct"] = d_pct
-            raw_history[i]["deltaQty"] = raw_history[i]["qtyFinanced"] - prev["qtyFinanced"]
-        else:
-            raw_history[i]["deltaAmtCrore"] = None
-            raw_history[i]["deltaPct"] = None
-            raw_history[i]["deltaQty"] = None
+    # Calculate session-on-session deltas for all symbols
+    for sym_key, raw_history in by_symbol.items():
+        for i in range(len(raw_history)):
+            if i + 1 < len(raw_history):
+                prev = raw_history[i + 1]
+                p_amt = prev["amtFinancedCrore"]
+                d_amt = round(raw_history[i]["amtFinancedCrore"] - p_amt, 2)
+                d_pct = round((d_amt / p_amt) * 100, 2) if p_amt > 0 else 0.0
+                raw_history[i]["deltaAmtCrore"] = d_amt
+                raw_history[i]["deltaPct"] = d_pct
+                raw_history[i]["deltaQty"] = raw_history[i]["qtyFinanced"] - prev["qtyFinanced"]
+            else:
+                raw_history[i]["deltaAmtCrore"] = None
+                raw_history[i]["deltaPct"] = None
+                raw_history[i]["deltaQty"] = None
+
+    _MTF_ALL_SESSIONS_CACHE = {
+        "timestamp": now,
+        "by_symbol": by_symbol,
+        "info_map": stock_info_map,
+    }
+    return _MTF_ALL_SESSIONS_CACHE
+
+def build_mtf_stock_history(symbol: str) -> dict:
+    sym = (symbol or "").upper().strip()
+    if not sym:
+        return {"ok": False, "message": "Symbol required"}
+
+    cache_data = _get_cached_mtf_all_sessions()
+    by_symbol = cache_data.get("by_symbol", {})
+    info_map = cache_data.get("info_map", {})
+
+    clean_sym = sym.replace("-EQ", "").replace("-BE", "").strip()
+    history = by_symbol.get(sym) or by_symbol.get(clean_sym) or []
+    info = info_map.get(sym) or info_map.get(clean_sym)
+
+    if not info:
+        fno_symbols = _get_fno_symbols(fetch_remote=False)
+        info = {
+            "symbol": sym,
+            "name": sym,
+            "isFnO": sym in fno_symbols,
+            "sector": _classify_sector(sym, sym),
+        }
 
     return {
         "ok": True,
         "symbol": sym,
-        "info": stock_info or {"symbol": sym, "name": sym, "isFnO": False, "sector": "Other"},
-        "history": raw_history,
+        "info": info,
+        "history": history,
     }
 
 

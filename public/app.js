@@ -4929,6 +4929,22 @@ function applyDeliveryFilterAndRender() {
   renderSecurityDeliveryTable(sortedList);
 }
 
+function isFnOSymbol(symbol) {
+  if (!symbol) return false;
+  const sym = String(symbol).trim().toUpperCase();
+  if (window._fnoSymbolsSet && window._fnoSymbolsSet.has(sym)) return true;
+  if (window.mtaData && Array.isArray(window.mtaData.stockScreener)) {
+    const found = window.mtaData.stockScreener.find(x => x.symbol === sym);
+    if (found && found.isFnO !== undefined) return Boolean(found.isFnO);
+  }
+  if (typeof SEARCH_INDEX_DATA !== 'undefined' && Array.isArray(SEARCH_INDEX_DATA)) {
+    const item = SEARCH_INDEX_DATA.find(x => x.symbol === sym);
+    if (item && item.isFnO !== undefined) return Boolean(item.isFnO);
+  }
+  return false;
+}
+window.isFnOSymbol = isFnOSymbol;
+
 function renderSecurityDeliveryTable(stocks) {
   const tbody = els.delivTableBody;
   if (!tbody) return;
@@ -4955,9 +4971,27 @@ function renderSecurityDeliveryTable(stocks) {
     // Delivery % Progress Bar
     const delivFillClass = s.delivPer >= 60 ? "high" : (s.delivPer >= 40 ? "med" : "low");
 
+    const isFno = Boolean(s.isFnO || isFnOSymbol(s.symbol));
+    const fnoBadge = isFno 
+      ? '<span class="mta-badge mta-badge-fno" style="font-size:9.5px; padding:1px 5px; margin-left:6px; vertical-align:middle;">F&amp;O</span>' 
+      : '<span class="mta-badge mta-badge-cash" style="font-size:9.5px; padding:1px 5px; margin-left:6px; vertical-align:middle;">Cash</span>';
+
+    const rowClickAction = isFno
+      ? `inspectStock('${s.symbol}')`
+      : `openDeliveryDrilldown('${s.symbol}')`;
+
+    const rowTitle = isFno
+      ? `Click to inspect ${s.symbol} MTF, F&amp;O &amp; leverage analytics`
+      : `Click to view ${s.symbol} date-wise delivery history`;
+
     return `
-      <tr onclick="inspectDeliveryStock('${s.symbol}')" style="cursor:pointer;" title="Click to inspect ${s.symbol} delivery details">
-        <td><strong style="color:var(--text-primary); font-weight:800;">${s.symbol}</strong></td>
+      <tr onclick="${rowClickAction}" style="cursor:pointer;" title="${rowTitle}">
+        <td>
+          <div style="display:flex; align-items:center;">
+            <strong style="color:var(--text-primary); font-weight:800;">${s.symbol}</strong>
+            ${fnoBadge}
+          </div>
+        </td>
         <td><strong>₹${s.close.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></td>
         <td style="color:${chgColor}; font-weight:700;">${chgPrefix}${s.changePct}%</td>
         <td>${s.tradedQty.toLocaleString("en-IN")}</td>
@@ -6720,6 +6754,44 @@ async function inspectStock(symbol) {
       const history = historyData.history;
       if (countBadge) countBadge.textContent = `${history.length} Sessions Available`;
 
+      // Update header and stats if they were missing or unpopulated
+      if (historyData.info) {
+        if ((!stock.name || stock.name === symbol) && historyData.info.name) {
+          document.getElementById('mtaModalName').textContent = historyData.info.name;
+        }
+        if (exchEl && !stock.exchange) {
+          exchEl.textContent = 'NSE';
+          exchEl.className = 'mta-badge mta-badge-nse';
+        }
+        if (segEl) {
+          const isF = historyData.info.isFnO;
+          segEl.textContent = isF ? 'F&O' : 'Cash';
+          segEl.className = 'mta-badge ' + (isF ? 'mta-badge-fno' : 'mta-badge-cash');
+        }
+        if (secEl && historyData.info.sector) {
+          secEl.textContent = historyData.info.sector;
+        }
+      }
+      if (history.length > 0) {
+        const latest = history[0];
+        if (bookEl && (bookEl.textContent === '—' || !stock.amtFinancedCrore)) {
+          bookEl.textContent = mtaCr(latest.amtFinancedCrore);
+        }
+        if (qtyEl && (qtyEl.textContent === '—' || !stock.qtyFinanced)) {
+          qtyEl.textContent = Number(latest.qtyFinanced || 0).toLocaleString('en-IN');
+        }
+        if (estPriceEl && (estPriceEl.textContent === '—' || !stock.amtFinancedCrore)) {
+          estPriceEl.textContent = latest.estPrice > 0 ? `₹${Number(latest.estPrice.toFixed(1)).toLocaleString('en-IN')}` : '—';
+        }
+        if (deltaEl && (deltaEl.textContent === '—' || !stock.deltaAmtCrore)) {
+          if (latest.deltaAmtCrore != null && !isNaN(latest.deltaAmtCrore)) {
+            const isPos = latest.deltaAmtCrore >= 0;
+            deltaEl.textContent = `${isPos ? '+' : ''}₹${latest.deltaAmtCrore.toFixed(1)} Cr (${isPos ? '+' : ''}${latest.deltaPct.toFixed(1)}%)`;
+            deltaEl.className = 'mta-mstat-val ' + (isPos ? 'text-green' : 'text-red');
+          }
+        }
+      }
+
       // Render History Table
       if (histBody) {
         histBody.innerHTML = history.map(h => {
@@ -6753,6 +6825,7 @@ async function inspectStock(symbol) {
     if (chartWrap) chartWrap.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;font-size:12px;">Failed to load history</div>';
   }
 }
+window.inspectStock = inspectStock;
 
 function mtaRenderStockTrendChart(records, container) {
   if (!container || !records || !records.length) return;
@@ -6931,8 +7004,21 @@ function mtaJumpToDesk(desk) {
       delivSearch.value = sym;
       delivSearch.dispatchEvent(new Event('input'));
     }
+  } else if (desk === 'futures') {
+    if (typeof instNav === 'function') {
+      instNav('futures', 'matrix');
+    } else {
+      switchTab('futures');
+    }
+    const cleanSym = String(sym).trim().toUpperCase();
+    const futSearch = document.getElementById('futSearchInput');
+    if (futSearch) {
+      futSearch.value = cleanSym;
+      futSearch.dispatchEvent(new Event('input'));
+    }
   }
 }
+window.mtaJumpToDesk = mtaJumpToDesk;
 
 // ── 1-Click CSV Export ───────────────────────────────────────────────────────
 function mtaExportCsv() {

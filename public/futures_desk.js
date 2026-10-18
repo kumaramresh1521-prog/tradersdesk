@@ -2470,8 +2470,15 @@
   }
 
   function inspectContract(sym) {
-    // Quick search focus or popup
-    filterBySymbol(sym);
+    if (!sym) return;
+    const cleanSym = String(sym).trim().toUpperCase();
+    if (typeof window.inspectStock === 'function') {
+      window.inspectStock(cleanSym);
+    } else if (typeof inspectStock === 'function') {
+      inspectStock(cleanSym);
+    } else {
+      filterBySymbol(cleanSym);
+    }
   }
 
   // --- Initialization ---
