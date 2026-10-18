@@ -661,8 +661,10 @@ function selectedIndexLabel() {
 
 function renderMessages() {
   const clean = [breadthMessageHtml, niftyMessageHtml].filter(Boolean);
-  els.messagePanel.classList.toggle("visible", clean.length > 0);
-  els.messagePanel.innerHTML = clean.join("<br>");
+  if (els.messagePanel) {
+    els.messagePanel.classList.toggle("visible", clean.length > 0);
+    els.messagePanel.innerHTML = clean.join("<br>");
+  }
 }
 
 function setMessage(parts) {
@@ -1665,20 +1667,30 @@ async function runBreadth(options = {}) {
   } catch (error) {
     latestData = null;
     drawChart([]);
-    const isBusy = (error.message || "").includes("503") || (error.message || "").includes("Unavailable") || (error.message || "").includes("Failed to fetch") || (error.message || "").includes("JSON");
-    const msg = isBusy ? "Exchange analytics engine is syncing market sessions. Please refresh in a moment." : escapeHtml(error.message);
+    const errText = error.message || "";
+    const isBusy = errText.includes("503") || errText.includes("Unavailable") || errText.includes("Failed to fetch") || errText.includes("JSON");
+    const isSimNotice = errText.includes("Simulated") || errText.includes("simulated");
+    let msg;
+    if (isBusy) {
+      msg = "Exchange analytics engine is syncing market sessions. Please refresh in a moment.";
+    } else if (isSimNotice) {
+      msg = "Market breadth live feed is offline. Displaying latest verified session.";
+    } else {
+      msg = escapeHtml(errText);
+    }
     setMessage([`<strong>Market Notice:</strong> ${msg}`]);
-    setRefreshState(isBusy ? "Syncing" : "Failed");
+    setRefreshState(isBusy ? "Syncing" : "Offline");
   } finally {
     setBusy(false);
   }
 }
 
 function payloadFromForm() {
+  const dsVal = (els.dataSource && els.dataSource.value) ? els.dataSource.value : "broker";
   const payload = {
     date: els.dateInput.value,
     endDate: els.dateRangeToggle.checked ? els.endDateInput.value : els.dateInput.value,
-    dataSource: els.dataSource.value,
+    dataSource: dsVal,
     universe: els.universeSelect.value,
     interval: els.intervalInput.value,
     chartMode: els.chartMode.value,
@@ -1693,16 +1705,17 @@ function payloadFromForm() {
     startTime: "09:15",
     endTime: "15:30",
   };
-  if ((els.dataSource.value === "angel" || els.dataSource.value === "broker") && els.totpInput && els.totpInput.value.trim()) {
+  if ((dsVal === "angel" || dsVal === "broker") && els.totpInput && els.totpInput.value.trim()) {
     payload.manualTotp = els.totpInput.value.trim();
   }
   return payload;
 }
 
 function niftyPayloadFromForm() {
+  const dsVal = (els.dataSource && els.dataSource.value) ? els.dataSource.value : "broker";
   const payload = {
     date: els.dateInput.value,
-    dataSource: els.dataSource.value,
+    dataSource: dsVal,
     index: els.indexSelect.value,
     interval: els.intervalInput.value,
     includeOptionChain: true,

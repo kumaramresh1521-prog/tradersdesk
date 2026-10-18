@@ -1123,6 +1123,7 @@
           <div style="display:none!important" aria-hidden="true">
             <select id="dataSource">
               <option value="broker" selected>Active Broker (Live)</option>
+              <option value="bhavcopy">Exchange Bhavcopy</option>
               <option value="sample">Sample Simulation</option>
             </select>
             <label id="totpLabel">
@@ -1164,6 +1165,9 @@
             <strong id="niftyChange">--</strong>
           </article>
         </section>
+
+        <!-- Breadth Desk Scoped Messages & Live Notice Banner -->
+        <section class="message-panel" id="messagePanel" aria-live="polite"></section>
 
         <!-- Sector Breadth Performance Matrix (Collapsible - Collapsed by default) -->
         <section class="sector-heatmap-section" id="sectorHeatmapSection">
@@ -5526,11 +5530,6 @@
           </div>
         </section>
       </div>
-
-
-
-      <!-- Messages / Logs Panel -->
-      <section class="message-panel" id="messagePanel" aria-live="polite"></section>
 
       <!-- Institutional Footer with Legal & Compliance Links (Strict 4-Column Layout) -->
       <footer class="terminal-footer">

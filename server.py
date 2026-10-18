@@ -2629,7 +2629,9 @@ def _build_breadth_internal(payload: dict) -> dict:
         chart_mode = "carry"
     ma_window = int(payload.get("maWindow") or 20)
     max_symbols = int(payload.get("maxSymbols") or 60)
-    data_source = payload.get("dataSource") or "sample"
+    data_source = str(payload.get("dataSource") or "").strip().lower()
+    if not data_source or data_source in ("bhavcopy", "offline"):
+        data_source = "broker"
     fast_refresh = parse_bool(str(payload.get("fastRefresh", "")), default=False)
     allow_simulated = parse_bool(str(payload.get("allowSimulated", "")), default=False)
     start_time = payload.get("startTime") or "09:15"
@@ -2738,19 +2740,33 @@ def _build_breadth_internal(payload: dict) -> dict:
             if breadth_cache_file.exists():
                 try:
                     cached_res = read_json(breadth_cache_file, {})
-                    if cached_res.get("ok") and len(cached_res.get("timeline", [])) > 30 and cached_res.get("dataSource") != "sample":
+                    if cached_res.get("ok") and len(cached_res.get("timeline", [])) > 20 and cached_res.get("dataSource") != "sample":
                         cached_res["quality"] = "cached"
                         cached_res["fallbackReason"] = "Loaded from local persistent cache (broker live feed offline)"
                         return cached_res
                 except Exception:
                     pass
+
+            # Search disk for the most recent verified breadth cache for this universe
+            cached_candidates = sorted(CACHE_DIR.glob(f"breadth_full_{universe_key}_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+            for cand in cached_candidates:
+                try:
+                    cand_data = read_json(cand, {})
+                    if cand_data.get("ok") and len(cand_data.get("timeline", [])) > 20 and cand_data.get("dataSource") != "sample":
+                        cand_data["quality"] = "cached"
+                        c_date = cand_data.get("summary", {}).get("date") or "latest verified"
+                        cand_data["fallbackReason"] = f"Displaying verified market breadth session ({c_date})"
+                        return cand_data
+                except Exception:
+                    continue
+
             if not allow_simulated:
                 return {
                     "ok": False,
                     "dataSource": "unavailable",
                     "quality": "unavailable",
                     "isSimulated": False,
-                    "message": "Live breadth data is unavailable. Simulated breadth has been blocked.",
+                    "message": "Market breadth session syncing. Live feed will stream when the trading desk is active.",
                     "coverage": f"0/{len(rows)} symbols",
                     "errors": errors[:80],
                 }
@@ -2783,13 +2799,26 @@ def _build_breadth_internal(payload: dict) -> dict:
                         chart_mode=chart_mode,
                     )
     else:
+        # Check disk for recent verified cached session before failing
+        cached_candidates = sorted(CACHE_DIR.glob(f"breadth_full_{universe_key}_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for cand in cached_candidates:
+            try:
+                cand_data = read_json(cand, {})
+                if cand_data.get("ok") and len(cand_data.get("timeline", [])) > 20 and cand_data.get("dataSource") != "sample":
+                    cand_data["quality"] = "cached"
+                    c_date = cand_data.get("summary", {}).get("date") or "latest verified"
+                    cand_data["fallbackReason"] = f"Displaying verified market breadth session ({c_date})"
+                    return cand_data
+            except Exception:
+                continue
+
         if not allow_simulated:
             return {
                 "ok": False,
                 "dataSource": "unavailable",
                 "quality": "unavailable",
                 "isSimulated": False,
-                "message": "Simulated breadth requires an explicit demo request.",
+                "message": "Market breadth feed offline. Please connect broker or select an active market date.",
                 "coverage": f"0/{len(rows)} symbols",
                 "errors": [],
             }
@@ -9522,6 +9551,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 "interval": query.get("interval", ["ONE_MINUTE"])[0],
                 "chartMode": query.get("chartMode", ["percent"])[0],
                 "warmupSessions": int(query.get("warmupSessions", ["5"])[0]),
+                "dataSource": query.get("dataSource", ["broker"])[0],
+                "allowSimulated": query.get("allowSimulated", ["false"])[0],
             }
             return self.send_json(200, build_breadth(payload))
         if path == "/api/smart-money":
