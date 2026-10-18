@@ -14,6 +14,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SEO_CONFIG_FILE = ROOT / "seo_config.json"
+NON_INDEXABLE_PATHS = frozenset({
+    "/admin", "/admin.html", "/settings", "/page2", "/page2.html",
+    "/calendar_studio", "/calendar_studio.html",
+})
+SITEMAP_EXCLUDED_PATHS = frozenset({
+    # Legacy aliases that 301 to their canonical destination.
+    "/fii-dii-cash", "/fii-dii-derivatives", "/fii-dii/cash", "/fii-dii/derivatives",
+})
 
 DEFAULT_SEO_CONFIG = {
     "site_title": "TradersDesk.in | Institutional Derivatives, Options Greeks & Market Breadth Terminal",
@@ -473,6 +481,11 @@ def load_all_seo_routes() -> dict[str, dict]:
         except Exception:
             pass
 
+    # A saved catalog must never be allowed to re-index an internal route.
+    for protected_path in NON_INDEXABLE_PATHS:
+        if protected_path in routes:
+            routes[protected_path]["robots"] = "noindex, nofollow, noarchive"
+
     return routes
 
 def save_all_seo_routes(routes: dict[str, dict]) -> bool:
@@ -597,16 +610,16 @@ def rebuild_sitemap_xml() -> tuple[bool, str]:
         all_r = load_all_seo_routes()
         lines = ['<?xml version="1.0" encoding="UTF-8"?>']
         lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
-        today = time.strftime("%Y-%m-%d")
-        
         # Sort routes: root first, then by priority desc
         sorted_routes = sorted(all_r.values(), key=lambda x: (0 if x["path"] == "/" else 1, -float(x.get("priority", 0.5))))
         
         seen_canonicals = set()
         count = 0
         for r in sorted_routes:
-            # Skip noindex
-            if "noindex" in r.get("robots", "").lower():
+            route_path = (r.get("path") or "").rstrip("/") or "/"
+            # Internal/admin and explicit noindex pages must never leak into the
+            # public sitemap, even if an old saved SEO catalog says otherwise.
+            if route_path in NON_INDEXABLE_PATHS or route_path in SITEMAP_EXCLUDED_PATHS or "noindex" in r.get("robots", "").lower():
                 continue
             canonical = (r.get("canonical") or f"https://tradersdesk.in{r['path'] if r['path'] != '/' else ''}").rstrip("/")
             if canonical == "https://tradersdesk.in":
@@ -618,7 +631,10 @@ def rebuild_sitemap_xml() -> tuple[bool, str]:
             freq = r.get("changefreq", "daily")
             lines.append("  <url>")
             lines.append(f"    <loc>{canonical}</loc>")
-            lines.append(f"    <lastmod>{today}</lastmod>")
+            last_updated = str(r.get("last_updated", "")).strip()
+            lastmod_match = re.match(r"^\d{4}-\d{2}-\d{2}", last_updated)
+            if lastmod_match:
+                lines.append(f"    <lastmod>{lastmod_match.group(0)}</lastmod>")
             lines.append(f"    <changefreq>{freq}</changefreq>")
             lines.append(f"    <priority>{prio}</priority>")
             lines.append("  </url>")
@@ -634,6 +650,10 @@ def rebuild_sitemap_xml() -> tuple[bool, str]:
 def get_seo_meta_for_path(path: str) -> dict:
     all_r = load_all_seo_routes()
     clean = ("/" + path.strip("/")).lower() if path.strip("/") else "/"
+    if clean in NON_INDEXABLE_PATHS:
+        base = all_r.get(clean, {}).copy()
+        base["robots"] = "noindex, nofollow, noarchive"
+        return base
     if clean in all_r:
         return all_r[clean]
     # Check prefixes
@@ -1341,6 +1361,3 @@ def get_crawler_inspection_preview(path: str) -> dict:
         "hasStructuredData": "application/ld+json" in processed_html,
         "hasCrawlerSection": "id=\"seoDynamicCrawlContent\"" in processed_html
     }
-
-
-

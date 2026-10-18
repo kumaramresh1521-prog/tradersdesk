@@ -1,37 +1,6 @@
 # TradersDesk.in - Search Engine Crawler Directives
 User-agent: *
 Allow: /
-Allow: /dashboard
-Allow: /option-chain-pro
-Allow: /options
-Allow: /futures
-Allow: /futures/*
-Allow: /breadth
-Allow: /market-breadth
-Allow: /fii-dii
-Allow: /fii-dii-cash
-Allow: /fii-dii-derivatives
-Allow: /smart-money
-Allow: /breadth-contribution
-Allow: /contribution
-Allow: /global-markets
-Allow: /straddle
-Allow: /atm-straddle
-Allow: /mtf
-Allow: /mtf-analytics
-Allow: /delivery
-Allow: /delivery-analytics
-Allow: /quant-tools
-Allow: /calendar-studio
-Allow: /calendar_studio.html
-Allow: /about.html
-Allow: /about
-Allow: /disclaimer.html
-Allow: /disclaimer
-Allow: /privacy.html
-Allow: /privacy
-Allow: /terms.html
-Allow: /terms
 
 Disallow: /api/
 Disallow: /admin

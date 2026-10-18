@@ -56,6 +56,10 @@ ANGEL_CANDLES = "/rest/secure/angelbroking/historical/v1/getCandleData"
 ANGEL_QUOTE = "/rest/secure/angelbroking/market/v1/quote"
 
 SERVER_START_TIME = time.time()
+_ADMIN_AUTH_LOCK = threading.Lock()
+_ADMIN_AUTH_FAILURES: dict[str, list[float]] = {}
+_ADMIN_AUTH_WINDOW_SECONDS = 15 * 60
+_ADMIN_AUTH_MAX_FAILURES = 8
 
 # --- System Error & Event Log Ring Buffer ---
 _SYSTEM_LOGS: list[dict] = []
@@ -82,7 +86,37 @@ log_system_event("INFO", "ANGEL", "Angel One SmartAPI session bridge active for 
 
 def get_admin_secret() -> str:
     raw = env("ADMIN_SECRET_KEY", "").strip().strip('"').strip("'")
-    return raw if raw else "9771897535"
+    # Never provide a known fallback. A missing production secret must lock the
+    # admin surface instead of silently making it publicly guessable.
+    return raw
+
+
+def _admin_client_identity(handler) -> str:
+    # Cloudflare provides this header at the edge. Fall back to the peer address
+    # for local development and direct deployments.
+    forwarded = handler.headers.get("CF-Connecting-IP", "").strip()
+    return forwarded or str(handler.client_address[0] if handler.client_address else "unknown")
+
+
+def admin_auth_is_rate_limited(handler) -> bool:
+    now = time.time()
+    identity = _admin_client_identity(handler)
+    with _ADMIN_AUTH_LOCK:
+        attempts = [ts for ts in _ADMIN_AUTH_FAILURES.get(identity, []) if now - ts < _ADMIN_AUTH_WINDOW_SECONDS]
+        _ADMIN_AUTH_FAILURES[identity] = attempts
+        return len(attempts) >= _ADMIN_AUTH_MAX_FAILURES
+
+
+def record_admin_auth_result(handler, valid: bool) -> None:
+    identity = _admin_client_identity(handler)
+    now = time.time()
+    with _ADMIN_AUTH_LOCK:
+        if valid:
+            _ADMIN_AUTH_FAILURES.pop(identity, None)
+            return
+        attempts = [ts for ts in _ADMIN_AUTH_FAILURES.get(identity, []) if now - ts < _ADMIN_AUTH_WINDOW_SECONDS]
+        attempts.append(now)
+        _ADMIN_AUTH_FAILURES[identity] = attempts
 
 
 def check_admin_request(handler) -> bool:
@@ -91,13 +125,10 @@ def check_admin_request(handler) -> bool:
         return False
     provided = handler.headers.get("X-Admin-Secret", "").strip().strip('"').strip("'")
     if not provided:
-        query = urllib.parse.parse_qs(urllib.parse.urlparse(handler.path).query)
-        provided = query.get("adminKey", [""])[0].strip().strip('"').strip("'")
-    if not provided:
         auth_h = handler.headers.get("Authorization", "").strip()
         if auth_h.lower().startswith("bearer "):
             provided = auth_h[7:].strip().strip('"').strip("'")
-    return bool(provided and provided == secret)
+    return bool(provided and hmac.compare_digest(provided, secret))
 
 
 def is_masked_or_empty(val: str) -> bool:
@@ -9457,6 +9488,30 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Max-Age", "86400")
         self.end_headers()
 
+    def do_HEAD(self) -> None:
+        # Search validators and uptime tools commonly use HEAD. Serve the same
+        # headers/status as GET without writing a response body.
+        self.do_GET()
+
+    def send_baseline_security_headers(self, *, html: bool = False) -> None:
+        """Headers that harden browser behavior without changing application flows."""
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()")
+        # Browsers only honor HSTS on HTTPS, so this remains safe for local HTTP development.
+        self.send_header("Strict-Transport-Security", "max-age=31536000")
+        if html:
+            # Report-only first: existing inline terminal scripts continue working while
+            # CSP violations can be observed before an enforcing policy is introduced.
+            self.send_header(
+                "Content-Security-Policy-Report-Only",
+                "default-src 'self' https: data: blob:; object-src 'none'; base-uri 'self'; "
+                "frame-ancestors 'self'; form-action 'self'; script-src 'self' https: 'unsafe-inline' 'unsafe-eval'; "
+                "style-src 'self' https: 'unsafe-inline'; img-src 'self' https: data: blob:; "
+                "connect-src 'self' https: wss:"
+            )
+
     def send_json(self, status: int, payload) -> None:
         try:
             sanitized = sanitize_for_json(payload)
@@ -9478,7 +9533,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Secret, Authorization")
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
-            self.wfile.write(data)
+            if self.command != "HEAD":
+                self.wfile.write(data)
         except Exception:
             pass
 
@@ -9963,7 +10019,10 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         # Admin Protected GET Endpoints
         if path == "/api/admin/verify":
+            if admin_auth_is_rate_limited(self):
+                return self.send_json(429, {"ok": False, "message": "Too many admin authentication attempts. Try again later."})
             is_valid = check_admin_request(self)
+            record_admin_auth_result(self, is_valid)
             return self.send_json(200 if is_valid else 401, {"ok": is_valid})
 
         if path == "/api/admin/broker-config":
@@ -10844,10 +10903,13 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, run_system_diagnostics())
 
             if parsed.path == "/api/admin/verify":
+                if admin_auth_is_rate_limited(self):
+                    return self.send_json(429, {"ok": False, "message": "Too many admin authentication attempts. Try again later."})
                 payload = self.read_body()
                 key = str(payload.get("adminKey", "")).strip().strip('"').strip("'")
                 secret = get_admin_secret()
-                is_valid = bool(key and key == secret)
+                is_valid = bool(key and secret and hmac.compare_digest(key, secret))
+                record_admin_auth_result(self, is_valid)
                 return self.send_json(200 if is_valid else 401, {"ok": is_valid, "message": "Admin authenticated" if is_valid else "Invalid Admin Key"})
 
             if parsed.path == "/api/admin/broker-config":
@@ -11129,6 +11191,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 with _SEO_HTML_CACHE_LOCK:
                     _SEO_HTML_CACHE[cache_key] = {"ts": now, "data": data}
 
+            is_admin_page = req_path.rstrip("/") in ("/admin", "/admin.html")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             cors_origin = self._get_cors_origin()
@@ -11136,11 +11199,13 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.send_header("Access-Control-Allow-Origin", cors_origin)
                 self.send_header("Vary", "Origin")
             self.send_header("Content-Length", str(len(data)))
-            self.send_header("Cache-Control", "public, max-age=30, s-maxage=60, stale-while-revalidate=120")
-            self.send_header("X-Content-Type-Options", "nosniff")
-            self.send_header("X-Frame-Options", "SAMEORIGIN")
+            self.send_header("Cache-Control", "no-store, max-age=0" if is_admin_page else "public, max-age=30, s-maxage=60, stale-while-revalidate=120")
+            if is_admin_page:
+                self.send_header("X-Robots-Tag", "noindex, nofollow, noarchive")
+            self.send_baseline_security_headers(html=True)
             self.end_headers()
-            self.wfile.write(data)
+            if self.command != "HEAD":
+                self.wfile.write(data)
         except Exception:
             self.serve_static(file_path_rel)
 
@@ -11162,8 +11227,12 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.send_header("Pragma", "no-cache")
             self.send_header("Expires", "0")
+            if clean.lower() == "admin.html":
+                self.send_header("X-Robots-Tag", "noindex, nofollow, noarchive")
+            self.send_baseline_security_headers()
             self.end_headers()
-            self.wfile.write(data)
+            if self.command != "HEAD":
+                self.wfile.write(data)
         except Exception:
             pass
 

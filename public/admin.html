@@ -1538,7 +1538,8 @@
     </div>
 
     <script>
-      let adminSecretKey = localStorage.getItem('bl_admin_secret') || sessionStorage.getItem('bl_admin_secret') || '';
+      // Admin credentials must disappear when the browser session closes.
+      let adminSecretKey = sessionStorage.getItem('bl_admin_secret') || '';
 
       function getAuthHeaders() {
         return {
@@ -1576,7 +1577,6 @@
           const data = await res.json();
           if (data.ok) {
             adminSecretKey = key;
-            localStorage.setItem('bl_admin_secret', key);
             sessionStorage.setItem('bl_admin_secret', key);
             document.getElementById('adminLockOverlay').style.display = 'none';
             document.getElementById('adminLayout').style.display = 'flex';
@@ -1596,7 +1596,6 @@
 
       function logoutAdmin() {
         adminSecretKey = '';
-        localStorage.removeItem('bl_admin_secret');
         sessionStorage.removeItem('bl_admin_secret');
         document.getElementById('adminLayout').style.display = 'none';
         document.getElementById('adminLockOverlay').style.display = 'flex';
@@ -1752,23 +1751,6 @@
         }
       });
 
-      function mergeBrokerVaultToLocalStorage(payload) {
-        try {
-          const existing = JSON.parse(localStorage.getItem('td_admin_broker_vault') || '{}');
-          for (const section of ['angel', 'upstox', 'kotak']) {
-            if (payload[section]) {
-              existing[section] = existing[section] || {};
-              for (const [k, v] of Object.entries(payload[section])) {
-                if (v && typeof v === 'string' && v.trim() && !v.includes('••••')) {
-                  existing[section][k] = v.trim();
-                }
-              }
-            }
-          }
-          localStorage.setItem('td_admin_broker_vault', JSON.stringify(existing));
-        } catch(e) {}
-      }
-
       async function loadMasterBrokers() {
         try {
           const redirEl = document.getElementById('admUpstoxRedirectUri');
@@ -1778,23 +1760,6 @@
           if (!res.ok) return;
           let data = await res.json();
           if (!data.ok) return;
-
-          // Auto-restore from local browser vault if server restarted on an ephemeral container with empty keys
-          try {
-            const localVault = JSON.parse(localStorage.getItem('td_admin_broker_vault') || '{}');
-            const serverMissingAngel = !data.angel?.apiKey && localVault.angel?.apiKey;
-            const serverMissingUpstox = !data.upstox?.apiKey && localVault.upstox?.apiKey;
-            const serverMissingKotak = !data.kotak?.consumerKey && localVault.kotak?.consumerKey;
-            if (serverMissingAngel || serverMissingUpstox || serverMissingKotak) {
-              await fetch('/api/admin/broker-config', {
-                method: 'POST',
-                headers: getAuthHeaders(),
-                body: JSON.stringify(localVault)
-              });
-              const res2 = await fetch('/api/admin/broker-config', { headers: getAuthHeaders() });
-              if (res2.ok) data = await res2.json();
-            }
-          } catch(e) {}
 
           // Angel One
           if (data.angel) {
@@ -1935,8 +1900,6 @@
             accessToken: cleanAdmInput('admKotakToken')
           }
         };
-
-        mergeBrokerVaultToLocalStorage(payload);
 
         try {
           const res = await fetch('/api/admin/broker-config', {
@@ -2903,7 +2866,6 @@
           const result = await res.json();
           if (result.ok) {
             adminSecretKey = newPin;
-            localStorage.setItem('bl_admin_secret', newPin);
             sessionStorage.setItem('bl_admin_secret', newPin);
             alert('✓ Admin PIN updated successfully! Remember your new PIN.');
             document.getElementById('admNewPin').value = '';
@@ -3269,7 +3231,7 @@
         }
       }
 
-      // Auto-unlock if session or local key exists
+      // Auto-unlock only during the current browser session.
       if (adminSecretKey) {
         const inp = document.getElementById('adminSecretInput');
         if (inp) inp.value = adminSecretKey;
@@ -3289,7 +3251,6 @@
             toggleLogsAutoRefresh();
           } else {
             // Clear invalid key
-            localStorage.removeItem('bl_admin_secret');
             sessionStorage.removeItem('bl_admin_secret');
             adminSecretKey = '';
           }
@@ -3456,4 +3417,3 @@
     </div>
   </body>
 </html>
-
