@@ -1,6 +1,6 @@
 @echo off
 echo ==========================================================
-echo  Deploying Breadth Lab to Google Cloud Run
+echo  Deploying TradersDesk.in to Google Cloud Run
 echo ==========================================================
 
 set SERVICE_NAME=tradersdesk

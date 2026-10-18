@@ -2,7 +2,7 @@
 set -e
 
 echo "=========================================================="
-echo "🚀 Deploying Breadth Lab to Google Cloud Run"
+echo "🚀 Deploying TradersDesk.in to Google Cloud Run"
 echo "=========================================================="
 
 SERVICE_NAME="tradersdesk"

@@ -22428,3 +22428,99 @@ body[data-theme="light"] .inst-dot-menu-btn:hover {
     align-items: center;
   }
 }
+
+/* ==========================================================================
+   📱 Mobile Bottom Navigation Bar & Institutional Watchlist Buttons
+   ========================================================================== */
+.deliv-star-btn,
+.gs-star-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 4px;
+  transition: transform 0.12s ease, color 0.12s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.deliv-star-btn:hover,
+.gs-star-btn:hover {
+  transform: scale(1.25);
+  color: #eab308 !important;
+}
+.deliv-star-btn.starred,
+.gs-star-btn.starred {
+  color: #eab308 !important;
+}
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 64px !important;
+  }
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 4px;
+  }
+  html[data-theme="light"] .mobile-bottom-nav {
+    background: rgba(255, 255, 255, 0.95);
+    border-top-color: #cbd5e1;
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
+  }
+  .mob-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 6px 0;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html[data-theme="light"] .mob-nav-item {
+    color: #64748b;
+  }
+  .mob-nav-icon {
+    font-size: 18px;
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+  .mob-nav-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .mob-nav-item:hover,
+  .mob-nav-item.active {
+    color: #38bdf8 !important;
+  }
+  html[data-theme="light"] .mob-nav-item.active {
+    color: #2563eb !important;
+  }
+  .mob-nav-item.active .mob-nav-icon {
+    transform: scale(1.15);
+  }
+}

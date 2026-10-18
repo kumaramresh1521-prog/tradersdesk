@@ -44,7 +44,7 @@ def http_json(
     payload = None
     request_headers = {
         "Accept": "application/json",
-        "User-Agent": "breadth-lab/1.0",
+        "User-Agent": "TradersDesk/1.0",
     }
     if body is not None:
         payload = json.dumps(body).encode("utf-8")
@@ -207,7 +207,7 @@ class UpstoxClient(BaseBrokerClient):
         return {
             "Authorization": token,
             "Accept": "application/json",
-            "User-Agent": "breadth-lab/1.0",
+            "User-Agent": "TradersDesk/1.0",
         }
 
     def _load_isin_map(self) -> dict[str, str]:

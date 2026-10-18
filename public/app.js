@@ -4816,6 +4816,7 @@ function selectDeliveryUniverse(key) {
 
 function matchDeliveryFilter(s, filterKey) {
   if (!filterKey || filterKey === "all") return true;
+  if (filterKey === "watchlist") return isWatchlisted(s.symbol);
   if (filterKey === "shocks") return (s.shockRatio || 0) >= 1.3;
   if (filterKey === "extreme_shocks") return (s.shockRatio || 0) >= 2.0;
   if (filterKey === "accumulation") return s.signal === "STRONG_ACCUMULATION" || ((s.changePct || 0) > 0.3 && (s.delivPer || 0) >= 50 && (s.shockRatio || 0) >= 1.2);
@@ -4914,7 +4915,8 @@ function applyDeliveryFilterAndRender() {
     const sortArrow = delivSortDir === "asc" ? "▲" : "▼";
 
     let filterText = "";
-    if (delivActiveFilter === "shocks") filterText = " • Shocks (>1.3x)";
+    if (delivActiveFilter === "watchlist") filterText = " • ⭐ Watchlist";
+    else if (delivActiveFilter === "shocks") filterText = " • Shocks (>1.3x)";
     else if (delivActiveFilter === "extreme_shocks") filterText = " • Extreme Surge (>2.0x)";
     else if (delivActiveFilter === "accumulation") filterText = " • Strong Accumulation";
     else if (delivActiveFilter === "distribution") filterText = " • Heavy Distribution";
@@ -4982,6 +4984,197 @@ function isFnOSymbol(symbol) {
 }
 window.isFnOSymbol = isFnOSymbol;
 
+// =============================================================================
+// ⭐ Unified Institutional Watchlist API (localStorage & Supabase Synced)
+// =============================================================================
+function getWatchlistSymbols() {
+  try {
+    if (window.AuthSync && window.AuthSync.workspace && Array.isArray(window.AuthSync.workspace.watchlist)) {
+      return window.AuthSync.workspace.watchlist.map(s => String(s).toUpperCase());
+    }
+    const raw = localStorage.getItem("td_watchlist");
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr.map(s => String(s).toUpperCase());
+    }
+  } catch (e) {}
+  return ["NIFTY", "BANKNIFTY", "RELIANCE", "HDFCBANK", "INFY", "TCS", "TATAMOTORS"];
+}
+window.getWatchlistSymbols = getWatchlistSymbols;
+
+function isWatchlisted(symbol) {
+  if (!symbol) return false;
+  const sym = String(symbol).trim().toUpperCase();
+  const list = getWatchlistSymbols();
+  return list.includes(sym);
+}
+window.isWatchlisted = isWatchlisted;
+
+function toggleWatchlistSymbol(symbol) {
+  if (!symbol) return false;
+  const sym = String(symbol).trim().toUpperCase();
+  let list = getWatchlistSymbols();
+  let isAdded = false;
+  if (list.includes(sym)) {
+    list = list.filter(s => s !== sym);
+  } else {
+    list.push(sym);
+    isAdded = true;
+  }
+  try {
+    localStorage.setItem("td_watchlist", JSON.stringify(list));
+    if (window.AuthSync && typeof window.AuthSync.saveWorkspace === "function") {
+      window.AuthSync.saveWorkspace({ watchlist: list });
+    }
+  } catch (e) {}
+
+  updateWatchlistCountPills();
+  window.dispatchEvent(new CustomEvent("td_watchlist_updated", { detail: { symbol: sym, isAdded, watchlist: list } }));
+  return isAdded;
+}
+window.toggleWatchlistSymbol = toggleWatchlistSymbol;
+
+function toggleWatchlistStockUI(symbol, btnEl) {
+  const isAdded = toggleWatchlistSymbol(symbol);
+  if (btnEl) {
+    btnEl.innerHTML = isAdded ? "★" : "☆";
+    btnEl.style.color = isAdded ? "#eab308" : "#94a3b8";
+    btnEl.title = isAdded ? "Remove from Watchlist" : "Add to Watchlist";
+    btnEl.classList.toggle("starred", isAdded);
+  }
+  if (typeof delivActiveFilter !== "undefined" && delivActiveFilter === "watchlist") {
+    if (typeof applyDeliveryFilterAndRender === "function") applyDeliveryFilterAndRender();
+  }
+  if (typeof mtfActiveFilterPill !== "undefined" && mtfActiveFilterPill === "watchlist") {
+    if (typeof mtaRenderStockTable === "function") mtaRenderStockTable();
+  }
+}
+window.toggleWatchlistStockUI = toggleWatchlistStockUI;
+
+function updateWatchlistCountPills() {
+  const list = getWatchlistSymbols();
+  const dCountEl = document.getElementById("delivWatchlistCount");
+  if (dCountEl) {
+    if (delivDataGlobal && (delivDataGlobal.allStocks || delivDataGlobal.stocks)) {
+      const all = delivDataGlobal.allStocks || delivDataGlobal.stocks || [];
+      dCountEl.textContent = all.filter(s => list.includes((s.symbol || "").toUpperCase())).length;
+    } else {
+      dCountEl.textContent = list.length;
+    }
+  }
+  const mCountEl = document.getElementById("mtfWatchlistCount");
+  if (mCountEl) {
+    if (window.mtaData && Array.isArray(window.mtaData.stockScreener)) {
+      mCountEl.textContent = window.mtaData.stockScreener.filter(s => list.includes((s.symbol || "").toUpperCase())).length;
+    } else {
+      mCountEl.textContent = list.length;
+    }
+  }
+}
+window.updateWatchlistCountPills = updateWatchlistCountPills;
+window.addEventListener("td_watchlist_updated", () => updateWatchlistCountPills());
+
+// =============================================================================
+// 📥 1-Click CSV Spreadsheet Export Engines
+// =============================================================================
+function exportDeliveryDeskCsv() {
+  const stocks = (_delivCurrentStockList && _delivCurrentStockList.length > 0)
+    ? _delivCurrentStockList
+    : (delivDataGlobal?.allStocks || delivDataGlobal?.stocks || []);
+
+  if (!stocks || !stocks.length) {
+    alert("No delivery data available to export.");
+    return;
+  }
+
+  const headers = [
+    "Symbol",
+    "Segment",
+    "Close Price (INR)",
+    "Change %",
+    "Traded Qty",
+    "Deliverable Qty",
+    "Delivery %",
+    "5D Avg Qty",
+    "5D Avg Delivery %",
+    "Delivery Turnover (Cr)",
+    "Volume Shock Ratio",
+    "Signal"
+  ];
+
+  const rows = stocks.map(s => [
+    `"${(s.symbol || '').replace(/"/g, '""')}"`,
+    Boolean(s.isFnO || isFnOSymbol(s.symbol)) ? "F&O" : "Cash",
+    s.close || 0,
+    s.changePct || 0,
+    s.tradedQty || 0,
+    s.delivQty || 0,
+    s.delivPer || 0,
+    s.avg5dQty || 0,
+    s.avgDelivPer5D || 0,
+    s.delivTurnoverCr || 0,
+    s.shockRatio || 1.0,
+    `"${(s.signal || 'NEUTRAL').replace(/"/g, '""')}"`
+  ]);
+
+  const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const d = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  a.href = url;
+  a.download = `NSE_Delivery_Absorption_${d}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+window.exportDeliveryDeskCsv = exportDeliveryDeskCsv;
+
+function exportDrilldownCsv() {
+  if (!currentDrillHistory || !currentDrillHistory.length) {
+    alert("No delivery history available to export.");
+    return;
+  }
+  const titleText = (els.drilldownTitle ? els.drilldownTitle.textContent : "STOCK");
+  const sym = (titleText.split(" - ")[0] || "STOCK").trim();
+  const headers = [
+    "Date",
+    "Close Price (INR)",
+    "Change %",
+    "Traded Qty",
+    "Deliverable Qty",
+    "Delivery %",
+    "Trades",
+    "Turnover (Cr)",
+    "Deliverable Turnover (Cr)",
+    "Shock vs 5D"
+  ];
+  const rows = currentDrillHistory.map(d => [
+    `"${d.date || ''}"`,
+    d.close || 0,
+    d.changePct || 0,
+    d.tradedQty || 0,
+    d.delivQty || 0,
+    d.delivPer || 0,
+    d.trades || 0,
+    d.turnoverCr || 0,
+    d.delivTurnoverCr || 0,
+    d.shockRatio || 1.0
+  ]);
+  const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${sym}_NSE_Delivery_History.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+window.exportDrilldownCsv = exportDrilldownCsv;
+
 let _delivDisplayLimit = 60;
 let _delivCurrentStockList = [];
 let _delivObserver = null;
@@ -5004,10 +5197,16 @@ function renderDeliveryRowHtml(s) {
     ? `Click to inspect ${s.symbol} MTF, F&amp;O &amp; leverage analytics`
     : `Click to view ${s.symbol} date-wise delivery history`;
 
+  const starred = isWatchlisted(s.symbol);
+  const starIcon = starred ? "★" : "☆";
+  const starClass = starred ? "starred" : "";
+  const starTitle = starred ? "Remove from Watchlist" : "Add to Watchlist";
+
   return `
     <tr onclick="${rowClickAction}" style="cursor:pointer;" title="${rowTitle}">
       <td>
-        <div style="display:flex; align-items:center;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button type="button" class="deliv-star-btn ${starClass}" onclick="event.stopPropagation(); toggleWatchlistStockUI('${s.symbol}', this)" title="${starTitle}" style="background:transparent; border:none; cursor:pointer; font-size:15px; color:${starred ? '#eab308' : '#94a3b8'}; padding:0 2px; line-height:1;">${starIcon}</button>
           <strong style="color:var(--text-primary); font-weight:800;">${s.symbol}</strong>
           ${fnoBadge}
         </div>
@@ -5786,7 +5985,8 @@ function mtaRenderStockTable(stocks, forceFilter) {
   let list = [...src];
 
   // Quick Filter Pills
-  if (mtfActiveFilterPill === 'leaders') list = list.filter(s => (s.amtFinancedCrore || 0) >= 500);
+  if (mtfActiveFilterPill === 'watchlist') list = list.filter(s => isWatchlisted(s.symbol));
+  else if (mtfActiveFilterPill === 'leaders') list = list.filter(s => (s.amtFinancedCrore || 0) >= 500);
   else if (mtfActiveFilterPill === 'fno') list = list.filter(s => s.isFnO);
   else if (mtfActiveFilterPill === 'cash') list = list.filter(s => !s.isFnO);
   else if (mtfActiveFilterPill === 'high_share') list = list.filter(s => (s.sharePct || 0) >= 1.0);
@@ -5813,6 +6013,7 @@ function mtaRenderStockTable(stocks, forceFilter) {
     const totalCount = (mtaData?.stockScreener || []).length;
     badge.textContent = `Showing ${list.length} of ${totalCount} Stocks`;
   }
+  updateWatchlistCountPills();
 
   const totalBook = list.reduce((s, x) => s + (x.amtFinancedCrore||0), 0);
 
@@ -5866,9 +6067,19 @@ function renderMtfRowHtml(s, i) {
   const exchBadge = '<span class="mta-badge mta-badge-nse">NSE</span>';
   const bookShare = s._calcShare || (s.sharePct || 0);
 
+  const starred = isWatchlisted(s.symbol);
+  const starIcon = starred ? "★" : "☆";
+  const starClass = starred ? "starred" : "";
+  const starTitle = starred ? "Remove from Watchlist" : "Add to Watchlist";
+
   return `<tr class="${rowCls}" style="cursor:pointer;" onclick="inspectStock('${s.symbol}')">
     <td style="color:#64748b;font-weight:600;">#${i+1}</td>
-    <td><strong class="mta-sym">${s.symbol}</strong></td>
+    <td>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button type="button" class="deliv-star-btn ${starClass}" onclick="event.stopPropagation(); toggleWatchlistStockUI('${s.symbol}', this)" title="${starTitle}" style="background:transparent; border:none; cursor:pointer; font-size:15px; color:${starred ? '#eab308' : '#94a3b8'}; padding:0 2px; line-height:1;">${starIcon}</button>
+        <strong class="mta-sym">${s.symbol}</strong>
+      </div>
+    </td>
     <td class="mta-name">${s.name}</td>
     <td style="text-align:center;">${exchBadge}</td>
     <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:${isHeavy?'#dc2626':isSig?'#d97706':'#0f172a'};">₹${Number(s.amtFinancedCrore).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
@@ -12310,6 +12521,12 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
       if (btn) btn.classList.add("active");
     }
 
+    // Sync Mobile Bottom Nav active state
+    const mobKey = (tabKey === "upstoxChain" || key === "upstoxChain" || key === "options") ? "options" : (key === "dashboard" ? "options" : (tabKey || key));
+    document.querySelectorAll(".mobile-bottom-nav .mob-nav-item").forEach(item => {
+      item.classList.toggle("active", item.dataset.desk === mobKey);
+    });
+
     // If subview provided (e.g. futures sub-desk, MTF sub-desk, Delivery sub-desk)
     if (tabKey === "futures" && window.futuresDesk && typeof window.futuresDesk.switchSubTab === "function") {
       window.futuresDesk.switchSubTab(subview || "matrix");
@@ -12355,6 +12572,20 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 }
+
+window.switchDesk = function(deskKey) {
+  if (deskKey === "options") instNav("upstoxChain", null, true, true);
+  else if (deskKey === "futures") instNav("futures", "matrix", true, true);
+  else if (deskKey === "delivery") instNav("delivery", null, true, true);
+  else if (deskKey === "mtf") instNav("mtf", null, true, true);
+  else if (deskKey === "search") {
+    if (typeof openGlobalSearch === "function") openGlobalSearch();
+    else {
+      const inp = document.getElementById("gsearchInput") || document.getElementById("delivSearchInput");
+      if (inp) { inp.focus(); }
+    }
+  }
+};
 
 function navigateDesk(targetKey, subview, explicitUrl, ev) {
   if (ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button === 1)) {

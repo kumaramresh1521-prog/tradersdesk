@@ -26,19 +26,19 @@ Is project ko internet par live publish karne ke liye sabhi jaruri files configu
    chmod +x deploy_to_gcp.sh
    ./deploy_to_gcp.sh
    ```
-   *(Ya direct: `gcloud run deploy breadth-lab --source . --region asia-south1 --allow-unauthenticated --port 8000 --memory 1Gi --cpu 1`)*
+   *(Ya direct: `gcloud run deploy tradersdesk --source . --region asia-south1 --allow-unauthenticated --port 8000 --memory 1Gi --cpu 1`)*
 5. 2 minute me aapko live secure URL mil jayega:
-   👉 `https://breadth-lab-xxxxxx-el.a.run.app`
+   👉 `https://tradersdesk-xxxxxx-el.a.run.app`
 
 ---
 
 ### Tareeqa 2: GitHub + Google Cloud Run (Automated Deployment)
 
-1. Apne GitHub account par ek new repository banayein (e.g. `breadth-lab`).
+1. Apne GitHub account par ek new repository banayein (e.g. `tradersdesk`).
 2. Apne computer ke terminal me ye commands run karein:
    ```bash
    git branch -M main
-   git remote add origin https://github.com/<AAPKA_USERNAME>/breadth-lab.git
+   git remote add origin https://github.com/<AAPKA_USERNAME>/tradersdesk.git
    git push -u origin main
    ```
 3. Google Cloud Console me **Cloud Run** ➔ **Create Service** par click karein:

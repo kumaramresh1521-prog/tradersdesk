@@ -69,12 +69,12 @@
     </noscript>
 
     <!-- Core Terminal Stylesheet -->
-    <link rel="stylesheet" href="/styles.css?v=20261018_v7">
+    <link rel="stylesheet" href="/styles.css?v=20261018_v8">
 
     <!-- Non-Blocking Secondary Stylesheet (Page 2 / Tools) -->
-    <link rel="preload" as="style" href="/page2.css?v=20261018_v7">
-    <link rel="stylesheet" href="/page2.css?v=20261018_v7" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="/page2.css?v=20261018_v7"></noscript>
+    <link rel="preload" as="style" href="/page2.css?v=20261018_v8">
+    <link rel="stylesheet" href="/page2.css?v=20261018_v8" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="/page2.css?v=20261018_v8"></noscript>
 
     <!-- Inlined Zero-Latency Anti-Tamper & Error Shield (0 Render Blocking) -->
     <script>
@@ -3646,6 +3646,9 @@
               <button id="delivRefreshBtn" class="deliv-primary-action-btn" type="button" title="Rescan NSE Cash Deliveries">
                 <span>Scan Deliveries</span>
               </button>
+              <button id="delivExportCsvBtn" class="deliv-primary-action-btn" type="button" onclick="exportDeliveryDeskCsv()" title="Export Delivery & Absorption Matrix to CSV Spreadsheet" style="background:#059669; border-color:#059669;">
+                <span>📥 Export CSV</span>
+              </button>
             </div>
           </div>
 
@@ -3688,6 +3691,7 @@
         <div class="deliv-filter-bar">
           <div class="filter-pill-group" id="delivFilterGroup">
             <button type="button" class="filter-pill active" data-filter="all">All Stocks</button>
+            <button type="button" class="filter-pill" data-filter="watchlist" id="delivWatchlistFilterPill"><span style="color:#eab308; margin-right:4px;">★</span>Watchlist (<span id="delivWatchlistCount">0</span>)</button>
             <button type="button" class="filter-pill" data-filter="shocks">Volume Shocks (&gt;1.3x)</button>
             <button type="button" class="filter-pill" data-filter="extreme_shocks">Extreme Surge (&gt;2.0x)</button>
             <button type="button" class="filter-pill" data-filter="accumulation"><span class="pill-dot green"></span>Strong Accumulation</button>
@@ -3870,7 +3874,10 @@
                 <h3 id="drilldownTitle" style="margin:0; font-size:16px; font-weight:800; color:#0f172a;">RELIANCE - Date-Wise Deliveries</h3>
                 <span id="drilldownSubtitle" style="font-size:11.5px; color:var(--text-muted);">Historical multi-session delivery position &amp; Demat absorption</span>
               </div>
-              <button type="button" class="deliv-modal-close" id="drilldownCloseBtn" style="background:transparent; border:none; font-size:24px; cursor:pointer; color:#64748b;">&times;</button>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button type="button" class="ctrl-btn" onclick="exportDrilldownCsv()" style="display:inline-flex; align-items:center; gap:4px; padding:4px 10px; font-size:11px; font-weight:700; border-radius:5px; background:#059669; color:#fff; border:none; cursor:pointer;" title="Download this stock's delivery history as CSV">📥 CSV</button>
+                <button type="button" class="deliv-modal-close" id="drilldownCloseBtn" style="background:transparent; border:none; font-size:24px; cursor:pointer; color:#64748b;">&times;</button>
+              </div>
             </div>
             <div class="deliv-modal-body">
               <div class="wpcr-table-wrap" style="overflow-x: auto; max-height: 420px;">
@@ -4078,6 +4085,7 @@
             <div class="deliv-filter-bar" style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin:10px 0;">
               <div class="filter-pill-group" id="mtfFilterPillsGroup" style="display:flex; gap:6px; flex-wrap:wrap;">
                 <button type="button" class="filter-pill active" data-mtf-filter="all">All MTF Stocks</button>
+                <button type="button" class="filter-pill" data-mtf-filter="watchlist" id="mtfWatchlistFilterPill"><span style="color:#eab308; margin-right:4px;">★</span>Watchlist (<span id="mtfWatchlistCount">0</span>)</button>
                 <button type="button" class="filter-pill" data-mtf-filter="leaders">🔥 Top Book Leaders (&gt;₹500 Cr)</button>
                 <button type="button" class="filter-pill" data-mtf-filter="fno">⚡ F&amp;O Equities</button>
                 <button type="button" class="filter-pill" data-mtf-filter="cash">💵 Cash Segment Only</button>
@@ -5608,6 +5616,7 @@
               <a href="/privacy">Privacy &amp; Data Governance</a>
               <a href="/terms">Terms of Institutional Service</a>
               <a href="/about">Quantitative Model Methodologies</a>
+              <a href="/contact">Contact &amp; Trader Support</a>
               <a href="https://www.nseindia.com" target="_blank" rel="noopener">NSE Official Regulatory Archive ↗</a>
               <a href="/admin">Platform Administration 🔒</a>
             </div>
@@ -6000,11 +6009,35 @@
       </div>
     </div>
 
-    <script src="/global_markets_desk.js?v=20261018_v7" defer></script>
-    <script src="/upstox_chain.js?v=20261018_v7" defer></script>
-    <script src="/futures_desk.js?v=20261018_v7" defer></script>
-    <script src="/app.js?v=20261018_v7" defer></script>
-    <script src="/global_search.js?v=20261018_v7" defer></script>
-    <script src="/auth_sync.js?v=20261018_v7" defer></script>
+    <!-- 📱 Mobile Bottom Navigation Bar (Visible on mobile <= 768px) -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile Bottom Navigation">
+      <button type="button" class="mob-nav-item active" data-desk="options" onclick="switchDesk('options')" aria-label="Options Pro Desk">
+        <span class="mob-nav-icon">⚡</span>
+        <span class="mob-nav-label">Options</span>
+      </button>
+      <button type="button" class="mob-nav-item" data-desk="futures" onclick="switchDesk('futures')" aria-label="Futures Desk">
+        <span class="mob-nav-icon">📈</span>
+        <span class="mob-nav-label">Futures</span>
+      </button>
+      <button type="button" class="mob-nav-item" data-desk="delivery" onclick="switchDesk('delivery')" aria-label="Delivery Desk">
+        <span class="mob-nav-icon">📦</span>
+        <span class="mob-nav-label">Delivery</span>
+      </button>
+      <button type="button" class="mob-nav-item" data-desk="mtf" onclick="switchDesk('mtf')" aria-label="MTF Desk">
+        <span class="mob-nav-icon">💳</span>
+        <span class="mob-nav-label">MTF</span>
+      </button>
+      <button type="button" class="mob-nav-item" data-desk="search" onclick="switchDesk('search')" aria-label="Universal Search">
+        <span class="mob-nav-icon">🔍</span>
+        <span class="mob-nav-label">Search</span>
+      </button>
+    </nav>
+
+    <script src="/global_markets_desk.js?v=20261018_v8" defer></script>
+    <script src="/upstox_chain.js?v=20261018_v8" defer></script>
+    <script src="/futures_desk.js?v=20261018_v8" defer></script>
+    <script src="/app.js?v=20261018_v8" defer></script>
+    <script src="/global_search.js?v=20261018_v8" defer></script>
+    <script src="/auth_sync.js?v=20261018_v8" defer></script>
   </body>
 </html>

@@ -351,6 +351,18 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
         "keywords": "terms of service, institutional terms, platform usage rules",
         "canonical": "https://tradersdesk.in/terms",
     },
+    "/contact": {
+        "title": "Contact Us & Trader Support | TradersDesk.in",
+        "desc": "Get in touch with the TradersDesk quantitative analytics team. Trader support, data bug reports, feature requests & API partnerships.",
+        "keywords": "contact tradersdesk, trader support, trading terminal feedback, nse api support",
+        "canonical": "https://tradersdesk.in/contact",
+    },
+    "/contact.html": {
+        "title": "Contact Us & Trader Support | TradersDesk.in",
+        "desc": "Get in touch with the TradersDesk quantitative analytics team. Trader support, data bug reports, feature requests & API partnerships.",
+        "keywords": "contact tradersdesk, trader support, trading terminal feedback, nse api support",
+        "canonical": "https://tradersdesk.in/contact",
+    },
 }
 
 import time

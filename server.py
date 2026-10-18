@@ -190,6 +190,7 @@ def get_default_footer_links() -> dict:
                     {"label": "Privacy & Data Governance", "url": "/privacy.html", "type": "link", "target": "_self"},
                     {"label": "Terms of Institutional Service", "url": "/terms.html", "type": "link", "target": "_self"},
                     {"label": "Quantitative Model Methodologies", "url": "/about.html", "type": "link", "target": "_self"},
+                    {"label": "Contact & Trader Support", "url": "/contact", "type": "link", "target": "_self"},
                     {"label": "NSE Official Regulatory Archive ↗", "url": "https://www.nseindia.com", "type": "link", "target": "_blank"},
                     {"label": "Platform Administration 🔒", "url": "/admin.html", "type": "link", "target": "_self"}
                 ]
@@ -661,7 +662,7 @@ def http_json(
     payload = None
     request_headers = {
         "Accept": "application/json",
-        "User-Agent": "breadth-lab/1.0",
+        "User-Agent": "TradersDesk/1.0",
     }
     if body is not None:
         payload = json.dumps(body).encode("utf-8")
@@ -688,7 +689,7 @@ def http_json(
 def http_text(url: str, *, timeout: int = 30) -> str:
     headers = {
         "Accept": "text/csv,application/json,text/plain,*/*",
-        "User-Agent": "Mozilla/5.0 breadth-lab/1.0",
+        "User-Agent": "Mozilla/5.0 TradersDesk/1.0",
         "Referer": "https://www.niftyindices.com/",
     }
     req = urllib.request.Request(url, headers=headers)
@@ -791,7 +792,7 @@ class AngelClient(brokers.BaseBrokerClient):
             "X-Api-Key": self.api_key,
             "X-UserType": "USER",
             "X-SourceID": "WEB",
-            "User-Agent": "breadth-lab/1.0",
+            "User-Agent": "TradersDesk/1.0",
         }
         if auth:
             token = self.jwt_token
@@ -10349,6 +10350,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         STATIC_PAGE_ROUTES = {
             "/about": "/about.html",
+            "/contact": "/contact.html",
             "/disclaimer": "/disclaimer.html",
             "/privacy": "/privacy.html",
             "/terms": "/terms.html",
@@ -10371,6 +10373,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/atm-straddle": "/straddle",
             "/contribution": "/breadth-contribution",
             "/about.html": "/about",
+            "/contact.html": "/contact",
             "/disclaimer.html": "/disclaimer",
             "/privacy.html": "/privacy",
             "/terms.html": "/terms",

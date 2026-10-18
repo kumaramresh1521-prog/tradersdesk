@@ -416,15 +416,21 @@
     let matches = [];
 
     if (!query) {
-      // Default initial view: show featured categories
-      let initialIndices = pool.filter(p => p.type === "index").slice(0, 5);
+      // Prioritize Watchlist items if available
+      const wl = (window.getWatchlistSymbols && window.getWatchlistSymbols()) || [];
+      const watchlistItems = wl.length
+        ? pool.filter(p => wl.includes((p.symbol || "").toUpperCase())).slice(0, 6)
+        : [];
+      const wlSymbols = new Set(watchlistItems.map(x => (x.symbol || "").toUpperCase()));
+
+      let initialIndices = pool.filter(p => p.type === "index" && !wlSymbols.has((p.symbol || "").toUpperCase())).slice(0, 4);
       let initialDesks = pool.filter(p => p.type === "desk").slice(0, 4);
-      let initialStocks = pool.filter(p => p.type === "stock" && p.isFnO).slice(0, 6);
+      let initialStocks = pool.filter(p => p.type === "stock" && p.isFnO && !wlSymbols.has((p.symbol || "").toUpperCase())).slice(0, 4);
 
       if (currentFilter === "indices") matches = pool.filter(p => p.type === "index");
       else if (currentFilter === "desks") matches = pool.filter(p => p.type === "desk");
       else if (currentFilter === "fno") matches = pool.filter(p => p.type === "stock");
-      else matches = [...initialIndices, ...initialDesks, ...initialStocks];
+      else matches = [...watchlistItems, ...initialIndices, ...initialDesks, ...initialStocks];
     } else {
       // Fuzzy & Substring matching
       matches = pool.filter(item => {
@@ -548,10 +554,16 @@
         `;
       }
 
+      const isStarred = (typeof window.isWatchlisted === "function" && window.isWatchlisted(item.symbol));
+      const starBtn = (item.type !== "desk")
+        ? `<button type="button" class="gs-star-btn" onclick="event.stopPropagation(); window.toggleWatchlistStockUI && window.toggleWatchlistStockUI('${item.symbol}', this); if (!document.getElementById('gsearchInput')?.value) renderSearchResults('');" title="${isStarred ? 'Remove from Watchlist' : 'Add to Watchlist'}" style="background:transparent; border:none; cursor:pointer; font-size:15px; color:${isStarred ? '#eab308' : '#64748b'}; padding:0 4px; line-height:1;">${isStarred ? '★' : '☆'}</button>`
+        : '';
+
       html += `
         <div class="gsearch-item-row" data-idx="${idx}" data-sym="${item.symbol}" data-type="${item.type}" onclick="handleItemSelect(${idx})">
           <div class="gs-item-left">
-            <div class="gs-item-top">
+            <div class="gs-item-top" style="display:flex; align-items:center; gap:6px;">
+              ${starBtn}
               <strong class="gs-item-sym">${item.label || item.symbol}</strong>
               ${badgeHtml}
             </div>
