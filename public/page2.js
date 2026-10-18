@@ -260,15 +260,23 @@
       window.AuthService.syncState({ page2Suite: suiteKey });
     }
     loadCurrentSuite();
-    if (suiteKey === "contribution") {
-      setupContribCanvasEvents();
-      requestAnimationFrame(() => {
+    setTimeout(() => {
+      if (suiteKey === "contribution") {
+        setupContribCanvasEvents();
         if (contribTimeline && contribTimeline.length > 0) {
           renderIntradayBreadthChart(contribTimeline);
           renderIntradayIndexChart(contribTimeline, contribDataCache ? contribDataCache.indexInfo : null);
+        } else {
+          loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
         }
-      });
-    }
+      } else if (suiteKey === "straddle") {
+        if (straddleState.data) {
+          renderStraddleChart(straddleState.data);
+        } else {
+          loadStraddleTool(false);
+        }
+      }
+    }, 60);
 
     syncP2Url(suiteKey, pushHistory);
   }
@@ -542,6 +550,9 @@
         if (straddleState.mode === "live") {
           populateExpiryOptions();
         }
+        if (currentSuite === "straddle" || currentSuite === "tools") {
+          loadStraddleTool(false);
+        }
       }
     } catch (err) {
       console.warn("Could not fetch categories:", err);
@@ -690,11 +701,27 @@
   async function loadStraddleTool(isSilent = false) {
     const refBtn = document.getElementById("straddleRefreshBtn");
     if (refBtn && !isSilent) {
-      refBtn.textContent = "⏳ Fetching...";
+      refBtn.textContent = "⏳ Refreshing...";
       refBtn.disabled = true;
     }
 
     try {
+      const idxSel = document.getElementById("straddleIndexSelect");
+      const catSel = document.getElementById("straddleCategorySelect");
+      const expSel = document.getElementById("straddleExpirySelect");
+      const stkSel = document.getElementById("straddleStrikeSelect");
+      const dateSel = document.getElementById("straddleDateSelect");
+      const dateInp = document.getElementById("straddleDateInput");
+
+      if (idxSel && idxSel.value) straddleState.index = idxSel.value;
+      if (catSel && catSel.value) straddleState.category = catSel.value;
+      if (expSel && expSel.value) straddleState.expiry = expSel.value;
+      if (stkSel && stkSel.value) straddleState.strike = stkSel.value;
+      if (straddleState.mode === "historical") {
+        if (dateSel && dateSel.value) straddleState.date = dateSel.value;
+        else if (dateInp && dateInp.value) straddleState.date = dateInp.value;
+      }
+
       const q = new URLSearchParams({
         index: straddleState.index || "NIFTY",
         category: straddleState.category || "Equity",
@@ -830,7 +857,7 @@
       console.error("Error loading straddle tool:", err);
     } finally {
       if (refBtn && !isSilent) {
-        refBtn.textContent = "🔄 Fetch";
+        refBtn.textContent = "🔄 Refresh";
         refBtn.disabled = false;
       }
     }
@@ -2073,6 +2100,11 @@
 
   async function loadBreadthContributionSuite(indexKey = "nifty50", dateStr = null, isRefresh = false) {
     const dateBadge = document.getElementById("contribDateDisplayBadge");
+    const contribRefBtn = document.getElementById("contribRefreshBtn");
+    if (isRefresh && contribRefBtn) {
+      contribRefBtn.innerHTML = "<span>⏳</span> <span>Refreshing...</span>";
+      contribRefBtn.disabled = true;
+    }
     if (isRefresh && dateBadge && !dateBadge.textContent.includes("⏳")) {
       dateBadge.textContent = "⏳ Computing Breadth...";
     }
@@ -2268,6 +2300,12 @@
         ctx.fillText("Verified session data unavailable", width / 2, height / 2);
       });
       console.error("Failed to load Breadth Contribution suite:", err);
+    } finally {
+      const contribRefBtn = document.getElementById("contribRefreshBtn");
+      if (contribRefBtn) {
+        contribRefBtn.innerHTML = "<span>🔄</span> <span>Refresh</span>";
+        contribRefBtn.disabled = false;
+      }
     }
   }
 

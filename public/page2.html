@@ -259,19 +259,9 @@
         </div>
       </div>
 
-      <!-- Right: Asset Selector, Spot Badge & Refresh -->
+      <!-- Right: Live Spot Underlying Badge -->
       <div class="page2-nav-right">
-        <select id="p2IndexSelect" class="page2-ctrl-select">
-          <option value="nifty50" selected>NIFTY 50</option>
-          <option value="banknifty">BANK NIFTY</option>
-          <option value="finnifty">FIN NIFTY</option>
-          <option value="sensex">BSE SENSEX</option>
-          <option value="crudeoil">MCX CRUDEOIL</option>
-          <option value="reliance">RELIANCE</option>
-          <option value="hdfcbank">HDFC BANK</option>
-        </select>
-        <div id="p2SpotBadge" class="page2-spot-badge">SPOT: ₹23,346.40</div>
-        <button id="p2RefreshBtn" class="page2-refresh-btn" type="button">🔄 Refresh</button>
+        <div id="p2SpotBadge" class="page2-spot-badge">SPOT: ₹24,800.00</div>
       </div>
     </div>
   </header>
@@ -347,7 +337,7 @@
             <span class="straddle-live-dot">●</span>
             <span id="stLiveText">Live 30s</span>
           </label>
-          <button id="straddleRefreshBtn" class="page2-refresh-btn" type="button">🔄 Fetch</button>
+          <button id="straddleRefreshBtn" class="page2-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;" title="Refresh Straddle Chart">🔄 Refresh</button>
         </div>
       </div>
     </div>
@@ -527,7 +517,7 @@
           <span class="spot-chg text-green" id="contribSpotChg">+75.80 (0.32%)</span>
         </div>
 
-        <button id="contribRefreshBtn" class="nt-btn-secondary" type="button" title="Refresh Live Data">
+        <button id="contribRefreshBtn" class="page2-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;" title="Refresh Breadth &amp; Contribution">
           <span>🔄</span> <span>Refresh</span>
         </button>
       </div>

@@ -1837,18 +1837,14 @@ function scheduleAutoRefresh() {
     setRefreshState(latestData ? `Updated ${formatTime(latestData.summary.latestTime)}` : "Manual mode");
     return;
   }
+  const seconds = Number(els.refreshInterval ? els.refreshInterval.value : 60) || 60;
   if (!_isMarketOpenState) {
     const sDate = (latestData && latestData.summary && latestData.summary.date) || (els.dateInput && els.dateInput.value) || "";
-    setRefreshState(sDate ? `Market Closed • EOD (${sDate})` : "Market Closed");
-    return;
+    setRefreshState(sDate ? `Auto (${seconds}s) • EOD` : `Auto (${seconds}s)`);
+  } else {
+    setRefreshState(`Auto ${seconds}s`);
   }
-  const seconds = Number(els.refreshInterval ? els.refreshInterval.value : 60) || 60;
-  setRefreshState(`Auto ${seconds}s`);
   autoRefreshTimer = setInterval(() => {
-    if (!_isMarketOpenState) {
-      scheduleAutoRefresh();
-      return;
-    }
     if (!isLoading) runBreadth({ fastRefresh: true });
   }, seconds * 1000);
 }
@@ -7730,10 +7726,20 @@ function switchTab(tab) {
   if (tab === "breadth") {
     isOptionsTabActive = false;
     showPanel("panelBreadth", "tabBreadth");
-    try { if (typeof resizeCanvas === "function") resizeCanvas(); } catch(e){}
-    try { if (typeof resizeNiftyCanvas === "function") resizeNiftyCanvas(); } catch(e){}
-    try { if (typeof resizeNiftyAdCanvas === "function") resizeNiftyAdCanvas(); } catch(e){}
-    try { if (typeof resizeAdCanvases === "function") resizeAdCanvases(); } catch(e){}
+    setTimeout(() => {
+      try { if (typeof resizeCanvas === "function") resizeCanvas(); } catch(e){}
+      try { if (typeof resizeNiftyCanvas === "function") resizeNiftyCanvas(); } catch(e){}
+      try { if (typeof resizeNiftyAdCanvas === "function") resizeNiftyAdCanvas(); } catch(e){}
+      try { if (typeof resizeAdCanvases === "function") resizeAdCanvases(); } catch(e){}
+      if (latestData && latestData.timeline) {
+        drawChart(latestData.timeline);
+      } else if (!isLoading) {
+        runBreadth({ fastRefresh: true });
+      }
+      if (niftyData && niftyData.points) {
+        drawNiftyChart(niftyData.points);
+      }
+    }, 60);
     try {
       if (!autoRefreshTimer && els.autoRefresh && els.autoRefresh.checked) {
         scheduleAutoRefresh();
@@ -9727,6 +9733,50 @@ els.indexSelect.addEventListener("change", () => loadNifty({ fastRefresh: true }
 els.autoRefresh.addEventListener("change", scheduleAutoRefresh);
 els.refreshInterval.addEventListener("change", scheduleAutoRefresh);
 
+// P&F Settings Popover Toggle & Sync
+const btnToggleBreadthSettings = document.getElementById("btnToggleBreadthSettings");
+const btnCloseBreadthSettings = document.getElementById("btnCloseBreadthSettings");
+const btnApplyBreadthSettings = document.getElementById("btnApplyBreadthSettings");
+const breadthSettingsPopover = document.getElementById("breadthSettingsPopover");
+const breadthSettingsBadge = document.getElementById("breadthSettingsBadge");
+
+function updateBreadthSettingsBadge() {
+  if (!breadthSettingsBadge) return;
+  const bp = (els.boxPercent && els.boxPercent.value) || "0.15";
+  const rb = (els.reversalBoxes && els.reversalBoxes.value) || "3";
+  breadthSettingsBadge.textContent = `${bp}% × ${rb}`;
+}
+
+if (btnToggleBreadthSettings && breadthSettingsPopover) {
+  btnToggleBreadthSettings.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isShown = breadthSettingsPopover.style.display === "block";
+    breadthSettingsPopover.style.display = isShown ? "none" : "block";
+  });
+}
+if (btnCloseBreadthSettings && breadthSettingsPopover) {
+  btnCloseBreadthSettings.addEventListener("click", () => {
+    breadthSettingsPopover.style.display = "none";
+  });
+}
+if (btnApplyBreadthSettings && breadthSettingsPopover) {
+  btnApplyBreadthSettings.addEventListener("click", () => {
+    updateBreadthSettingsBadge();
+    breadthSettingsPopover.style.display = "none";
+    runBreadth({ fastRefresh: false });
+  });
+}
+if (breadthSettingsPopover) {
+  breadthSettingsPopover.addEventListener("click", (e) => e.stopPropagation());
+  document.addEventListener("click", (e) => {
+    if (breadthSettingsPopover.style.display === "block" && !breadthSettingsPopover.contains(e.target) && e.target !== btnToggleBreadthSettings) {
+      breadthSettingsPopover.style.display = "none";
+    }
+  });
+}
+if (els.boxPercent) els.boxPercent.addEventListener("input", updateBreadthSettingsBadge);
+if (els.reversalBoxes) els.reversalBoxes.addEventListener("input", updateBreadthSettingsBadge);
+
 els.canvas.addEventListener("mousemove", (event) => updateHoverFromClientX(event.clientX));
 els.canvas.addEventListener("mouseleave", () => {
   if (!latestData) return;
@@ -10408,6 +10458,7 @@ window.addEventListener("resize", () => {
   if (els.optIndexSelect && els.indexSelect) {
     els.optIndexSelect.value = els.indexSelect.value;
   }
+  updateBreadthSettingsBadge();
 
   // 1. Auto-run Market Breadth on page load in background and schedule continuous auto-refresh
   runBreadth({ fastRefresh: true });

@@ -1016,57 +1016,86 @@
             </label>
           </div>
 
-          <div class="ctrl-group">
-            <label>
-              <span>Graph</span>
-              <select id="chartMode">
-                <option value="carry">Carry prev</option>
-                <option value="previous_current">Prev + curr</option>
-                <option value="current">Current only</option>
-              </select>
-            </label>
-            <label>
-              <span>Warmup</span>
-              <input id="warmupSessions" type="number" min="0" max="20" step="1" value="5">
-            </label>
-            <label>
-              <span>Basis</span>
-              <select id="pnfBasis">
-                <option value="hl">High/Low</option>
-                <option value="close">Close</option>
-              </select>
-            </label>
-            <label>
-              <span>Box %</span>
-              <input id="boxPercent" type="number" min="0.05" max="5" step="0.05" value="0.15">
-            </label>
-            <label>
-              <span>Rev</span>
-              <input id="reversalBoxes" type="number" min="1" max="5" step="1" value="3">
-            </label>
-            <label>
-              <span>Limit</span>
-              <input id="maxSymbols" type="number" min="1" max="500" step="1" value="50">
-            </label>
-            <label>
-              <span>Index</span>
-              <select id="indexSelect">
-                <option value="nifty50">Nifty 50</option>
-                <option value="sensex">BSE Sensex</option>
-                <option value="banknifty">Bank Nifty</option>
-                <option value="finnifty">FinNifty</option>
-                <option value="midcpnifty">Midcap Select</option>
-                <option value="niftyit">Nifty IT</option>
-                <option value="niftyauto">Nifty Auto</option>
-                <option value="niftypharma">Nifty Pharma</option>
-                <option value="niftymetal">Nifty Metal</option>
-                <option value="niftyfmcg">Nifty FMCG</option>
-                <option value="niftyenergy">Nifty Energy</option>
-                <option value="niftymidcap100">Nifty Midcap 100</option>
-                <option value="niftynext50">Nifty Next 50</option>
-                <option value="nifty500">Nifty 500</option>
-              </select>
-            </label>
+          <!-- Compact P&F Settings Trigger & Popover (Documented in docs/market_breadth_settings.md) -->
+          <div class="ctrl-group breadth-settings-trigger-group" style="position:relative;">
+            <button id="btnToggleBreadthSettings" type="button" class="breadth-settings-btn" title="Point &amp; Figure Calculation Settings" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--bg-input, #0f172a); border:1px solid var(--border-default, #334155); border-radius:6px; color:var(--text-primary, #f8fafc); font-size:12px; font-weight:600; cursor:pointer;">
+              <span>⚙️</span> <span>P&amp;F Settings</span> <span id="breadthSettingsBadge" class="settings-pill" style="font-size:10px; background:rgba(56,189,248,0.15); color:#38bdf8; padding:2px 6px; border-radius:4px; margin-left:2px;">0.15% × 3</span>
+            </button>
+
+            <!-- Collapsible Clean Settings Popover Modal -->
+            <div id="breadthSettingsPopover" class="breadth-settings-popover" style="display:none; position:absolute; top:calc(100% + 8px); left:0; z-index:999; width:340px; padding:16px; background:#0b1329; border:1px solid #1e293b; border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,0.5); backdrop-filter:blur(8px);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span style="font-size:14px;">⚙️</span>
+                  <span style="font-size:12.5px; font-weight:700; color:#f8fafc;">Point &amp; Figure Parameters</span>
+                </div>
+                <button type="button" id="btnCloseBreadthSettings" style="background:transparent; border:none; color:#94a3b8; font-size:16px; cursor:pointer; line-height:1;">&times;</button>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
+                  <span>Graph Mode</span>
+                  <select id="chartMode" class="mini-select" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+                    <option value="carry">Carry prev</option>
+                    <option value="previous_current">Prev + curr</option>
+                    <option value="current">Current only</option>
+                  </select>
+                </label>
+
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
+                  <span>P&amp;F Basis</span>
+                  <select id="pnfBasis" class="mini-select" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+                    <option value="hl">High/Low</option>
+                    <option value="close">Close</option>
+                  </select>
+                </label>
+
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
+                  <span>Box %</span>
+                  <input id="boxPercent" type="number" min="0.05" max="5" step="0.05" value="0.15" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+                </label>
+
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
+                  <span>Reversal Boxes</span>
+                  <input id="reversalBoxes" type="number" min="1" max="5" step="1" value="3" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+                </label>
+
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
+                  <span>Warmup Sessions</span>
+                  <input id="warmupSessions" type="number" min="0" max="20" step="1" value="5" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+                </label>
+
+                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
+                  <span>Max Symbols Limit</span>
+                  <input id="maxSymbols" type="number" min="1" max="500" step="1" value="50" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+                </label>
+              </div>
+
+              <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8; margin-bottom:12px;">
+                <span>Overlay Index</span>
+                <select id="indexSelect" class="mini-select" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
+                  <option value="nifty50">Nifty 50</option>
+                  <option value="sensex">BSE Sensex</option>
+                  <option value="banknifty">Bank Nifty</option>
+                  <option value="finnifty">FinNifty</option>
+                  <option value="midcpnifty">Midcap Select</option>
+                  <option value="niftyit">Nifty IT</option>
+                  <option value="niftyauto">Nifty Auto</option>
+                  <option value="niftypharma">Nifty Pharma</option>
+                  <option value="niftymetal">Nifty Metal</option>
+                  <option value="niftyfmcg">Nifty FMCG</option>
+                  <option value="niftyenergy">Nifty Energy</option>
+                  <option value="niftymidcap100">Nifty Midcap 100</option>
+                  <option value="niftynext50">Nifty Next 50</option>
+                  <option value="nifty500">Nifty 500</option>
+                </select>
+              </label>
+
+              <div style="font-size:10.5px; color:#64748b; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span>Docs in <code>docs/</code></span>
+                <button type="button" id="btnApplyBreadthSettings" style="background:#2563eb; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">Apply &amp; Run</button>
+              </div>
+            </div>
           </div>
 
           <!-- Top-Fitted Auto Refresh (Pre-Ticked & Active) -->
