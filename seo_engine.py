@@ -1083,44 +1083,51 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
     nifty = snapshot.get("nifty_spot", 23146.15)
     bn = snapshot.get("banknifty_spot", 55918.00)
 
-    # 1. Substitute static Loading placeholders with rich keywords
-    replacements = [
-        (r'Loading multi-session EOD data\.\.\.', f'NSE Derivatives Multi-Session Institutional EOD Data ({date_str})'),
-        (r'[\u23f3\s]*Loading 260\+ F&amp;O instruments\.\.\.', '220+ NSE &amp; BSE F&amp;O Instruments Tracked Live'),
-        (r'>Loading Expiries\.\.\.<', '>Active Weekly &amp; Monthly Expiries<'),
-        (r'>Loading expiries\.\.\.<', '>Active Weekly &amp; Monthly Expiries<'),
-        (r'[\u23f3\s]*Loading live Option Chain Pro\.\.\.', 'Streaming Option Chain Pro with Greeks, PCR &amp; Max Pain'),
-        (r'Loading Volatility Regime Analysis\.\.\.', 'India Volatility Index (VIX) &amp; Options Regime Analytics'),
-        (r'Loading strategy\.\.\.', 'Quantitative Options Volatility &amp; Delta-Neutral Strategy Matrix'),
-        (r'Loading F&amp;O Stock Volatility Screener\.\.\.', 'Institutional F&amp;O Volatility &amp; Greeks Screener'),
-        (r'[\u23f3\s]*Loading sessions\.\.\.', 'Live &amp; Historical Trading Sessions'),
-        (r'>Loading Sessions\.\.\.<', '>Live &amp; Historical Trading Sessions<'),
-        (r'Loading trend data\.\.\.', 'Multi-Session Systemic MTF Trend Data'),
-        (r'Loading official NSE stockwise disclosure\.\.\.', f'Official NSE Stockwise MTF Leverage &amp; Financing Disclosure ({date_str})'),
-        (r'Loading retail leaders\.\.\.', 'High Retail Margin Trading Exposure Stocks'),
-        (r'Loading institutional anchors\.\.\.', 'Institutional Bluechip MTF Anchor Equities'),
-        (r'Loading classification analysis\.\.\.', 'NSE Equity Leverage Classification &amp; Heavyweight Distribution'),
-        (r'Loading heatmap\.\.\.', 'Sectoral Margin Trading &amp; Leverage Heatmap'),
-        (r'Loading sectors\.\.\.', 'Sectoral Margin Trading &amp; Derivatives Exposure Distribution'),
-        (r'Loading historical data from mtf\.trading\.\.\.', 'Historical Exchange MTF Loan Book &amp; Systemic Leverage Trend'),
-        (r'Loading global comparison\.\.\.', 'Global Benchmark Margin Trading &amp; Leverage Comparison'),
-        (r'Loading Stock A metrics\.\.\.', 'Select Stock A for Comparative Leverage &amp; OI Analytics'),
-        (r'Loading Stock B metrics\.\.\.', 'Select Stock B for Comparative Leverage &amp; OI Analytics'),
-        (r'Loading history\.\.\.', 'Comparative Multi-Session Leverage History'),
-        (r'Loading session history\.\.\.', 'Session-by-Session MTF Loan Book Evolution'),
-        (r'Loading absorption data\.\.\.', 'Institutional Cash Delivery Absorption &amp; Volume Shock Radar'),
-        (r'Loading volatility analysis\.\.\.', 'Implied Volatility (IV) Skew &amp; Statistical Dispersion Analysis'),
-        (r'>Loading\.\.\.</span>', f'>{date_str} EOD Synced</span>'),
-        (r'<tr><td colspan=["\']?7["\']?[^>]*>Loading\.\.\.</td></tr>', '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">Official NSE Stockwise MTF Exposure Matrix</td></tr>'),
-        (r'<tr><td colspan=["\']?9["\']?[^>]*>Loading\.\.\.</td></tr>', '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:20px;">Institutional MTF Leverage &amp; Classification Radar</td></tr>'),
-        (r'<tr><td colspan=["\']?4["\']?[^>]*>Loading\.\.\.</td></tr>', '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">Institutional MTF Top Movers &amp; Squeeze Radar</td></tr>'),
-        (r'<tr><td colspan=["\']?6["\']?[^>]*>Loading\.\.\.</td></tr>', '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:20px;">Broker MTF Leverage &amp; Regulatory Benchmark Matrix</td></tr>'),
-        (r'Loading dates\.\.\.', f'Active NSE Sessions ({date_str})'),
-        (r'NIFTY 50\s*•\s*Loading\.\.\.', f'NIFTY 50 • {nifty:,.2f}')
+    # 1. Substitute static Loading placeholders with rich keywords (Fast literal replace)
+    static_replacements = [
+        ('Loading multi-session EOD data...', f'NSE Derivatives Multi-Session Institutional EOD Data ({date_str})'),
+        ('>Loading Expiries...<', '>Active Weekly &amp; Monthly Expiries<'),
+        ('>Loading expiries...<', '>Active Weekly &amp; Monthly Expiries<'),
+        ('Loading Volatility Regime Analysis...', 'India Volatility Index (VIX) &amp; Options Regime Analytics'),
+        ('Loading strategy...', 'Quantitative Options Volatility &amp; Delta-Neutral Strategy Matrix'),
+        ('Loading F&amp;O Stock Volatility Screener...', 'Institutional F&amp;O Volatility &amp; Greeks Screener'),
+        ('Loading sessions...', 'Live &amp; Historical Trading Sessions'),
+        ('>Loading Sessions...<', '>Live &amp; Historical Trading Sessions<'),
+        ('Loading trend data...', 'Multi-Session Systemic MTF Trend Data'),
+        ('Loading official NSE stockwise disclosure...', f'Official NSE Stockwise MTF Leverage &amp; Financing Disclosure ({date_str})'),
+        ('Loading retail leaders...', 'High Retail Margin Trading Exposure Stocks'),
+        ('Loading institutional anchors...', 'Institutional Bluechip MTF Anchor Equities'),
+        ('Loading classification analysis...', 'NSE Equity Leverage Classification &amp; Heavyweight Distribution'),
+        ('Loading heatmap...', 'Sectoral Margin Trading &amp; Leverage Heatmap'),
+        ('Loading sectors...', 'Sectoral Margin Trading &amp; Derivatives Exposure Distribution'),
+        ('Loading historical data from mtf.trading...', 'Historical Exchange MTF Loan Book &amp; Systemic Leverage Trend'),
+        ('Loading global comparison...', 'Global Benchmark Margin Trading &amp; Leverage Comparison'),
+        ('Loading Stock A metrics...', 'Select Stock A for Comparative Leverage &amp; OI Analytics'),
+        ('Loading Stock B metrics...', 'Select Stock B for Comparative Leverage &amp; OI Analytics'),
+        ('Loading history...', 'Comparative Multi-Session Leverage History'),
+        ('Loading session history...', 'Session-by-Session MTF Loan Book Evolution'),
+        ('Loading absorption data...', 'Institutional Cash Delivery Absorption &amp; Volume Shock Radar'),
+        ('Loading volatility analysis...', 'Implied Volatility (IV) Skew &amp; Statistical Dispersion Analysis'),
+        ('>Loading...</span>', f'>{date_str} EOD Synced</span>'),
+        ('Loading dates...', f'Active NSE Sessions ({date_str})'),
+        ('<div class="dash-kpi-val" id="dashKpiNifty">--</div>', f'<div class="dash-kpi-val" id="dashKpiNifty">{nifty:,.2f}</div>'),
+        ('<div class="dash-kpi-val" id="dashKpiBankNifty">--</div>', f'<div class="dash-kpi-val" id="dashKpiBankNifty">{bn:,.2f}</div>')
     ]
 
-    for pat, rep in replacements:
-        html = re.sub(pat, rep, html)
+    for pat, rep in static_replacements:
+        html = html.replace(pat, rep)
+
+    regex_replacements = [
+        (re.compile(r'[\u23f3\s]*Loading 260\+ F&amp;O instruments\.\.\.', re.IGNORECASE), '220+ NSE &amp; BSE F&amp;O Instruments Tracked Live'),
+        (re.compile(r'[\u23f3\s]*Loading live Option Chain Pro\.\.\.', re.IGNORECASE), 'Streaming Option Chain Pro with Greeks, PCR &amp; Max Pain'),
+        (re.compile(r'<tr><td colspan=["\']?7["\']?[^>]*>Loading\.\.\.</td></tr>', re.IGNORECASE), '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">Official NSE Stockwise MTF Exposure Matrix</td></tr>'),
+        (re.compile(r'<tr><td colspan=["\']?9["\']?[^>]*>Loading\.\.\.</td></tr>', re.IGNORECASE), '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:20px;">Institutional MTF Leverage &amp; Classification Radar</td></tr>'),
+        (re.compile(r'<tr><td colspan=["\']?4["\']?[^>]*>Loading\.\.\.</td></tr>', re.IGNORECASE), '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">Institutional MTF Top Movers &amp; Squeeze Radar</td></tr>'),
+        (re.compile(r'<tr><td colspan=["\']?6["\']?[^>]*>Loading\.\.\.</td></tr>', re.IGNORECASE), '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:20px;">Broker MTF Leverage &amp; Regulatory Benchmark Matrix</td></tr>'),
+        (re.compile(r'NIFTY 50\s*•\s*Loading\.\.\.', re.IGNORECASE), f'NIFTY 50 • {nifty:,.2f}')
+    ]
+    for r_pat, rep in regex_replacements:
+        html = r_pat.sub(rep, html)
 
     # 2. Pre-fill initial KPI values
     html = re.sub(r'<div class="dash-kpi-val" id="dashKpiNifty">--</div>', f'<div class="dash-kpi-val" id="dashKpiNifty">{nifty:,.2f}</div>', html)

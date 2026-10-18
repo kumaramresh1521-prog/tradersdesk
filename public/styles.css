@@ -22394,11 +22394,41 @@ body[data-theme="light"] .inst-dot-menu-btn:hover {
 }
 
 
-/* SEO Crawler Pre-Render Element: Never render visually below footer */
+/* Dedicated Live Market Summary Section for Crawlers & Visitors (Accessible, Compliant) */
 #seoDynamicCrawlContent,
 .seo-crawler-content {
-  display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  overflow: hidden !important;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Google Mobile SEO & Lighthouse Audit Optimizations */
+@media (max-width: 860px) {
+  /* 1. Ensure legible font sizes: prevent text < 12px from failing Lighthouse mobile legible font audit */
+  .p2-badge,
+  .inst-nav-badge,
+  .dot-sub-desc,
+  .inst-stat-label,
+  .stat-label,
+  .metric-label,
+  .card-sub,
+  .tbl-cell-sub,
+  small,
+  .text-xs {
+    font-size: max(12px, 0.75rem) !important;
+  }
+
+  /* 2. Accessible Tap Targets: Ensure interactive buttons & links are at least 44px tap area on mobile */
+  .inst-nav-btn,
+  .inst-dot-menu-btn,
+  .dot-sub-item,
+  .dot-menu-main-item,
+  .tab-btn,
+  .seo-pill-btn,
+  .gsearch-hub-action-card button,
+  .footer-links a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 }

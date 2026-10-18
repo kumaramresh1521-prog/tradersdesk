@@ -9370,6 +9370,10 @@ def get_straddle_chart_response(params: dict) -> dict:
     return _compute_straddle_now()
 
 
+_SEO_HTML_CACHE = {}
+_SEO_HTML_CACHE_LOCK = threading.Lock()
+
+
 class RequestHandler(BaseHTTPRequestHandler):
     server_version = "TradersDesk/1.0"
 
@@ -10862,6 +10866,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 payload = self.read_body()
                 ok = seo_engine.save_seo_config(payload)
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if ok else 400, {"ok": ok, "message": "SEO & Meta tags updated successfully!" if ok else "Failed to update SEO config."})
 
             if parsed.path == "/api/admin/seo-routes":
@@ -10869,6 +10875,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 payload = self.read_body()
                 ok, msg = seo_engine.save_single_seo_route(payload)
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if ok else 400, {"ok": ok, "message": msg})
 
             if parsed.path == "/api/admin/seo-routes/delete":
@@ -10877,12 +10885,16 @@ class RequestHandler(BaseHTTPRequestHandler):
                 payload = self.read_body()
                 path_to_del = payload.get("path", "")
                 ok, msg = seo_engine.delete_single_seo_route(path_to_del)
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if ok else 400, {"ok": ok, "message": msg})
 
             if parsed.path == "/api/admin/seo-routes/auto-discover":
                 if not check_admin_request(self):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 discovered, total = seo_engine.auto_discover_pages()
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200, {
                     "ok": True,
                     "discoveredCount": len(discovered),
@@ -10895,6 +10907,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if not check_admin_request(self):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 ok, msg = seo_engine.rebuild_sitemap_xml()
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if ok else 500, {"ok": ok, "message": msg})
 
             if parsed.path == "/api/admin/seo/sync-dynamic":
@@ -10902,6 +10916,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 snap = seo_engine.sync_dynamic_seo_snapshot()
                 ok_sm, sm_msg = seo_engine.rebuild_sitemap_xml()
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200, {
                     "ok": True,
                     "message": f"⚡ Dynamic SEO synchronized with latest live market session and sitemap rebuilt! ({sm_msg})",
@@ -11053,9 +11069,21 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_json(404, {"ok": False, "message": "Not found"})
             return
         try:
-            raw_html = file_path.read_text(encoding="utf-8")
-            injected_html = seo_engine.inject_seo_metadata(raw_html, req_path)
-            data = injected_html.encode("utf-8")
+            cache_key = (clean, req_path)
+            now = time.time()
+            data = None
+            with _SEO_HTML_CACHE_LOCK:
+                cached = _SEO_HTML_CACHE.get(cache_key)
+                if cached and (now - cached["ts"] < 60.0):
+                    data = cached["data"]
+
+            if data is None:
+                raw_html = file_path.read_text(encoding="utf-8")
+                injected_html = seo_engine.inject_seo_metadata(raw_html, req_path)
+                data = injected_html.encode("utf-8")
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE[cache_key] = {"ts": now, "data": data}
+
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             cors_origin = self._get_cors_origin()

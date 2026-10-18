@@ -59,12 +59,27 @@
     }
     </script>
 
+    <!-- High-Performance Preconnects & Non-Blocking Font Loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css?v=20261008_v4">
-    <link rel="stylesheet" href="/page2.css?v=20261008_v4">
-    <script src="/security_shield.js"></script>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+    </noscript>
+
+    <!-- Core Terminal Stylesheet -->
+    <link rel="stylesheet" href="/styles.css?v=20261018_v5">
+
+    <!-- Non-Blocking Secondary Stylesheet (Page 2 / Tools) -->
+    <link rel="preload" as="style" href="/page2.css?v=20261018_v5">
+    <link rel="stylesheet" href="/page2.css?v=20261018_v5" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="/page2.css?v=20261018_v5"></noscript>
+
+    <!-- Inlined Zero-Latency Anti-Tamper & Error Shield (0 Render Blocking) -->
+    <script>
+      (function(){"use strict";try{if(typeof console!=="undefined"&&console.log){console.log("%c⚡ TradersDesk Terminal %c| Institutional Quantitative Analytics Terminal","background:#0284c7;color:#fff;padding:4px 8px;border-radius:4px;font-weight:bold;","color:#94a3b8;padding:4px;");}}catch(e){}try{if(typeof Response!=="undefined"&&Response.prototype&&Response.prototype.json){const o=Response.prototype.json;Response.prototype.json=async function(){try{return await o.call(this);}catch(err){if(!this.ok){return{ok:false,status:this.status,error:"HTTP "+this.status+": Service temporarily unavailable ("+(this.statusText||'Server Busy')+")",message:"HTTP "+this.status+": Service temporarily unavailable"};}return{ok:false,status:this.status,error:err.message||"Failed to parse JSON response",message:"Invalid response format"};}};}}catch(_){}})();
+    </script>
 
 
     <!-- Early Route Activator & Non-blocking Navigation Dispatcher -->
@@ -169,8 +184,8 @@
         <div class="inst-brand-bar">
           <div class="inst-brand-left">
             <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in — Institutional Quant &amp; Derivatives Terminal">
-              <img src="/tradersdesk_header.svg" alt="TradersDesk.in" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px; width:auto;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
-              <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px; width:auto;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+              <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px; width:auto;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+              <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px; width:auto;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
               <div class="inst-brand-fallback-text" id="instBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
                 <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk<svg style="width:13px; height:13px; vertical-align:middle; transform:translateY(-2px); margin-left:-1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg></span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
               </div>
@@ -354,7 +369,7 @@
                   </div>
                 </a>
                 <!-- Submenu 4: Market Breadth with Advance Decline -->
-                <a href="/market-breadth" class="inst-dd-item" onclick="return window.instNavClick(event, 'breadth')">
+                <a href="/breadth" class="inst-dd-item" onclick="return window.instNavClick(event, 'breadth')">
                   <span class="dd-icon">📉</span>
                   <div class="dd-text">
                     <span class="dd-title">Market Breadth with Advance Decline</span>
@@ -375,7 +390,7 @@
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">Smart Money Flow</span>
                 <!-- Sub 1: FII DII Cash -->
-                <a href="/fii-dii/cash" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'cash')">
+                <a href="/fii-dii" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'cash')">
                   <span class="dd-icon">💵</span>
                   <div class="dd-text">
                     <span class="dd-title">FII / DII Cash Market</span>
@@ -383,7 +398,7 @@
                   </div>
                 </a>
                 <!-- Sub 2: FII DII Derivatives -->
-                <a href="/fii-dii/derivatives" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'derivatives')">
+                <a href="/fii-dii" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'derivatives')">
                   <span class="dd-icon">⚡</span>
                   <div class="dd-text">
                     <span class="dd-title">FII / DII Derivatives <span class="p2-badge p2-badge-teal" style="margin-left:4px;">F&amp;O</span></span>
@@ -5588,10 +5603,10 @@
               🛡️ Regulatory &amp; Compliance
             </h4>
             <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
-              <a href="/disclaimer.html">SEBI Regulatory Disclaimer</a>
-              <a href="/privacy.html">Privacy &amp; Data Governance</a>
-              <a href="/terms.html">Terms of Institutional Service</a>
-              <a href="/about.html">Quantitative Model Methodologies</a>
+              <a href="/disclaimer">SEBI Regulatory Disclaimer</a>
+              <a href="/privacy">Privacy &amp; Data Governance</a>
+              <a href="/terms">Terms of Institutional Service</a>
+              <a href="/about">Quantitative Model Methodologies</a>
               <a href="https://www.nseindia.com" target="_blank" rel="noopener">NSE Official Regulatory Archive ↗</a>
               <a href="/admin.html">Platform Administration 🔒</a>
             </div>
@@ -5763,7 +5778,7 @@
                 </div>
               </a>
               <!-- Sub 4 -->
-              <a href="/market-breadth" class="dot-sub-item" onclick="return window.dotNavClick(event, 'breadth')">
+              <a href="/breadth" class="dot-sub-item" onclick="return window.dotNavClick(event, 'breadth')">
                 <span class="dot-sub-icon">📊</span>
                 <div class="dot-sub-text">
                   <div class="dot-sub-title">Market Breadth with A/D</div>
@@ -5782,7 +5797,7 @@
             </div>
             <div class="dot-sub-grid">
               <!-- Sub 1 -->
-              <a href="/fii-dii/cash" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'cash')">
+              <a href="/fii-dii" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'cash')">
                 <span class="dot-sub-icon">💵</span>
                 <div class="dot-sub-text">
                   <div class="dot-sub-title">FII / DII Cash Market</div>
@@ -5790,7 +5805,7 @@
                 </div>
               </a>
               <!-- Sub 2 -->
-              <a href="/fii-dii/derivatives" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'derivatives')">
+              <a href="/fii-dii" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'derivatives')">
                 <span class="dot-sub-icon">📊</span>
                 <div class="dot-sub-text">
                   <div class="dot-sub-title">FII / DII Derivatives <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">F&amp;O</span></div>
@@ -5802,7 +5817,7 @@
 
           <!-- 6. DELIVERY DESK -->
           <div class="dot-menu-section">
-            <a href="/delivery-analytics" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'delivery')">
+            <a href="/delivery" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'delivery')">
               <div class="dot-menu-item-left">
                 <span class="dot-menu-item-icon">📦</span>
                 <div>
@@ -5816,7 +5831,7 @@
 
           <!-- 7. MTF DESK -->
           <div class="dot-menu-section">
-            <a href="/mtf-analytics" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'mtf')">
+            <a href="/mtf" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'mtf')">
               <div class="dot-menu-item-left">
                 <span class="dot-menu-item-icon">💳</span>
                 <div>
@@ -5984,11 +5999,11 @@
       </div>
     </div>
 
-    <script src="/global_markets_desk.js?v=20261011_v2"></script>
-    <script src="/upstox_chain.js?v=20261011_v2"></script>
-    <script src="/futures_desk.js?v=20261011_v2"></script>
-    <script src="/app.js?v=20261011_v2"></script>
-    <script src="/global_search.js?v=20261011_v1"></script>
-    <script src="/auth_sync.js?v=20261011_v2"></script>
+    <script src="/global_markets_desk.js?v=20261018_v5" defer></script>
+    <script src="/upstox_chain.js?v=20261018_v5" defer></script>
+    <script src="/futures_desk.js?v=20261018_v5" defer></script>
+    <script src="/app.js?v=20261018_v5" defer></script>
+    <script src="/global_search.js?v=20261018_v5" defer></script>
+    <script src="/auth_sync.js?v=20261018_v5" defer></script>
   </body>
 </html>
