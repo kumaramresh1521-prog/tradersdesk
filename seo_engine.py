@@ -1189,11 +1189,6 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
     if target_h1:
         html = re.sub(r'<h1[^>]*>.*?</h1>', f'<h1>{target_h1}</h1>', html, count=1, flags=re.DOTALL | re.IGNORECASE)
 
-    # 4. Inject semantic crawler section before </body>
-    if "id=\"seoDynamicCrawlContent\"" not in html and "</body>" in html:
-        semantic_sec = build_semantic_crawler_html(path, snapshot)
-        html = html.replace("</body>", f"{semantic_sec}\n</body>", 1)
-
     return html
 
 def inject_seo_metadata(html: str, path: str) -> str:

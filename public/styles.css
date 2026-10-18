@@ -22393,12 +22393,9 @@ body[data-theme="light"] .inst-dot-menu-btn:hover {
 }
 
 
-/* Dedicated Live Market Summary Section for Crawlers & Visitors (Accessible, Compliant) */
 #seoDynamicCrawlContent,
 .seo-crawler-content {
-  display: block;
-  visibility: visible;
-  opacity: 1;
+  display: none !important;
 }
 
 /* Google Mobile SEO & Lighthouse Audit Optimizations */
