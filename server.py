@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import csv
+import gzip
 import hashlib
 import hmac
 import io
@@ -9424,6 +9425,30 @@ _SEO_HTML_CACHE = {}
 _SEO_HTML_CACHE_LOCK = threading.Lock()
 
 
+_GZIP_STATIC_CACHE: dict[str, tuple[float, bytes, bytes]] = {}
+_GZIP_CACHE_LOCK = threading.Lock()
+
+def _get_static_bytes(file_path: Path, clean_path: str, accept_gzip: bool) -> tuple[bytes, bool]:
+    try:
+        mtime = file_path.stat().st_mtime
+    except Exception:
+        mtime = 0.0
+    with _GZIP_CACHE_LOCK:
+        cached = _GZIP_STATIC_CACHE.get(clean_path)
+        if cached and cached[0] == mtime:
+            raw_bytes, gz_bytes = cached[1], cached[2]
+        else:
+            raw_bytes = file_path.read_bytes()
+            if len(raw_bytes) > 256:
+                gz_bytes = gzip.compress(raw_bytes, compresslevel=6)
+            else:
+                gz_bytes = raw_bytes
+            _GZIP_STATIC_CACHE[clean_path] = (mtime, raw_bytes, gz_bytes)
+
+    if accept_gzip and len(gz_bytes) < len(raw_bytes):
+        return gz_bytes, True
+    return raw_bytes, False
+
 class RequestHandler(BaseHTTPRequestHandler):
     server_version = "TradersDesk/1.0"
 
@@ -11165,21 +11190,33 @@ class RequestHandler(BaseHTTPRequestHandler):
                 with _SEO_HTML_CACHE_LOCK:
                     _SEO_HTML_CACHE[cache_key] = {"ts": now, "data": data}
 
+            accept_gzip = "gzip" in self.headers.get("Accept-Encoding", "").lower()
+            if accept_gzip and len(data) > 512:
+                send_data = gzip.compress(data, compresslevel=6)
+                is_gzipped = True
+            else:
+                send_data = data
+                is_gzipped = False
+
             is_admin_page = req_path.rstrip("/") in ("/admin", "/admin.html")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            if is_gzipped:
+                self.send_header("Content-Encoding", "gzip")
             cors_origin = self._get_cors_origin()
             if cors_origin:
                 self.send_header("Access-Control-Allow-Origin", cors_origin)
-                self.send_header("Vary", "Origin")
-            self.send_header("Content-Length", str(len(data)))
+                self.send_header("Vary", "Origin, Accept-Encoding")
+            else:
+                self.send_header("Vary", "Accept-Encoding")
+            self.send_header("Content-Length", str(len(send_data)))
             self.send_header("Cache-Control", "no-store, max-age=0" if is_admin_page else "public, max-age=30, s-maxage=60, stale-while-revalidate=120")
             if is_admin_page:
                 self.send_header("X-Robots-Tag", "noindex, nofollow, noarchive")
             self.send_baseline_security_headers(html=True)
             self.end_headers()
             if self.command != "HEAD":
-                self.wfile.write(data)
+                self.wfile.write(send_data)
         except Exception:
             self.serve_static(file_path_rel)
 
@@ -11190,19 +11227,34 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_json(404, {"ok": False, "message": "Not found"})
             return
         content_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
-        data = file_path.read_bytes()
+        accept_gzip = "gzip" in self.headers.get("Accept-Encoding", "").lower()
+        should_compress = accept_gzip and (
+            content_type.startswith("text/")
+            or content_type in ("application/javascript", "application/json", "image/svg+xml")
+        )
+        data, is_gzipped = _get_static_bytes(file_path, clean, should_compress)
         try:
             self.send_response(200)
             self.send_header("Content-Type", content_type)
             cors_origin = self._get_cors_origin()
             if cors_origin:
                 self.send_header("Access-Control-Allow-Origin", cors_origin)
-                self.send_header("Vary", "Origin")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.send_header("Pragma", "no-cache")
-            self.send_header("Expires", "0")
-            if clean.lower() == "admin.html":
+                self.send_header("Vary", "Origin, Accept-Encoding")
+            else:
+                self.send_header("Vary", "Accept-Encoding")
+            if is_gzipped:
+                self.send_header("Content-Encoding", "gzip")
+            self.send_header("Content-Length", str(len(data)))
+
+            lower_clean = clean.lower()
+            if lower_clean.endswith((".css", ".js", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".ico", ".woff", ".woff2")):
+                self.send_header("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400")
+            elif lower_clean == "admin.html":
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
                 self.send_header("X-Robots-Tag", "noindex, nofollow, noarchive")
+            else:
+                self.send_header("Cache-Control", "public, max-age=3600")
+
             self.send_baseline_security_headers()
             self.end_headers()
             if self.command != "HEAD":

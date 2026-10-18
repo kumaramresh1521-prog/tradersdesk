@@ -4097,15 +4097,27 @@
     initVisualizerEvents();
   }
 
+  let _upstoxInitialized = false;
+
+  function ensureUpstoxInit() {
+    if (_upstoxInitialized) return;
+    _upstoxInitialized = true;
+    initListeners();
+    loadSecuritiesMaster();
+    fetchChain(false);
+  }
+
   // Public Interface attached to window
   window.upstoxOptionChain = {
     init: function () {
-      initListeners();
-      loadSecuritiesMaster();
-      fetchChain(false);
+      ensureUpstoxInit();
     },
     refresh: function () {
-      fetchChain(true);
+      if (!_upstoxInitialized) {
+        ensureUpstoxInit();
+      } else {
+        fetchChain(true);
+      }
     },
     centerAtm: function () {
       centerToAtm();
@@ -4125,14 +4137,24 @@
       if (state.chainData) renderVisualizerChart(state.chainData);
     },
     setInstrument: function (key) {
+      if (!_upstoxInitialized) {
+        ensureUpstoxInit();
+      }
       setInstrument(key);
     },
   };
 
-  // Run init on DOMContentLoaded or immediate if document already ready
+  // Only auto-init if panelUpstoxChain is actually active on page load!
+  function checkOptionChainAutoInit() {
+    const p = document.getElementById('panelUpstoxChain');
+    if (p && (p.classList.contains('active') || p.style.display !== 'none')) {
+      ensureUpstoxInit();
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => window.upstoxOptionChain.init());
+    document.addEventListener('DOMContentLoaded', checkOptionChainAutoInit);
   } else {
-    window.upstoxOptionChain.init();
+    checkOptionChainAutoInit();
   }
 })();

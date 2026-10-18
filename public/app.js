@@ -4982,11 +4982,66 @@ function isFnOSymbol(symbol) {
 }
 window.isFnOSymbol = isFnOSymbol;
 
+let _delivDisplayLimit = 60;
+let _delivCurrentStockList = [];
+let _delivObserver = null;
+
+function renderDeliveryRowHtml(s) {
+  const chgColor = s.changePct > 0 ? "#10b981" : (s.changePct < 0 ? "#ef4444" : "var(--text-muted)");
+  const chgPrefix = s.changePct > 0 ? "+" : "";
+  const delivFillClass = s.delivPer >= 60 ? "high" : (s.delivPer >= 40 ? "med" : "low");
+
+  const isFno = Boolean(s.isFnO || isFnOSymbol(s.symbol));
+  const fnoBadge = isFno 
+    ? '<span class="mta-badge mta-badge-fno" style="font-size:9.5px; padding:1px 5px; margin-left:6px; vertical-align:middle;">F&amp;O</span>' 
+    : '<span class="mta-badge mta-badge-cash" style="font-size:9.5px; padding:1px 5px; margin-left:6px; vertical-align:middle;">Cash</span>';
+
+  const rowClickAction = isFno
+    ? `inspectStock('${s.symbol}')`
+    : `openDeliveryDrilldown('${s.symbol}')`;
+
+  const rowTitle = isFno
+    ? `Click to inspect ${s.symbol} MTF, F&amp;O &amp; leverage analytics`
+    : `Click to view ${s.symbol} date-wise delivery history`;
+
+  return `
+    <tr onclick="${rowClickAction}" style="cursor:pointer;" title="${rowTitle}">
+      <td>
+        <div style="display:flex; align-items:center;">
+          <strong style="color:var(--text-primary); font-weight:800;">${s.symbol}</strong>
+          ${fnoBadge}
+        </div>
+      </td>
+      <td><strong>₹${s.close.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></td>
+      <td style="color:${chgColor}; font-weight:700;">${chgPrefix}${s.changePct}%</td>
+      <td>${s.tradedQty.toLocaleString("en-IN")}</td>
+      <td><strong style="color:#2563eb;">${s.delivQty.toLocaleString("en-IN")}</strong></td>
+      <td>
+        <div class="deliv-progress-wrap">
+          <span style="font-weight:800; width:45px;">${s.delivPer}%</span>
+          <div class="deliv-progress-bar">
+            <div class="deliv-progress-fill ${delivFillClass}" style="width: ${Math.min(100, s.delivPer)}%;"></div>
+          </div>
+        </div>
+      </td>
+      <td style="color:var(--text-muted); font-size:11px;">${s.avg5dQty ? Number(s.avg5dQty).toLocaleString("en-IN") : '--'}</td>
+      <td style="color:var(--text-muted); font-weight:700;">${s.avgDelivPer5D}%</td>
+      <td style="color:#16a34a; font-weight:800;">₹${s.delivTurnoverCr.toLocaleString("en-IN")} Cr</td>
+      <td>
+        <button type="button" class="drilldown-btn" onclick="event.stopPropagation(); openDeliveryDrilldown('${s.symbol}')">📅 History</button>
+      </td>
+    </tr>
+  `;
+}
+
 function renderSecurityDeliveryTable(stocks) {
   const tbody = els.delivTableBody;
   if (!tbody) return;
 
-  if (!stocks.length) {
+  _delivCurrentStockList = stocks || [];
+  _delivDisplayLimit = 60;
+
+  if (!_delivCurrentStockList.length) {
     if (delivSearchQuery) {
       tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:28px; color:var(--text-muted);">
         <div style="font-size:13.5px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Stock "<strong>${delivSearchQuery.toUpperCase()}</strong>" not found in selected index universe.</div>
@@ -5001,55 +5056,69 @@ function renderSecurityDeliveryTable(stocks) {
     return;
   }
 
-  tbody.innerHTML = stocks.map(s => {
-    const chgColor = s.changePct > 0 ? "#10b981" : (s.changePct < 0 ? "#ef4444" : "var(--text-muted)");
-    const chgPrefix = s.changePct > 0 ? "+" : "";
+  const chunk = _delivCurrentStockList.slice(0, _delivDisplayLimit);
+  let rowsHtml = chunk.map(renderDeliveryRowHtml).join("");
 
-    // Delivery % Progress Bar
-    const delivFillClass = s.delivPer >= 60 ? "high" : (s.delivPer >= 40 ? "med" : "low");
-
-    const isFno = Boolean(s.isFnO || isFnOSymbol(s.symbol));
-    const fnoBadge = isFno 
-      ? '<span class="mta-badge mta-badge-fno" style="font-size:9.5px; padding:1px 5px; margin-left:6px; vertical-align:middle;">F&amp;O</span>' 
-      : '<span class="mta-badge mta-badge-cash" style="font-size:9.5px; padding:1px 5px; margin-left:6px; vertical-align:middle;">Cash</span>';
-
-    const rowClickAction = isFno
-      ? `inspectStock('${s.symbol}')`
-      : `openDeliveryDrilldown('${s.symbol}')`;
-
-    const rowTitle = isFno
-      ? `Click to inspect ${s.symbol} MTF, F&amp;O &amp; leverage analytics`
-      : `Click to view ${s.symbol} date-wise delivery history`;
-
-    return `
-      <tr onclick="${rowClickAction}" style="cursor:pointer;" title="${rowTitle}">
-        <td>
-          <div style="display:flex; align-items:center;">
-            <strong style="color:var(--text-primary); font-weight:800;">${s.symbol}</strong>
-            ${fnoBadge}
+  if (_delivCurrentStockList.length > _delivDisplayLimit) {
+    rowsHtml += `
+      <tr id="delivTableSentinel">
+        <td colspan="10" style="text-align:center; padding:12px 16px; background:rgba(2,132,199,0.03); border-top:1px dashed #cbd5e1;">
+          <div style="display:inline-flex; align-items:center; gap:10px; font-size:12px; color:var(--text-muted);">
+            <span>Showing ${_delivDisplayLimit} of ${_delivCurrentStockList.length} scrips</span>
+            <button type="button" class="ctrl-btn" onclick="loadMoreDeliveryRows(true)" style="padding:4px 14px; font-size:11.5px; font-weight:700; cursor:pointer; background:#2563eb; color:#fff; border:none; border-radius:5px;">⚡ Load All Scrips</button>
           </div>
-        </td>
-        <td><strong>₹${s.close.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></td>
-        <td style="color:${chgColor}; font-weight:700;">${chgPrefix}${s.changePct}%</td>
-        <td>${s.tradedQty.toLocaleString("en-IN")}</td>
-        <td><strong style="color:#2563eb;">${s.delivQty.toLocaleString("en-IN")}</strong></td>
-        <td>
-          <div class="deliv-progress-wrap">
-            <span style="font-weight:800; width:45px;">${s.delivPer}%</span>
-            <div class="deliv-progress-bar">
-              <div class="deliv-progress-fill ${delivFillClass}" style="width: ${Math.min(100, s.delivPer)}%;"></div>
-            </div>
-          </div>
-        </td>
-        <td style="color:var(--text-muted); font-size:11px;">${s.avg5dQty ? Number(s.avg5dQty).toLocaleString("en-IN") : '--'}</td>
-        <td style="color:var(--text-muted); font-weight:700;">${s.avgDelivPer5D}%</td>
-        <td style="color:#16a34a; font-weight:800;">₹${s.delivTurnoverCr.toLocaleString("en-IN")} Cr</td>
-        <td>
-          <button type="button" class="drilldown-btn" onclick="event.stopPropagation(); openDeliveryDrilldown('${s.symbol}')">📅 History</button>
         </td>
       </tr>
     `;
-  }).join("");
+  }
+
+  tbody.innerHTML = rowsHtml;
+  setupDelivSentinelObserver();
+}
+
+function loadMoreDeliveryRows(loadAll = false) {
+  const tbody = els.delivTableBody;
+  if (!tbody || !_delivCurrentStockList.length) return;
+
+  const sentinel = document.getElementById("delivTableSentinel");
+  if (!sentinel) return;
+
+  const prevLimit = _delivDisplayLimit;
+  _delivDisplayLimit = loadAll ? _delivCurrentStockList.length : _delivDisplayLimit + 80;
+  const nextChunk = _delivCurrentStockList.slice(prevLimit, _delivDisplayLimit);
+
+  if (!nextChunk.length) {
+    sentinel.remove();
+    return;
+  }
+
+  const nextHtml = nextChunk.map(renderDeliveryRowHtml).join("");
+  sentinel.insertAdjacentHTML("beforebegin", nextHtml);
+
+  if (_delivDisplayLimit >= _delivCurrentStockList.length) {
+    sentinel.remove();
+  } else {
+    const lbl = sentinel.querySelector("span");
+    if (lbl) lbl.textContent = `Showing ${_delivDisplayLimit} of ${_delivCurrentStockList.length} scrips`;
+    setupDelivSentinelObserver();
+  }
+}
+window.loadMoreDeliveryRows = loadMoreDeliveryRows;
+
+function setupDelivSentinelObserver() {
+  if (_delivObserver) {
+    _delivObserver.disconnect();
+  }
+  const sentinel = document.getElementById("delivTableSentinel");
+  if (!sentinel || typeof IntersectionObserver === "undefined") return;
+
+  _delivObserver = new IntersectionObserver((entries) => {
+    if (entries[0] && entries[0].isIntersecting) {
+      loadMoreDeliveryRows(false);
+    }
+  }, { rootMargin: "300px" });
+
+  _delivObserver.observe(sentinel);
 }
 
 async function inspectDeliveryStock(symbol) {
@@ -5752,33 +5821,107 @@ function mtaRenderStockTable(stocks, forceFilter) {
     return;
   }
 
-  tbody.innerHTML = list.slice(0, 500).map((s, i) => {
-    const isHeavy  = s.amtFinancedCrore >= 500;
-    const isSig    = s.amtFinancedCrore >= 50;
-    const rowCls   = isHeavy ? 'mta-row-heavy' : isSig ? 'mta-row-sig' : '';
-    const riskBadge= isHeavy
-      ? '<span class="mta-badge" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;font-size:10px;">⚠ HEAVY</span>'
-      : isSig
-        ? '<span class="mta-badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:10px;">MED</span>'
-        : '<span class="mta-badge" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:10px;">LOW</span>';
-    const seg = s.isFnO
-      ? '<span class="mta-badge mta-badge-fno">F&O</span>'
-      : '<span class="mta-badge mta-badge-cash">Cash</span>';
-    const exchBadge = '<span class="mta-badge mta-badge-nse">NSE</span>';
-    const bookShare = totalBook > 0 ? (s.amtFinancedCrore / totalBook * 100) : (s.sharePct || 0);
+  _mtfCurrentList = list;
+  _mtfDisplayLimit = 60;
+  list.forEach(s => {
+    s._calcShare = totalBook > 0 ? (s.amtFinancedCrore / totalBook * 100) : (s.sharePct || 0);
+  });
 
-    return `<tr class="${rowCls}" style="cursor:pointer;" onclick="inspectStock('${s.symbol}')">
-      <td style="color:#64748b;font-weight:600;">#${i+1}</td>
-      <td><strong class="mta-sym">${s.symbol}</strong></td>
-      <td class="mta-name">${s.name}</td>
-      <td style="text-align:center;">${exchBadge}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:${isHeavy?'#dc2626':isSig?'#d97706':'#0f172a'};">₹${Number(s.amtFinancedCrore).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;">${Number(s.qtyFinanced||0).toLocaleString('en-IN')}</td>
-      <td style="text-align:right;font-weight:700;color:${bookShare >= 1 ? '#b45309' : '#475569'};">${mtaNum(bookShare, 2)}%</td>
-      <td style="text-align:center;">${seg}</td>
-      <td style="text-align:center;">${riskBadge}</td>
-    </tr>`;
-  }).join('');
+  const chunk = list.slice(0, _mtfDisplayLimit);
+  let rowsHtml = chunk.map((s, i) => renderMtfRowHtml(s, i)).join('');
+
+  if (list.length > _mtfDisplayLimit) {
+    rowsHtml += `
+      <tr id="mtfTableSentinel">
+        <td colspan="9" style="text-align:center; padding:12px 16px; background:rgba(2,132,199,0.03); border-top:1px dashed #cbd5e1;">
+          <div style="display:inline-flex; align-items:center; gap:10px; font-size:12px; color:var(--text-muted);">
+            <span>Showing ${_mtfDisplayLimit} of ${list.length} scrips</span>
+            <button type="button" class="ctrl-btn" onclick="loadMoreMtfRows(true)" style="padding:4px 14px; font-size:11.5px; font-weight:700; cursor:pointer; background:#2563eb; color:#fff; border:none; border-radius:5px;">⚡ Load All Scrips</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  tbody.innerHTML = rowsHtml;
+  setupMtfSentinelObserver();
+}
+
+let _mtfDisplayLimit = 60;
+let _mtfCurrentList = [];
+let _mtfObserver = null;
+
+function renderMtfRowHtml(s, i) {
+  const isHeavy  = s.amtFinancedCrore >= 500;
+  const isSig    = s.amtFinancedCrore >= 50;
+  const rowCls   = isHeavy ? 'mta-row-heavy' : isSig ? 'mta-row-sig' : '';
+  const riskBadge= isHeavy
+    ? '<span class="mta-badge" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;font-size:10px;">⚠ HEAVY</span>'
+    : isSig
+      ? '<span class="mta-badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:10px;">MED</span>'
+      : '<span class="mta-badge" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:10px;">LOW</span>';
+  const seg = s.isFnO
+    ? '<span class="mta-badge mta-badge-fno">F&O</span>'
+    : '<span class="mta-badge mta-badge-cash">Cash</span>';
+  const exchBadge = '<span class="mta-badge mta-badge-nse">NSE</span>';
+  const bookShare = s._calcShare || (s.sharePct || 0);
+
+  return `<tr class="${rowCls}" style="cursor:pointer;" onclick="inspectStock('${s.symbol}')">
+    <td style="color:#64748b;font-weight:600;">#${i+1}</td>
+    <td><strong class="mta-sym">${s.symbol}</strong></td>
+    <td class="mta-name">${s.name}</td>
+    <td style="text-align:center;">${exchBadge}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:${isHeavy?'#dc2626':isSig?'#d97706':'#0f172a'};">₹${Number(s.amtFinancedCrore).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;">${Number(s.qtyFinanced||0).toLocaleString('en-IN')}</td>
+    <td style="text-align:right;font-weight:700;color:${bookShare >= 1 ? '#b45309' : '#475569'};">${mtaNum(bookShare, 2)}%</td>
+    <td style="text-align:center;">${seg}</td>
+    <td style="text-align:center;">${riskBadge}</td>
+  </tr>`;
+}
+
+function loadMoreMtfRows(loadAll = false) {
+  const tbody = document.getElementById('mtfStockTableBody') || (typeof els !== "undefined" && els.mtfStockTableBody);
+  if (!tbody || !_mtfCurrentList.length) return;
+
+  const sentinel = document.getElementById("mtfTableSentinel");
+  if (!sentinel) return;
+
+  const prevLimit = _mtfDisplayLimit;
+  _mtfDisplayLimit = loadAll ? _mtfCurrentList.length : _mtfDisplayLimit + 80;
+  const nextChunk = _mtfCurrentList.slice(prevLimit, _delivDisplayLimit || _mtfDisplayLimit);
+
+  if (!nextChunk.length) {
+    sentinel.remove();
+    return;
+  }
+
+  const nextHtml = nextChunk.map((s, idx) => renderMtfRowHtml(s, prevLimit + idx)).join("");
+  sentinel.insertAdjacentHTML("beforebegin", nextHtml);
+
+  if (_mtfDisplayLimit >= _mtfCurrentList.length) {
+    sentinel.remove();
+  } else {
+    const lbl = sentinel.querySelector("span");
+    if (lbl) lbl.textContent = `Showing ${_mtfDisplayLimit} of ${_mtfCurrentList.length} scrips`;
+    setupMtfSentinelObserver();
+  }
+}
+window.loadMoreMtfRows = loadMoreMtfRows;
+
+function setupMtfSentinelObserver() {
+  if (_mtfObserver) {
+    _mtfObserver.disconnect();
+  }
+  const sentinel = document.getElementById("mtfTableSentinel");
+  if (!sentinel || typeof IntersectionObserver === "undefined") return;
+
+  _mtfObserver = new IntersectionObserver((entries) => {
+    if (entries[0] && entries[0].isIntersecting) {
+      loadMoreMtfRows(false);
+    }
+  }, { rootMargin: "300px" });
+
+  _mtfObserver.observe(sentinel);
 }
 
 // Backward-compat alias expected by external callers
