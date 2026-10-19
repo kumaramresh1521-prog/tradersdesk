@@ -484,6 +484,16 @@ def load_dotenv() -> None:
             except Exception:
                 pass
 
+    # Priority 4: Supabase cloud persistence (if configured & table exists)
+    try:
+        sb_config = supabase_engine.load_broker_settings_from_supabase()
+        if sb_config and isinstance(sb_config, dict):
+            for k, v in sb_config.items():
+                if v and (k not in os.environ or not os.environ[k]):
+                    os.environ[k] = str(v)
+    except Exception:
+        pass
+
     # Default DATA_BROKER if credentials exist
     if not os.environ.get("DATA_BROKER"):
         if os.environ.get("ANGEL_API_KEY") and os.environ.get("ANGEL_CLIENT_CODE"):
@@ -548,6 +558,12 @@ def save_dotenv(updates: dict[str, str]) -> None:
             DATA_BACKUP_FILE.write_text(json.dumps(backup, indent=2), encoding="utf-8")
         except Exception:
             pass
+    except Exception:
+        pass
+
+    # Priority 4: Sync to Supabase cloud in background
+    try:
+        threading.Thread(target=supabase_engine.save_broker_settings_to_supabase, args=(backup,), daemon=True).start()
     except Exception:
         pass
 

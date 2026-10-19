@@ -248,3 +248,60 @@ def load_user_workspace(user_id: str, token: str | None = None) -> dict:
             return {"ok": True, "workspace": None}
     except Exception as e:
         return {"ok": False, "message": str(e)}
+
+
+# =====================================================================
+# GLOBAL BROKER SETTINGS CLOUD SYNC (Supabase app_config)
+# =====================================================================
+
+def save_broker_settings_to_supabase(config_data: dict) -> dict:
+    """Save global broker settings to Supabase app_config table."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return {"ok": False, "message": "Supabase not configured"}
+    
+    url = f"{cfg['url']}/rest/v1/app_config"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+    payload = {
+        "key": "global_broker_settings",
+        "value": config_data,
+        "updated_at": "now()"
+    }
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+    try:
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=req_headers, method="POST")
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            return {"ok": True, "message": "Broker settings backed up to Supabase."}
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+
+def load_broker_settings_from_supabase() -> dict | None:
+    """Load global broker settings from Supabase app_config table."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return None
+    url = f"{cfg['url']}/rest/v1/app_config?key=eq.global_broker_settings&select=value"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Accept": "application/json"
+    }
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="GET")
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            raw = resp.read().decode("utf-8")
+            items = json.loads(raw or "[]")
+            if items and isinstance(items, list) and len(items) > 0:
+                val = items[0].get("value")
+                if isinstance(val, dict):
+                    return val
+    except Exception:
+        pass
+    return None
+
