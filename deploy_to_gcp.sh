@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+set -o pipefail
 
 echo "=========================================================="
 echo "🚀 Deploying TradersDesk.in to Google Cloud Run"
@@ -17,10 +18,17 @@ SECRET_CANDIDATES=(
   "SUPABASE_URL=tradersdesk-supabase-url" "SUPABASE_ANON_KEY=tradersdesk-supabase-anon-key" "SUPABASE_SERVICE_ROLE_KEY=tradersdesk-supabase-service-role-key"
 )
 SECRET_MAP=""
+echo "Checking Secret Manager configuration (one request)..."
+if ! AVAILABLE_SECRETS="$(gcloud secrets list --project "${PROJECT_ID}" --format='value(name)' 2>&1)"; then
+  echo "ERROR: Could not read Secret Manager. Run: gcloud auth login"
+  echo "Details: ${AVAILABLE_SECRETS}"
+  exit 1
+fi
+
 for pair in "${SECRET_CANDIDATES[@]}"; do
   env_name="${pair%%=*}"
   secret_name="${pair#*=}"
-  if gcloud secrets describe "${secret_name}" --project "${PROJECT_ID}" >/dev/null 2>&1; then
+  if printf '%s\n' "${AVAILABLE_SECRETS}" | grep -Fxq "${secret_name}"; then
     [[ -n "${SECRET_MAP}" ]] && SECRET_MAP+=","
     SECRET_MAP+="${env_name}=${secret_name}:latest"
   fi
@@ -30,9 +38,11 @@ if [[ -z "${SECRET_MAP}" ]]; then
   exit 1
 fi
 
-echo "Building and deploying to project: ${PROJECT_ID}, region: ${REGION}..."
+SECRET_COUNT=$(tr ',' '\n' <<< "${SECRET_MAP}" | wc -l | tr -d ' ')
+echo "Found ${SECRET_COUNT} configured secret(s)."
+echo "Starting Cloud Run build and deploy (this normally takes 2–5 minutes)..."
 
-gcloud run deploy ${SERVICE_NAME} \
+gcloud run deploy "${SERVICE_NAME}" \
   --project ${PROJECT_ID} \
   --source . \
   --region ${REGION} \
@@ -45,7 +55,9 @@ gcloud run deploy ${SERVICE_NAME} \
   --max-instances 10 \
   --concurrency 80 \
   --set-env-vars "GOOGLE_CLOUD_PROJECT=${PROJECT_ID}" \
-  --update-secrets "${SECRET_MAP}"
+  --update-secrets "${SECRET_MAP}" \
+  --quiet
 
 echo ""
 echo "✅ Deployment completed successfully!"
+echo "Service URL: $(gcloud run services describe "${SERVICE_NAME}" --project "${PROJECT_ID}" --region "${REGION}" --format='value(status.url)')"
