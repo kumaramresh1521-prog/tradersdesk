@@ -72,15 +72,17 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html { height: 100%; }
+    html { min-height: 100%; }
     body {
       background: var(--bg-base);
       color: var(--text-primary);
       font-family: var(--font-sans);
-      height: 100vh;
+      min-height: 100vh;
+      height: auto;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     /* Scrollbars */
@@ -488,6 +490,7 @@
        ============================================================ */
     .cs-main {
       flex: 1;
+      min-height: 680px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -840,6 +843,48 @@
       height: 28px;
     }
     .cs-sheet-footer strong { color: var(--text-secondary); }
+
+    /* Site footer — Calendar Studio does not load the main terminal CSS, so
+       keep its footer self-contained and prevent the unstyled link dump that
+       previously appeared below the fixed workspace. */
+    .terminal-footer {
+      width: min(1440px, calc(100% - 32px));
+      margin: 32px auto 0;
+      padding: 28px 30px 20px;
+      background: #0d111b;
+      border: 1px solid var(--border-dim);
+      border-bottom: 0;
+      border-radius: 14px 14px 0 0;
+      color: var(--text-secondary);
+    }
+    .footer-four-columns {
+      display: grid !important;
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      gap: 28px !important;
+      margin-bottom: 24px !important;
+    }
+    .footer-link-group { min-width: 0; }
+    .footer-links-list { gap: 7px !important; }
+    .footer-link-group a {
+      display: block;
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.4;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+    .footer-link-group a:hover { color: #7dd3fc; }
+    .footer-bottom { color: #64748b !important; }
+    @media (max-width: 980px) {
+      .footer-four-columns { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    }
+    @media (max-width: 640px) {
+      body { font-size: 14px; }
+      .cs-main { min-height: 610px; }
+      .terminal-footer { width: 100%; margin-top: 20px; padding: 22px 16px 16px; border-radius: 0; }
+      .footer-four-columns { grid-template-columns: 1fr !important; gap: 20px !important; }
+      .footer-bottom { flex-direction: column !important; align-items: flex-start !important; gap: 7px !important; }
+    }
 
     /* ============================================================
        MODALS
