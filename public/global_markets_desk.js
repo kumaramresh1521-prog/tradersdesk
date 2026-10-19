@@ -31,7 +31,8 @@
     setupControls();
     loadGlobalMarketsSuite(false);
 
-    // Auto-refresh quotes every 10 seconds (ultra-fast in-memory cache on backend)
+    // The backend refreshes the provider cache every 20 seconds. Matching that
+    // cadence prevents the UI from creating fake "ticks" between real quotes.
     if (gmAutoRefreshTimer) clearInterval(gmAutoRefreshTimer);
     gmAutoRefreshTimer = setInterval(() => {
       const autoBox = document.getElementById("gmAutoRefresh");
@@ -39,7 +40,7 @@
       if (autoBox && autoBox.checked && panel && (panel.style.display !== "none" || panel.classList.contains("active"))) {
         loadGlobalMarketsSuite(true);
       }
-    }, 10000);
+    }, 20000);
   }
 
   function setupControls() {
@@ -101,12 +102,13 @@
 
   async function loadGlobalMarketsSuite(isSilent = false) {
     try {
-      const res = await fetch(`/api/global-markets?category=all`);
+      const res = await fetch(`/api/global-markets?category=all&_=${Date.now()}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (!json || !json.ok) throw new Error("Invalid response");
 
       gmCachedData = json;
+      updateDataStatus(json);
 
       // Update Global Sentiment Card & Category Counts
       updateGlobalSentimentCard(json.categorySummary, json.sections);
@@ -126,6 +128,22 @@
         }
       }
     }
+  }
+
+  function updateDataStatus(json) {
+    const status = document.getElementById("gmDataStatus");
+    const label = document.getElementById("gmLiveLabel");
+    if (!json) return;
+    const total = Number(json.totalAssets || 0);
+    const live = Number(json.liveAssetCount || 0);
+    const interval = Number(json.refreshSeconds || 20);
+    if (label) label.textContent = live ? `Auto ${interval}s` : "Feed unavailable";
+    if (!status) return;
+    const source = escapeHtml(json.dataSource || "Market-data feed");
+    const asOf = escapeHtml(json.asOf || "");
+    const fresh = live > 0;
+    status.classList.toggle("is-stale", !fresh);
+    status.innerHTML = `<span class="gm-data-status-dot"></span><span>${fresh ? `${live}/${total} quoted assets refreshed` : "No fresh quote available"} · ${source} · ${asOf}</span>`;
   }
 
   function updateGiftNiftyHero(cue, metrics) {
@@ -381,7 +399,7 @@
     const dayPct = daySpread > 0 ? Math.min(100, Math.max(0, ((asset.ltp - asset.low) / daySpread) * 100)) : 50;
 
     let statusStyle = "background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3);";
-    if (asset.marketStatus === "CLOSED") {
+    if (asset.marketStatus === "CLOSED" || asset.marketStatus === "STALE") {
       statusStyle = "background:rgba(148,163,184,0.12); color:#94a3b8; border:1px solid rgba(148,163,184,0.25);";
     }
 
@@ -432,7 +450,7 @@
         </td>
         <td style="text-align:center;">
           <span style="font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:10px; ${statusStyle}">
-            ${asset.marketStatus === "OPEN" ? "● OPEN" : "○ CLOSED"}
+            ${asset.marketStatus === "UPDATED" ? "● UPDATED" : asset.marketStatus === "STALE" ? "○ STALE" : "○ CLOSED"}
           </span>
         </td>
       </tr>
@@ -497,7 +515,7 @@
 
     let items = gmCachedData.assets || [];
     if (currentGmCategory !== "all") {
-      items = items.filter(x => x.category === currentGmCategory);
+      items = ((gmCachedData.sections || {})[currentGmCategory] || {}).items || [];
     }
     if (gmSearchQuery) {
       items = items.filter(x => {
@@ -525,7 +543,7 @@
               </div>
               <div class="gm-card-name" title="${escapeHtml(asset.name)}">${escapeHtml(asset.name)}</div>
             </div>
-            <span class="gm-status-pill ${asset.marketStatus === 'OPEN' ? 'open' : 'closed'}">${asset.marketStatus}</span>
+            <span class="gm-status-pill ${asset.marketStatus === 'UPDATED' || asset.marketStatus === 'OPEN' ? 'live' : 'closed'}">${asset.marketStatus}</span>
           </div>
 
           <div class="gm-card-price-row">

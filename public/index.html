@@ -868,7 +868,7 @@
         <div class="gm-desk-header">
           <div class="gm-title-wrap">
             <h2>🌐 REAL-TIME GLOBAL INDICES &amp; MACRO DESK</h2>
-            <p>Moneycontrol-style institutional tracking of World Indices, Forex, Commodities, Sovereign Yields &amp; Indian ADRs</p>
+            <p>Live market-data monitor for World Indices, Forex, Commodities &amp; Indian ADRs</p>
           </div>
 
           <div class="gm-controls-wrap">
@@ -887,12 +887,16 @@
             <label class="straddle-live-toggle" title="Auto-refresh quotes every 10 seconds">
               <input type="checkbox" id="gmAutoRefresh" checked>
               <span class="straddle-live-dot">●</span>
-              <span id="gmLiveLabel">Live 10s</span>
+              <span id="gmLiveLabel">Refreshing…</span>
             </label>
 
             <!-- Manual Refresh Button -->
             <button id="gmRefreshBtn" class="page2-refresh-btn" type="button">🔄 Fetch</button>
           </div>
+        </div>
+
+        <div class="gm-data-status" id="gmDataStatus" role="status" aria-live="polite">
+          <span class="gm-data-status-dot"></span><span>Connecting to market-data feed…</span>
         </div>
 
         <!-- Global Market Sentiment & Advancers vs Decliners Meter -->

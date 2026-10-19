@@ -2497,6 +2497,90 @@ body.theme-light .gm-table-range-track {
   animation: gmFlashRed 1.4s ease-out;
 }
 
+/* Global Markets — source transparency and proper light-mode contrast */
+.gm-data-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 2px 0 14px;
+  padding: 7px 10px;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  border-radius: 7px;
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--p2-text-muted);
+  font: 600 11px var(--font-mono);
+}
+.gm-data-status-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+}
+.gm-data-status.is-stale {
+  border-color: rgba(245, 158, 11, 0.36);
+  background: rgba(245, 158, 11, 0.08);
+}
+.gm-data-status.is-stale .gm-data-status-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+}
+
+body.theme-light #panelGlobalMarkets .gm-regional-header,
+[data-theme="light"] #panelGlobalMarkets .gm-regional-header {
+  background: #f8fafc;
+  border-bottom-color: #dbe5f0;
+}
+body.theme-light #panelGlobalMarkets .gm-regional-header h3,
+[data-theme="light"] #panelGlobalMarkets .gm-regional-header h3 {
+  color: #0f172a;
+}
+body.theme-light #panelGlobalMarkets .gm-regional-table th,
+[data-theme="light"] #panelGlobalMarkets .gm-regional-table th {
+  background: #eef4fa;
+  color: #475569;
+  border-bottom-color: #dbe5f0;
+}
+body.theme-light #panelGlobalMarkets .gm-regional-table td,
+[data-theme="light"] #panelGlobalMarkets .gm-regional-table td {
+  color: #1e293b;
+  border-bottom-color: #edf2f7;
+}
+body.theme-light #panelGlobalMarkets .gm-regional-table tr:hover td,
+[data-theme="light"] #panelGlobalMarkets .gm-regional-table tr:hover td {
+  background: #f8fafc;
+}
+body.theme-light #panelGlobalMarkets .gm-regional-table [style*="color:#fff"],
+[data-theme="light"] #panelGlobalMarkets .gm-regional-table [style*="color:#fff"] {
+  color: #0f172a !important;
+}
+body.theme-light #panelGlobalMarkets .gm-regional-table [style*="color:#94a3b8"],
+[data-theme="light"] #panelGlobalMarkets .gm-regional-table [style*="color:#94a3b8"] {
+  color: #64748b !important;
+}
+body.theme-light #panelGlobalMarkets .gm-range-track,
+body.theme-light #panelGlobalMarkets .gm-table-range-track,
+[data-theme="light"] #panelGlobalMarkets .gm-range-track,
+[data-theme="light"] #panelGlobalMarkets .gm-table-range-track {
+  background: #dbe5f0;
+}
+body.theme-light #panelGlobalMarkets .gm-data-status,
+[data-theme="light"] #panelGlobalMarkets .gm-data-status {
+  background: #ecfdf5;
+  color: #166534;
+}
+body.theme-light #panelGlobalMarkets .gm-data-status.is-stale,
+[data-theme="light"] #panelGlobalMarkets .gm-data-status.is-stale {
+  background: #fffbeb;
+  color: #92400e;
+}
+body.theme-light #panelGlobalMarkets .gm-hero-sentiment-card > div > div > div,
+[data-theme="light"] #panelGlobalMarkets .gm-hero-sentiment-card > div > div > div {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
 
 /* ==========================================================================
    Opstra-Style Synchronized Dual-Subplot WPCR & Stock Price Chart

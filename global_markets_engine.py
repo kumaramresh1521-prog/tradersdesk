@@ -11,7 +11,6 @@ Provides real-time multi-asset intelligence across:
 from __future__ import annotations
 import time
 import random
-import math
 from typing import Dict, Any, List
 
 def _gen_sparkline(base_price: float, trend_dir: float = 1.0, points: int = 15) -> List[float]:
@@ -1003,10 +1002,17 @@ import urllib.parse
 import json
 from concurrent.futures import ThreadPoolExecutor
 
+# Quotes are deliberately short-lived.  This desk must never make an old
+# response look like a live tick simply because a provider is temporarily down.
 _LIVE_GLOBAL_CACHE = {"timestamp": 0.0, "data": {}}
+_LIVE_CACHE_TTL_SECONDS = 20.0
+_LIVE_STALE_AFTER_SECONDS = 90.0
 
 GLOBAL_TICKER_MAP = {
     # 1. Global Indices
+    # This is Nifty spot, not GIFT Nifty futures.  GIFT Nifty requires a
+    # licensed NSE IX feed and must not be synthetically manufactured.
+    "gift_nifty": "^NSEI",
     "dow_jones": "^DJI",
     "sp500": "^GSPC",
     "nasdaq": "^IXIC",
@@ -1064,7 +1070,9 @@ _LIVE_GLOBAL_FETCHING = False
 def _fetch_one_yf(item):
     k, sym = item
     try:
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(sym)}?interval=1d&range=2d"
+        # 5-minute bars provide a real quoted session range rather than mixing
+        # a new LTP with old sample OHLC numbers.
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(sym, safe='')}?interval=5m&range=5d&includePrePost=true"
         req = urllib.request.Request(
             url,
             headers={
@@ -1076,13 +1084,34 @@ def _fetch_one_yf(item):
         with urllib.request.urlopen(req, timeout=3.5) as r:
             d = json.loads(r.read().decode())
             meta = d["chart"]["result"][0]["meta"]
-            price = float(meta.get("regularMarketPrice") or 0.0)
+            result = d["chart"]["result"][0]
+            meta = result["meta"]
+            quote = (result.get("indicators", {}).get("quote") or [{}])[0]
+            closes = quote.get("close") or []
+            opens = quote.get("open") or []
+            highs = quote.get("high") or []
+            lows = quote.get("low") or []
+            valid = [i for i, close in enumerate(closes) if close is not None]
+            latest = valid[-1] if valid else None
+            price = float(meta.get("regularMarketPrice") or (closes[latest] if latest is not None else 0.0) or 0.0)
             prev = float(meta.get("chartPreviousClose") or meta.get("previousClose") or price)
             chg = round(price - prev, 2)
             pct = round((chg / prev) * 100.0, 2) if prev else 0.0
-            high = float(meta.get("regularMarketDayHigh") or price)
-            low = float(meta.get("regularMarketDayLow") or price)
-            return k, {"price": price, "prev": prev, "change": chg, "changePct": pct, "high": high, "low": low}
+            high = float(meta.get("regularMarketDayHigh") or (highs[latest] if latest is not None and highs[latest] is not None else price) or price)
+            low = float(meta.get("regularMarketDayLow") or (lows[latest] if latest is not None and lows[latest] is not None else price) or price)
+            # Some instruments expose an extended-hours LTP while their regular
+            # session range remains unchanged.  Keep the displayed range valid.
+            high, low = max(high, price), min(low, price)
+            opening = float(meta.get("regularMarketOpen") or (opens[latest] if latest is not None and opens[latest] is not None else price) or price)
+            bar_prices = [float(v) for v in closes[-30:] if v is not None]
+            return k, {
+                "price": price, "prev": prev, "change": chg, "changePct": pct,
+                "open": opening, "high": high, "low": low,
+                "week52High": float(meta.get("fiftyTwoWeekHigh") or 0.0),
+                "week52Low": float(meta.get("fiftyTwoWeekLow") or 0.0),
+                "sparkline": bar_prices, "marketTime": int(meta.get("regularMarketTime") or 0),
+                "fetchedAt": time.time(), "source": "Yahoo Finance"
+            }
     except Exception:
         return k, None
 
@@ -1090,10 +1119,11 @@ def _bg_fetch_all():
     global _LIVE_GLOBAL_CACHE, _LIVE_GLOBAL_FETCHING
     _LIVE_GLOBAL_FETCHING = True
     try:
-        with ThreadPoolExecutor(max_workers=35) as pool:
+        with ThreadPoolExecutor(max_workers=16) as pool:
             fetched = dict(pool.map(_fetch_one_yf, GLOBAL_TICKER_MAP.items()))
         
-        # Merge with existing cache so valid quotes are preserved permanently
+        # Preserve an earlier valid quote only for a bounded grace window.  It
+        # remains explicitly marked stale instead of being presented as live.
         existing = dict(_LIVE_GLOBAL_CACHE.get("data") or {})
         for k, v in fetched.items():
             if v and v.get("price", 0) > 0:
@@ -1113,7 +1143,7 @@ def _bg_continuous_worker():
             _bg_fetch_all()
         except Exception:
             pass
-        time.sleep(12)
+        time.sleep(int(_LIVE_CACHE_TTL_SECONDS))
 
 # Start background continuous polling thread on engine import
 try:
@@ -1124,43 +1154,20 @@ except Exception:
 def get_live_global_quotes() -> Dict[str, Any]:
     global _LIVE_GLOBAL_CACHE
     now = time.time()
-    if _LIVE_GLOBAL_CACHE.get("data") and (now - _LIVE_GLOBAL_CACHE.get("timestamp", 0)) < 30.0:
+    if _LIVE_GLOBAL_CACHE.get("data") and (now - _LIVE_GLOBAL_CACHE.get("timestamp", 0)) < _LIVE_CACHE_TTL_SECONDS:
         return _LIVE_GLOBAL_CACHE["data"]
     if not _LIVE_GLOBAL_FETCHING:
         threading.Thread(target=_bg_fetch_all, daemon=True).start()
+    # On a cold start, wait briefly for real data.  Returning the old static
+    # catalogue was the source of the misleading first screen.
+    if not _LIVE_GLOBAL_CACHE.get("data"):
+        _bg_fetch_all()
     return _LIVE_GLOBAL_CACHE.get("data") or {}
 
 def get_global_markets_data(category: str = "all") -> Dict[str, Any]:
     """Returns categorized and aggregated global markets dataset with real-time exchange quotes."""
     cat_clean = (category or "all").lower().strip()
-    t = time.time()
-    
     live_quotes = get_live_global_quotes()
-
-    # Dynamic Gift Nifty calculation matching live Nifty 50 spot + real futures basis
-    nifty_spot = 22421.95
-    nifty_prev = 22620.45
-    try:
-        import sys
-        srv = sys.modules.get("server")
-        if srv:
-            c_data = getattr(srv, "_LIVE_INDEX_CACHE", {}).get("data", {})
-            if c_data and "nifty50" in c_data and c_data["nifty50"].get("spot", 0) > 0:
-                n_q = c_data["nifty50"]
-                nifty_spot = float(n_q["spot"])
-                nifty_prev = float(n_q.get("prevClose") or (nifty_spot - n_q.get("change", 0.0)))
-    except Exception:
-        pass
-
-    sp500_pct = (live_quotes.get("sp500") or {}).get("changePct", 0.0)
-    basis = 32.50
-    overnight_drift = round(nifty_spot * (sp500_pct / 100.0) * 0.35, 2)
-    gift_ltp = round(nifty_spot + basis + overnight_drift, 2)
-    gift_prev = round(nifty_prev + basis, 2)
-    gift_chg = round(gift_ltp - gift_prev, 2)
-    gift_pct = round((gift_chg / gift_prev) * 100.0, 2)
-    gift_high = max(gift_ltp, round(gift_prev + 55.0, 2))
-    gift_low = min(gift_ltp, round(gift_prev - 65.0, 2))
 
     all_items = []
     category_summary = {}
@@ -1171,67 +1178,33 @@ def get_global_markets_data(category: str = "all") -> Dict[str, Any]:
             item_copy = dict(it)
             i_id = item_copy.get("id")
             
-            # 1. Overlay Live Real Quotes if available
-            if i_id == "gift_nifty":
-                item_copy["ltp"] = gift_ltp
-                item_copy["prevClose"] = gift_prev
-                item_copy["change"] = gift_chg
-                item_copy["changePct"] = gift_pct
-                item_copy["open"] = round(gift_prev + overnight_drift, 2)
-                item_copy["high"] = gift_high
-                item_copy["low"] = gift_low
-                item_copy["sparkline"] = _gen_sparkline(gift_ltp, trend_dir=1.0 if gift_chg >= 0 else -1.0)
-            elif i_id == "gold_mcx":
-                g_spot = (live_quotes.get("gold_spot") or {}).get("price", 4202.0)
-                u_inr = (live_quotes.get("usdinr") or {}).get("price", 96.30)
-                mcx_val = round(((g_spot * u_inr) / 31.1035) * 10.0 * 1.09, -1)
-                g_prev = (live_quotes.get("gold_spot") or {}).get("prev", g_spot)
-                mcx_prev = round(((g_prev * u_inr) / 31.1035) * 10.0 * 1.09, -1)
-                item_copy["ltp"] = mcx_val
-                item_copy["prevClose"] = mcx_prev
-                item_copy["change"] = round(mcx_val - mcx_prev, 2)
-                item_copy["changePct"] = round(((mcx_val - mcx_prev) / mcx_prev) * 100.0, 2) if mcx_prev else 0.0
-                item_copy["high"] = round(mcx_val * 1.008, -1)
-                item_copy["low"] = round(mcx_val * 0.992, -1)
-                item_copy["sparkline"] = _gen_sparkline(mcx_val, trend_dir=1.0 if item_copy["change"] >= 0 else -1.0)
-            elif i_id == "silver_mcx":
-                s_spot = (live_quotes.get("silver_spot") or {}).get("price", 34.50)
-                u_inr = (live_quotes.get("usdinr") or {}).get("price", 96.30)
-                mcx_val = round(((s_spot * u_inr) / 31.1035) * 1000.0 * 1.09, -1)
-                s_prev = (live_quotes.get("silver_spot") or {}).get("prev", s_spot)
-                mcx_prev = round(((s_prev * u_inr) / 31.1035) * 1000.0 * 1.09, -1)
-                item_copy["ltp"] = mcx_val
-                item_copy["prevClose"] = mcx_prev
-                item_copy["change"] = round(mcx_val - mcx_prev, 2)
-                item_copy["changePct"] = round(((mcx_val - mcx_prev) / mcx_prev) * 100.0, 2) if mcx_prev else 0.0
-                item_copy["high"] = round(mcx_val * 1.012, -1)
-                item_copy["low"] = round(mcx_val * 0.988, -1)
-                item_copy["sparkline"] = _gen_sparkline(mcx_val, trend_dir=1.0 if item_copy["change"] >= 0 else -1.0)
-            elif i_id == "india_10y":
-                item_copy["ltp"] = 6.84
-                item_copy["prevClose"] = 6.86
-                item_copy["change"] = -0.02
-                item_copy["changePct"] = -0.29
-                item_copy["high"] = 6.87
-                item_copy["low"] = 6.83
-                item_copy["sparkline"] = _gen_sparkline(6.84, trend_dir=-1.0)
-            elif i_id in live_quotes:
+            # Never blend a current LTP with historical sample values.  Assets
+            # without a provider quote are omitted until a licensed source is
+            # connected.
+            if i_id == "gift_nifty" and i_id in live_quotes:
+                item_copy["symbol"] = "NIFTY 50 SPOT"
+                item_copy["name"] = "Nifty 50 spot (not GIFT Nifty futures)"
+                item_copy["currency"] = "INR"
+            if i_id in live_quotes:
                 lq = live_quotes[i_id]
                 item_copy["ltp"] = lq["price"]
                 item_copy["prevClose"] = lq["prev"]
                 item_copy["change"] = lq["change"]
                 item_copy["changePct"] = lq["changePct"]
-                if lq.get("high"): item_copy["high"] = lq["high"]
-                if lq.get("low"): item_copy["low"] = lq["low"]
-                item_copy["sparkline"] = _gen_sparkline(lq["price"], trend_dir=1.0 if lq["change"] >= 0 else -1.0)
+                item_copy["open"] = lq.get("open") or lq["price"]
+                item_copy["high"] = lq.get("high") or lq["price"]
+                item_copy["low"] = lq.get("low") or lq["price"]
+                item_copy["week52High"] = lq.get("week52High") or item_copy.get("week52High")
+                item_copy["week52Low"] = lq.get("week52Low") or item_copy.get("week52Low")
+                item_copy["sparkline"] = lq.get("sparkline") or [lq["price"]]
+                item_copy["source"] = lq.get("source", "Yahoo Finance")
+                item_copy["fetchedAt"] = lq.get("fetchedAt", 0.0)
+                item_copy["isLive"] = (time.time() - item_copy["fetchedAt"]) <= _LIVE_STALE_AFTER_SECONDS
+                # Fresh means our upstream request completed recently; it does
+                # not claim exchange-licensed tick-by-tick entitlement.
+                item_copy["marketStatus"] = "UPDATED" if item_copy["isLive"] else "STALE"
             else:
-                # Add micro-oscillation for live feel
-                noise = math.sin(t * 0.1 + hash(i_id) % 100) * 0.0005
-                if item_copy["marketStatus"] in ("OPEN", "24/7 LIVE"):
-                    current_ltp = round(item_copy["ltp"] * (1.0 + noise), 2 if item_copy["ltp"] > 10 else 4)
-                    item_copy["ltp"] = current_ltp
-                    item_copy["change"] = round(current_ltp - item_copy["prevClose"], 2 if item_copy["ltp"] > 10 else 4)
-                    item_copy["changePct"] = round((item_copy["change"] / item_copy["prevClose"]) * 100.0, 2)
+                continue
 
             # Range position percentage
             d_range = item_copy["high"] - item_copy["low"]
@@ -1275,7 +1248,10 @@ def get_global_markets_data(category: str = "all") -> Dict[str, Any]:
     usdinr_item = next((x for x in all_items if x["id"] == "usdinr"), None)
 
     # Dynamic Nifty opening gap cue
-    gap_points = round(gift_ltp - nifty_spot, 1)
+    nifty_item = next((x for x in all_items if x["id"] == "gift_nifty"), None)
+    nifty_spot = float(nifty_item["ltp"]) if nifty_item else 0.0
+    gift_ltp = nifty_spot
+    gap_points = float(nifty_item.get("change", 0.0)) if nifty_item else 0.0
     if gap_points >= 25.0:
         opening_bias = "GAP UP"
         bias_sentiment = "BULLISH"
@@ -1340,6 +1316,9 @@ def get_global_markets_data(category: str = "all") -> Dict[str, Any]:
     return {
         "ok": True,
         "asOf": time.strftime("%Y-%m-%d %H:%M:%S IST"),
+        "dataSource": "Yahoo Finance public market-data feed (availability/delay varies by instrument)",
+        "refreshSeconds": int(_LIVE_CACHE_TTL_SECONDS),
+        "liveAssetCount": sum(1 for x in all_items if x.get("isLive")),
         "timestamp": time.time(),
         "selectedCategory": cat_clean,
         "totalAssets": len(all_items),
@@ -1418,4 +1397,3 @@ def get_global_markets_data(category: str = "all") -> Dict[str, Any]:
         "sections": sections,
         "assets": result_items
     }
-
