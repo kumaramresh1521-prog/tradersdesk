@@ -1000,6 +1000,7 @@ GLOBAL_MARKETS_DATA = {
 import urllib.request
 import urllib.parse
 import json
+import html as html_lib
 from concurrent.futures import ThreadPoolExecutor
 
 # Quotes are deliberately short-lived.  This desk must never make an old
@@ -1010,9 +1011,6 @@ _LIVE_STALE_AFTER_SECONDS = 90.0
 
 GLOBAL_TICKER_MAP = {
     # 1. Global Indices
-    # This is Nifty spot, not GIFT Nifty futures.  GIFT Nifty requires a
-    # licensed NSE IX feed and must not be synthetically manufactured.
-    "gift_nifty": "^NSEI",
     "dow_jones": "^DJI",
     "sp500": "^GSPC",
     "nasdaq": "^IXIC",
@@ -1067,6 +1065,53 @@ import threading
 
 _LIVE_GLOBAL_FETCHING = False
 
+
+def _fetch_gift_nifty_nseix():
+    """Fetch near-month GIFT Nifty future from the official NSE IX public page.
+
+    NSE IX is the exchange venue for this contract.  A response is accepted
+    only when its instrument row explicitly identifies the NIFTY index future;
+    Nifty spot is never used as a replacement value.
+    """
+    try:
+        req = urllib.request.Request(
+            "https://www.nseix.com/",
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; TradersDesk/1.0)",
+                "Accept": "text/html,application/xhtml+xml",
+                "Accept-Language": "en-IN,en;q=0.8",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=7) as response:
+            raw = response.read().decode("utf-8", "ignore")
+        # Keep table separators so the near-month row can be unambiguously
+        # identified after HTML markup is removed.
+        text = html_lib.unescape(re.sub(r"<[^>]+>", " | ", raw))
+        text = re.sub(r"\s+", " ", text)
+        patterns = (
+            r"Index Futures\s*\|\s*NIFTY\s*\|[^|]*\|[^|]*\|[^|]*\|\s*([0-9][0-9,]*\.\d+)\s*\|\s*([+-]?[0-9][0-9,]*\.\d+)\s*\|\s*([+-]?[0-9][0-9,]*\.\d+)",
+            r"GIFT NIFTY[^0-9]{0,280}([0-9][0-9,]*\.\d+)\s*\|\s*([+-]?[0-9][0-9,]*\.\d+)\s*\|\s*([+-]?[0-9][0-9,]*\.\d+)",
+        )
+        for pattern in patterns:
+            match = re.search(pattern, text, flags=re.IGNORECASE)
+            if not match:
+                continue
+            price = float(match.group(1).replace(",", ""))
+            change = float(match.group(2).replace(",", ""))
+            pct = float(match.group(3).replace(",", ""))
+            if price > 1000:
+                prev = round(price - change, 2)
+                return "gift_nifty", {
+                    "price": price, "prev": prev, "change": change,
+                    "changePct": pct, "open": price, "high": price,
+                    "low": price, "sparkline": [prev, price],
+                    "fetchedAt": time.time(), "source": "NSE IX public market page",
+                    "marketState": "UNKNOWN",
+                }
+    except Exception:
+        pass
+    return "gift_nifty", None
+
 def _fetch_one_yf(item):
     k, sym = item
     try:
@@ -1110,7 +1155,8 @@ def _fetch_one_yf(item):
                 "week52High": float(meta.get("fiftyTwoWeekHigh") or 0.0),
                 "week52Low": float(meta.get("fiftyTwoWeekLow") or 0.0),
                 "sparkline": bar_prices, "marketTime": int(meta.get("regularMarketTime") or 0),
-                "fetchedAt": time.time(), "source": "Yahoo Finance"
+                "fetchedAt": time.time(), "source": "Yahoo Finance",
+                "marketState": str(meta.get("marketState") or "").upper(),
             }
     except Exception:
         return k, None
@@ -1121,6 +1167,8 @@ def _bg_fetch_all():
     try:
         with ThreadPoolExecutor(max_workers=16) as pool:
             fetched = dict(pool.map(_fetch_one_yf, GLOBAL_TICKER_MAP.items()))
+        gift_id, gift_quote = _fetch_gift_nifty_nseix()
+        fetched[gift_id] = gift_quote
         
         # Preserve an earlier valid quote only for a bounded grace window.  It
         # remains explicitly marked stale instead of being presented as live.
@@ -1181,10 +1229,6 @@ def get_global_markets_data(category: str = "all") -> Dict[str, Any]:
             # Never blend a current LTP with historical sample values.  Assets
             # without a provider quote are omitted until a licensed source is
             # connected.
-            if i_id == "gift_nifty" and i_id in live_quotes:
-                item_copy["symbol"] = "NIFTY 50 SPOT"
-                item_copy["name"] = "Nifty 50 spot (not GIFT Nifty futures)"
-                item_copy["currency"] = "INR"
             if i_id in live_quotes:
                 lq = live_quotes[i_id]
                 item_copy["ltp"] = lq["price"]
@@ -1200,9 +1244,17 @@ def get_global_markets_data(category: str = "all") -> Dict[str, Any]:
                 item_copy["source"] = lq.get("source", "Yahoo Finance")
                 item_copy["fetchedAt"] = lq.get("fetchedAt", 0.0)
                 item_copy["isLive"] = (time.time() - item_copy["fetchedAt"]) <= _LIVE_STALE_AFTER_SECONDS
-                # Fresh means our upstream request completed recently; it does
-                # not claim exchange-licensed tick-by-tick entitlement.
-                item_copy["marketStatus"] = "UPDATED" if item_copy["isLive"] else "STALE"
+                market_state = str(lq.get("marketState") or "").upper()
+                if not item_copy["isLive"]:
+                    item_copy["marketStatus"] = "STALE"
+                elif i_id in ("btc", "eth", "sol", "xrp", "bnb"):
+                    item_copy["marketStatus"] = "24/7 LIVE"
+                elif market_state in ("REGULAR", "PRE", "POST", "OPEN"):
+                    item_copy["marketStatus"] = "OPEN"
+                elif i_id == "gift_nifty":
+                    item_copy["marketStatus"] = "AS OF NSE IX"
+                else:
+                    item_copy["marketStatus"] = "CLOSED"
             else:
                 continue
 
@@ -1248,10 +1300,10 @@ def get_global_markets_data(category: str = "all") -> Dict[str, Any]:
     usdinr_item = next((x for x in all_items if x["id"] == "usdinr"), None)
 
     # Dynamic Nifty opening gap cue
-    nifty_item = next((x for x in all_items if x["id"] == "gift_nifty"), None)
-    nifty_spot = float(nifty_item["ltp"]) if nifty_item else 0.0
-    gift_ltp = nifty_spot
-    gap_points = float(nifty_item.get("change", 0.0)) if nifty_item else 0.0
+    gift_item = next((x for x in all_items if x["id"] == "gift_nifty"), None)
+    gift_ltp = float(gift_item["ltp"]) if gift_item else 0.0
+    nifty_spot = 0.0
+    gap_points = float(gift_item.get("change", 0.0)) if gift_item else 0.0
     if gap_points >= 25.0:
         opening_bias = "GAP UP"
         bias_sentiment = "BULLISH"
@@ -1316,7 +1368,7 @@ def get_global_markets_data(category: str = "all") -> Dict[str, Any]:
     return {
         "ok": True,
         "asOf": time.strftime("%Y-%m-%d %H:%M:%S IST"),
-        "dataSource": "Yahoo Finance public market-data feed (availability/delay varies by instrument)",
+        "dataSource": "NSE IX for GIFT Nifty; Yahoo Finance for global assets (availability/delay varies by instrument)",
         "refreshSeconds": int(_LIVE_CACHE_TTL_SECONDS),
         "liveAssetCount": sum(1 for x in all_items if x.get("isLive")),
         "timestamp": time.time(),

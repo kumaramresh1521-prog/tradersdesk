@@ -5052,6 +5052,29 @@
           <!-- Alert / Toast Banner -->
           <div id="settingsAlertBanner" class="settings-alert" style="display:none;"></div>
 
+          <!-- Global Broker Status & Master PIN Security Card -->
+          <div class="settings-section-card" style="border: 1px solid rgba(16, 185, 129, 0.35); background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.8) 100%);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+              <div style="flex: 1; min-width: 280px;">
+                <span class="section-badge" id="globalFeedBadge" style="background:#10b981; color:#fff;">🌐 GLOBAL SERVER FEED: CHECKING...</span>
+                <h3 style="margin-top:6px; margin-bottom:4px;">🌐 Centralized Global Market Feed (Server-Wide)</h3>
+                <p id="globalFeedDescription" style="color:var(--text-muted, #94a3b8); font-size:13px; margin:0;">
+                  Once credentials are saved on this server, live market data streams globally to all devices, mobile phones, and visitors without requiring separate broker logins.
+                </p>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px; background:rgba(0,0,0,0.3); padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                <label for="cfgAdminSecret" style="font-size:12px; font-weight:700; color:#38bdf8; display:flex; align-items:center; gap:5px;">
+                  🔒 Master Admin PIN / Secret:
+                </label>
+                <div class="input-with-btn" style="width:220px;">
+                  <input type="password" id="cfgAdminSecret" placeholder="Enter Admin Secret / PIN" autocomplete="off" style="padding:6px 10px; font-size:13px; border-radius:6px; background:#0f172a; border:1px solid #334155; color:#fff; width:100%;">
+                  <button type="button" class="btn-toggle-vis" onclick="toggleFieldVis('cfgAdminSecret')">👁️</button>
+                </div>
+                <span style="font-size:11px; color:var(--text-muted, #94a3b8);">Required to save/update global server keys</span>
+              </div>
+            </div>
+          </div>
+
           <!-- User Profile & Workspace Settings Card -->
           <div class="settings-section-card" style="border: 1px solid rgba(56, 189, 248, 0.25); background: linear-gradient(135deg, rgba(56, 189, 248, 0.04) 0%, rgba(15, 23, 42, 0.6) 100%);">
             <div class="section-title-wrap" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">

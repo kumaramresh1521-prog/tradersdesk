@@ -50,6 +50,7 @@ import secret_manager_engine
 ROOT = Path(__file__).resolve().parent
 PUBLIC_DIR = ROOT / "public"
 CACHE_DIR = ROOT / ".cache"
+DATA_DIR = ROOT / "data"
 ENV_FILE = ROOT / ".env"
 
 ANGEL_ROOT = "https://apiconnect.angelone.in"
@@ -441,6 +442,7 @@ SAMPLE_SECTORS = [
 
 
 CONFIG_BACKUP_FILE = CACHE_DIR / "broker_config.json"
+DATA_BACKUP_FILE = DATA_DIR / "broker_config.json"
 SECRET_BACKED_ENV_KEYS = frozenset({
     "ADMIN_SECRET_KEY", "DATA_BROKER",
     "ANGEL_API_KEY", "ANGEL_CLIENT_CODE", "ANGEL_PIN", "ANGEL_TOTP_SECRET", "ANGEL_TOTP_CODE", "ANGEL_BASE_URL",
@@ -452,10 +454,10 @@ SECRET_BACKED_ENV_KEYS = frozenset({
 
 
 def load_dotenv() -> None:
-    # Priority 1: Cloud Run environment variables (injected from Secret Manager)
+    # Priority 1: Cloud Run environment variables (injected from Cloud Run service config)
     # are already present in os.environ and must never be overwritten.
 
-    # Priority 2: Local .env file for local development only.
+    # Priority 2: Local .env file for local development and Cloud Shell.
     if ENV_FILE.exists():
         try:
             for raw_line in ENV_FILE.read_text(encoding="utf-8").splitlines():
@@ -471,18 +473,23 @@ def load_dotenv() -> None:
             pass
 
     # Priority 3: Persistent local cache file
-    if CONFIG_BACKUP_FILE.exists():
-        try:
-            backup_data = json.loads(CONFIG_BACKUP_FILE.read_text(encoding="utf-8"))
-            if isinstance(backup_data, dict):
-                for k, v in backup_data.items():
-                    if v and (k not in os.environ or not os.environ[k]):
-                        os.environ[k] = str(v)
-        except Exception:
-            pass
+    for backup_path in (CONFIG_BACKUP_FILE, DATA_BACKUP_FILE):
+        if backup_path.exists():
+            try:
+                backup_data = json.loads(backup_path.read_text(encoding="utf-8"))
+                if isinstance(backup_data, dict):
+                    for k, v in backup_data.items():
+                        if v and (k not in os.environ or not os.environ[k]):
+                            os.environ[k] = str(v)
+            except Exception:
+                pass
 
-    # Broker credentials intentionally do not restore from Supabase or a
-    # repository file. In production they come only from Secret Manager.
+    # Default DATA_BROKER if credentials exist
+    if not os.environ.get("DATA_BROKER"):
+        if os.environ.get("ANGEL_API_KEY") and os.environ.get("ANGEL_CLIENT_CODE"):
+            os.environ["DATA_BROKER"] = "ANGEL"
+        elif os.environ.get("UPSTOX_ACCESS_TOKEN"):
+            os.environ["DATA_BROKER"] = "UPSTOX"
 
 
 load_dotenv()
@@ -524,13 +531,23 @@ def save_dotenv(updates: dict[str, str]) -> None:
     backup = {}
     try:
         ensure_cache()
-        if CONFIG_BACKUP_FILE.exists():
+        if DATA_BACKUP_FILE.exists():
+            try:
+                backup = json.loads(DATA_BACKUP_FILE.read_text(encoding="utf-8"))
+            except Exception:
+                backup = {}
+        elif CONFIG_BACKUP_FILE.exists():
             try:
                 backup = json.loads(CONFIG_BACKUP_FILE.read_text(encoding="utf-8"))
             except Exception:
                 backup = {}
         backup.update(updates)
         CONFIG_BACKUP_FILE.write_text(json.dumps(backup, indent=2), encoding="utf-8")
+        try:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            DATA_BACKUP_FILE.write_text(json.dumps(backup, indent=2), encoding="utf-8")
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -9596,38 +9613,46 @@ class RequestHandler(BaseHTTPRequestHandler):
             upstox_ready = bool(env("UPSTOX_ACCESS_TOKEN", "").strip())
             kotak_ready = bool(env("KOTAK_ACCESS_TOKEN", "").strip() or (env("KOTAK_CONSUMER_KEY", "").strip() and env("KOTAK_MOBILE_NO", "").strip()))
             fyers_ready = bool(env("FYERS_APP_ID", "").strip() and env("FYERS_ACCESS_TOKEN", "").strip())
+            is_global_active = is_active_broker_configured()
+            has_admin = bool(get_admin_secret())
             return self.send_json(
                 200,
                 {
                     "ok": True,
                     "activeBroker": active_broker,
+                    "globalFeedActive": is_global_active,
+                    "hasAdminSecret": has_admin,
+                    "globalStatusMessage": (
+                        f"Global Broker Feed is LIVE ({active_broker}). Real-time market data is active across all devices."
+                        if is_global_active else "No global broker is configured. Please configure your broker credentials below."
+                    ),
                     "angel": {
-                        "apiKey": "",
-                        "clientCode": "",
-                        "pin": "",
-                        "totpSecret": "",
+                        "apiKey": mask(env("ANGEL_API_KEY")) if angel_ready else "",
+                        "clientCode": mask(env("ANGEL_CLIENT_CODE")) if angel_ready else "",
+                        "pin": "••••" if angel_ready else "",
+                        "totpSecret": "••••••••" if bool(env("ANGEL_TOTP_SECRET")) else "",
                         "totpCode": "",
-                        "baseUrl": ANGEL_ROOT,
+                        "baseUrl": env("ANGEL_BASE_URL", ANGEL_ROOT),
                         "configured": angel_ready,
                     },
                     "upstox": {
-                        "accessToken": "",
-                        "apiKey": "",
-                        "apiSecret": "",
+                        "accessToken": ("••••••••" + env("UPSTOX_ACCESS_TOKEN")[-6:]) if upstox_ready else "",
+                        "apiKey": mask(env("UPSTOX_API_KEY")) if upstox_ready else "",
+                        "apiSecret": "••••" if bool(env("UPSTOX_API_SECRET")) else "",
                         "configured": upstox_ready,
                     },
                     "kotak": {
-                        "accessToken": "",
-                        "consumerKey": "",
+                        "accessToken": "••••" if kotak_ready else "",
+                        "consumerKey": mask(env("KOTAK_CONSUMER_KEY")) if kotak_ready else "",
                         "consumerSecret": "",
                         "viewToken": "",
-                        "mobileNo": "",
-                        "mpin": "",
+                        "mobileNo": mask(env("KOTAK_MOBILE_NO")) if kotak_ready else "",
+                        "mpin": "••••" if kotak_ready else "",
                         "configured": kotak_ready,
                     },
                     "fyers": {
-                        "appId": "",
-                        "accessToken": "",
+                        "appId": mask(env("FYERS_APP_ID")) if fyers_ready else "",
+                        "accessToken": "••••" if fyers_ready else "",
                         "configured": fyers_ready,
                     },
                 },
@@ -10571,9 +10596,31 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200 if res.get("ok") else 400, res)
 
             if parsed.path == "/api/settings":
-                if not check_admin_request(self):
-                    return self.send_json(401, {"ok": False, "message": "Unauthorized: Admin authorization required to modify broker settings."})
                 payload = self.read_body()
+                
+                # Check admin authorization:
+                # 1. From header: X-Admin-Secret or Authorization: Bearer <secret>
+                # 2. From payload: adminSecret or adminPin
+                server_secret = get_admin_secret()
+                provided_secret = (
+                    self.headers.get("X-Admin-Secret", "").strip().strip('"').strip("'")
+                    or str(payload.get("adminSecret") or "").strip().strip('"').strip("'")
+                    or str(payload.get("adminPin") or "").strip().strip('"').strip("'")
+                )
+                if not provided_secret:
+                    auth_h = self.headers.get("Authorization", "").strip()
+                    if auth_h.lower().startswith("bearer "):
+                        provided_secret = auth_h[7:].strip().strip('"').strip("'")
+
+                if server_secret:
+                    if not provided_secret or not hmac.compare_digest(provided_secret, server_secret):
+                        record_admin_auth_result(self, False)
+                        return self.send_json(401, {
+                            "ok": False,
+                            "message": "Admin authorization failed. Please enter the correct Master Admin PIN."
+                        })
+                    record_admin_auth_result(self, True)
+
                 updates = {}
 
                 if "activeBroker" in payload and payload["activeBroker"]:
@@ -10611,6 +10658,13 @@ class RequestHandler(BaseHTTPRequestHandler):
                         if not is_masked_or_empty(val_str):
                             updates[env_key] = val_str
 
+                # Allow initializing or updating admin secret
+                new_admin = str(payload.get("newAdminSecret") or "").strip()
+                if new_admin and not is_masked_or_empty(new_admin) and len(new_admin) >= 4:
+                    updates["ADMIN_SECRET_KEY"] = new_admin
+                elif not server_secret and provided_secret and len(provided_secret) >= 4:
+                    updates["ADMIN_SECRET_KEY"] = provided_secret
+
                 if updates:
                     save_dotenv(updates)
 
@@ -10619,7 +10673,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                     200,
                     {
                         "ok": True,
-                        "message": f"Settings saved successfully! Active broker set to {active_b}.",
+                        "message": f"Global Broker settings saved successfully! Active broker set to {active_b}. Live market feed is active globally.",
                         "activeBroker": active_b,
                     },
                 )

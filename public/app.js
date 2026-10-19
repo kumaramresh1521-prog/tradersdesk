@@ -11341,6 +11341,7 @@ async function loadBrokerSettings() {
     const savedActiveBroker = localStorage.getItem("bl_active_broker") || "ANGEL";
     const data = serverSettings || {
       activeBroker: savedActiveBroker,
+      globalFeedActive: false,
       angel: { apiKey: "", clientCode: "", pin: "", totpSecret: "", totpCode: "", configured: false },
       upstox: { accessToken: "", apiKey: "", apiSecret: "", configured: false },
       kotak: { accessToken: "", consumerKey: "", consumerSecret: "", mobileNo: "", mpin: "", configured: false },
@@ -11363,6 +11364,28 @@ async function loadBrokerSettings() {
       }
     });
 
+    // Global Feed Banner & Admin PIN
+    const globalBadge = document.getElementById("globalFeedBadge");
+    const globalDesc = document.getElementById("globalFeedDescription");
+    if (globalBadge) {
+      if (data.globalFeedActive) {
+        globalBadge.style.background = "#10b981";
+        globalBadge.textContent = `🌐 GLOBAL SERVER FEED: LIVE (${active})`;
+      } else {
+        globalBadge.style.background = "#f59e0b";
+        globalBadge.textContent = "⚠️ GLOBAL FEED: NOT CONFIGURED";
+      }
+    }
+    if (globalDesc && data.globalStatusMessage) {
+      globalDesc.textContent = data.globalStatusMessage;
+    }
+
+    const adminInput = document.getElementById("cfgAdminSecret");
+    if (adminInput && !adminInput.value) {
+      const stored = localStorage.getItem("bl_admin_secret") || sessionStorage.getItem("bl_admin_secret") || "";
+      if (stored) adminInput.value = stored;
+    }
+
     // Angel One Fields
     if (data.angel) {
       const elKey = document.getElementById("cfgAngelApiKey");
@@ -11370,17 +11393,17 @@ async function loadBrokerSettings() {
       const elPin = document.getElementById("cfgAngelPin");
       const elTotpSec = document.getElementById("cfgAngelTotpSecret");
       const elTotpCode = document.getElementById("cfgAngelTotpCode");
-      if (elKey) elKey.value = data.angel.apiKey || "";
-      if (elCode) elCode.value = data.angel.clientCode || "";
-      if (elPin) elPin.value = data.angel.pin || "";
-      if (elTotpSec) elTotpSec.value = data.angel.totpSecret || "";
-      if (elTotpCode) elTotpCode.value = data.angel.totpCode || "";
+      if (elKey && data.angel.apiKey) elKey.value = data.angel.apiKey;
+      if (elCode && data.angel.clientCode) elCode.value = data.angel.clientCode;
+      if (elPin && data.angel.pin) elPin.value = data.angel.pin;
+      if (elTotpSec && data.angel.totpSecret) elTotpSec.value = data.angel.totpSecret;
+      if (elTotpCode && data.angel.totpCode) elTotpCode.value = data.angel.totpCode;
 
       const badge = document.getElementById("badgeAngelStatus");
       if (badge) {
-        const isCfg = Boolean(data.angel.configured || (data.angel.apiKey && data.angel.clientCode && data.angel.pin));
+        const isCfg = Boolean(data.angel.configured || (data.angel.apiKey && data.angel.clientCode));
         badge.className = isCfg ? "broker-status-pill configured" : "broker-status-pill not-configured";
-        badge.textContent = isCfg ? "Configured" : "Not Configured";
+        badge.textContent = isCfg ? "✓ Server Active" : "Not Configured";
       }
     }
 
@@ -11389,15 +11412,15 @@ async function loadBrokerSettings() {
       const elToken = document.getElementById("cfgUpstoxAccessToken");
       const elKey = document.getElementById("cfgUpstoxApiKey");
       const elSecret = document.getElementById("cfgUpstoxApiSecret");
-      if (elToken) elToken.value = data.upstox.accessToken || "";
-      if (elKey) elKey.value = data.upstox.apiKey || "";
-      if (elSecret) elSecret.value = data.upstox.apiSecret || "";
+      if (elToken && data.upstox.accessToken) elToken.value = data.upstox.accessToken;
+      if (elKey && data.upstox.apiKey) elKey.value = data.upstox.apiKey;
+      if (elSecret && data.upstox.apiSecret) elSecret.value = data.upstox.apiSecret;
 
       const badge = document.getElementById("badgeUpstoxStatus");
       if (badge) {
         const isCfg = Boolean(data.upstox.configured || data.upstox.accessToken);
         badge.className = isCfg ? "broker-status-pill configured" : "broker-status-pill not-configured";
-        badge.textContent = isCfg ? "Configured" : "Not Configured";
+        badge.textContent = isCfg ? "✓ Server Active" : "Not Configured";
       }
     }
 
@@ -11408,17 +11431,17 @@ async function loadBrokerSettings() {
       const elSecret = document.getElementById("cfgKotakConsumerSecret");
       const elMobile = document.getElementById("cfgKotakMobileNo");
       const elMpin = document.getElementById("cfgKotakMpin");
-      if (elToken) elToken.value = data.kotak.accessToken || "";
-      if (elKey) elKey.value = data.kotak.consumerKey || "";
-      if (elSecret) elSecret.value = data.kotak.consumerSecret || "";
-      if (elMobile) elMobile.value = data.kotak.mobileNo || "";
-      if (elMpin) elMpin.value = data.kotak.mpin || "";
+      if (elToken && data.kotak.accessToken) elToken.value = data.kotak.accessToken;
+      if (elKey && data.kotak.consumerKey) elKey.value = data.kotak.consumerKey;
+      if (elSecret && data.kotak.consumerSecret) elSecret.value = data.kotak.consumerSecret;
+      if (elMobile && data.kotak.mobileNo) elMobile.value = data.kotak.mobileNo;
+      if (elMpin && data.kotak.mpin) elMpin.value = data.kotak.mpin;
 
       const badge = document.getElementById("badgeKotakStatus");
       if (badge) {
         const isCfg = Boolean(data.kotak.configured || data.kotak.accessToken || (data.kotak.consumerKey && data.kotak.mobileNo));
         badge.className = isCfg ? "broker-status-pill configured" : "broker-status-pill not-configured";
-        badge.textContent = isCfg ? "Configured" : "Not Configured";
+        badge.textContent = isCfg ? "✓ Server Active" : "Not Configured";
       }
     }
 
@@ -11426,14 +11449,14 @@ async function loadBrokerSettings() {
     if (data.fyers) {
       const elAppId = document.getElementById("cfgFyersAppId");
       const elToken = document.getElementById("cfgFyersAccessToken");
-      if (elAppId) elAppId.value = data.fyers.appId || "";
-      if (elToken) elToken.value = data.fyers.accessToken || "";
+      if (elAppId && data.fyers.appId) elAppId.value = data.fyers.appId;
+      if (elToken && data.fyers.accessToken) elToken.value = data.fyers.accessToken;
 
       const badge = document.getElementById("badgeFyersStatus");
       if (badge) {
         const isCfg = Boolean(data.fyers.configured || (data.fyers.appId && data.fyers.accessToken));
         badge.className = isCfg ? "broker-status-pill configured" : "broker-status-pill not-configured";
-        badge.textContent = isCfg ? "Configured" : "Not Configured";
+        badge.textContent = isCfg ? "✓ Server Active" : "Not Configured";
       }
     }
   } catch (err) {
@@ -11447,8 +11470,18 @@ async function saveBrokerSettings() {
   const selectedRadio = document.querySelector('input[name="brokerSelect"]:checked');
   const activeBroker = selectedRadio ? selectedRadio.value : "ANGEL";
 
+  const adminInput = (document.getElementById("cfgAdminSecret")?.value || "").trim();
+  if (adminInput) {
+    try {
+      localStorage.setItem("bl_admin_secret", adminInput);
+      sessionStorage.setItem("bl_admin_secret", adminInput);
+    } catch (e) {}
+  }
+  const adminKey = adminInput || localStorage.getItem("bl_admin_secret") || sessionStorage.getItem("bl_admin_secret") || localStorage.getItem("breadthlab_admin_secret") || "";
+
   const payload = {
     activeBroker: activeBroker,
+    adminSecret: adminKey,
     angel: {
       apiKey: (document.getElementById("cfgAngelApiKey")?.value || "").trim(),
       clientCode: (document.getElementById("cfgAngelClientCode")?.value || "").trim(),
@@ -11489,12 +11522,11 @@ async function saveBrokerSettings() {
     if (btn) {
       btn.disabled = true;
       btn.dataset.prevHtml = btn.innerHTML;
-      btn.innerHTML = `⏳ Saving...`;
+      btn.innerHTML = `⏳ Saving Globally...`;
     }
   });
 
   try {
-    const adminKey = localStorage.getItem("bl_admin_secret") || sessionStorage.getItem("bl_admin_secret") || localStorage.getItem("breadthlab_admin_secret") || "";
     const response = await fetch("/api/settings", {
       method: "POST",
       headers: {
@@ -11508,10 +11540,10 @@ async function saveBrokerSettings() {
       throw new Error(result.message || "Settings were not saved on the server.");
     }
 
-    showSettingsAlert(result.message || `Broker credentials saved securely. Active: ${activeBroker}`, "success");
+    showSettingsAlert(result.message || `Global broker credentials saved securely! Active broker: ${activeBroker}`, "success");
     await loadBrokerSettings();
   } catch (err) {
-    showSettingsAlert(`Save failed: ${err.message || "Admin authentication is required."}`, "error");
+    showSettingsAlert(`Save failed: ${err.message || "Please enter the Master Admin PIN."}`, "error");
   } finally {
     saveBtns.forEach(btn => {
       if (btn) {
