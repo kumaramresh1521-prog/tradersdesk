@@ -1491,7 +1491,7 @@
               <div class="fut-movers-header">
                 <div class="fut-movers-title-box">
                   <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="fut-movers-badge">OPSTRA RADAR</span>
+                    <span class="fut-movers-badge">BUZZER RADAR</span>
                     <h3 class="fut-movers-title">⚡ High-Velocity F&amp;O Movers &amp; Buzzers</h3>
                   </div>
                   <span class="fut-movers-subtitle">Live institutional scans: Price Momentum, OI Surges, Volume Anomalies &amp; IV Volatility</span>
@@ -4142,7 +4142,7 @@
               <div class="mta-signal-val text-red" id="mtaSumSpecBook">—</div>
               <div class="mta-signal-desc">Low-priced stocks (&lt;₹25 debt/sh) with heavy retail crowding</div>
             </div>
-            <div class="mta-signal-card" style="border-left:4px solid #2563eb;background:#ffffff;">
+            <div class="mta-signal-card" style="border-left:4px solid #2563eb;">
               <div class="mta-signal-icon">⚖️</div>
               <div class="mta-signal-title">Retail / Institutional Ratio</div>
               <div class="mta-signal-val text-blue" id="mtaSumRatio">—</div>
@@ -4154,7 +4154,7 @@
           <div class="mta-dual-grid">
             <!-- Left: Top Retail Heavyweights -->
             <div class="mta-side-card" style="border-top:3px solid #d97706;">
-              <div class="mta-side-header" style="background:#fffbeb;color:#92400e;">
+              <div class="mta-side-header mta-side-header-amber">
                 <span>🔴 Top Retail Leverage Heavyweights</span>
                 <span class="mta-badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;">Crowd Leaders</span>
               </div>
@@ -4177,7 +4177,7 @@
 
             <!-- Right: Top Institutional Anchors -->
             <div class="mta-side-card" style="border-top:3px solid #16a34a;">
-              <div class="mta-side-header" style="background:#f0fdf4;color:#166534;">
+              <div class="mta-side-header mta-side-header-green">
                 <span>🏛️ Top Institutional / Wealth Desk Anchors</span>
                 <span class="mta-badge" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;">Bluechip Blocks</span>
               </div>
@@ -4203,8 +4203,8 @@
           <div class="mta-section" style="margin-top:16px;">
             <div class="mta-section-header" style="flex-wrap:wrap;gap:12px;">
               <div>
-                <span style="font-size:13px;font-weight:800;color:#0f172a;">🔬 Stock Leverage Classification Table</span>
-                <div style="font-size:11px;color:#64748b;margin-top:2px;">Segmented by market-cap, ticket size, and F&amp;O participation</div>
+                <span style="font-size:13px;font-weight:800;color:var(--text-bright, #0f172a);">🔬 Stock Leverage Classification Table</span>
+                <div style="font-size:11px;color:var(--text-muted, #64748b);margin-top:2px;">Segmented by market-cap, ticket size, and F&amp;O participation</div>
               </div>
               <!-- Segmented Pills Bar -->
               <div class="mta-pills-bar" id="mtaRetailPills">
@@ -4932,9 +4932,9 @@
         </div>
 
         <!-- Educational Card -->
-        <div class="mta-section" style="margin-top:16px;background:#f8fafc;border-left:4px solid #2563eb;">
-          <h4 style="margin:0 0 6px 0;font-size:14px;font-weight:800;color:#1e293b;">📌 How MTF (Margin Trading Facility) Data Works</h4>
-          <p style="margin:0;font-size:12px;color:#475569;line-height:1.6;">
+        <div class="mta-section mta-edu-section" style="margin-top:16px;border-left:4px solid #2563eb;">
+          <h4 style="margin:0 0 6px 0;font-size:14px;font-weight:800;color:var(--text-bright, #1e293b);">📌 How MTF (Margin Trading Facility) Data Works</h4>
+          <p style="margin:0;font-size:12px;color:var(--text-muted, #475569);line-height:1.6;">
             <strong>Margin Trading Facility (MTF)</strong> allows investors to take leveraged positions in cash market equities by putting up a fraction of the capital (collateral), while the broker funds the rest.
             Under SEBI regulations, NSE and BSE publish mandatory EOD MTF disclosures with a 1-session reporting lag.
             Rising aggregate MTF book indicates building bullish retail/institutional leverage, while sharp drops signal margin liquidation and deleveraging cascades.
@@ -4978,7 +4978,7 @@
               <div class="mta-mstat">
                 <div class="mta-mstat-lbl">Margin Debt / Share</div>
                 <div class="mta-mstat-val" id="mtaModalEstPrice">—</div>
-                <div style="font-size:9.5px;color:#64748b;margin-top:1px;">Broker funded debt</div>
+                <div style="font-size:9.5px;color:var(--text-muted, #64748b);margin-top:1px;">Broker funded debt</div>
               </div>
               <div class="mta-mstat">
                 <div class="mta-mstat-lbl">Share of Total Book</div>
@@ -4991,7 +4991,7 @@
             </div>
 
             <!-- Official T+1 Schedule Notice -->
-            <div style="font-size:11px; color:#475569; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:7px 12px; margin-top:10px; display:flex; align-items:center; gap:8px;">
+            <div class="mta-reg-notice" style="font-size:11px; border:1px solid #e2e8f0; border-radius:6px; padding:7px 12px; margin-top:10px; display:flex; align-items:center; gap:8px;">
               <span style="font-size:13px;">ℹ️</span>
               <span id="mtaRegulatoryNotice"><strong>Official NSE Regulatory Disclosure:</strong> Brokers report MTF client margin books on a <strong>T+1 regulatory schedule</strong>. All numbers are compiled directly from official NSE exchange disclosure archives.</span>
             </div>
@@ -5000,7 +5000,7 @@
             <!-- Historical Multi-Session Trend Chart -->
             <div class="mta-section" style="margin-top:14px;padding:12px 14px;box-shadow:none;border:1px solid #e2e8f0;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <span style="font-size:12px;font-weight:700;color:#1e293b;">📈 Multi-Session MTF Leverage Trend (₹ Cr)</span>
+                <span style="font-size:12px;font-weight:700;color:var(--text-bright, #1e293b);">📈 Multi-Session MTF Leverage Trend (₹ Cr)</span>
                 <span id="mtaModalSessionsCount" class="mta-badge" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;">Multi-Session</span>
               </div>
               <div id="mtaModalChartWrap" style="position:relative;height:160px;width:100%;">

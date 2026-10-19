@@ -2215,7 +2215,7 @@ function renderIndicesOverview(data) {
             <strong>${Number(idx.totalOi).toLocaleString("en-IN")}</strong>
           </div>
           <div class="idx-mini-row">
-            <span>PCR (OI) / Opstra wPCR:</span>
+            <span>PCR (OI) / wPCR:</span>
             <span><strong>${idx.pcrOi ? idx.pcrOi.toFixed(2) : '--'}</strong> / <strong style="color:#7c3aed;">${idx.wpcr ? idx.wpcr.toFixed(2) : '--'}</strong></span>
           </div>
           <div class="idx-mini-row">
@@ -5840,8 +5840,8 @@ function mtaRenderTop10(stocks) {
       <td><strong class="mta-sym">${s.symbol}</strong></td>
       <td class="mta-name">${s.name}</td>
       <td>${seg}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;">₹${Number(s.amtFinancedCrore).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
-      <td style="text-align:right;font-weight:700;color:${s.sharePct >= 1 ? '#b45309' : '#475569'};">${mtaNum(s.sharePct, 2)}%</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text-bright, #f8fafc);">₹${Number(s.amtFinancedCrore).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+      <td style="text-align:right;font-weight:700;color:${s.sharePct >= 1 ? '#f59e0b' : 'var(--text-muted, #94a3b8)'};">${mtaNum(s.sharePct, 2)}%</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;">${Number(s.qtyFinanced).toLocaleString('en-IN')}</td>
     </tr>`;
   }).join('');
@@ -6073,7 +6073,7 @@ function renderMtfRowHtml(s, i) {
   const starTitle = starred ? "Remove from Watchlist" : "Add to Watchlist";
 
   return `<tr class="${rowCls}" style="cursor:pointer;" onclick="inspectStock('${s.symbol}')">
-    <td style="color:#64748b;font-weight:600;">#${i+1}</td>
+    <td style="color:var(--text-muted, #64748b);font-weight:600;">#${i+1}</td>
     <td>
       <div style="display:flex; align-items:center; gap:6px;">
         <button type="button" class="deliv-star-btn ${starClass}" onclick="event.stopPropagation(); toggleWatchlistStockUI('${s.symbol}', this)" title="${starTitle}" style="background:transparent; border:none; cursor:pointer; font-size:15px; color:${starred ? '#eab308' : '#94a3b8'}; padding:0 2px; line-height:1;">${starIcon}</button>
@@ -6082,9 +6082,9 @@ function renderMtfRowHtml(s, i) {
     </td>
     <td class="mta-name">${s.name}</td>
     <td style="text-align:center;">${exchBadge}</td>
-    <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:${isHeavy?'#dc2626':isSig?'#d97706':'#0f172a'};">₹${Number(s.amtFinancedCrore).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:${isHeavy?'#ef4444':isSig?'#f59e0b':'var(--text-bright, #f8fafc)'};">₹${Number(s.amtFinancedCrore).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
     <td style="text-align:right;font-family:'JetBrains Mono',monospace;">${Number(s.qtyFinanced||0).toLocaleString('en-IN')}</td>
-    <td style="text-align:right;font-weight:700;color:${bookShare >= 1 ? '#b45309' : '#475569'};">${mtaNum(bookShare, 2)}%</td>
+    <td style="text-align:right;font-weight:700;color:${bookShare >= 1 ? '#f59e0b' : 'var(--text-muted, #94a3b8)'};">${mtaNum(bookShare, 2)}%</td>
     <td style="text-align:center;">${seg}</td>
     <td style="text-align:center;">${riskBadge}</td>
   </tr>`;
@@ -6363,14 +6363,14 @@ function mtaFilterRetailTable() {
     const seg = s.isFnO ? '<span class="mta-badge mta-badge-fno">F&O</span>' : '<span class="mta-badge mta-badge-cash">Cash</span>';
     const debtStr = s._debtPerShare > 0 ? `₹${Number(s._debtPerShare.toFixed(1)).toLocaleString('en-IN')}` : '—';
     return `<tr style="cursor:pointer;" onclick="inspectStock('${s.symbol}')">
-      <td style="color:#64748b;font-weight:600;">#${i+1}</td>
+      <td style="color:var(--text-muted, #64748b);font-weight:600;">#${i+1}</td>
       <td><strong class="mta-sym">${s.symbol}</strong></td>
       <td class="mta-name">${s.name}</td>
       <td style="text-align:center;">${seg}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:#0f172a;">₹${Number(s.amtFinancedCrore).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text-bright, #f8fafc);">₹${Number(s.amtFinancedCrore).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;">${debtStr}</td>
       <td style="text-align:center;">${mtaClassBadge(s._cls)}</td>
-      <td class="mta-insight-text" style="font-size:11px;color:#475569;">${mtaInsight(s, s._cls)}</td>
+      <td class="mta-insight-text" style="font-size:11px;color:var(--text-muted, #94a3b8);">${mtaInsight(s, s._cls)}</td>
     </tr>`;
   }).join('');
 }
@@ -6588,13 +6588,20 @@ function mtaRenderTrendChart() {
   const areaPath = usePrimary.map((v, i) => `${i === 0 ? 'M' : 'L'}${xS(i).toFixed(1)},${yP(v).toFixed(1)}`).join(' ')
     + ` L${xS(n - 1).toFixed(1)},${pad.t + iH} L${pad.l},${pad.t + iH} Z`;
 
+  // Theme detection for SVG styling
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || document.body.classList.contains('theme-dark') || document.body.classList.contains('dark');
+  const chartBg = isDark ? '#0d121d' : '#ffffff';
+  const chartBorder = isDark ? '#1e293b' : '#e2e8f0';
+  const gridStroke = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0';
+  const lastDateColor = isDark ? '#f8fafc' : '#0f172a';
+
   // Y-axis grid lines (5 ticks)
   let gridLines = '', yLabels = '', yLabelsR = '';
   for (let t = 0; t <= 4; t++) {
     const yPos = pad.t + (t / 4) * iH;
     const vP   = maxP - (t / 4) * (maxP - minP);
     const vS   = hasSecond ? (maxS - (t / 4) * (maxS - minS)) : 0;
-    gridLines += `<line x1="${pad.l}" y1="${yPos.toFixed(1)}" x2="${W - pad.r}" y2="${yPos.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`;
+    gridLines += `<line x1="${pad.l}" y1="${yPos.toFixed(1)}" x2="${W - pad.r}" y2="${yPos.toFixed(1)}" stroke="${gridStroke}" stroke-width="1"/>`;
     yLabels   += `<text x="${pad.l - 8}" y="${(yPos + 4).toFixed(1)}" font-size="10" font-weight="700" fill="#2563eb" text-anchor="end" font-family="'JetBrains Mono',monospace">${mtaFmtAxisVal(vP)}</text>`;
     if (!showFreshLiq && hasSecond) {
       yLabelsR += `<text x="${W - pad.r + 8}" y="${(yPos + 4).toFixed(1)}" font-size="10" font-weight="700" fill="#16a34a" text-anchor="start" font-family="'JetBrains Mono',monospace">${mtaFmtAxisVal(vS)}</text>`;
@@ -6612,7 +6619,7 @@ function mtaRenderTrendChart() {
   // Ensure the very last date is always visible
   const lastD = dates[n - 1] || '';
   const lastLbl = formatMtfDate(lastD).replace(/ \d{4}$/, '');
-  xLabels += `<text x="${xS(n - 1).toFixed(1)}" y="${H - 12}" font-size="9.5" font-weight="700" fill="#0f172a" text-anchor="middle" font-family="'JetBrains Mono',monospace">${lastLbl}</text>`;
+  xLabels += `<text x="${xS(n - 1).toFixed(1)}" y="${H - 12}" font-size="9.5" font-weight="700" fill="${lastDateColor}" text-anchor="middle" font-family="'JetBrains Mono',monospace">${lastLbl}</text>`;
 
   svg.setAttribute('width', W);
   svg.innerHTML = `
@@ -6627,7 +6634,7 @@ function mtaRenderTrendChart() {
     </defs>
 
     <!-- Background -->
-    <rect x="${pad.l}" y="${pad.t}" width="${iW}" height="${iH}" fill="#ffffff" rx="6" stroke="#e2e8f0"/>
+    <rect x="${pad.l}" y="${pad.t}" width="${iW}" height="${iH}" fill="${chartBg}" rx="6" stroke="${chartBorder}"/>
     
     <!-- Grid -->
     ${gridLines}
@@ -6878,7 +6885,7 @@ function mtaRenderBrokerDesk(data) {
       const barW   = Math.min(100, share * 3.5);
       return `<tr>
         <td><strong style="color:${idx<3?'#d97706':'#64748b'};">#${idx+1}</strong></td>
-        <td><strong style="color:#0f172a;">${b.name}</strong></td>
+        <td><strong style="color:var(--text-bright, #f8fafc);">${b.name}</strong></td>
         <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:#2563eb;">₹${Number(bookCr).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
         <td>
           <div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;min-width:100px;">
@@ -6918,7 +6925,7 @@ function mtaRenderGlobalLens(data) {
         <div class="mta-global-bar-track">
           <div class="mta-global-bar-fill" style="width:${pct}%;background:${isIndia ? '#2563eb' : '#94a3b8'};"></div>
         </div>
-        <div class="mta-global-bar-val" style="color:${isIndia?'#2563eb':'#475569'};">$${(m.usd_bn||0).toFixed(1)}Bn</div>
+        <div class="mta-global-bar-val" style="color:${isIndia?'#38bdf8':'var(--text-muted, #94a3b8)'};">$${(m.usd_bn||0).toFixed(1)}Bn</div>
       </div>`;
     }).join('');
   }
@@ -6928,9 +6935,9 @@ function mtaRenderGlobalLens(data) {
   if (tbody) {
     tbody.innerHTML = markets.map(m => {
       const isIndia = m.country === 'India';
-      return `<tr style="${isIndia ? 'background:#eff6ff;font-weight:700;' : ''}">
+      return `<tr style="${isIndia ? 'background:rgba(37,99,235,0.15);font-weight:700;' : ''}">
         <td><strong>${isIndia ? '🇮🇳 ' : ''}${m.country}</strong></td>
-        <td style="font-size:11.5px;color:#475569;">${m.metric||'Margin Debt'} (${m.source||''})</td>
+        <td style="font-size:11.5px;color:var(--text-muted, #94a3b8);">${m.metric||'Margin Debt'} (${m.source||''})</td>
         <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;">₹${m.inr_lakh_crore ? m.inr_lakh_crore.toFixed(2) : '—'} Lk Cr</td>
         <td style="text-align:right;font-family:'JetBrains Mono',monospace;">$${m.usd_bn ? m.usd_bn.toFixed(1) : '—'} Bn</td>
         <td style="text-align:right;">
@@ -7025,7 +7032,7 @@ function mtaRenderMoversTab(data) {
           <td><strong class="mta-sym">${r.symbol}</strong></td>
           <td><span class="mta-badge" style="${badgeStyle}">${r.riskType}</span></td>
           <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;">₹${Number(r.amtFinancedCrore).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
-          <td style="font-size:11.5px;color:#475569;">${r.desc}</td>
+          <td style="font-size:11.5px;color:var(--text-muted, #94a3b8);">${r.desc}</td>
         </tr>`;
       }).join('');
     }
@@ -7046,20 +7053,20 @@ function mtaRenderSectorsTab(data) {
   tbody.innerHTML = sectors.map((sec, idx) => {
     const barWidth = Math.min(100, Math.max(2, (sec.sharePct || 0) * 3));
     const topStockHtml = sec.topStock
-      ? `<span class="mta-sym" style="cursor:pointer;color:#2563eb;" onclick="inspectStock('${sec.topStock.symbol}')">${sec.topStock.symbol}</span> <span style="font-size:11px;color:#64748b;">(₹${Math.round(sec.topStock.amtFinancedCrore)} Cr)</span>`
+      ? `<span class="mta-sym" style="cursor:pointer;color:#2563eb;" onclick="inspectStock('${sec.topStock.symbol}')">${sec.topStock.symbol}</span> <span style="font-size:11px;color:var(--text-muted, #64748b);">(₹${Math.round(sec.topStock.amtFinancedCrore)} Cr)</span>`
       : '—';
 
     return `<tr>
-      <td style="color:#64748b;font-weight:600;">#${idx + 1}</td>
+      <td style="color:var(--text-muted, #64748b);font-weight:600;">#${idx + 1}</td>
       <td><strong>${sec.sector}</strong></td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:#0f172a;">₹${Number(sec.amtFinancedCrore).toLocaleString('en-IN', { maximumFractionDigits: 0 })} Cr</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text-bright, #f8fafc);">₹${Number(sec.amtFinancedCrore).toLocaleString('en-IN', { maximumFractionDigits: 0 })} Cr</td>
       <td>
         <div style="background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;min-width:140px;">
           <div style="width:${barWidth}%;background:#2563eb;height:100%;border-radius:4px;transition:width 0.5s ease;"></div>
         </div>
       </td>
       <td style="text-align:right;"><span class="mta-badge" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-weight:700;">${sec.sharePct.toFixed(1)}%</span></td>
-      <td style="text-align:center;font-family:'JetBrains Mono',monospace;color:#475569;">${sec.stockCount}</td>
+      <td style="text-align:center;font-family:'JetBrains Mono',monospace;color:var(--text-muted, #94a3b8);">${sec.stockCount}</td>
       <td>${topStockHtml}</td>
     </tr>`;
   }).join('');
@@ -10883,7 +10890,7 @@ if (els.wpcrModeGroup) {
         if (els.wpcrChartTitle) {
           els.wpcrChartTitle.textContent = wpcrChartMode === "ce_pe_crossover"
             ? "⚔️ Total Put Capital vs Call Capital Dynamics & Crossover"
-            : "📈 Intraday wPCR & Put-Call Capital Dynamics (Opstra Style)";
+            : "📈 Intraday wPCR & Put-Call Capital Dynamics (Institutional)";
         }
         if (els.wpcrChartSubtitle) {
           els.wpcrChartSubtitle.textContent = wpcrChartMode === "ce_pe_crossover"

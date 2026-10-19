@@ -4774,7 +4774,7 @@ def compute_wpcr_pce_metrics(
             "vwpcr": opstra_vwpcr,
             "oiWpcr": opstra_oi_wpcr,
             "standardPcr": opstra_standard_pcr,
-            "window": "ATM ± 10 Strikes (Opstra Standard)",
+            "window": "ATM ± 10 Strikes (Standard)",
         },
         "divergence": divergence,
         "bias": bias,
