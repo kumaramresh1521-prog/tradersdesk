@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="/libs/jexcel.css" type="text/css" />
   <script src="/libs/jsuites.js"></script>
   <script src="/libs/jexcel.js"></script>
+  <script src="/libs/xlsx.full.min.js"></script>
   <script src="/security_shield.js"></script>
 
   <style>
@@ -550,6 +551,31 @@
       padding: 3px 6px;
     }
     .tbtn-group-label { font-size: 10px; color: var(--text-dim); font-family: var(--font-mono); white-space: nowrap; }
+    .tbtn-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border-normal);
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+    .tbtn-icon {
+      min-width: 28px;
+      padding: 0 7px;
+      justify-content: center;
+      text-align: center;
+      font-size: 12px;
+    }
+    .tbtn-icon.bold {
+      font-weight: 900;
+      font-family: serif;
+      font-size: 13.5px;
+    }
+    .tbtn-icon.italic {
+      font-style: italic;
+      font-family: serif;
+      font-weight: 700;
+      font-size: 13.5px;
+    }
 
     .spot-display {
       font-size: 12px;
@@ -1263,19 +1289,55 @@
     <!-- Sheet Toolbar -->
     <div class="cs-sheet-toolbar">
       <div class="cs-toolbar-left">
-        <button class="tbtn green" onclick="addNewStrikeRow()">➕ Add Row</button>
-        <button class="tbtn blue" onclick="insertRowAboveSelection()">⬆ Insert Above</button>
-        <button class="tbtn red" onclick="deleteSelectedRow()">🗑 Delete Row</button>
-        <button class="tbtn purple" onclick="insertMergedSectionHeader()">🏷 Strategy Header</button>
-        <button class="tbtn" onclick="mergeSelectedCells()">🔀 Merge</button>
-        <button class="tbtn" onclick="unmergeSelectedCells()">🔓 Unmerge</button>
+        <!-- Excel File Operations -->
+        <div class="tbtn-group" title="Excel File Operations">
+          <button class="tbtn green" onclick="exportExcelXlsx()" title="Export entire workbook / active sheet as Microsoft Excel (.xlsx)">📊 Excel (.xlsx)</button>
+          <button class="tbtn" onclick="triggerExcelImport()" title="Open / Import Excel file (.xlsx, .xls, .csv)">📤 Open Excel</button>
+          <button class="tbtn" onclick="exportCsv()" title="Export active sheet as CSV">📥 CSV</button>
+          <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" onchange="importExcelXlsx(event)" style="display:none;" />
+        </div>
+
+        <div class="tbtn-sep"></div>
+
+        <!-- Excel Text Formatting -->
+        <div class="tbtn-group" title="Text Formatting (Ctrl+B, Ctrl+I)">
+          <button class="tbtn tbtn-icon bold" onclick="toggleCellBold()" title="Bold (Ctrl+B)">B</button>
+          <button class="tbtn tbtn-icon italic" onclick="toggleCellItalic()" title="Italic (Ctrl+I)">I</button>
+        </div>
+
+        <!-- Cell Alignment -->
+        <div class="tbtn-group" title="Text Alignment">
+          <button class="tbtn tbtn-icon" onclick="alignSelectedCells('left')" title="Align Left">⫷</button>
+          <button class="tbtn tbtn-icon" onclick="alignSelectedCells('center')" title="Align Center">⬌</button>
+          <button class="tbtn tbtn-icon" onclick="alignSelectedCells('right')" title="Align Right">⫸</button>
+        </div>
+
+        <!-- Number & Currency Formatting -->
+        <div class="tbtn-group" title="Number Formatting">
+          <button class="tbtn tbtn-icon" onclick="formatSelectedCurrency()" title="Format as Indian Rupee (₹)">₹</button>
+          <button class="tbtn tbtn-icon" onclick="formatSelectedPercent()" title="Format as Percentage (%)">%</button>
+          <button class="tbtn tbtn-icon" onclick="formatSelectedDecimals(2)" title="Format 2 Decimals (.00)">.00</button>
+        </div>
+
+        <div class="tbtn-sep"></div>
+
+        <!-- Row & Grid Structure Actions -->
+        <button class="tbtn green" onclick="addNewStrikeRow()" title="Add Row at bottom">➕ Add Row</button>
+        <button class="tbtn blue" onclick="insertRowAboveSelection()" title="Insert Row above selected cell">⬆ Insert Above</button>
+        <button class="tbtn red" onclick="deleteSelectedRow()" title="Delete selected row">🗑 Delete Row</button>
+        <button class="tbtn purple" onclick="insertMergedSectionHeader()" title="Insert Strategy Section Header Banner">🏷 Strategy Header</button>
+        <button class="tbtn" onclick="mergeSelectedCells()" title="Merge selected cells">🔀 Merge</button>
+        <button class="tbtn" onclick="unmergeSelectedCells()" title="Unmerge selected cells">🔓 Unmerge</button>
+
+        <div class="tbtn-sep"></div>
+
+        <!-- Option Type & Strike Reset -->
         <div class="tbtn-group">
           <span class="tbtn-group-label">Type:</span>
           <button class="tbtn green" style="height:22px;padding:0 7px;font-size:11px;" onclick="setAllRowsOptionType('CE')">All CE</button>
           <button class="tbtn red" style="height:22px;padding:0 7px;font-size:11px;" onclick="setAllRowsOptionType('PE')">All PE</button>
         </div>
-        <button class="tbtn" onclick="resetToAtmStrikes()">↻ Reset ATM</button>
-        <button class="tbtn" onclick="exportCsv()">📥 CSV</button>
+        <button class="tbtn" onclick="resetToAtmStrikes()" title="Reset to auto-calculated ATM strikes">↻ Reset ATM</button>
       </div>
       <div class="cs-toolbar-right">
         <div class="spot-display">Spot: <strong id="toolbarSpotDisplay">--</strong></div>
@@ -1408,6 +1470,14 @@
           <div><span class="fhelp-code">=INT(B1/100)*100</span> — Nearest hundred</div>
           <div><span class="fhelp-code">=ABS(B1-23000)</span> — Absolute distance</div>
           <div><span class="fhelp-code">=IF(B1>23000, B1+100, B1+50)</span> — Conditional</div>
+        </div>
+        <div class="fhelp-card">
+          <div class="fhelp-card-title">⚡ Excel Shortcuts</div>
+          <div><span class="fhelp-code">Ctrl + B</span> — Toggle Bold formatting</div>
+          <div><span class="fhelp-code">Ctrl + I</span> — Toggle Italic formatting</div>
+          <div><span class="fhelp-code">Ctrl + S</span> — Save Active Strategy Sheet</div>
+          <div><span class="fhelp-code">Ctrl + D</span> — Fill Down formula in column</div>
+          <div><span class="fhelp-code">F2</span> — Focus and edit Formula Bar</div>
         </div>
       </div>
       <div class="fhelp-note">
@@ -2142,6 +2212,15 @@
       if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
         fillDownColumnFormula();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        toggleCellBold();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
+        e.preventDefault();
+        toggleCellItalic();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        saveActiveSheetNow();
       } else if (e.key === 'F2') {
         const input = document.getElementById('excelFormulaInput');
         if (input) { input.focus(); input.select(); }
@@ -2421,6 +2500,347 @@
     function exportCsv() {
       if (!sheet) return;
       sheet.download(true);
+    }
+
+    /* ============================================================
+       EXCEL ENGINE: XLSX EXPORT, IMPORT & FORMATTING TOOLS
+       ============================================================ */
+    function exportExcelXlsx() {
+      if (typeof XLSX === 'undefined') {
+        showToast("SheetJS library not ready. Downloading CSV instead...", true);
+        exportCsv();
+        return;
+      }
+      if (!sheet) return;
+
+      try {
+        const wb = XLSX.utils.book_new();
+
+        // 1. Prepare Active Sheet data
+        const activeHeaders = gridColumns.map(c => c.title ? c.title.replace(/^[A-Z]:\s*/, '') : '');
+        const gridRows = sheet.getData();
+
+        const activeAoa = [activeHeaders];
+        for (let r = 0; r < gridRows.length; r++) {
+          const row = gridRows[r];
+          const rowData = [];
+          for (let c = 0; c < gridColumns.length; c++) {
+            let val = row[c];
+            if (typeof val === 'string') {
+              const clean = val.replace(/,/g, '').trim();
+              if (/^-?\d+(\.\d+)?$/.test(clean)) {
+                val = parseFloat(clean);
+              }
+            }
+            rowData.push(val !== undefined && val !== null ? val : '');
+          }
+          activeAoa.push(rowData);
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet(activeAoa);
+
+        // Column widths
+        ws['!cols'] = gridColumns.map(c => ({
+          wch: Math.max(12, Math.round((c.width || 80) / 7))
+        }));
+
+        // Active sheet name
+        const activeTabObj = (typeof activeTabId !== 'undefined' && Array.isArray(savedTabsStore))
+          ? savedTabsStore.find(t => t.id === activeTabId)
+          : null;
+        const activeName = (activeTabObj && activeTabObj.name) ? activeTabObj.name : 'Calendar Spread';
+        const cleanActiveName = activeName.substring(0, 31).replace(/[:\\\/\?\*\[\]]/g, '_');
+
+        XLSX.utils.book_append_sheet(wb, ws, cleanActiveName);
+
+        // 2. Also export saved tabs as additional Excel sheets in the workbook
+        if (Array.isArray(savedTabsStore) && savedTabsStore.length > 0) {
+          savedTabsStore.forEach((tab, idx) => {
+            if (tab.id !== activeTabId && tab.data && tab.data.length > 0) {
+              const tabAoa = [activeHeaders];
+              tab.data.forEach(row => {
+                const rowData = [];
+                for (let c = 0; c < gridColumns.length; c++) {
+                  let val = row[c];
+                  if (typeof val === 'string') {
+                    const clean = val.replace(/,/g, '').trim();
+                    if (/^-?\d+(\.\d+)?$/.test(clean)) {
+                      val = parseFloat(clean);
+                    }
+                  }
+                  rowData.push(val !== undefined && val !== null ? val : '');
+                }
+                tabAoa.push(rowData);
+              });
+              const tabWs = XLSX.utils.aoa_to_sheet(tabAoa);
+              tabWs['!cols'] = ws['!cols'];
+
+              let sheetName = (tab.name || `Sheet ${idx + 1}`).substring(0, 31).replace(/[:\\\/\?\*\[\]]/g, '_');
+              let finalName = sheetName;
+              let counter = 1;
+              while (wb.SheetNames.includes(finalName)) {
+                finalName = `${sheetName.substring(0, 27)}_${counter++}`;
+              }
+              XLSX.utils.book_append_sheet(wb, tabWs, finalName);
+            }
+          });
+        }
+
+        const sym = document.getElementById('cfgUnderlying')?.value || 'NIFTY';
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const fileName = `Calendar_Spread_Studio_${sym}_${dateStr}.xlsx`;
+
+        XLSX.writeFile(wb, fileName);
+        showToast(`Exported ${wb.SheetNames.length} sheet(s) to ${fileName}!`);
+      } catch (err) {
+        console.error("Error exporting Excel:", err);
+        showToast("Error exporting Excel: " + err.message, true);
+      }
+    }
+
+    function triggerExcelImport() {
+      const input = document.getElementById('excelFileInput');
+      if (input) {
+        input.value = '';
+        input.click();
+      }
+    }
+
+    function importExcelXlsx(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      if (typeof XLSX === 'undefined') {
+        showToast("SheetJS library is not available for Excel import.", true);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+
+          if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+            showToast("No sheets found in workbook!", true);
+            return;
+          }
+
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          if (!rows || rows.length === 0) {
+            showToast("Excel sheet contains no data!", true);
+            return;
+          }
+
+          // Check if row 0 is headers
+          let dataRows = rows;
+          const headerCandidate = rows[0] || [];
+          const hasHeader = headerCandidate.some(c => typeof c === 'string' && ['type', 'strike', 'bid', 'ask', 'ltp', 'iv', 'delta', 'vega', 'vol'].some(k => c.toLowerCase().includes(k)));
+          if (hasHeader) {
+            dataRows = rows.slice(1);
+          }
+
+          if (dataRows.length === 0) {
+            showToast("No data rows found below headers!", true);
+            return;
+          }
+
+          // If workbook has multiple sheets, import remaining as tabs
+          if (workbook.SheetNames.length > 1) {
+            for (let i = 1; i < workbook.SheetNames.length; i++) {
+              const sName = workbook.SheetNames[i];
+              const sWs = workbook.Sheets[sName];
+              const sRows = XLSX.utils.sheet_to_json(sWs, { header: 1 });
+              if (sRows && sRows.length > 0) {
+                let sDataRows = sRows;
+                const sHeaderCand = sRows[0] || [];
+                const sHasHeader = sHeaderCand.some(c => typeof c === 'string' && ['type', 'strike', 'bid', 'ask', 'ltp', 'iv', 'delta', 'vega', 'vol'].some(k => c.toLowerCase().includes(k)));
+                if (sHasHeader) sDataRows = sRows.slice(1);
+
+                const newTab = {
+                  id: 'tab_' + Date.now() + '_' + i,
+                  name: sName,
+                  underlying: document.getElementById('cfgUnderlying')?.value || 'NIFTY',
+                  farExpiry: document.getElementById('cfgFarExpiry')?.value || '',
+                  nearExpiry: document.getElementById('cfgNearExpiry')?.value || '',
+                  optionType: currentType,
+                  data: sDataRows,
+                  mergeCells: {},
+                  createdAt: Date.now()
+                };
+                savedTabsStore.push(newTab);
+              }
+            }
+            try { localStorage.setItem('calendar_saved_tabs', JSON.stringify(savedTabsStore)); } catch (e) {}
+            renderTabsBar();
+          }
+
+          ignoreChangeEvents = true;
+          sheet.setData(dataRows);
+          ignoreChangeEvents = false;
+
+          syncChangedStrikes();
+          saveCurrentToStore();
+          showToast(`Imported ${dataRows.length} rows from ${file.name} (${workbook.SheetNames.length} sheet(s))!`);
+        } catch (err) {
+          console.error("Excel import failed:", err);
+          showToast("Excel import failed: " + err.message, true);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function toggleCellBold() {
+      if (!sheet) return;
+      const minX = Math.min(selectedCoords.x1, selectedCoords.x2);
+      const maxX = Math.max(selectedCoords.x1, selectedCoords.x2);
+      const minY = Math.min(selectedCoords.y1, selectedCoords.y2);
+      const maxY = Math.max(selectedCoords.y1, selectedCoords.y2);
+
+      const firstCell = sheet.getCellFromCoords(minX, minY);
+      const isBold = firstCell && (firstCell.style.fontWeight === 'bold' || firstCell.style.fontWeight === '700' || parseInt(firstCell.style.fontWeight, 10) >= 600);
+      const targetWeight = isBold ? 'normal' : 'bold';
+
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          const colName = jspreadsheet.helpers.getColumnNameFromCoords(x, y);
+          if (typeof sheet.setStyle === 'function') {
+            sheet.setStyle(colName, 'font-weight', targetWeight, 1);
+          }
+          const cell = sheet.getCellFromCoords(x, y);
+          if (cell) cell.style.fontWeight = targetWeight;
+        }
+      }
+      saveCurrentToStore();
+      showToast(targetWeight === 'bold' ? 'Bold applied (Ctrl+B)' : 'Bold removed');
+    }
+
+    function toggleCellItalic() {
+      if (!sheet) return;
+      const minX = Math.min(selectedCoords.x1, selectedCoords.x2);
+      const maxX = Math.max(selectedCoords.x1, selectedCoords.x2);
+      const minY = Math.min(selectedCoords.y1, selectedCoords.y2);
+      const maxY = Math.max(selectedCoords.y1, selectedCoords.y2);
+
+      const firstCell = sheet.getCellFromCoords(minX, minY);
+      const isItalic = firstCell && firstCell.style.fontStyle === 'italic';
+      const targetStyle = isItalic ? 'normal' : 'italic';
+
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          const colName = jspreadsheet.helpers.getColumnNameFromCoords(x, y);
+          if (typeof sheet.setStyle === 'function') {
+            sheet.setStyle(colName, 'font-style', targetStyle, 1);
+          }
+          const cell = sheet.getCellFromCoords(x, y);
+          if (cell) cell.style.fontStyle = targetStyle;
+        }
+      }
+      saveCurrentToStore();
+      showToast(targetStyle === 'italic' ? 'Italic applied (Ctrl+I)' : 'Italic removed');
+    }
+
+    function alignSelectedCells(alignment) {
+      if (!sheet) return;
+      const minX = Math.min(selectedCoords.x1, selectedCoords.x2);
+      const maxX = Math.max(selectedCoords.x1, selectedCoords.x2);
+      const minY = Math.min(selectedCoords.y1, selectedCoords.y2);
+      const maxY = Math.max(selectedCoords.y1, selectedCoords.y2);
+
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          const colName = jspreadsheet.helpers.getColumnNameFromCoords(x, y);
+          if (typeof sheet.setStyle === 'function') {
+            sheet.setStyle(colName, 'text-align', alignment, 1);
+          }
+          const cell = sheet.getCellFromCoords(x, y);
+          if (cell) cell.style.textAlign = alignment;
+        }
+      }
+      saveCurrentToStore();
+      showToast(`Aligned ${alignment}`);
+    }
+
+    function formatSelectedCurrency() {
+      if (!sheet) return;
+      const minX = Math.min(selectedCoords.x1, selectedCoords.x2);
+      const maxX = Math.max(selectedCoords.x1, selectedCoords.x2);
+      const minY = Math.min(selectedCoords.y1, selectedCoords.y2);
+      const maxY = Math.max(selectedCoords.y1, selectedCoords.y2);
+
+      ignoreChangeEvents = true;
+      let count = 0;
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          const val = sheet.getValueFromCoords(x, y);
+          if (val !== null && val !== undefined && val !== '') {
+            const num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+            if (!isNaN(num)) {
+              const formatted = '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              sheet.setValueFromCoords(x, y, formatted, true);
+              count++;
+            }
+          }
+        }
+      }
+      ignoreChangeEvents = false;
+      saveCurrentToStore();
+      showToast(`Formatted ${count} cell(s) as ₹ Currency`);
+    }
+
+    function formatSelectedPercent() {
+      if (!sheet) return;
+      const minX = Math.min(selectedCoords.x1, selectedCoords.x2);
+      const maxX = Math.max(selectedCoords.x1, selectedCoords.x2);
+      const minY = Math.min(selectedCoords.y1, selectedCoords.y2);
+      const maxY = Math.max(selectedCoords.y1, selectedCoords.y2);
+
+      ignoreChangeEvents = true;
+      let count = 0;
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          const val = sheet.getValueFromCoords(x, y);
+          if (val !== null && val !== undefined && val !== '') {
+            const num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+            if (!isNaN(num)) {
+              sheet.setValueFromCoords(x, y, num.toFixed(2) + '%', true);
+              count++;
+            }
+          }
+        }
+      }
+      ignoreChangeEvents = false;
+      saveCurrentToStore();
+      showToast(`Formatted ${count} cell(s) as %`);
+    }
+
+    function formatSelectedDecimals(decimals) {
+      if (!sheet) return;
+      const minX = Math.min(selectedCoords.x1, selectedCoords.x2);
+      const maxX = Math.max(selectedCoords.x1, selectedCoords.x2);
+      const minY = Math.min(selectedCoords.y1, selectedCoords.y2);
+      const maxY = Math.max(selectedCoords.y1, selectedCoords.y2);
+
+      ignoreChangeEvents = true;
+      let count = 0;
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          const val = sheet.getValueFromCoords(x, y);
+          if (val !== null && val !== undefined && val !== '') {
+            const num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+            if (!isNaN(num)) {
+              sheet.setValueFromCoords(x, y, num.toFixed(decimals), true);
+              count++;
+            }
+          }
+        }
+      }
+      ignoreChangeEvents = false;
+      saveCurrentToStore();
+      showToast(`Formatted ${count} cell(s) to ${decimals} decimals`);
     }
 
     function getPairKey() {
@@ -3115,11 +3535,14 @@
       document.getElementById('formulaHelpModal').style.display = 'none';
     }
 
-    function showToast(msg) {
+    function showToast(msg, isError = false) {
       const t = document.getElementById('toast');
+      if (!t) return;
       t.textContent = msg;
+      t.style.borderColor = isError ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.4)';
+      t.style.color = isError ? '#fca5a5' : '#86efac';
       t.style.display = 'flex';
-      setTimeout(() => { t.style.display = 'none'; }, 2200);
+      setTimeout(() => { t.style.display = 'none'; }, 2400);
     }
 
     // Close modals on overlay click
