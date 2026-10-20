@@ -116,15 +116,7 @@
           </div>
         </div>
 
-        <!-- 3. OPEN INTEREST (DIRECTLY AFTER FUTURES) -->
-        <div class="inst-nav-item">
-          <a href="/open-interest/nifty" class="inst-nav-btn inst-nav-btn-blue" title="Live Nifty &amp; F&amp;O Call vs Put Open Interest, PCR &amp; Max Pain">
-            <span class="inst-nav-icon">📊</span> <span class="nav-label">Open Interest</span>
-            <span class="p2-badge p2-badge-blue">OI</span>
-          </a>
-        </div>
-
-        <!-- 4. OPTIONS (MAIN MENU WITH SUBMENUS) -->
+        <!-- 3. OPTIONS (MAIN MENU WITH SUBMENUS) -->
         <div class="inst-nav-item has-dropdown">
           <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight active">
             <span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span>
@@ -133,7 +125,15 @@
           <div class="inst-dropdown inst-dropdown-md">
             <div class="inst-dropdown-col">
               <span class="inst-dropdown-header">Derivatives Suite</span>
-              <!-- Submenu 1: Option Chain Pro -->
+              <!-- Submenu 1: Open Interest Analysis -->
+              <a href="/open-interest/nifty" class="inst-dd-item" title="Live Nifty &amp; F&amp;O Call vs Put Open Interest, PCR &amp; Max Pain">
+                <span class="dd-icon">📊</span>
+                <div class="dd-text">
+                  <span class="dd-title">Open Interest Analysis <span class="p2-badge p2-badge-blue" style="margin-left:4px;">OI</span></span>
+                  <span class="dd-sub">Live Call vs Put distribution, PCR &amp; Max Pain</span>
+                </div>
+              </a>
+              <!-- Submenu 2: Option Chain Pro -->
               <a href="/option-chain-pro" class="inst-dd-item">
                 <span class="dd-icon">⚡</span>
                 <div class="dd-text">
@@ -899,21 +899,7 @@
             </div>
           </div>
 
-          <!-- 3. OPEN INTEREST ANALYSIS -->
-          <div class="dot-menu-section">
-            <a href="/open-interest/nifty" class="dot-menu-main-item">
-              <div class="dot-menu-item-left">
-                <span class="dot-menu-item-icon">📊</span>
-                <div>
-                  <div class="dot-menu-item-title">Open Interest Analysis <span class="p2-badge p2-badge-blue" style="font-size:10px; margin-left:4px;">OI</span></div>
-                  <div class="dot-menu-item-desc">Live Nifty Call vs Put distribution, PCR &amp; Max Pain</div>
-                </div>
-              </div>
-              <span class="dot-menu-arrow">→</span>
-            </a>
-          </div>
-
-          <!-- 4. OPTIONS DESK WITH ALL 4 SUBMENUS -->
+          <!-- 3. OPTIONS DESK WITH SUBMENUS -->
           <div class="dot-menu-section" data-dot-section="options">
             <div class="dot-menu-section-header">
               <span class="dot-section-icon">📈</span>
@@ -921,7 +907,15 @@
               <span class="p2-badge p2-badge-cyan" style="font-size:10px;">GREEKS</span>
             </div>
             <div class="dot-sub-grid">
-              <!-- Sub 1 -->
+              <!-- Sub 1: Open Interest Analysis -->
+              <a href="/open-interest/nifty" class="dot-sub-item">
+                <span class="dot-sub-icon">📊</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Open Interest Analysis <span class="p2-badge p2-badge-blue" style="font-size:9.5px; margin-left:3px;">OI</span></div>
+                  <div class="dot-sub-desc">Live Call vs Put distribution, PCR &amp; Max Pain</div>
+                </div>
+              </a>
+              <!-- Sub 2: Option Chain Pro -->
               <a href="/option-chain-pro" class="dot-sub-item" onclick="return window.dotNavClick(event, 'options')">
                 <span class="dot-sub-icon">⚡</span>
                 <div class="dot-sub-text">

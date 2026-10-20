@@ -656,6 +656,30 @@
     .delta-pos { color: var(--oi-put-green); font-weight: 700; }
     .delta-neg { color: var(--oi-call-red); font-weight: 700; }
 
+    .inst-logo-img, .inst-brand-logo-img {
+      height: 28px !important;
+      width: auto !important;
+      max-height: 28px !important;
+      object-fit: contain !important;
+      display: block;
+    }
+    html[data-theme="light"] .inst-brand-logo-dark,
+    body[data-theme="light"] .inst-brand-logo-dark {
+      display: none !important;
+    }
+    html[data-theme="light"] .inst-brand-logo-light,
+    body[data-theme="light"] .inst-brand-logo-light {
+      display: block !important;
+    }
+    html:not([data-theme="light"]) .inst-brand-logo-light,
+    body:not([data-theme="light"]) .inst-brand-logo-light {
+      display: none !important;
+    }
+    html:not([data-theme="light"]) .inst-brand-logo-dark,
+    body:not([data-theme="light"]) .inst-brand-logo-dark {
+      display: block !important;
+    }
+
     @media (max-width: 860px) {
       .oi-toolbar { flex-direction: column; align-items: stretch; }
       .oi-toolbar-left, .oi-toolbar-right { justify-content: flex-start; }
@@ -672,15 +696,19 @@
 
   <!-- Top Header Navigation -->
   <header class="inst-header" id="instTopHeader">
-    <div class="inst-top-bar">
-      <div class="inst-brand">
-        <a href="/" class="inst-logo-link" title="TradersDesk Institutional Terminal">
-          <img src="/tradersdesk-logo.jpg" alt="TradersDesk" class="inst-logo-img" />
-          <div class="inst-logo-text-group">
-            <span class="inst-logo-title">TRADERSDESK</span>
-            <span class="inst-logo-subtitle">INSTITUTIONAL QUANT SUITE</span>
+    <div class="inst-brand-bar">
+      <div class="inst-brand-left">
+        <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in — Institutional Quant &amp; Derivatives Terminal">
+          <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <div class="inst-brand-fallback-text" id="instBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
+            <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk<svg style="width:13px; height:13px; vertical-align:middle; transform:translateY(-2px); margin-left:-1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg></span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
           </div>
         </a>
+        <div class="inst-terminal-tag">
+          <span class="inst-tag-pulse"></span>
+          <span class="inst-tag-text">QUANT TERMINAL</span>
+        </div>
       </div>
 
       <div class="inst-market-clock-wrap" id="topMarketClockWrap">
@@ -727,13 +755,19 @@
           </div>
         </div>
       </div>
-      <div class="inst-nav-item"><a href="/open-interest/nifty" class="inst-nav-btn inst-nav-btn-blue active"><span class="inst-nav-icon">📊</span> <span class="nav-label">Open Interest</span><span class="p2-badge p2-badge-blue">OI</span></a></div>
       <div class="inst-nav-item has-dropdown">
-        <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight"><span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span><span class="inst-nav-arrow">▾</span></a>
+        <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight active" id="navOptions"><span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span><span class="inst-nav-arrow">▾</span></a>
         <div class="inst-dropdown inst-dropdown-md">
           <div class="inst-dropdown-col">
             <span class="inst-dropdown-header">Derivatives Suite</span>
-            <a href="/option-chain-pro" class="inst-dd-item"><span class="dd-icon">⚡</span><div class="dd-text"><span class="dd-title">Option Chain Pro</span><span class="dd-sub">Multi-broker live chain, Greeks, PCR &amp; IV skew</span></div></a>
+            <a href="/open-interest/nifty" class="inst-dd-item active" style="background:rgba(37,99,235,0.08);">
+              <span class="dd-icon">📊</span>
+              <div class="dd-text">
+                <span class="dd-title" style="color:#2563eb; font-weight:700;">Open Interest Analysis <span class="p2-badge p2-badge-blue" style="margin-left:4px;">OI</span></span>
+                <span class="dd-sub">Live Call vs Put distribution, PCR &amp; Max Pain</span>
+              </div>
+            </a>
+            <a href="/option-chain-pro" class="inst-dd-item"><span class="dd-icon">⚡</span><div class="dd-text"><span class="dd-title">Option Chain Pro <span class="p2-badge p2-badge-teal" style="margin-left:4px;">LIVE</span></span><span class="dd-sub">Multi-broker live chain, Greeks, PCR &amp; IV skew</span></div></a>
             <a href="/straddle" class="inst-dd-item"><span class="dd-icon">📉</span><div class="dd-text"><span class="dd-title">Straddle Desk</span><span class="dd-sub">Combined CE+PE premium decay, IV crush &amp; Greeks</span></div></a>
           </div>
         </div>
