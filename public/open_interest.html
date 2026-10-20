@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk</title>
-  <meta name="description" content="Live NSE Nifty and F&O Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.">
+  <title>Nifty Open Interest Analysis - Live Call vs Put Charts &amp; Max Pain | TradersDesk</title>
+  <meta name="description" content="Live NSE Nifty and F&amp;O Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.">
   <meta name="keywords" content="nifty open interest, banknifty oi, call vs put chart, pcr, max pain strike, nifty support resistance, options oi buildup, tradersdesk">
   <meta name="author" content="TradersDesk.in Quantitative Analytics">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
@@ -15,14 +15,14 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://tradersdesk.in/open-interest/nifty">
-  <meta property="og:title" content="Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk">
+  <meta property="og:title" content="Nifty Open Interest Analysis - Live Call vs Put Charts &amp; Max Pain | TradersDesk">
   <meta property="og:description" content="Live NSE Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.">
   <meta property="og:site_name" content="TradersDesk.in">
   <meta property="og:image" content="https://tradersdesk.in/tradersdesk-logo.jpg">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk">
+  <meta name="twitter:title" content="Nifty Open Interest Analysis - Live Call vs Put Charts &amp; Max Pain | TradersDesk">
   <meta name="twitter:description" content="Live NSE Open Interest (OI) distribution, Put-Call Ratio (PCR), Max Pain, and key resistance/support levels.">
   <meta name="twitter:image" content="https://tradersdesk.in/tradersdesk-logo.jpg">
 
@@ -62,8 +62,8 @@
 
   <style>
     /* ==========================================================================
-       🏛️ STOCKMOJO-STYLE INSTITUTIONAL OPEN INTEREST DESK STYLING
-       Ultra-clean White Aesthetics, Crisp Typography, Modern Slate Borders
+       🏛️ STOCKMOJO-STYLE INSTITUTIONAL OPEN INTEREST DESK
+       Ultra-Clean White Aesthetics, Crisp Typography, Real-Time Streaming Ticker
        ========================================================================== */
     :root {
       --oi-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -117,42 +117,64 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Outer Container */
+    /* Desk Container */
     .oi-desk-wrapper {
       max-width: 1440px;
       margin: 0 auto;
       padding: 16px 20px 48px;
     }
 
-    /* Sub-nav & Breadcrumb Header */
-    .oi-breadcrumb-bar {
+    /* Live Header Strip */
+    .oi-live-strip {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 12px;
-      padding: 6px 0;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: 4px 0;
     }
-    .oi-breadcrumb {
+    .oi-title-box h1 {
+      margin: 0 0 4px 0;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--oi-text);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+    }
+    .oi-title-box p {
+      margin: 0;
       font-size: 13px;
       color: var(--oi-text-muted);
     }
-    .oi-breadcrumb a {
-      color: var(--oi-blue-accent);
-      text-decoration: none;
-      font-weight: 500;
-    }
-    .oi-breadcrumb a:hover {
-      text-decoration: underline;
-    }
-    .oi-breadcrumb .sep {
-      color: var(--oi-text-dim);
-    }
-    .oi-breadcrumb .cur {
+
+    /* Live Streaming Status Pill */
+    .oi-live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--oi-card-bg);
+      border: 1px solid var(--oi-card-border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
       color: var(--oi-text);
-      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .oi-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
 
     /* Control Toolbar */
@@ -160,29 +182,23 @@
       background: var(--oi-card-bg);
       border: 1px solid var(--oi-card-border);
       border-radius: 12px;
-      padding: 14px 18px;
+      padding: 12px 16px;
       margin-bottom: 18px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
-    }
-    .oi-toolbar-left {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
       gap: 12px;
     }
-    .oi-toolbar-right {
+    .oi-toolbar-left, .oi-toolbar-right {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 10px;
     }
 
-    /* Symbol Quick Pills */
+    /* Index Selector Pills */
     .oi-sym-pills {
       display: inline-flex;
       background: var(--oi-bg);
@@ -204,16 +220,16 @@
     }
     .oi-sym-pill:hover {
       color: var(--oi-text);
-      background: rgba(0, 0, 0, 0.04);
+      background: rgba(0, 0, 0, 0.03);
     }
     .oi-sym-pill.active {
       background: var(--oi-card-bg);
       color: var(--oi-blue-accent);
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-      font-weight: 700;
+      font-weight: 800;
     }
 
-    /* Select Controls */
+    /* Dropdowns */
     .oi-select-group {
       display: flex;
       align-items: center;
@@ -269,7 +285,7 @@
       background: var(--oi-card-bg);
       color: var(--oi-blue-accent);
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-      font-weight: 700;
+      font-weight: 800;
     }
 
     /* Action Buttons */
@@ -289,21 +305,18 @@
     }
     .oi-action-btn:hover {
       background: var(--oi-bg);
-      border-color: #cbd5e1;
     }
-    .oi-action-btn.primary {
-      background: var(--oi-blue-accent);
-      color: #ffffff;
-      border-color: var(--oi-blue-accent);
-    }
-    .oi-action-btn.primary:hover {
-      opacity: 0.92;
+    .oi-action-btn.active-live {
+      background: var(--oi-put-green-bg);
+      color: #065f46;
+      border-color: var(--oi-put-green-border);
+      font-weight: 700;
     }
 
-    /* KPI Summary Cards Grid (StockMojo style) */
+    /* 6 Top StockMojo-Style Metric Cards */
     .oi-kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
       gap: 14px;
       margin-bottom: 20px;
     }
@@ -318,6 +331,10 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .oi-kpi-card:hover {
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
     }
     .oi-kpi-card::before {
       content: "";
@@ -326,7 +343,6 @@
       left: 0;
       right: 0;
       height: 3px;
-      background: transparent;
     }
     .oi-kpi-card.kpi-spot::before { background: var(--oi-blue-accent); }
     .oi-kpi-card.kpi-pcr::before { background: #8b5cf6; }
@@ -362,6 +378,7 @@
       color: var(--oi-text);
       line-height: 1.2;
       margin-bottom: 4px;
+      transition: color 0.2s;
     }
     .oi-kpi-sub {
       font-size: 11.5px;
@@ -371,68 +388,29 @@
       gap: 4px;
     }
 
-    /* Sentiment badges */
-    .badge-bullish {
-      background: var(--oi-put-green-bg);
-      color: var(--oi-put-green);
-      border: 1px solid var(--oi-put-green-border);
-    }
-    .badge-bearish {
-      background: var(--oi-call-red-bg);
-      color: var(--oi-call-red);
-      border: 1px solid var(--oi-call-red-border);
-    }
-    .badge-neutral {
-      background: var(--oi-atm-gold-bg);
-      color: var(--oi-atm-gold);
-      border: 1px solid var(--oi-atm-gold-border);
-    }
-    .badge-blue {
-      background: var(--oi-blue-accent-bg);
-      color: var(--oi-blue-accent);
-      border: 1px solid #bae6fd;
-    }
+    /* Badges */
+    .badge-bullish { background: var(--oi-put-green-bg); color: var(--oi-put-green); border: 1px solid var(--oi-put-green-border); }
+    .badge-bearish { background: var(--oi-call-red-bg); color: var(--oi-call-red); border: 1px solid var(--oi-call-red-border); }
+    .badge-neutral { background: var(--oi-atm-gold-bg); color: var(--oi-atm-gold); border: 1px solid var(--oi-atm-gold-border); }
+    .badge-blue { background: var(--oi-blue-accent-bg); color: var(--oi-blue-accent); border: 1px solid #bae6fd; }
 
-    /* Call vs Put Ratio Bar */
-    .oi-ratio-bar-wrap {
-      margin-top: 6px;
-    }
-    .oi-ratio-bar-track {
-      height: 8px;
-      background: #e2e8f0;
-      border-radius: 4px;
-      overflow: hidden;
-      display: flex;
-    }
-    .oi-ratio-bar-call {
-      background: var(--oi-call-red);
-      height: 100%;
-      transition: width 0.3s ease;
-    }
-    .oi-ratio-bar-put {
-      background: var(--oi-put-green);
-      height: 100%;
-      transition: width 0.3s ease;
-    }
-    .oi-ratio-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 10px;
-      font-weight: 700;
-      margin-top: 4px;
-      font-family: var(--oi-font-mono);
-    }
+    /* Ratio Bar */
+    .oi-ratio-bar-wrap { margin-top: 6px; }
+    .oi-ratio-bar-track { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; display: flex; }
+    .oi-ratio-bar-call { background: var(--oi-call-red); height: 100%; transition: width 0.3s ease; }
+    .oi-ratio-bar-put { background: var(--oi-put-green); height: 100%; transition: width 0.3s ease; }
+    .oi-ratio-labels { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; margin-top: 4px; font-family: var(--oi-font-mono); }
     .oi-ratio-call-lbl { color: var(--oi-call-red); }
     .oi-ratio-put-lbl { color: var(--oi-put-green); }
 
-    /* Chart Section */
+    /* Chart Section Card */
     .oi-chart-card {
       background: var(--oi-card-bg);
       border: 1px solid var(--oi-card-border);
       border-radius: 12px;
-      padding: 20px;
+      padding: 18px 20px;
       margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
     .oi-chart-header {
       display: flex;
@@ -440,26 +418,10 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--oi-card-border);
     }
-    .oi-chart-title-group h2 {
-      margin: 0 0 4px 0;
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--oi-text);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .oi-chart-title-group p {
-      margin: 0;
-      font-size: 12px;
-      color: var(--oi-text-muted);
-    }
-
-    /* Mode View Switcher */
     .oi-view-pills {
       display: inline-flex;
       background: var(--oi-bg);
@@ -479,17 +441,14 @@
       cursor: pointer;
       transition: all 0.15s;
     }
-    .oi-view-pill:hover {
-      color: var(--oi-text);
-    }
+    .oi-view-pill:hover { color: var(--oi-text); }
     .oi-view-pill.active {
       background: var(--oi-card-bg);
       color: var(--oi-text);
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-      font-weight: 700;
+      font-weight: 800;
     }
 
-    /* Chart Legend */
     .oi-chart-legend {
       display: flex;
       align-items: center;
@@ -497,37 +456,29 @@
       font-size: 12px;
       font-weight: 600;
     }
-    .oi-legend-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .oi-legend-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 3px;
-    }
+    .oi-legend-item { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+    .oi-legend-dot { width: 12px; height: 12px; border-radius: 3px; }
     .oi-legend-dot.call { background: var(--oi-call-red); }
     .oi-legend-dot.put { background: var(--oi-put-green); }
     .oi-legend-dot.atm { background: var(--oi-atm-gold); width: 14px; height: 3px; }
 
-    /* Canvas / Chart Container */
-    .oi-canvas-container {
+    /* SVG Chart Viewport */
+    .oi-svg-chart-container {
       position: relative;
       width: 100%;
       height: 420px;
-      margin: 10px 0 6px;
+      margin: 8px 0;
+      user-select: none;
     }
-    #oiMainChartCanvas {
+    #oiSvgChart {
       width: 100%;
       height: 100%;
       display: block;
+      overflow: visible;
     }
 
-    /* Custom Tooltip */
-    .oi-chart-tooltip {
+    /* Tooltip */
+    .oi-interactive-tooltip {
       position: absolute;
       background: rgba(15, 23, 42, 0.95);
       backdrop-filter: blur(8px);
@@ -540,7 +491,7 @@
       z-index: 100;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      min-width: 180px;
+      min-width: 190px;
     }
     .oi-tip-header {
       font-weight: 800;
@@ -552,35 +503,27 @@
       justify-content: space-between;
       color: #38bdf8;
     }
-    .oi-tip-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 3px;
-    }
+    .oi-tip-row { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 3px; }
     .oi-tip-row.call { color: #f87171; }
     .oi-tip-row.put { color: #4ade80; }
-    .oi-tip-val {
-      font-family: var(--oi-font-mono);
-      font-weight: 700;
-    }
+    .oi-tip-val { font-family: var(--oi-font-mono); font-weight: 700; }
 
-    /* Table Section */
+    /* Strike Matrix Table Card */
     .oi-table-card {
       background: var(--oi-card-bg);
       border: 1px solid var(--oi-card-border);
       border-radius: 12px;
-      padding: 20px;
+      padding: 18px 20px;
       margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
-    .oi-table-header {
+    .oi-table-top {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .oi-table-search {
       background: var(--oi-bg);
@@ -646,18 +589,10 @@
       border-bottom: 1px solid var(--oi-card-border);
       transition: background 0.1s;
     }
-    .oi-matrix-table tbody tr:hover {
-      background: rgba(2, 132, 199, 0.04);
-    }
+    .oi-matrix-table tbody tr:hover { background: rgba(2, 132, 199, 0.04); }
     .oi-matrix-table tbody tr.is-atm-row {
       background: var(--oi-atm-gold-bg) !important;
       font-weight: 700;
-    }
-    .oi-matrix-table tbody tr.is-res-row {
-      background: var(--oi-call-red-bg);
-    }
-    .oi-matrix-table tbody tr.is-sup-row {
-      background: var(--oi-put-green-bg);
     }
 
     .oi-matrix-table td {
@@ -693,14 +628,8 @@
       justify-content: flex-end;
       gap: 6px;
     }
-    .oi-cell-bar-wrap.left {
-      justify-content: flex-start;
-    }
-    .oi-cell-bar {
-      height: 5px;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
+    .oi-cell-bar-wrap.left { justify-content: flex-start; }
+    .oi-cell-bar { height: 5px; border-radius: 2px; flex-shrink: 0; }
     .oi-cell-bar.call { background: var(--oi-call-red); }
     .oi-cell-bar.put { background: var(--oi-put-green); }
 
@@ -724,74 +653,26 @@
     [data-theme="dark"] .buildup-covering { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
     [data-theme="dark"] .buildup-unwinding { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
 
-    /* Helper delta colors */
     .delta-pos { color: var(--oi-put-green); font-weight: 700; }
     .delta-neg { color: var(--oi-call-red); font-weight: 700; }
-    .delta-neu { color: var(--oi-text-muted); }
-
-    /* Educational Guide Cards */
-    .oi-guide-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-      margin-top: 10px;
-    }
-    .oi-guide-card {
-      background: var(--oi-card-bg);
-      border: 1px solid var(--oi-card-border);
-      border-radius: 10px;
-      padding: 14px 16px;
-      font-size: 12.5px;
-    }
-    .oi-guide-card h4 {
-      margin: 0 0 6px 0;
-      font-size: 13.5px;
-      font-weight: 700;
-      color: var(--oi-text);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .oi-guide-card p {
-      margin: 0;
-      color: var(--oi-text-muted);
-      line-height: 1.5;
-    }
 
     @media (max-width: 860px) {
-      .oi-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .oi-toolbar-left, .oi-toolbar-right {
-        justify-content: flex-start;
-      }
-      .oi-canvas-container {
-        height: 320px;
-      }
-      .oi-kpi-grid {
-        grid-template-columns: 1fr 1fr;
-      }
+      .oi-toolbar { flex-direction: column; align-items: stretch; }
+      .oi-toolbar-left, .oi-toolbar-right { justify-content: flex-start; }
+      .oi-svg-chart-container { height: 320px; }
+      .oi-kpi-grid { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 520px) {
-      .oi-kpi-grid {
-        grid-template-columns: 1fr;
-      }
-      .oi-canvas-container {
-        height: 280px;
-      }
+      .oi-kpi-grid { grid-template-columns: 1fr; }
+      .oi-svg-chart-container { height: 280px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ========================================================================
-       TOP HEADER: LOGO, MARKET CLOCK, STATUS & UTILITIES
-       ======================================================================== -->
+  <!-- Top Header Navigation -->
   <header class="inst-header" id="instTopHeader">
     <div class="inst-top-bar">
-
-      <!-- Left: Logo & Brand -->
       <div class="inst-brand">
         <a href="/" class="inst-logo-link" title="TradersDesk Institutional Terminal">
           <img src="/tradersdesk-logo.jpg" alt="TradersDesk" class="inst-logo-img" />
@@ -802,9 +683,8 @@
         </a>
       </div>
 
-      <!-- Center: Live Indian Market Clock & Session Status -->
       <div class="inst-market-clock-wrap" id="topMarketClockWrap">
-        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE / BSE Regular Trading Session (09:15 - 15:30 IST)">
+        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE Regular Trading Session">
           <span class="market-dot" id="marketDot"></span>
           <span id="marketStatusText">NSE LIVE</span>
         </div>
@@ -814,23 +694,15 @@
         </div>
       </div>
 
-      <!-- Right: Utilities & Navigation Menu -->
       <div class="inst-right-controls">
-        <!-- 6-DOT APP LAUNCHER (MOBILE ONLY) -->
         <button id="oiDotMenuBtn" type="button" class="inst-dot-menu-btn" onclick="openMobileDotMenu()" aria-label="Open Navigation Drawer" title="All Desks &amp; Menus">
           <svg class="dot-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="8" cy="5" r="2.2" />
-            <circle cx="16" cy="5" r="2.2" />
-            <circle cx="8" cy="12" r="2.2" />
-            <circle cx="16" cy="12" r="2.2" />
-            <circle cx="8" cy="19" r="2.2" />
-            <circle cx="16" cy="19" r="2.2" />
+            <circle cx="8" cy="5" r="2.2" /><circle cx="16" cy="5" r="2.2" /><circle cx="8" cy="12" r="2.2" /><circle cx="16" cy="12" r="2.2" /><circle cx="8" cy="19" r="2.2" /><circle cx="16" cy="19" r="2.2" />
           </svg>
           <span class="dot-menu-label">Menu</span>
         </button>
-
-        <div class="status inst-api-status" id="apiStatus" title="System Connection State">Connected</div>
-        <button id="btnTopRefresh" type="button" class="inst-util-btn" onclick="refreshOiDesk();" title="Refresh Live Open Interest Data">
+        <div class="status inst-api-status" id="apiStatus">Connected</div>
+        <button id="btnTopRefresh" type="button" class="inst-util-btn" onclick="fetchOiData(true);" title="Refresh Live Data">
           <span class="util-icon">🔄</span>
           <span class="util-text">Refresh</span>
         </button>
@@ -843,128 +715,61 @@
 
     <!-- Mega-Menu Navigation Bar -->
     <nav class="inst-nav" aria-label="Main Navigation" id="mainInstNav">
-      <!-- 1. DASHBOARD -->
-      <div class="inst-nav-item">
-        <a href="/" class="inst-nav-btn" id="navDashboard">
-          <span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span>
-        </a>
-      </div>
-
-      <!-- 2. FUTURES DASHBOARD -->
+      <div class="inst-nav-item"><a href="/" class="inst-nav-btn"><span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span></a></div>
       <div class="inst-nav-item has-dropdown">
-        <a href="/futures" class="inst-nav-btn" id="navFutures">
-          <span class="inst-nav-icon">📈</span> <span class="nav-label">Futures</span>
-          <span class="inst-nav-arrow">▾</span>
-        </a>
+        <a href="/futures" class="inst-nav-btn"><span class="inst-nav-icon">📈</span> <span class="nav-label">Futures</span><span class="inst-nav-arrow">▾</span></a>
         <div class="inst-dropdown inst-dropdown-md">
           <div class="inst-dropdown-col">
             <span class="inst-dropdown-header">Futures Market &amp; Structure</span>
-            <a href="/futures" class="inst-dd-item">
-              <span class="dd-icon">📊</span>
-              <div class="dd-text">
-                <span class="dd-title">Future Marketwatch</span>
-                <span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span>
-              </div>
-            </a>
-            <a href="/futures/buildup" class="inst-dd-item">
-              <span class="dd-icon">⚡</span>
-              <div class="dd-text">
-                <span class="dd-title">Buildup Quadrants</span>
-                <span class="dd-sub">Long/Short buildup, covering &amp; unwinding radar</span>
-              </div>
-            </a>
-            <a href="/futures/rollover" class="inst-dd-item">
-              <span class="dd-icon">📑</span>
-              <div class="dd-text">
-                <span class="dd-title">Futures Rollover Matrix <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">PRO</span></span>
-                <span class="dd-sub">Expiry rollover %, 3M/6M averages &amp; historical velocity</span>
-              </div>
-            </a>
+            <a href="/futures" class="inst-dd-item"><span class="dd-icon">📊</span><div class="dd-text"><span class="dd-title">Future Marketwatch</span><span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span></div></a>
+            <a href="/futures/buildup" class="inst-dd-item"><span class="dd-icon">⚡</span><div class="dd-text"><span class="dd-title">Buildup Quadrants</span><span class="dd-sub">Long/Short buildup, covering &amp; unwinding radar</span></div></a>
+            <a href="/futures/rollover" class="inst-dd-item"><span class="dd-icon">📑</span><div class="dd-text"><span class="dd-title">Futures Rollover Matrix</span><span class="dd-sub">Expiry rollover %, 3M/6M averages &amp; historical velocity</span></div></a>
           </div>
         </div>
       </div>
-
-      <!-- 3. OPEN INTEREST DESK (ACTIVE) -->
-      <div class="inst-nav-item">
-        <a href="/open-interest/nifty" class="inst-nav-btn inst-nav-btn-blue active" id="navOpenInterest">
-          <span class="inst-nav-icon">📊</span> <span class="nav-label">Open Interest</span>
-          <span class="p2-badge p2-badge-blue">OI</span>
-        </a>
-      </div>
-
-      <!-- 4. OPTIONS SUITE -->
+      <div class="inst-nav-item"><a href="/open-interest/nifty" class="inst-nav-btn inst-nav-btn-blue active"><span class="inst-nav-icon">📊</span> <span class="nav-label">Open Interest</span><span class="p2-badge p2-badge-blue">OI</span></a></div>
       <div class="inst-nav-item has-dropdown">
-        <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight" id="navOptions">
-          <span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span>
-          <span class="inst-nav-arrow">▾</span>
-        </a>
+        <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight"><span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span><span class="inst-nav-arrow">▾</span></a>
         <div class="inst-dropdown inst-dropdown-md">
           <div class="inst-dropdown-col">
             <span class="inst-dropdown-header">Derivatives Suite</span>
-            <a href="/option-chain-pro" class="inst-dd-item">
-              <span class="dd-icon">⚡</span>
-              <div class="dd-text">
-                <span class="dd-title">Option Chain Pro <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
-                <span class="dd-sub">Multi-broker live chain, Greeks, PCR &amp; IV skew</span>
-              </div>
-            </a>
-            <a href="/straddle" class="inst-dd-item">
-              <span class="dd-icon">📉</span>
-              <div class="dd-text">
-                <span class="dd-title">Straddle Desk</span>
-                <span class="dd-sub">Combined CE+PE premium decay, IV crush &amp; Greeks</span>
-              </div>
-            </a>
+            <a href="/option-chain-pro" class="inst-dd-item"><span class="dd-icon">⚡</span><div class="dd-text"><span class="dd-title">Option Chain Pro</span><span class="dd-sub">Multi-broker live chain, Greeks, PCR &amp; IV skew</span></div></a>
+            <a href="/straddle" class="inst-dd-item"><span class="dd-icon">📉</span><div class="dd-text"><span class="dd-title">Straddle Desk</span><span class="dd-sub">Combined CE+PE premium decay, IV crush &amp; Greeks</span></div></a>
           </div>
         </div>
       </div>
-
-      <!-- 5. BREADTH & PARTICIPANT DESKS -->
-      <div class="inst-nav-item">
-        <a href="/breadth" class="inst-nav-btn">
-          <span class="inst-nav-icon">📉</span> <span class="nav-label">Breadth Pro</span>
-        </a>
-      </div>
-      <div class="inst-nav-item">
-        <a href="/fii-dii" class="inst-nav-btn">
-          <span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII &amp; DII</span>
-        </a>
-      </div>
-      <div class="inst-nav-item">
-        <a href="/delivery" class="inst-nav-btn">
-          <span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery</span>
-        </a>
-      </div>
-      <div class="inst-nav-item">
-        <a href="/mtf" class="inst-nav-btn">
-          <span class="inst-nav-icon">💳</span> <span class="nav-label">MTF Book</span>
-        </a>
-      </div>
+      <div class="inst-nav-item"><a href="/breadth" class="inst-nav-btn"><span class="inst-nav-icon">📉</span> <span class="nav-label">Breadth Pro</span></a></div>
+      <div class="inst-nav-item"><a href="/fii-dii" class="inst-nav-btn"><span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII &amp; DII</span></a></div>
+      <div class="inst-nav-item"><a href="/delivery" class="inst-nav-btn"><span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery</span></a></div>
+      <div class="inst-nav-item"><a href="/mtf" class="inst-nav-btn"><span class="inst-nav-icon">💳</span> <span class="nav-label">MTF Book</span></a></div>
     </nav>
   </header>
 
   <!-- ========================================================================
-       MAIN OPEN INTEREST DESK
+       MAIN DESK CONTENT
        ======================================================================== -->
   <main class="oi-desk-wrapper">
 
-    <!-- Breadcrumb & Status -->
-    <div class="oi-breadcrumb-bar">
-      <div class="oi-breadcrumb">
-        <a href="/">Terminal</a>
-        <span class="sep">/</span>
-        <a href="/futures">Derivatives</a>
-        <span class="sep">/</span>
-        <span class="cur">Open Interest Analysis</span>
+    <!-- Live Status Strip -->
+    <div class="oi-live-strip">
+      <div class="oi-title-box">
+        <h1><span>📊</span> <span id="deskTitleText">Nifty Open Interest Analysis</span></h1>
+        <p>Real-time strike-wise Call vs Put open interest distribution, Put-Call Ratio (PCR), and Max Pain resistance/support walls.</p>
       </div>
-      <div style="font-size:12px; color:var(--oi-text-muted); font-weight:600; display:flex; align-items:center; gap:6px;">
-        <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#10b981;"></span>
-        <span id="oiLastUpdatedText">NSE EOD MASTER LOADED</span>
+
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="oi-live-pill" id="liveStreamingPill">
+          <span class="oi-pulse-dot"></span>
+          <span id="oiStreamingText">LIVE STREAMING (3s)</span>
+        </div>
+        <button type="button" class="oi-action-btn active-live" id="btnToggleAutoRefresh" onclick="toggleAutoRefresh()" title="Toggle 3s Auto-Refresh Loop">
+          <span id="autoRefreshIcon">⏸️</span> <span id="autoRefreshLabel">Auto: 3s</span>
+        </button>
       </div>
     </div>
 
-    <!-- Control Toolbar (StockMojo style) -->
-    <section class="oi-toolbar" aria-label="Open Interest Controls">
+    <!-- StockMojo Control Toolbar -->
+    <section class="oi-toolbar" aria-label="Controls">
       <div class="oi-toolbar-left">
         <!-- Quick Index Selector Pills -->
         <div class="oi-sym-pills" id="oiSymPills">
@@ -978,7 +783,7 @@
         <!-- Custom F&O Symbol Dropdown -->
         <div class="oi-select-group">
           <label for="oiSymbolSelect" class="oi-select-label">Symbol</label>
-          <select id="oiSymbolSelect" class="oi-select" style="min-width: 130px;">
+          <select id="oiSymbolSelect" class="oi-select" style="min-width: 140px;" onchange="onSymbolDropdownChange(this.value)">
             <optgroup label="Major Indices">
               <option value="NIFTY" selected>NIFTY 50</option>
               <option value="BANKNIFTY">BANK NIFTY</option>
@@ -986,7 +791,7 @@
               <option value="MIDCPNIFTY">MIDCAP NIFTY</option>
               <option value="SENSEX">BSE SENSEX</option>
             </optgroup>
-            <optgroup label="Top F&O Heavyweights">
+            <optgroup label="Top F&amp;O Equities">
               <option value="RELIANCE">RELIANCE</option>
               <option value="HDFCBANK">HDFCBANK</option>
               <option value="ICICIBANK">ICICIBANK</option>
@@ -1004,7 +809,7 @@
         <!-- Expiry Dropdown -->
         <div class="oi-select-group">
           <label for="oiExpirySelect" class="oi-select-label">Expiry</label>
-          <select id="oiExpirySelect" class="oi-select">
+          <select id="oiExpirySelect" class="oi-select" onchange="onExpiryChange(this.value)">
             <option value="">Loading expiries...</option>
           </select>
         </div>
@@ -1015,28 +820,28 @@
         <div class="oi-select-group">
           <span class="oi-select-label">Strikes</span>
           <div class="oi-range-group" id="oiRangeGroup">
-            <button type="button" class="oi-range-btn" data-range="5">±5</button>
-            <button type="button" class="oi-range-btn active" data-range="10">±10</button>
-            <button type="button" class="oi-range-btn" data-range="15">±15</button>
-            <button type="button" class="oi-range-btn" data-range="20">±20</button>
-            <button type="button" class="oi-range-btn" data-range="0">All</button>
+            <button type="button" class="oi-range-btn" data-range="5" onclick="setStrikeRange(5)">±5</button>
+            <button type="button" class="oi-range-btn active" data-range="10" onclick="setStrikeRange(10)">±10</button>
+            <button type="button" class="oi-range-btn" data-range="15" onclick="setStrikeRange(15)">±15</button>
+            <button type="button" class="oi-range-btn" data-range="20" onclick="setStrikeRange(20)">±20</button>
+            <button type="button" class="oi-range-btn" data-range="0" onclick="setStrikeRange(0)">All</button>
           </div>
         </div>
 
         <!-- Export CSV Button -->
-        <button type="button" class="oi-action-btn" id="oiExportCsvBtn" onclick="exportOiToCsv()" title="Download Strike Matrix to CSV">
-          <span>📥</span> <span>Export CSV</span>
+        <button type="button" class="oi-action-btn" onclick="exportOiToCsv()" title="Download Strike Matrix to CSV">
+          <span>📥</span> <span>CSV</span>
         </button>
 
         <!-- Refresh Button -->
-        <button type="button" class="oi-action-btn primary" onclick="refreshOiDesk()" title="Fetch Fresh Quotes &amp; Strikes">
+        <button type="button" class="oi-action-btn" onclick="fetchOiData(true)" title="Fetch Fresh Quotes Now">
           <span>🔄</span> <span>Refresh</span>
         </button>
       </div>
     </section>
 
-    <!-- Top Institutional KPI Strip (StockMojo style) -->
-    <section class="oi-kpi-grid" aria-label="Open Interest Summary Metrics">
+    <!-- Top 6 StockMojo-Style Institutional Metric Cards -->
+    <section class="oi-kpi-grid" aria-label="Key Performance Indicators">
 
       <!-- Card 1: Spot Price -->
       <div class="oi-kpi-card kpi-spot">
@@ -1121,19 +926,19 @@
 
     </section>
 
-    <!-- Interactive Call vs Put Chart (StockMojo style) -->
-    <section class="oi-chart-card" aria-label="Interactive Open Interest Chart">
+    <!-- Interactive Visual Chart Card -->
+    <section class="oi-chart-card" aria-label="Open Interest Chart">
       <div class="oi-chart-header">
         <div class="oi-chart-title-group">
-          <h2>📊 Strike-Wise Open Interest Distribution</h2>
+          <h2 id="oiChartMainTitle">📊 Strike-Wise Open Interest Distribution</h2>
           <p id="oiChartSubtitle">Comparing Call Open Interest (Resistance / Supply) vs Put Open Interest (Support / Demand)</p>
         </div>
 
-        <!-- Chart View Modes Switcher -->
+        <!-- Mode Switcher -->
         <div class="oi-view-pills" id="oiChartModeGroup">
-          <button type="button" class="oi-view-pill active" data-mode="total">Total OI</button>
-          <button type="button" class="oi-view-pill" data-mode="change">OI Change</button>
-          <button type="button" class="oi-view-pill" data-mode="net">Net OI (PE - CE)</button>
+          <button type="button" class="oi-view-pill active" data-mode="total" onclick="setChartMode('total')">Total OI</button>
+          <button type="button" class="oi-view-pill" data-mode="change" onclick="setChartMode('change')">OI Change</button>
+          <button type="button" class="oi-view-pill" data-mode="net" onclick="setChartMode('net')">Net OI (PE - CE)</button>
         </div>
 
         <!-- Chart Legend -->
@@ -1153,23 +958,23 @@
         </div>
       </div>
 
-      <!-- High-DPI Interactive Canvas Chart -->
-      <div class="oi-canvas-container" id="oiChartContainer">
-        <canvas id="oiMainChartCanvas"></canvas>
-        <div class="oi-chart-tooltip" id="oiChartTooltip"></div>
+      <!-- Pure SVG High-DPI Vector Chart Viewport -->
+      <div class="oi-svg-chart-container" id="oiSvgChartContainer">
+        <svg id="oiSvgChart" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
+        <div class="oi-interactive-tooltip" id="oiChartTooltip"></div>
       </div>
     </section>
 
-    <!-- Detailed Strike Buildup & Greek Matrix Table -->
-    <section class="oi-table-card" aria-label="Strike Matrix Table">
-      <div class="oi-table-header">
+    <!-- Strike Matrix Buildup Table Card -->
+    <section class="oi-table-card" aria-label="Detailed Strike Matrix">
+      <div class="oi-table-top">
         <div class="oi-chart-title-group">
           <h2>📋 Detailed Strike Matrix &amp; Buildup Quadrants</h2>
           <p>Complete multi-strike open interest buildup, Put-Call Ratio per strike, and estimated premium</p>
         </div>
 
         <div>
-          <input type="text" id="oiTableSearchInput" class="oi-table-search" placeholder="🔍 Filter Strike (e.g. 23000)..." oninput="filterMatrixTable()" />
+          <input type="text" id="oiTableSearchInput" class="oi-table-search" placeholder="🔍 Search Strike (e.g. 23000)..." oninput="filterMatrixTable()" />
         </div>
       </div>
 
@@ -1182,17 +987,12 @@
               <th colspan="4" class="group-put">PUTS (PE) - Foundational Support</th>
             </tr>
             <tr>
-              <!-- Calls -->
               <th style="text-align:left;">Buildup</th>
               <th>LTP (₹)</th>
               <th>OI Chg</th>
               <th>Call OI</th>
-
-              <!-- Strike -->
               <th style="text-align:center;">Strike</th>
               <th style="text-align:center;">PCR</th>
-
-              <!-- Puts -->
               <th style="text-align:left;">Put OI</th>
               <th>OI Chg</th>
               <th>LTP (₹)</th>
@@ -1202,27 +1002,11 @@
           <tbody id="oiMatrixTableBody">
             <tr>
               <td colspan="10" style="text-align:center; padding:30px; color:var(--oi-text-muted);">
-                Loading strike data from NSE Bhavcopy engine...
+                Connecting to institutional quote stream...
               </td>
             </tr>
           </tbody>
         </table>
-      </div>
-    </section>
-
-    <!-- Educational & Institutional Context Strip -->
-    <section class="oi-guide-grid">
-      <div class="oi-guide-card">
-        <h4>⚡ Understanding Open Interest Walls</h4>
-        <p>The strike with the highest <strong>Call Open Interest</strong> acts as the strongest overhead resistance wall, where writers defend premiums. Conversely, the strike with highest <strong>Put Open Interest</strong> creates the primary floor support.</p>
-      </div>
-      <div class="oi-guide-card">
-        <h4>⚖️ Put-Call Ratio (PCR) Interpretation</h4>
-        <p>A PCR &gt; 1.2 indicates aggressive put writing relative to calls, signaling bullish institutional sentiment. A PCR &lt; 0.8 signals heavy call writing and cautious or bearish bias. Range 0.8–1.2 reflects balanced market equilibrium.</p>
-      </div>
-      <div class="oi-guide-card">
-        <h4>🎯 Max Pain Strike Significance</h4>
-        <p>The Max Pain strike is the theoretical price point where option buyers suffer maximum financial loss upon contract expiry, maximizing cumulative profits for institutional options sellers.</p>
       </div>
     </section>
 
@@ -1234,7 +1018,6 @@
   <footer class="inst-footer" style="background:#0f172a; color:#94a3b8; padding:40px 20px 24px; margin-top:40px; border-top:1px solid #1e293b; font-size:12.5px;">
     <div style="max-width:1440px; margin:0 auto;">
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:24px; margin-bottom:30px;">
-        <!-- Col 1 -->
         <div>
           <h4 style="color:#38bdf8; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">🏛️ Institutional Desks</h4>
           <div style="display:flex; flex-direction:column; gap:8px;">
@@ -1246,7 +1029,6 @@
             <a href="/dashboard" style="color:inherit; text-decoration:none;">Institutional Dashboard</a>
           </div>
         </div>
-        <!-- Col 2 -->
         <div>
           <h4 style="color:#a78bfa; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">⚡ Derivatives &amp; Options</h4>
           <div style="display:flex; flex-direction:column; gap:8px;">
@@ -1257,7 +1039,6 @@
             <a href="/futures/rollover" style="color:inherit; text-decoration:none;">Historical Rollover Matrix</a>
           </div>
         </div>
-        <!-- Col 3 -->
         <div>
           <h4 style="color:#34d399; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">📊 Market Analytics</h4>
           <div style="display:flex; flex-direction:column; gap:8px;">
@@ -1267,7 +1048,6 @@
             <a href="/futures/heatmap" style="color:inherit; text-decoration:none;">F&amp;O Sector Heatmap</a>
           </div>
         </div>
-        <!-- Col 4 -->
         <div>
           <h4 style="color:#f59e0b; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">🛡️ Governance &amp; Legal</h4>
           <div style="display:flex; flex-direction:column; gap:8px;">
@@ -1284,9 +1064,7 @@
     </div>
   </footer>
 
-  <!-- ========================================================================
-       MOBILE 6-DOT MENU MODAL DRAWER
-       ======================================================================== -->
+  <!-- Mobile Menu Drawer Modal -->
   <div id="mobileDotMenuModal" class="dot-menu-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; backdrop-filter:blur(4px); align-items:flex-end;">
     <div class="dot-menu-drawer" style="background:var(--oi-card-bg); border-top:1px solid var(--oi-card-border); border-radius:16px 16px 0 0; width:100%; max-height:85vh; overflow-y:auto; padding:20px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -1310,16 +1088,20 @@
   </div>
 
   <!-- ========================================================================
-       CORE JAVASCRIPT CONTROLLER FOR OPEN INTEREST DESK
+       ROCK-SOLID CLIENT-SIDE CONTROLLER & STREAMING ENGINE
        ======================================================================== -->
   <script>
-    // State management
+    // State
     let currentSymbol = "NIFTY";
     let currentExpiry = "";
     let currentStrikeRange = 10;
     let currentChartMode = "total"; // 'total', 'change', 'net'
     let oiData = null;
+    let autoRefreshActive = true;
+    let autoRefreshIntervalTimer = null;
+    let autoRefreshCountdown = 3;
     let seriesVisibility = { call: true, put: true };
+    let isFetching = false;
 
     // Formatters
     function formatNumber(num) {
@@ -1359,8 +1141,7 @@
       localStorage.setItem("breadth_theme", next);
       const icon = document.getElementById("themeToggleIcon");
       if (icon) icon.textContent = next === "dark" ? "☀️" : "🌙";
-      // Redraw chart with theme colors
-      drawOiChart();
+      renderSvgChart();
     }
 
     // Mobile Menu Controls
@@ -1373,56 +1154,107 @@
       if (m) m.style.display = "none";
     };
 
-    // Load Data from Server
-    async function loadOpenInterestData(isSilent = false) {
-      const lastUpText = document.getElementById("oiLastUpdatedText");
-      if (!isSilent && lastUpText) lastUpText.textContent = "FETCHING NSE LIVE QUOTES...";
-
-      try {
-        const url = `/api/open-interest?symbol=${encodeURIComponent(currentSymbol)}&range=${currentStrikeRange}` + (currentExpiry ? `&expiry=${encodeURIComponent(currentExpiry)}` : "");
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json();
-        if (!data || !data.ok) throw new Error("Invalid response");
-
-        oiData = data;
-        updateHeaderAndKpis(data);
-        populateExpiryDropdown(data.expiries, data.selected_expiry);
-        drawOiChart();
-        renderMatrixTable(data.strikes, data.atm_strike);
-
-        if (lastUpText) {
-          const nowStr = new Date().toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-          lastUpText.textContent = `LIVE NSE QUOTES UPDATED ${nowStr} IST (${data.execution_time_ms}ms)`;
+    // Auto-refresh loop
+    function startAutoRefreshLoop() {
+      if (autoRefreshIntervalTimer) clearInterval(autoRefreshIntervalTimer);
+      autoRefreshCountdown = 3;
+      autoRefreshIntervalTimer = setInterval(() => {
+        if (!autoRefreshActive) return;
+        autoRefreshCountdown--;
+        const pillText = document.getElementById("oiStreamingText");
+        if (autoRefreshCountdown <= 0) {
+          if (pillText) pillText.textContent = "UPDATING...";
+          fetchOiData(false);
+          autoRefreshCountdown = 3;
+        } else {
+          if (pillText) pillText.textContent = `LIVE STREAMING (${autoRefreshCountdown}s)`;
         }
-      } catch (err) {
-        console.error("Failed to load OI data:", err);
-        if (lastUpText) lastUpText.textContent = "DATA FETCH FAILED - RETRYING...";
+      }, 1000);
+    }
+
+    function toggleAutoRefresh() {
+      autoRefreshActive = !autoRefreshActive;
+      const btn = document.getElementById("btnToggleAutoRefresh");
+      const icon = document.getElementById("autoRefreshIcon");
+      const lbl = document.getElementById("autoRefreshLabel");
+      const pillText = document.getElementById("oiStreamingText");
+      if (autoRefreshActive) {
+        btn.classList.add("active-live");
+        if (icon) icon.textContent = "⏸️";
+        if (lbl) lbl.textContent = "Auto: 3s";
+        if (pillText) pillText.textContent = "LIVE STREAMING (3s)";
+        startAutoRefreshLoop();
+      } else {
+        btn.classList.remove("active-live");
+        if (icon) icon.textContent = "▶️";
+        if (lbl) lbl.textContent = "Auto: OFF";
+        if (pillText) pillText.textContent = "AUTO-REFRESH PAUSED";
       }
     }
 
-    function refreshOiDesk() {
-      loadOpenInterestData(false);
+    // Fetch Data
+    async function fetchOiData(isManual = false) {
+      if (isFetching && !isManual) return;
+      isFetching = true;
+
+      try {
+        const url = `/api/open-interest?symbol=${encodeURIComponent(currentSymbol)}&range=${currentStrikeRange}` + (currentExpiry ? `&expiry=${encodeURIComponent(currentExpiry)}` : "") + `&_=${Date.now()}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (!data || !data.ok) throw new Error("Invalid payload");
+
+        oiData = data;
+        updateUI(data);
+      } catch (err) {
+        console.warn("OI data fetch warning:", err);
+      } finally {
+        isFetching = false;
+      }
     }
 
-    // Populate Expiry Dropdown
+    // Master UI Update
+    function updateUI(d) {
+      // 1. Title
+      const titleEl = document.getElementById("deskTitleText");
+      if (titleEl) titleEl.textContent = `${d.symbol} Open Interest Analytics`;
+
+      // 2. Market status badge
+      const statusText = document.getElementById("marketStatusText");
+      if (statusText && d.market_status) statusText.textContent = d.market_status;
+
+      // 3. Expiries Dropdown
+      populateExpiryDropdown(d.expiries, d.selected_expiry);
+
+      // 4. Update KPI Cards
+      updateKpis(d);
+
+      // 5. Render SVG Chart
+      renderSvgChart();
+
+      // 6. Render Matrix Table
+      renderTable(d.strikes, d.atm_strike);
+    }
+
+    // Populate Expiries
     function populateExpiryDropdown(expiries, selected) {
       const sel = document.getElementById("oiExpirySelect");
       if (!sel || !Array.isArray(expiries)) return;
-      sel.innerHTML = "";
-      expiries.forEach(exp => {
-        const opt = document.createElement("option");
-        opt.value = exp.date;
-        opt.textContent = exp.label || exp.date;
-        if (exp.date === selected) opt.selected = true;
-        sel.appendChild(opt);
-      });
-      currentExpiry = sel.value;
+      const prevVal = sel.value;
+      if (sel.options.length !== expiries.length) {
+        sel.innerHTML = "";
+        expiries.forEach(e => {
+          const opt = document.createElement("option");
+          opt.value = e.date;
+          opt.textContent = e.label || e.date;
+          if (e.date === selected) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      }
     }
 
-    // Update Top KPIs
-    function updateHeaderAndKpis(d) {
-      // Spot
+    // Update KPI Cards
+    function updateKpis(d) {
       const spotSym = document.getElementById("kpiSpotSymbol");
       if (spotSym) spotSym.textContent = `${d.symbol} SPOT`;
 
@@ -1455,7 +1287,7 @@
 
       const pcrSub = document.getElementById("kpiPcrSub");
       if (pcrSub) {
-        pcrSub.textContent = d.overall_pcr >= 1.05 ? "Support Heavy (Put OI dominant)" : (d.overall_pcr <= 0.85 ? "Resistance Heavy (Call OI dominant)" : "Neutral Equilibrium");
+        pcrSub.textContent = d.overall_pcr >= 1.05 ? "Support Heavy (Put writing dominant)" : (d.overall_pcr <= 0.85 ? "Resistance Heavy (Call writing dominant)" : "Neutral Equilibrium");
       }
 
       // Max Pain
@@ -1471,24 +1303,16 @@
 
       // Resistance & Support
       const resVal = document.getElementById("kpiResistanceVal");
-      if (resVal && d.key_resistance) {
-        resVal.textContent = formatNumber(d.key_resistance.strike) + " CE";
-      }
+      if (resVal && d.key_resistance) resVal.textContent = formatNumber(d.key_resistance.strike) + " CE";
       const resSub = document.getElementById("kpiResistanceSub");
-      if (resSub && d.key_resistance) {
-        resSub.textContent = `${formatOiLakhs(d.key_resistance.oi)} contracts OI`;
-      }
+      if (resSub && d.key_resistance) resSub.textContent = `${formatOiLakhs(d.key_resistance.oi)} contracts OI`;
 
       const supVal = document.getElementById("kpiSupportVal");
-      if (supVal && d.key_support) {
-        supVal.textContent = formatNumber(d.key_support.strike) + " PE";
-      }
+      if (supVal && d.key_support) supVal.textContent = formatNumber(d.key_support.strike) + " PE";
       const supSub = document.getElementById("kpiSupportSub");
-      if (supSub && d.key_support) {
-        supSub.textContent = `${formatOiLakhs(d.key_support.oi)} contracts OI`;
-      }
+      if (supSub && d.key_support) supSub.textContent = `${formatOiLakhs(d.key_support.oi)} contracts OI`;
 
-      // Call vs Put Ratio Bar
+      // Ratio Bar
       const cBar = document.getElementById("kpiCallRatioBar");
       const pBar = document.getElementById("kpiPutRatioBar");
       if (cBar && pBar) {
@@ -1512,64 +1336,47 @@
 
       const totSub = document.getElementById("kpiTotalOiSub");
       if (totSub) {
-        totSub.textContent = `Total OI: ${formatOiLakhs(d.total_call_oi + d.total_put_oi)} contracts`;
+        totSub.textContent = `Total Open Interest: ${formatOiLakhs(d.total_call_oi + d.total_put_oi)} contracts`;
       }
     }
 
     // ========================================================================
-    // HIGH-DPI CANVAS CHART RENDERING (STOCKMOJO DUAL BAR ARCHITECTURE)
+    // PURE SVG HIGH-DPI VECTOR CHART (ZERO FLICKER, ZERO BLUR, 100% STABLE)
     // ========================================================================
-    let chartHoverInfo = null;
-
-    function drawOiChart() {
-      const canvas = document.getElementById("oiMainChartCanvas");
-      if (!canvas || !oiData || !Array.isArray(oiData.strikes) || oiData.strikes.length === 0) return;
+    function renderSvgChart() {
+      const svg = document.getElementById("oiSvgChart");
+      if (!svg || !oiData || !Array.isArray(oiData.strikes) || oiData.strikes.length === 0) return;
 
       const strikes = oiData.strikes;
-      const ctx = canvas.getContext("2d");
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-
-      const w = rect.width;
-      const h = rect.height;
       const isDark = document.documentElement.getAttribute("data-theme") === "dark";
 
-      // Clear
-      ctx.clearRect(0, 0, w, h);
+      const width = 1000;
+      const height = 420;
+      const padTop = 38;
+      const padBottom = 46;
+      const padLeft = 68;
+      const padRight = 36;
+      const plotW = width - padLeft - padRight;
+      const plotH = height - padTop - padBottom;
 
-      // Margins
-      const padTop = 36;
-      const padBottom = 42;
-      const padLeft = 60;
-      const padRight = 30;
-      const plotW = w - padLeft - padRight;
-      const plotH = h - padTop - padBottom;
-
-      // Color definitions
       const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
       const textColor = isDark ? "#94a3b8" : "#64748b";
-      const textBoldColor = isDark ? "#f8fafc" : "#0f172a";
       const callColor = isDark ? "#f87171" : "#ef4444";
       const putColor = isDark ? "#34d399" : "#10b981";
       const atmColor = isDark ? "#fbbf24" : "#f59e0b";
 
-      // Compute Y Scale depending on currentChartMode
+      // Compute Scales
       let maxVal = 0;
       let minVal = 0;
 
       if (currentChartMode === "net") {
         strikes.forEach(s => {
-          const net = s.net_oi;
-          if (net > maxVal) maxVal = net;
-          if (net < minVal) minVal = net;
+          if (s.net_oi > maxVal) maxVal = s.net_oi;
+          if (s.net_oi < minVal) minVal = s.net_oi;
         });
-        const absLimit = Math.max(Math.abs(maxVal), Math.abs(minVal)) * 1.15 || 100000;
-        maxVal = absLimit;
-        minVal = -absLimit;
+        const absVal = Math.max(Math.abs(maxVal), Math.abs(minVal)) * 1.15 || 100000;
+        maxVal = absVal;
+        minVal = -absVal;
       } else if (currentChartMode === "change") {
         strikes.forEach(s => {
           const c = Math.abs(s.call_oi_change);
@@ -1580,7 +1387,6 @@
         maxVal = maxVal * 1.18 || 100000;
         minVal = 0;
       } else {
-        // total OI
         strikes.forEach(s => {
           if (s.call_oi > maxVal) maxVal = s.call_oi;
           if (s.put_oi > maxVal) maxVal = s.put_oi;
@@ -1589,230 +1395,170 @@
         minVal = 0;
       }
 
-      // Horizontal Grid Lines & Y-Axis Labels
-      const gridSteps = 5;
-      ctx.textAlign = "right";
-      ctx.textBaseline = "middle";
-      ctx.font = `600 11px ${getComputedStyle(document.body).getPropertyValue('--oi-font-mono')}`;
+      let svgHtml = "";
 
-      for (let i = 0; i <= gridSteps; i++) {
-        const ratio = i / gridSteps;
+      // Horizontal Grid Lines & Y-Labels
+      const steps = 5;
+      for (let i = 0; i <= steps; i++) {
+        const ratio = i / steps;
         const y = padTop + plotH * (1 - ratio);
         const val = minVal + ratio * (maxVal - minVal);
 
-        ctx.strokeStyle = gridColor;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(padLeft, y);
-        ctx.lineTo(w - padRight, y);
-        ctx.stroke();
-
-        ctx.fillStyle = textColor;
-        ctx.fillText(formatOiLakhs(val), padLeft - 8, y);
+        svgHtml += `
+          <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="${gridColor}" stroke-width="1" />
+          <text x="${padLeft - 10}" y="${y + 4}" fill="${textColor}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="600" text-anchor="end">${formatOiLakhs(val)}</text>
+        `;
       }
 
-      // Bar Geometries
       const n = strikes.length;
       const slotW = plotW / n;
-      const barPadding = Math.max(2, slotW * 0.12);
-      const groupW = slotW - barPadding * 2;
-      const singleBarW = Math.max(3, (groupW / 2) - 2);
+      const barPad = Math.max(3, slotW * 0.12);
+      const groupW = slotW - barPad * 2;
+      const singleW = Math.max(3, (groupW / 2) - 2);
 
-      let atmLineX = null;
+      let atmX = null;
+      let resX = null;
+      let supX = null;
 
       // Draw Bars
       strikes.forEach((s, idx) => {
         const slotX = padLeft + idx * slotW;
         const centerX = slotX + slotW / 2;
 
-        if (s.is_atm) {
-          atmLineX = centerX;
-        }
+        if (s.is_atm) atmX = centerX;
+        if (oiData.key_resistance && s.strike === oiData.key_resistance.strike) resX = centerX;
+        if (oiData.key_support && s.strike === oiData.key_support.strike) supX = centerX;
 
         if (currentChartMode === "net") {
-          // Single net bar centered per strike
           const net = s.net_oi;
           const zeroY = padTop + plotH * (maxVal / (maxVal - minVal));
           const netY = padTop + plotH * (1 - (net - minVal) / (maxVal - minVal));
-          const barH = Math.abs(netY - zeroY);
-          const barY = Math.min(zeroY, netY);
+          const bH = Math.max(2, Math.abs(netY - zeroY));
+          const bY = Math.min(zeroY, netY);
+          const barColor = net >= 0 ? putColor : callColor;
 
-          ctx.fillStyle = net >= 0 ? putColor : callColor;
-          ctx.beginPath();
-          ctx.roundRect(centerX - groupW / 2, barY, groupW, Math.max(2, barH), [3, 3, 0, 0]);
-          ctx.fill();
-
+          svgHtml += `
+            <rect x="${centerX - groupW/2}" y="${bY}" width="${groupW}" height="${bH}" rx="3" fill="${barColor}" class="oi-svg-bar" data-idx="${idx}" />
+          `;
         } else if (currentChartMode === "change") {
-          // Change bars
           const cChg = s.call_oi_change;
           const pChg = s.put_oi_change;
+          const cH = Math.max(2, (Math.abs(cChg) / maxVal) * plotH);
+          const pH = Math.max(2, (Math.abs(pChg) / maxVal) * plotH);
 
-          const cH = (Math.abs(cChg) / maxVal) * plotH;
-          const pH = (Math.abs(pChg) / maxVal) * plotH;
-
-          // Call change bar
           if (seriesVisibility.call) {
-            ctx.fillStyle = cChg >= 0 ? callColor : "rgba(239, 68, 68, 0.4)";
-            ctx.beginPath();
-            ctx.roundRect(centerX - singleBarW - 1, padTop + plotH - cH, singleBarW, Math.max(2, cH), [3, 3, 0, 0]);
-            ctx.fill();
+            svgHtml += `
+              <rect x="${centerX - singleW - 1}" y="${padTop + plotH - cH}" width="${singleW}" height="${cH}" rx="3" fill="${callColor}" class="oi-svg-bar" data-idx="${idx}" />
+            `;
           }
-
-          // Put change bar
           if (seriesVisibility.put) {
-            ctx.fillStyle = pChg >= 0 ? putColor : "rgba(16, 185, 129, 0.4)";
-            ctx.beginPath();
-            ctx.roundRect(centerX + 1, padTop + plotH - pH, singleBarW, Math.max(2, pH), [3, 3, 0, 0]);
-            ctx.fill();
+            svgHtml += `
+              <rect x="${centerX + 1}" y="${padTop + plotH - pH}" width="${singleW}" height="${pH}" rx="3" fill="${putColor}" class="oi-svg-bar" data-idx="${idx}" />
+            `;
           }
-
         } else {
-          // Total OI Dual Bars
-          const cH = (s.call_oi / maxVal) * plotH;
-          const pH = (s.put_oi / maxVal) * plotH;
+          // Total OI
+          const cH = Math.max(2, (s.call_oi / maxVal) * plotH);
+          const pH = Math.max(2, (s.put_oi / maxVal) * plotH);
 
-          // Call bar (Left)
           if (seriesVisibility.call) {
-            ctx.fillStyle = callColor;
-            ctx.beginPath();
-            ctx.roundRect(centerX - singleBarW - 1, padTop + plotH - cH, singleBarW, Math.max(2, cH), [3, 3, 0, 0]);
-            ctx.fill();
+            svgHtml += `
+              <rect x="${centerX - singleW - 1}" y="${padTop + plotH - cH}" width="${singleW}" height="${cH}" rx="3" fill="${callColor}" class="oi-svg-bar" data-idx="${idx}" />
+            `;
           }
-
-          // Put bar (Right)
           if (seriesVisibility.put) {
-            ctx.fillStyle = putColor;
-            ctx.beginPath();
-            ctx.roundRect(centerX + 1, padTop + plotH - pH, singleBarW, Math.max(2, pH), [3, 3, 0, 0]);
-            ctx.fill();
+            svgHtml += `
+              <rect x="${centerX + 1}" y="${padTop + plotH - pH}" width="${singleW}" height="${pH}" rx="3" fill="${putColor}" class="oi-svg-bar" data-idx="${idx}" />
+            `;
           }
         }
 
-        // X-Axis Strike Label
-        ctx.fillStyle = s.is_atm ? atmColor : textColor;
-        ctx.font = s.is_atm ? "bold 11px var(--oi-font-mono)" : "500 10.5px var(--oi-font-mono)";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.fillText(formatNumber(s.strike), centerX, padTop + plotH + 8);
-      });
-
-      // Draw ATM Golden Dashed Line
-      if (atmLineX !== null) {
-        ctx.save();
-        ctx.strokeStyle = atmColor;
-        ctx.lineWidth = 1.8;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(atmLineX, padTop - 12);
-        ctx.lineTo(atmLineX, padTop + plotH);
-        ctx.stroke();
-        ctx.restore();
-
-        // ATM Tag flag
-        ctx.fillStyle = atmColor;
-        ctx.beginPath();
-        ctx.roundRect(atmLineX - 28, padTop - 26, 56, 18, 4);
-        ctx.fill();
-
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 10px var(--oi-font-sans)";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("ATM SPOT", atmLineX, padTop - 17);
-      }
-
-      // Resistance & Support Badges over highest strikes
-      if (oiData.key_resistance && currentChartMode === "total") {
-        const resK = oiData.key_resistance.strike;
-        const resIdx = strikes.findIndex(s => s.strike === resK);
-        if (resIdx !== -1) {
-          const resX = padLeft + resIdx * slotW + slotW / 2;
-          ctx.fillStyle = callColor;
-          ctx.beginPath();
-          ctx.roundRect(resX - 24, padTop + 2, 48, 16, 4);
-          ctx.fill();
-
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 9.5px var(--oi-font-sans)";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("RES (CE)", resX, padTop + 10);
-        }
-      }
-
-      if (oiData.key_support && currentChartMode === "total") {
-        const supK = oiData.key_support.strike;
-        const supIdx = strikes.findIndex(s => s.strike === supK);
-        if (supIdx !== -1) {
-          const supX = padLeft + supIdx * slotW + slotW / 2;
-          ctx.fillStyle = putColor;
-          ctx.beginPath();
-          ctx.roundRect(supX - 24, padTop + 22, 48, 16, 4);
-          ctx.fill();
-
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 9.5px var(--oi-font-sans)";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("SUP (PE)", supX, padTop + 30);
-        }
-      }
-    }
-
-    // Chart Mouse Hover Interaction
-    const chartContainer = document.getElementById("oiChartContainer");
-    const chartTooltip = document.getElementById("oiChartTooltip");
-
-    if (chartContainer) {
-      chartContainer.addEventListener("mousemove", (e) => {
-        if (!oiData || !oiData.strikes) return;
-        const rect = chartContainer.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
-        const padLeft = 60;
-        const padRight = 30;
-        const plotW = rect.width - padLeft - padRight;
-
-        if (mouseX < padLeft || mouseX > rect.width - padRight) {
-          chartTooltip.style.display = "none";
-          return;
-        }
-
-        const slotW = plotW / oiData.strikes.length;
-        const idx = Math.floor((mouseX - padLeft) / slotW);
-        const s = oiData.strikes[idx];
-        if (!s) {
-          chartTooltip.style.display = "none";
-          return;
-        }
-
-        chartTooltip.style.display = "block";
-        chartTooltip.style.left = `${Math.min(rect.width - 200, Math.max(10, mouseX + 14))}px`;
-        chartTooltip.style.top = `${Math.min(rect.height - 130, Math.max(10, mouseY - 20))}px`;
-
-        chartTooltip.innerHTML = `
-          <div class="oi-tip-header">
-            <span>STRIKE ${formatNumber(s.strike)} ${s.is_atm ? '(ATM)' : ''}</span>
-            <span style="color:#ffffff;">PCR ${s.pcr}</span>
-          </div>
-          <div class="oi-tip-row call">
-            <span>Call OI:</span>
-            <span class="oi-tip-val">${formatNumber(s.call_oi)} (${s.call_oi_change >= 0 ? '+' : ''}${formatNumber(s.call_oi_change)})</span>
-          </div>
-          <div class="oi-tip-row put">
-            <span>Put OI:</span>
-            <span class="oi-tip-val">${formatNumber(s.put_oi)} (${s.put_oi_change >= 0 ? '+' : ''}${formatNumber(s.put_oi_change)})</span>
-          </div>
-          <div class="oi-tip-row" style="color:#cbd5e1; font-size:11px; margin-top:4px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">
-            <span>Net (PE - CE):</span>
-            <span class="oi-tip-val ${s.net_oi >= 0 ? 'delta-pos' : 'delta-neg'}">${s.net_oi >= 0 ? '+' : ''}${formatOiLakhs(s.net_oi)}</span>
-          </div>
+        // Strike label below X axis
+        const isAtm = s.is_atm;
+        const strikeColor = isAtm ? atmColor : textColor;
+        const fontW = isAtm ? "bold" : "600";
+        svgHtml += `
+          <text x="${centerX}" y="${padTop + plotH + 18}" fill="${strikeColor}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="${fontW}" text-anchor="middle">${formatNumber(s.strike)}</text>
         `;
       });
 
-      chartContainer.addEventListener("mouseleave", () => {
-        chartTooltip.style.display = "none";
+      // ATM Line & Marker
+      if (atmX !== null) {
+        svgHtml += `
+          <line x1="${atmX}" y1="${padTop - 10}" x2="${atmX}" y2="${padTop + plotH}" stroke="${atmColor}" stroke-width="1.8" stroke-dasharray="4,4" />
+          <rect x="${atmX - 34}" y="${padTop - 26}" width="68" height="20" rx="4" fill="${atmColor}" />
+          <text x="${atmX}" y="${padTop - 12}" fill="#ffffff" font-size="10" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">ATM SPOT</text>
+        `;
+      }
+
+      // Resistance Tag
+      if (resX !== null && currentChartMode === "total") {
+        svgHtml += `
+          <rect x="${resX - 28}" y="${padTop + 4}" width="56" height="18" rx="4" fill="${callColor}" />
+          <text x="${resX}" y="${padTop + 16}" fill="#ffffff" font-size="9.5" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">RES (CE)</text>
+        `;
+      }
+
+      // Support Tag
+      if (supX !== null && currentChartMode === "total") {
+        svgHtml += `
+          <rect x="${supX - 28}" y="${padTop + 24}" width="56" height="18" rx="4" fill="${putColor}" />
+          <text x="${supX}" y="${padTop + 36}" fill="#ffffff" font-size="9.5" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">SUP (PE)</text>
+        `;
+      }
+
+      svg.innerHTML = svgHtml;
+      bindSvgChartInteractions();
+    }
+
+    // Chart Tooltip Hover Interactions
+    function bindSvgChartInteractions() {
+      const container = document.getElementById("oiSvgChartContainer");
+      const tooltip = document.getElementById("oiChartTooltip");
+      const bars = document.querySelectorAll(".oi-svg-bar");
+
+      bars.forEach(b => {
+        b.addEventListener("mouseenter", (e) => {
+          if (!oiData || !oiData.strikes) return;
+          const idx = parseInt(b.getAttribute("data-idx"), 10);
+          const s = oiData.strikes[idx];
+          if (!s) return;
+
+          const rect = container.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          tooltip.style.display = "block";
+          tooltip.style.left = `${Math.min(rect.width - 210, Math.max(10, mouseX + 14))}px`;
+          tooltip.style.top = `${Math.min(rect.height - 140, Math.max(10, mouseY - 20))}px`;
+
+          tooltip.innerHTML = `
+            <div class="oi-tip-header">
+              <span>STRIKE ${formatNumber(s.strike)} ${s.is_atm ? '(ATM)' : ''}</span>
+              <span style="color:#ffffff;">PCR ${s.pcr.toFixed(2)}</span>
+            </div>
+            <div class="oi-tip-row call">
+              <span>Call OI:</span>
+              <span class="oi-tip-val">${formatNumber(s.call_oi)} (${s.call_oi_change >= 0 ? '+' : ''}${formatNumber(s.call_oi_change)})</span>
+            </div>
+            <div class="oi-tip-row put">
+              <span>Put OI:</span>
+              <span class="oi-tip-val">${formatNumber(s.put_oi)} (${s.put_oi_change >= 0 ? '+' : ''}${formatNumber(s.put_oi_change)})</span>
+            </div>
+            <div class="oi-tip-row" style="color:#cbd5e1; font-size:11px; margin-top:4px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">
+              <span>Net (PE - CE):</span>
+              <span class="oi-tip-val ${s.net_oi >= 0 ? 'delta-pos' : 'delta-neg'}">${s.net_oi >= 0 ? '+' : ''}${formatOiLakhs(s.net_oi)}</span>
+            </div>
+            <div class="oi-tip-row" style="font-size:10.5px; margin-top:2px;">
+              <span>Buildup:</span>
+              <span style="font-weight:700;">CE: ${s.call_buildup} | PE: ${s.put_buildup}</span>
+            </div>
+          `;
+        });
+
+        b.addEventListener("mouseleave", () => {
+          tooltip.style.display = "none";
+        });
       });
     }
 
@@ -1825,11 +1571,11 @@
         seriesVisibility.put = !seriesVisibility.put;
         document.getElementById("legendPutItem").style.opacity = seriesVisibility.put ? "1" : "0.4";
       }
-      drawOiChart();
+      renderSvgChart();
     }
 
     // Render Matrix Table
-    function renderMatrixTable(strikes, atmStrike) {
+    function renderTable(strikes, atmStrike) {
       const tbody = document.getElementById("oiMatrixTableBody");
       if (!tbody) return;
 
@@ -1838,7 +1584,6 @@
         return;
       }
 
-      // Max values for relative bar widths
       let maxC = 1;
       let maxP = 1;
       strikes.forEach(s => {
@@ -1860,7 +1605,6 @@
 
         html += `
           <tr class="${isAtm ? 'is-atm-row' : ''}" data-strike="${s.strike}">
-            <!-- Calls Left -->
             <td style="text-align:left;">
               <span class="buildup-badge buildup-${cBuildupClass}">${s.call_buildup || 'Neutral'}</span>
             </td>
@@ -1873,7 +1617,6 @@
               </div>
             </td>
 
-            <!-- Strike Center -->
             <td class="strike-cell">
               <span>${formatNumber(s.strike)}</span>
               ${isAtm ? '<span class="oi-atm-badge">ATM</span>' : ''}
@@ -1882,7 +1625,6 @@
               ${s.pcr.toFixed(2)}
             </td>
 
-            <!-- Puts Right -->
             <td>
               <div class="oi-cell-bar-wrap left">
                 <div class="oi-cell-bar put" style="width: ${pBarPct}px;"></div>
@@ -1915,7 +1657,48 @@
       });
     }
 
-    // Export CSV Function
+    // Switch Symbol
+    function onSymbolDropdownChange(sym) {
+      currentSymbol = sym;
+      const pills = document.querySelectorAll("#oiSymPills .oi-sym-pill");
+      pills.forEach(p => {
+        p.classList.toggle("active", p.getAttribute("data-sym") === currentSymbol);
+      });
+      fetchOiData(true);
+    }
+
+    function onExpiryChange(exp) {
+      currentExpiry = exp;
+      fetchOiData(true);
+    }
+
+    function setStrikeRange(r) {
+      currentStrikeRange = r;
+      const btns = document.querySelectorAll("#oiRangeGroup .oi-range-btn");
+      btns.forEach(b => {
+        b.classList.toggle("active", parseInt(b.getAttribute("data-range"), 10) === r);
+      });
+      fetchOiData(true);
+    }
+
+    function setChartMode(mode) {
+      currentChartMode = mode;
+      const btns = document.querySelectorAll("#oiChartModeGroup .oi-view-pill");
+      btns.forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-mode") === mode);
+      });
+      const sub = document.getElementById("oiChartSubtitle");
+      if (sub) {
+        sub.textContent = mode === "change" ?
+          "Intraday Open Interest Shifts (Buildup, Short Covering, Long Unwinding per Strike)" :
+          (mode === "net" ?
+            "Net Open Interest Difference (Put OI minus Call OI: Green = Put Dominance, Red = Call Dominance)" :
+            "Comparing Call Open Interest (Resistance / Supply) vs Put Open Interest (Support / Demand)");
+      }
+      renderSvgChart();
+    }
+
+    // Export CSV
     function exportOiToCsv() {
       if (!oiData || !oiData.strikes) return;
       const headers = ["Strike", "ATM", "PCR", "Call_OI", "Call_OI_Change", "Call_LTP", "Call_Buildup", "Put_OI", "Put_OI_Change", "Put_LTP", "Put_Buildup", "Net_OI"];
@@ -1945,9 +1728,7 @@
       document.body.removeChild(link);
     }
 
-    // ========================================================================
-    // INITIALIZATION & EVENT LISTENERS
-    // ========================================================================
+    // Initialize
     document.addEventListener("DOMContentLoaded", () => {
       // 1. Symbol quick pills
       const pills = document.querySelectorAll("#oiSymPills .oi-sym-pill");
@@ -1958,68 +1739,13 @@
           currentSymbol = p.getAttribute("data-sym") || "NIFTY";
           const symSel = document.getElementById("oiSymbolSelect");
           if (symSel) symSel.value = currentSymbol;
-          loadOpenInterestData(false);
+          fetchOiData(true);
         });
       });
 
-      // 2. Symbol select
-      const symSelect = document.getElementById("oiSymbolSelect");
-      if (symSelect) {
-        symSelect.addEventListener("change", (e) => {
-          currentSymbol = e.target.value;
-          pills.forEach(p => {
-            p.classList.toggle("active", p.getAttribute("data-sym") === currentSymbol);
-          });
-          loadOpenInterestData(false);
-        });
-      }
-
-      // 3. Expiry select
-      const expSelect = document.getElementById("oiExpirySelect");
-      if (expSelect) {
-        expSelect.addEventListener("change", (e) => {
-          currentExpiry = e.target.value;
-          loadOpenInterestData(false);
-        });
-      }
-
-      // 4. Strike range buttons
-      const rangeBtns = document.querySelectorAll("#oiRangeGroup .oi-range-btn");
-      rangeBtns.forEach(b => {
-        b.addEventListener("click", () => {
-          rangeBtns.forEach(x => x.classList.remove("active"));
-          b.classList.add("active");
-          currentStrikeRange = parseInt(b.getAttribute("data-range") || "10", 10);
-          loadOpenInterestData(false);
-        });
-      });
-
-      // 5. Chart mode buttons
-      const modeBtns = document.querySelectorAll("#oiChartModeGroup .oi-view-pill");
-      modeBtns.forEach(b => {
-        b.addEventListener("click", () => {
-          modeBtns.forEach(x => x.classList.remove("active"));
-          b.classList.add("active");
-          currentChartMode = b.getAttribute("data-mode") || "total";
-          const subtitle = document.getElementById("oiChartSubtitle");
-          if (subtitle) {
-            subtitle.textContent = currentChartMode === "change" ?
-              "Intraday Open Interest Shifts (Buildup, Short Covering, Long Unwinding per Strike)" :
-              (currentChartMode === "net" ?
-                "Net Open Interest Difference (Put OI minus Call OI: Green = Put Dominance, Red = Call Dominance)" :
-                "Comparing Call Open Interest (Resistance / Supply) vs Put Open Interest (Support / Demand)");
-          }
-          drawOiChart();
-        });
-      });
-
-      // Window resize re-draw
-      window.addEventListener("resize", () => {
-        drawOiChart();
-      });
-
-      // Initial Data Fetch
-      loadOpenInterestData(false);
+      // 2. Initial fetch & Start auto-refresh
+      fetchOiData(true);
+      startAutoRefreshLoop();
     });
   </script>
 </body>
