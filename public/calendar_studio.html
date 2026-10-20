@@ -1488,12 +1488,22 @@
           <div><span class="fhelp-code">=IF(B1>23000, B1+100, B1+50)</span> — Conditional</div>
         </div>
         <div class="fhelp-card">
+          <div class="fhelp-card-title">🎯 Market & Strike Formulas</div>
+          <div><span class="fhelp-code">=ATM - 50</span> — ATM strike minus 50 pts</div>
+          <div><span class="fhelp-code">=choose - 50</span> — Dynamic ATM strike - 50 pts</div>
+          <div><span class="fhelp-code">=SPOT + 100</span> — Index Spot price + 100 pts</div>
+          <div><span class="fhelp-code">=CHOOSE(2, 24000, 24500)</span> — Pick 2nd item (24500)</div>
+          <div><span class="fhelp-code">+50 / -50</span> — In Col C, auto =B1±50</div>
+        </div>
+        <div class="fhelp-card">
           <div class="fhelp-card-title">⚡ Excel Shortcuts</div>
-          <div><span class="fhelp-code">Ctrl + B</span> — Toggle Bold formatting</div>
-          <div><span class="fhelp-code">Ctrl + I</span> — Toggle Italic formatting</div>
-          <div><span class="fhelp-code">Ctrl + S</span> — Save Active Strategy Sheet</div>
-          <div><span class="fhelp-code">Ctrl + D</span> — Fill Down formula in column</div>
-          <div><span class="fhelp-code">F2</span> — Focus and edit Formula Bar</div>
+          <div><span class="fhelp-code">Ctrl + Shift + =</span> — Insert Column</div>
+          <div><span class="fhelp-code">Ctrl + =</span> — Insert Row</div>
+          <div><span class="fhelp-code">Ctrl + Shift + -</span> — Delete Column</div>
+          <div><span class="fhelp-code">Ctrl + -</span> — Delete Row</div>
+          <div><span class="fhelp-code">Ctrl + Z / Y</span> — Undo / Redo</div>
+          <div><span class="fhelp-code">Delete</span> — Clear selected cells</div>
+          <div><span class="fhelp-code">Ctrl + B / I / U</span> — Bold / Italic / Underline</div>
         </div>
       </div>
       <div class="fhelp-note">
@@ -1521,6 +1531,58 @@
     let streamInterval = null;
     let isFetching = false;
     let currentPendingExpiryTarget = 'far';
+
+    /* ============================================================
+       EXCEL FORMULA SCOPE ENGINE (Allows =choose-50, =ATM-50, =SUM, etc.)
+       ============================================================ */
+    try {
+      Object.defineProperty(window, 'ATM', { get: () => currentAtmStrike || 24800, configurable: true });
+      Object.defineProperty(window, 'atm', { get: () => currentAtmStrike || 24800, configurable: true });
+      Object.defineProperty(window, 'SPOT', { get: () => currentSpotPrice || 24800, configurable: true });
+      Object.defineProperty(window, 'spot', { get: () => currentSpotPrice || 24800, configurable: true });
+      Object.defineProperty(window, 'STEP', { get: () => getIndexStep(currentUnderlying), configurable: true });
+      Object.defineProperty(window, 'step', { get: () => getIndexStep(currentUnderlying), configurable: true });
+      Object.defineProperty(window, 'choose', { get: () => currentAtmStrike || 24800, configurable: true });
+      Object.defineProperty(window, 'CHOOSE', {
+        value: function(index, ...args) {
+          const flat = args.flat(Infinity);
+          if (typeof index === 'number') {
+            return flat[index - 1] !== undefined ? flat[index - 1] : 0;
+          }
+          return currentAtmStrike || 24800;
+        },
+        writable: true,
+        configurable: true
+      });
+      window.SUM = (...args) => args.flat(Infinity).reduce((a, b) => a + (parseFloat(b) || 0), 0);
+      window.sum = window.SUM;
+      window.AVERAGE = (...args) => {
+        const flat = args.flat(Infinity).filter(x => x !== '' && x !== null && !isNaN(parseFloat(x)));
+        return flat.length ? flat.reduce((a, b) => a + parseFloat(b), 0) / flat.length : 0;
+      };
+      window.average = window.AVERAGE;
+      window.AVG = window.AVERAGE;
+      window.avg = window.AVERAGE;
+      window.COUNT = (...args) => args.flat(Infinity).filter(x => x !== '' && x !== null && !isNaN(parseFloat(x))).length;
+      window.count = window.COUNT;
+      window.MAX = (...args) => Math.max(...args.flat(Infinity).map(x => parseFloat(x) || 0));
+      window.max = window.MAX;
+      window.MIN = (...args) => Math.min(...args.flat(Infinity).map(x => parseFloat(x) || 0));
+      window.min = window.MIN;
+      window.ROUND = (v, d = 0) => Math.round(Number(v) * Math.pow(10, d)) / Math.pow(10, d);
+      window.round = window.ROUND;
+      window.INT = (v) => Math.floor(Number(v) || 0);
+      window.int = window.INT;
+      window.ABS = (v) => Math.abs(Number(v) || 0);
+      window.abs = window.ABS;
+      window.POWER = (b, e) => Math.pow(Number(b) || 0, Number(e) || 0);
+      window.power = window.POWER;
+      window.SQRT = (v) => Math.sqrt(Number(v) || 0);
+      window.sqrt = window.SQRT;
+      window.IF = (cond, ifTrue, ifFalse) => cond ? ifTrue : ifFalse;
+    } catch (e) {
+      console.warn("Global formula engine registration:", e);
+    }
 
     function escapeHtml(str) {
       if (!str) return '';
@@ -1702,6 +1764,8 @@
       expr = expr.replace(/\bATM\b/gi, atm);
       expr = expr.replace(/\bSPOT\b/gi, spot);
       expr = expr.replace(/\bSTEP\b/gi, step);
+      expr = expr.replace(/\bchoose\b/gi, atm);
+      expr = expr.replace(/\bCHOOSE\s*\(/gi, 'Math_choose(');
 
       const gridData = getGridData();
 
@@ -1742,11 +1806,12 @@
       const Math_avg = (...args) => args.flat().reduce((a, b) => a + (parseFloat(b) || 0), 0) / (args.flat().length || 1);
       const Math_round = (v, d = 0) => Math.round(Number(v) * Math.pow(10, d)) / Math.pow(10, d);
       const Math_if = (cond, ifTrue, ifFalse) => cond ? ifTrue : ifFalse;
+      const Math_choose = (idx, ...args) => { const f = args.flat(); return f[idx - 1] !== undefined ? f[idx - 1] : atm; };
 
       try {
         if (/^[0-9+\-*/().\s,><=%!_a-zA-Z]+$/.test(expr)) {
-          const evalFn = new Function('Math_sum', 'Math_avg', 'Math_round', 'Math_if', 'Math', '"use strict"; return (' + expr + ');');
-          const res = evalFn(Math_sum, Math_avg, Math_round, Math_if, Math);
+          const evalFn = new Function('Math_sum', 'Math_avg', 'Math_round', 'Math_if', 'Math_choose', 'Math', '"use strict"; return (' + expr + ');');
+          const res = evalFn(Math_sum, Math_avg, Math_round, Math_if, Math_choose, Math);
           if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
             return Math.round(res * 100) / 100;
           }
@@ -1804,9 +1869,9 @@
         data: normalizedData,
         columns: gridColumns,
         mergeCells: mergeCells || {},
-        minDimensions: [17, 12],
+        minDimensions: [1, 1],
         tableOverflow: true,
-        tableHeight: 'calc(100vh - 248px)',
+        tableHeight: 'calc(100vh - 230px)',
         allowInsertRow: true,
         allowManualInsertRow: true,
         allowInsertColumn: true,
@@ -1815,6 +1880,61 @@
         allowDeleteColumn: true,
         wordWrap: false,
         parseFormulas: true,
+        contextMenu: function(instance, x, y, e) {
+          const items = [];
+          items.push({
+            title: '➕ Insert Row Above (Ctrl+=)',
+            onclick: function() { insertRowAboveSelection(); }
+          });
+          items.push({
+            title: '➕ Insert Row Below',
+            onclick: function() { addNewStrikeRow(); }
+          });
+          items.push({
+            title: '🗑 Delete Row (Ctrl+-)',
+            onclick: function() { deleteSelectedRow(); }
+          });
+          items.push({ type: 'line' });
+          items.push({
+            title: '➕ Insert Column Right (Ctrl+Shift+=)',
+            onclick: function() { insertColumnAfterSelection(); }
+          });
+          items.push({
+            title: '🗑 Delete Column (Ctrl+Shift+-)',
+            onclick: function() { deleteSelectedColumn(); }
+          });
+          items.push({ type: 'line' });
+          items.push({
+            title: '🔀 Merge Selected Cells',
+            onclick: function() { mergeSelectedCells(); }
+          });
+          items.push({
+            title: '🔓 Unmerge Cells',
+            onclick: function() { unmergeSelectedCells(); }
+          });
+          items.push({ type: 'line' });
+          items.push({
+            title: 'Bold (Ctrl+B)',
+            onclick: function() { toggleCellBold(); }
+          });
+          items.push({
+            title: 'Italic (Ctrl+I)',
+            onclick: function() { toggleCellItalic(); }
+          });
+          items.push({
+            title: 'Underline (Ctrl+U)',
+            onclick: function() { toggleCellUnderline(); }
+          });
+          items.push({
+            title: '₹ Format Currency',
+            onclick: function() { formatSelectedCurrency(); }
+          });
+          items.push({
+            title: '% Format Percentage',
+            onclick: function() { formatSelectedPercent(); }
+          });
+          return items;
+        },
         onbeforechange: function(instance, cell, x, y, value) {
           if (value === null || value === undefined) return '';
           let str = String(value).trim();
@@ -2185,7 +2305,29 @@
       executeDropDown(x1, y1, totalRows - 1);
     }
 
+    function clearSelectedCellsContent() {
+      if (!sheet || !selectedCoords) return;
+      const minX = Math.min(selectedCoords.x1, selectedCoords.x2);
+      const maxX = Math.max(selectedCoords.x1, selectedCoords.x2);
+      const minY = Math.min(selectedCoords.y1, selectedCoords.y2);
+      const maxY = Math.max(selectedCoords.y1, selectedCoords.y2);
+
+      ignoreChangeEvents = true;
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          sheet.setValueFromCoords(x, y, '', true);
+        }
+      }
+      ignoreChangeEvents = false;
+      saveCurrentToStore();
+      showToast("Cleared cell contents");
+    }
+
     window.addEventListener('keydown', (e) => {
+      const activeTag = document.activeElement ? document.activeElement.tagName : '';
+      const isInput = (activeTag === 'INPUT' || activeTag === 'TEXTAREA') && document.activeElement.id !== 'excelFormulaInput';
+      if (isInput) return;
+
       if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
         fillDownColumnFormula();
@@ -2201,6 +2343,35 @@
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
         saveActiveSheetNow();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        if (sheet && typeof sheet.undo === 'function') {
+          e.preventDefault();
+          sheet.undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+        if (sheet && typeof sheet.redo === 'function') {
+          e.preventDefault();
+          sheet.redo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+' || e.code === 'NumpadAdd' || e.code === 'Equal')) {
+        e.preventDefault();
+        if (e.shiftKey || e.altKey) {
+          insertColumnAfterSelection();
+        } else {
+          insertRowAboveSelection();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === '-' || e.code === 'NumpadSubtract' || e.code === 'Minus')) {
+        e.preventDefault();
+        if (e.shiftKey || e.altKey) {
+          deleteSelectedColumn();
+        } else {
+          deleteSelectedRow();
+        }
+      } else if (e.key === 'Delete') {
+        if (document.activeElement.id !== 'excelFormulaInput') {
+          e.preventDefault();
+          clearSelectedCellsContent();
+        }
       } else if (e.key === 'F2') {
         const input = document.getElementById('excelFormulaInput');
         if (input) { input.focus(); input.select(); }
@@ -2901,21 +3072,61 @@
 
     function insertColumnAfterSelection() {
       if (!sheet) return;
-      const { x1 } = selectedCoords;
-      const colIndex = (x1 !== undefined && x1 !== null && x1 >= 0) ? x1 + 1 : (sheet.options.columns ? sheet.options.columns.length : 17);
-      sheet.insertColumn(1, colIndex, 1);
-      showToast("Column inserted!");
+      const totalCols = (sheet.options && sheet.options.columns) ? sheet.options.columns.length : 17;
+      let colIdx = (selectedCoords && selectedCoords.x1 !== undefined && selectedCoords.x1 >= 0) ? selectedCoords.x1 : totalCols - 1;
+      if (colIdx >= totalCols) colIdx = totalCols - 1;
+
+      try {
+        sheet.insertColumn(1, colIdx, 0);
+        saveCurrentToStore();
+        showToast(`Column inserted after ${String.fromCharCode(65 + colIdx)}!`);
+      } catch (err) {
+        console.warn("insertColumn error, running data insertion fallback:", err);
+        try {
+          const colLetter = String.fromCharCode(65 + totalCols);
+          if (sheet.options && sheet.options.columns) {
+            sheet.options.columns.splice(colIdx + 1, 0, { type: 'text', title: colLetter, width: 90 });
+          }
+          const d = sheet.getData();
+          d.forEach(r => r.splice(colIdx + 1, 0, ''));
+          sheet.setData(d);
+          showToast(`Column ${colLetter} inserted!`);
+        } catch (e2) {
+          showToast("Error inserting column: " + err.message, true);
+        }
+      }
     }
 
     function deleteSelectedColumn() {
       if (!sheet) return;
-      const { x1 } = selectedCoords;
-      if (x1 === undefined || x1 === null || x1 < 0) {
-        showToast("Select a column to delete", true);
+      const totalCols = (sheet.options && sheet.options.columns) ? sheet.options.columns.length : 17;
+      if (totalCols <= 1) {
+        showToast("Cannot delete the only column left!", true);
         return;
       }
-      sheet.deleteColumn(x1, 1);
-      showToast("Column deleted!");
+      let colIdx = (selectedCoords && selectedCoords.x1 !== undefined && selectedCoords.x1 >= 0) ? selectedCoords.x1 : totalCols - 1;
+      if (colIdx >= totalCols) colIdx = totalCols - 1;
+
+      try {
+        const hadMerges = sheet.options && sheet.options.mergeCells && Object.keys(sheet.options.mergeCells).length > 0;
+        if (hadMerges && typeof sheet.destroyMerged === 'function') {
+          sheet.destroyMerged();
+        }
+        sheet.deleteColumn(colIdx, 1);
+        saveCurrentToStore();
+        showToast(`Column ${String.fromCharCode(65 + colIdx)} deleted!`);
+      } catch (err) {
+        console.warn("deleteColumn error, running data deletion fallback:", err);
+        try {
+          if (sheet.options && sheet.options.columns) sheet.options.columns.splice(colIdx, 1);
+          const d = sheet.getData();
+          d.forEach(r => r.splice(colIdx, 1));
+          sheet.setData(d);
+          showToast(`Column deleted!`);
+        } catch (e2) {
+          showToast("Error deleting column: " + err.message, true);
+        }
+      }
     }
 
     function updateExcelSelectionStats(x1, y1, x2, y2) {
