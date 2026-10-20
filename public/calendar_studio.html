@@ -30,6 +30,7 @@
   <script src="/libs/jsuites.js"></script>
   <script src="/libs/jexcel.js"></script>
   <script src="/libs/xlsx.full.min.js"></script>
+  <script src="/libs/echarts.min.js"></script>
   <script src="/security_shield.js"></script>
 
   <style>
@@ -848,6 +849,87 @@
     }
 
     /* Sheet Grid container */
+    .cs-workspace-split {
+      display: flex;
+      flex: 1;
+      min-height: 520px;
+      overflow: hidden;
+      background: #ffffff;
+      position: relative;
+    }
+
+    /* Layout Side: 58% Grid, 42% Chart */
+    .cs-workspace-split.layout-side {
+      flex-direction: row;
+    }
+    .cs-workspace-split.layout-side .cs-grid-wrap {
+      flex: 1 1 58%;
+      min-width: 320px;
+      height: 100%;
+      border-right: 1px solid var(--border-normal);
+    }
+    .cs-workspace-split.layout-side .cs-chart-pane {
+      flex: 0 0 42%;
+      width: 42%;
+      min-width: 380px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+    }
+    .cs-workspace-split.layout-side .jexcel_content {
+      max-height: calc(100vh - 225px) !important;
+    }
+
+    /* Layout Bottom: 55% Grid, 45% Chart */
+    .cs-workspace-split.layout-bottom {
+      flex-direction: column;
+    }
+    .cs-workspace-split.layout-bottom .cs-grid-wrap {
+      flex: 1 1 55%;
+      height: 55%;
+      min-height: 280px;
+      border-bottom: 1px solid var(--border-normal);
+    }
+    .cs-workspace-split.layout-bottom .cs-chart-pane {
+      flex: 1 1 45%;
+      height: 45%;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+    }
+    .cs-workspace-split.layout-bottom .jexcel_content {
+      max-height: calc(50vh - 120px) !important;
+    }
+
+    /* Layout Max: 100% Chart (Grid Hidden) */
+    .cs-workspace-split.layout-max .cs-grid-wrap {
+      display: none !important;
+    }
+    .cs-workspace-split.layout-max .cs-chart-pane {
+      flex: 1 1 100%;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+    }
+
+    /* Layout Hidden: 100% Grid (Pure Spreadsheet) */
+    .cs-workspace-split.layout-hidden .cs-grid-wrap {
+      flex: 1 1 100%;
+      width: 100%;
+      border-right: none;
+      border-bottom: none;
+    }
+    .cs-workspace-split.layout-hidden .cs-chart-pane {
+      display: none !important;
+    }
+    .cs-workspace-split.layout-hidden .jexcel_content {
+      max-height: calc(100vh - 225px) !important;
+    }
+
     .cs-grid-wrap {
       flex: 1;
       overflow: hidden;
@@ -866,6 +948,159 @@
     .jexcel_content::-webkit-scrollbar-track { background: #f1f5f9; }
     .jexcel_content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .jexcel_content::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Chart Pane Inner Elements */
+    .cs-chart-pane {
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .cs-chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .cs-chart-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      overflow-x: auto;
+    }
+
+    .cs-chart-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .cs-chart-tab:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .cs-chart-tab.active {
+      background: #ecfdf5;
+      color: #107c41;
+      border-color: #a7f3d0;
+      box-shadow: 0 1px 2px rgba(16, 124, 65, 0.08);
+    }
+
+    .cs-chart-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .cs-chart-tool-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .cs-chart-tool-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
+    .cs-chart-tool-btn.close-btn {
+      color: #64748b;
+      padding: 3px 6px;
+      font-size: 12px;
+    }
+    .cs-chart-tool-btn.close-btn:hover {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fca5a5;
+    }
+
+    /* KPI Metrics Bar */
+    .cs-chart-kpi-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 12px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .chart-kpi-item {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .chart-kpi-item .kpi-label {
+      color: #64748b;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .chart-kpi-item .kpi-val {
+      color: #0f172a;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .chart-kpi-item .kpi-val.highlight {
+      color: #107c41;
+      font-weight: 800;
+    }
+
+    .cs-chart-canvas-wrap {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .cs-chart-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 12px;
+      background: #ffffff;
+    }
+
+    .tbtn.chart-active {
+      background: #ecfdf5 !important;
+      color: #107c41 !important;
+      border-color: #107c41 !important;
+      font-weight: 700 !important;
+    }
 
     /* Sheet Footer */
     .cs-sheet-footer {
@@ -1340,6 +1575,8 @@
         </div>
         <button class="tbtn purple" onclick="insertMergedSectionHeader()" title="Insert Strategy Section Header Banner">🏷 Strategy Header</button>
         <button class="tbtn" onclick="resetToAtmStrikes()" title="Reset to auto-calculated ATM strikes">↻ Reset ATM</button>
+        <div class="tbtn-sep"></div>
+        <button class="tbtn chart-active" id="btnRibbonToggleChart" onclick="toggleChartPane()" title="Toggle Visual Analytics &amp; Spread Charts (Ctrl+Alt+C)">📊 Spread Charts</button>
       </div>
       <div class="cs-toolbar-right">
         <div class="spot-display">Spot: <strong id="toolbarSpotDisplay">--</strong></div>
@@ -1362,9 +1599,75 @@
       <button class="tbtn purple" style="height:28px;font-size:11.5px;" onclick="fillDownColumnFormula()" title="Fill Down (Ctrl+D)">⬇ Fill Down</button>
     </div>
 
-    <!-- Grid Container (Pure White Excel Spreadsheet) -->
-    <div class="cs-grid-wrap">
-      <div id="spreadsheetGrid" style="width:100%;min-height:480px;"></div>
+    <!-- Split Workspace: Grid + Interactive Analytics Charts (Powered by ECharts) -->
+    <div class="cs-workspace-split layout-side" id="csWorkspaceSplit">
+      <!-- Spreadsheet Grid Wrap -->
+      <div class="cs-grid-wrap" id="csGridWrap">
+        <div id="spreadsheetGrid" style="width:100%;height:100%;min-height:480px;"></div>
+      </div>
+
+      <!-- Interactive Visual Analytics Panel -->
+      <div class="cs-chart-pane" id="csChartPane">
+        <!-- Chart Header with Tab Switcher & Layout Controls -->
+        <div class="cs-chart-header">
+          <div class="cs-chart-tabs">
+            <button class="cs-chart-tab active" id="tabChartSpread" onclick="switchChartTab('spread')" title="Strike vs Calendar Spread Premium Curve">
+              📈 Spread Curve
+            </button>
+            <button class="cs-chart-tab" id="tabChartIv" onclick="switchChartTab('iv')" title="IV Term Structure & Skew (Far IV vs Near IV & Spread)">
+              ⚡ IV Term &amp; Skew
+            </button>
+            <button class="cs-chart-tab" id="tabChartGreeks" onclick="switchChartTab('greeks')" title="Greeks Sensitivity: Delta & Vega Spread">
+              🎯 Greeks Profile
+            </button>
+          </div>
+          
+          <div class="cs-chart-controls">
+            <button class="cs-chart-tool-btn" id="btnChartLayout" onclick="cycleChartLayout()" title="Cycle Split Layout: Side-by-Side / Bottom / Maximized / Hidden">
+              ◫ Split: Side
+            </button>
+            <button class="cs-chart-tool-btn" onclick="exportChartImage()" title="Export High-Resolution Chart PNG">
+              📷 Save PNG
+            </button>
+            <button class="cs-chart-tool-btn close-btn" onclick="toggleChartPane(false)" title="Hide Charts (Spreadsheet Only)">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Live KPI Metrics Strip -->
+        <div class="cs-chart-kpi-bar" id="chartKpiBar">
+          <div class="chart-kpi-item">
+            <span class="kpi-label">Spot / ATM:</span>
+            <span class="kpi-val" id="chartKpiSpot">--</span>
+          </div>
+          <div class="chart-kpi-item">
+            <span class="kpi-label">ATM Spread:</span>
+            <span class="kpi-val highlight" id="chartKpiAtmSpread">₹--</span>
+          </div>
+          <div class="chart-kpi-item">
+            <span class="kpi-label">Avg Spread:</span>
+            <span class="kpi-val" id="chartKpiAvgSpread">₹--</span>
+          </div>
+          <div class="chart-kpi-item">
+            <span class="kpi-label">Avg IV Skew:</span>
+            <span class="kpi-val" id="chartKpiIvSkew">--%</span>
+          </div>
+          <div class="chart-kpi-item">
+            <span class="kpi-label">Range:</span>
+            <span class="kpi-val" id="chartKpiRange">-- / --</span>
+          </div>
+        </div>
+
+        <!-- ECharts Rendering Container -->
+        <div class="cs-chart-canvas-wrap">
+          <div id="calendarEChart" style="width:100%;height:100%;"></div>
+          <div id="chartEmptyPlaceholder" class="cs-chart-placeholder" style="display:none;">
+            <div style="font-size:24px;margin-bottom:8px;">📊</div>
+            <div>No strike data available to chart</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ========================================
@@ -1969,6 +2272,7 @@
           if (fInput) fInput.value = rawVal !== null && rawVal !== undefined ? rawVal : '';
           setupDragDropAutofill(sheet);
           updateExcelSelectionStats(x1, y1, x2, y2);
+          highlightChartPoint(y1);
         },
         onchange: function(instance, cell, x, y, value) {
           if (ignoreChangeEvents) return;
@@ -2005,6 +2309,7 @@
 
           if (strikesChanged) syncChangedStrikes();
           saveCurrentToStore();
+          scheduleChartUpdate();
         }
       });
 
@@ -2025,6 +2330,7 @@
       updateRowCountBadge();
       setupDragDropAutofill(sheet);
       applySectionHeaderStyles();
+      scheduleChartUpdate();
 
       container.addEventListener('dblclick', function(e) {
         const td = e.target.closest('td[colspan]');
@@ -2375,6 +2681,9 @@
       } else if (e.key === 'F2') {
         const input = document.getElementById('excelFormulaInput');
         if (input) { input.focus(); input.select(); }
+      } else if ((e.ctrlKey || e.metaKey) && e.altKey && (e.key === 'c' || e.key === 'C')) {
+        e.preventDefault();
+        toggleChartPane();
       }
     });
 
@@ -2497,6 +2806,7 @@
 
       ignoreChangeEvents = false;
       applySectionHeaderStyles();
+      scheduleChartUpdate();
     }
 
     function computeSpreadWithRule(farBid, nearAsk, rowIndex) {
@@ -3876,10 +4186,734 @@
       });
     });
 
+    /* ============================================================
+       APACHE ECHARTS INTERACTIVE VISUAL ANALYTICS ENGINE
+       ============================================================ */
+    let calendarChartInstance = null;
+    let currentChartTab = 'spread'; // 'spread', 'iv', 'greeks'
+    let chartLayoutMode = 'layout-side'; // 'layout-side', 'layout-bottom', 'layout-max', 'layout-hidden'
+    let chartUpdateDebounce = null;
+
+    function extractChartDatasetFromGrid() {
+      if (!sheet) return null;
+      const rowCount = getGridRowCount();
+      if (rowCount === 0) return null;
+
+      const strikes = [];
+      const spreadLtps = [];
+      const farBids = [];
+      const nearAsks = [];
+      const ivSpreads = [];
+      const farIvs = [];
+      const nearIvs = [];
+      const deltaSpreads = [];
+      const vegaSpreads = [];
+      const labels = [];
+      const strikePairs = [];
+
+      let spotVal = currentSpotPrice || 0;
+      let atmVal = currentAtmStrike || 0;
+
+      for (let r = 0; r < rowCount; r++) {
+        const rawS1 = sheet.getValueFromCoords(1, r);
+        if (rawS1 === null || rawS1 === undefined || rawS1 === '') continue;
+        const s1 = parseFloat(String(rawS1).replace(/[^0-9.-]/g, ''));
+        if (isNaN(s1) || s1 < 500) continue;
+
+        const rawS2 = sheet.getValueFromCoords(2, r);
+        let s2 = parseFloat(String(rawS2).replace(/[^0-9.-]/g, ''));
+        if (isNaN(s2) || s2 < 500) s2 = s1;
+
+        const optType = String(sheet.getValueFromCoords(0, r) || currentType || 'CE').trim().toUpperCase();
+        const fBid = parseFloat(String(sheet.getValueFromCoords(3, r)).replace(/[^0-9.-]/g, '')) || 0;
+        const nAsk = parseFloat(String(sheet.getValueFromCoords(4, r)).replace(/[^0-9.-]/g, '')) || 0;
+        const spLtp = parseFloat(String(sheet.getValueFromCoords(5, r)).replace(/[^0-9.-]/g, '')) || 0;
+
+        const deltaSp = parseFloat(String(sheet.getValueFromCoords(6, r)).replace(/[^0-9.-]/g, ''));
+        const ivSp = parseFloat(String(sheet.getValueFromCoords(7, r)).replace(/[^0-9.-]/g, ''));
+        const vegaSp = parseFloat(String(sheet.getValueFromCoords(8, r)).replace(/[^0-9.-]/g, ''));
+
+        const farIv = parseFloat(String(sheet.getValueFromCoords(11, r)).replace(/[^0-9.-]/g, ''));
+        const nearIv = parseFloat(String(sheet.getValueFromCoords(12, r)).replace(/[^0-9.-]/g, ''));
+
+        const label = (s1 === s2) ? `${s1}` : `${s1}/${s2}`;
+        labels.push(label);
+        strikes.push(s1);
+        strikePairs.push({ s1, s2, type: optType, row: r });
+        spreadLtps.push(spLtp);
+        farBids.push(fBid);
+        nearAsks.push(nAsk);
+        ivSpreads.push(isNaN(ivSp) ? 0 : ivSp);
+        farIvs.push(isNaN(farIv) ? 0 : farIv);
+        nearIvs.push(isNaN(nearIv) ? 0 : nearIv);
+        deltaSpreads.push(isNaN(deltaSp) ? 0 : deltaSp);
+        vegaSpreads.push(isNaN(vegaSp) ? 0 : vegaSp);
+      }
+
+      if (strikes.length === 0) return null;
+
+      return {
+        labels,
+        strikes,
+        strikePairs,
+        spreadLtps,
+        farBids,
+        nearAsks,
+        ivSpreads,
+        farIvs,
+        nearIvs,
+        deltaSpreads,
+        vegaSpreads,
+        spotPrice: spotVal,
+        atmStrike: atmVal
+      };
+    }
+
+    function updateChartKpis(data) {
+      if (!data) return;
+      const spotEl = document.getElementById('chartKpiSpot');
+      const atmSpEl = document.getElementById('chartKpiAtmSpread');
+      const avgSpEl = document.getElementById('chartKpiAvgSpread');
+      const ivSkewEl = document.getElementById('chartKpiIvSkew');
+      const rangeEl = document.getElementById('chartKpiRange');
+
+      if (spotEl) {
+        spotEl.textContent = data.spotPrice > 0 ? `₹${data.spotPrice.toLocaleString('en-IN', {minimumFractionDigits: 1, maximumFractionDigits: 1})}` : '--';
+      }
+
+      let atmLtp = 0;
+      if (data.strikes.length > 0) {
+        let bestDist = Infinity;
+        let bestIdx = 0;
+        const target = data.atmStrike || data.spotPrice;
+        for (let i = 0; i < data.strikes.length; i++) {
+          const d = Math.abs(data.strikes[i] - target);
+          if (d < bestDist) {
+            bestDist = d;
+            bestIdx = i;
+          }
+        }
+        atmLtp = data.spreadLtps[bestIdx];
+      }
+
+      if (atmSpEl) {
+        atmSpEl.textContent = `₹${Number(atmLtp).toFixed(2)}`;
+      }
+
+      if (data.spreadLtps.length > 0) {
+        const sum = data.spreadLtps.reduce((a, b) => a + b, 0);
+        const avg = sum / data.spreadLtps.length;
+        const min = Math.min(...data.spreadLtps);
+        const max = Math.max(...data.spreadLtps);
+        if (avgSpEl) avgSpEl.textContent = `₹${avg.toFixed(2)}`;
+        if (rangeEl) rangeEl.textContent = `₹${min.toFixed(1)} - ₹${max.toFixed(1)}`;
+      }
+
+      if (data.ivSpreads.length > 0) {
+        const validIvs = data.ivSpreads.filter(v => v !== 0);
+        if (validIvs.length > 0) {
+          const avgIv = validIvs.reduce((a, b) => a + b, 0) / validIvs.length;
+          if (ivSkewEl) {
+            ivSkewEl.textContent = `${avgIv >= 0 ? '+' : ''}${avgIv.toFixed(2)}%`;
+            ivSkewEl.style.color = avgIv >= 0 ? '#107c41' : '#dc2626';
+          }
+        }
+      }
+    }
+
+    function buildSpreadCurveChartOption(data) {
+      let spotMarkLine = null;
+      if (data.spotPrice > 0 && data.strikes.length > 0) {
+        let nearestIdx = 0;
+        let minDiff = Infinity;
+        for (let i = 0; i < data.strikes.length; i++) {
+          const diff = Math.abs(data.strikes[i] - data.spotPrice);
+          if (diff < minDiff) {
+            minDiff = diff;
+            nearestIdx = i;
+          }
+        }
+        const nearestLabel = data.labels[nearestIdx];
+        spotMarkLine = {
+          symbol: ['none', 'none'],
+          silent: true,
+          data: [
+            {
+              xAxis: nearestLabel,
+              lineStyle: { color: '#ef4444', width: 2, type: 'dashed' },
+              label: {
+                show: true,
+                position: 'insideStartTop',
+                formatter: `ATM / Spot ₹${Math.round(data.spotPrice)}`,
+                color: '#b91c1c',
+                fontSize: 10,
+                fontWeight: 700,
+                backgroundColor: '#fee2e2',
+                padding: [2, 6],
+                borderRadius: 3,
+                borderColor: '#fca5a5',
+                borderWidth: 1
+              }
+            }
+          ]
+        };
+      }
+
+      return {
+        backgroundColor: '#ffffff',
+        animationDuration: 350,
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'cross', lineStyle: { color: '#94a3b8', type: 'dashed' } },
+          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          borderColor: '#e2e8f0',
+          borderWidth: 1,
+          textStyle: { color: '#0f172a', fontSize: 12 },
+          extraCssText: 'box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border-radius: 8px; padding: 10px 14px;',
+          formatter: function(params) {
+            if (!params || params.length === 0) return '';
+            const idx = params[0].dataIndex;
+            const strike = data.strikes[idx];
+            const optType = (data.strikePairs[idx] && data.strikePairs[idx].type) || currentType;
+            const ltp = data.spreadLtps[idx];
+            const fBid = data.farBids[idx];
+            const nAsk = data.nearAsks[idx];
+            const dist = data.spotPrice ? (strike - data.spotPrice).toFixed(0) : '0';
+            const distStr = dist > 0 ? `+${dist}` : `${dist}`;
+
+            return `
+              <div style="font-weight:700;font-size:12.5px;color:#0f172a;margin-bottom:6px;display:flex;justify-content:space-between;gap:12px;">
+                <span>Strike ${strike} (${optType})</span>
+                <span style="font-size:11px;font-weight:600;color:#64748b;">${distStr} pts from Spot</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;">
+                <div style="display:flex;justify-content:space-between;gap:16px;">
+                  <span style="color:#107c41;font-weight:700;">● Spread LTP:</span>
+                  <strong style="color:#107c41;">₹${Number(ltp).toFixed(2)}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:16px;">
+                  <span style="color:#0284c7;">● Far Bid:</span>
+                  <span style="color:#0f172a;font-weight:600;">₹${Number(fBid).toFixed(2)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:16px;">
+                  <span style="color:#f59e0b;">● Near Ask:</span>
+                  <span style="color:#0f172a;font-weight:600;">₹${Number(nAsk).toFixed(2)}</span>
+                </div>
+              </div>
+            `;
+          }
+        },
+        legend: {
+          top: 6,
+          right: 12,
+          icon: 'roundRect',
+          textStyle: { color: '#475569', fontSize: 11, fontWeight: 600 }
+        },
+        grid: {
+          top: 38,
+          left: 48,
+          right: 24,
+          bottom: 34,
+          containLabel: false
+        },
+        xAxis: {
+          type: 'category',
+          data: data.labels,
+          boundaryGap: false,
+          axisLine: { lineStyle: { color: '#cbd5e1' } },
+          axisTick: { alignWithLabel: true, lineStyle: { color: '#cbd5e1' } },
+          axisLabel: {
+            color: '#64748b',
+            fontSize: 10,
+            interval: 0,
+            rotate: data.labels.length > 10 ? 30 : 0
+          }
+        },
+        yAxis: {
+          type: 'value',
+          name: 'Spread LTP (₹)',
+          nameTextStyle: { color: '#64748b', fontSize: 10, padding: [0, 0, 0, 8] },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+          axisLabel: {
+            color: '#64748b',
+            fontSize: 10,
+            formatter: '₹{value}'
+          }
+        },
+        series: [
+          {
+            name: 'Spread LTP',
+            type: 'line',
+            smooth: 0.35,
+            data: data.spreadLtps,
+            symbol: 'circle',
+            symbolSize: 6,
+            itemStyle: { color: '#107c41', borderColor: '#ffffff', borderWidth: 1.5 },
+            lineStyle: { width: 2.5, color: '#107c41' },
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(16, 124, 65, 0.28)' },
+                { offset: 1, color: 'rgba(16, 124, 65, 0.01)' }
+              ])
+            },
+            markPoint: {
+              symbol: 'pin',
+              symbolSize: 32,
+              data: [
+                { type: 'max', name: 'Max Spread', itemStyle: { color: '#107c41' } },
+                { type: 'min', name: 'Min Spread', itemStyle: { color: '#0284c7' } }
+              ],
+              label: { fontSize: 9, color: '#fff' }
+            },
+            markLine: spotMarkLine
+          },
+          {
+            name: 'Far Bid',
+            type: 'line',
+            smooth: 0.3,
+            data: data.farBids,
+            symbol: 'none',
+            lineStyle: { width: 1.4, type: 'dashed', color: '#0284c7' },
+            itemStyle: { color: '#0284c7' }
+          },
+          {
+            name: 'Near Ask',
+            type: 'line',
+            smooth: 0.3,
+            data: data.nearAsks,
+            symbol: 'none',
+            lineStyle: { width: 1.4, type: 'dotted', color: '#f59e0b' },
+            itemStyle: { color: '#f59e0b' }
+          }
+        ]
+      };
+    }
+
+    function buildIvChartOption(data) {
+      return {
+        backgroundColor: '#ffffff',
+        animationDuration: 350,
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          borderColor: '#e2e8f0',
+          borderWidth: 1,
+          textStyle: { color: '#0f172a', fontSize: 12 },
+          extraCssText: 'box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border-radius: 8px; padding: 10px 14px;',
+          formatter: function(params) {
+            if (!params || params.length === 0) return '';
+            const idx = params[0].dataIndex;
+            const strike = data.strikes[idx];
+            const fIv = data.farIvs[idx];
+            const nIv = data.nearIvs[idx];
+            const ivSp = data.ivSpreads[idx];
+            const skewColor = ivSp >= 0 ? '#107c41' : '#ef4444';
+
+            return `
+              <div style="font-weight:700;font-size:12.5px;color:#0f172a;margin-bottom:6px;">
+                Strike ${strike} — IV Term Structure
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;">
+                <div style="display:flex;justify-content:space-between;gap:16px;">
+                  <span style="color:#7c3aed;font-weight:600;">● Far Expiry IV:</span>
+                  <strong>${fIv ? Number(fIv).toFixed(2) + '%' : '--'}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:16px;">
+                  <span style="color:#0891b2;font-weight:600;">● Near Expiry IV:</span>
+                  <strong>${nIv ? Number(nIv).toFixed(2) + '%' : '--'}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:16px;border-top:1px solid #e2e8f0;padding-top:4px;margin-top:2px;">
+                  <span style="color:${skewColor};font-weight:700;">● IV Spread (Far − Near):</span>
+                  <strong style="color:${skewColor};">${ivSp >= 0 ? '+' : ''}${ivSp ? Number(ivSp).toFixed(2) + '%' : '--'}</strong>
+                </div>
+              </div>
+            `;
+          }
+        },
+        legend: {
+          top: 6,
+          right: 12,
+          icon: 'roundRect',
+          textStyle: { color: '#475569', fontSize: 11, fontWeight: 600 }
+        },
+        grid: {
+          top: 38,
+          left: 48,
+          right: 48,
+          bottom: 34,
+          containLabel: false
+        },
+        xAxis: {
+          type: 'category',
+          data: data.labels,
+          axisLine: { lineStyle: { color: '#cbd5e1' } },
+          axisTick: { alignWithLabel: true, lineStyle: { color: '#cbd5e1' } },
+          axisLabel: { color: '#64748b', fontSize: 10, interval: 0, rotate: data.labels.length > 10 ? 30 : 0 }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: 'IV (%)',
+            nameTextStyle: { color: '#64748b', fontSize: 10 },
+            splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+            axisLabel: { color: '#64748b', fontSize: 10, formatter: '{value}%' }
+          },
+          {
+            type: 'value',
+            name: 'IV Skew (%)',
+            nameTextStyle: { color: '#64748b', fontSize: 10 },
+            splitLine: { show: false },
+            axisLabel: { color: '#64748b', fontSize: 10, formatter: '{value}%' }
+          }
+        ],
+        series: [
+          {
+            name: 'Far Expiry IV',
+            type: 'line',
+            smooth: 0.3,
+            data: data.farIvs,
+            symbol: 'circle',
+            symbolSize: 6,
+            itemStyle: { color: '#7c3aed' },
+            lineStyle: { width: 2.2, color: '#7c3aed' }
+          },
+          {
+            name: 'Near Expiry IV',
+            type: 'line',
+            smooth: 0.3,
+            data: data.nearIvs,
+            symbol: 'circle',
+            symbolSize: 6,
+            itemStyle: { color: '#0891b2' },
+            lineStyle: { width: 2.2, color: '#0891b2' }
+          },
+          {
+            name: 'IV Spread (Skew)',
+            type: 'bar',
+            yAxisIndex: 1,
+            data: data.ivSpreads.map(val => ({
+              value: val,
+              itemStyle: {
+                color: val >= 0 ? '#107c41' : '#ef4444',
+                borderRadius: val >= 0 ? [3, 3, 0, 0] : [0, 0, 3, 3]
+              }
+            })),
+            barWidth: 14
+          }
+        ]
+      };
+    }
+
+    function buildGreeksChartOption(data) {
+      return {
+        backgroundColor: '#ffffff',
+        animationDuration: 350,
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'cross', lineStyle: { color: '#94a3b8', type: 'dashed' } },
+          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          borderColor: '#e2e8f0',
+          borderWidth: 1,
+          textStyle: { color: '#0f172a', fontSize: 12 },
+          extraCssText: 'box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border-radius: 8px; padding: 10px 14px;',
+          formatter: function(params) {
+            if (!params || params.length === 0) return '';
+            const idx = params[0].dataIndex;
+            const strike = data.strikes[idx];
+            const dSp = data.deltaSpreads[idx];
+            const vSp = data.vegaSpreads[idx];
+
+            return `
+              <div style="font-weight:700;font-size:12.5px;color:#0f172a;margin-bottom:6px;">
+                Strike ${strike} — Greeks Sensitivity
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;">
+                <div style="display:flex;justify-content:space-between;gap:16px;">
+                  <span style="color:#2563eb;font-weight:600;">● Delta Spread (Far − Near):</span>
+                  <strong style="color:#2563eb;">${dSp !== undefined && !isNaN(dSp) ? Number(dSp).toFixed(4) : '--'}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;gap:16px;">
+                  <span style="color:#d97706;font-weight:600;">● Vega Spread (Far − Near):</span>
+                  <strong style="color:#d97706;">${vSp !== undefined && !isNaN(vSp) ? Number(vSp).toFixed(2) : '--'}</strong>
+                </div>
+              </div>
+            `;
+          }
+        },
+        legend: {
+          top: 6,
+          right: 12,
+          icon: 'roundRect',
+          textStyle: { color: '#475569', fontSize: 11, fontWeight: 600 }
+        },
+        grid: {
+          top: 38,
+          left: 48,
+          right: 48,
+          bottom: 34,
+          containLabel: false
+        },
+        xAxis: {
+          type: 'category',
+          data: data.labels,
+          axisLine: { lineStyle: { color: '#cbd5e1' } },
+          axisTick: { alignWithLabel: true, lineStyle: { color: '#cbd5e1' } },
+          axisLabel: { color: '#64748b', fontSize: 10, interval: 0, rotate: data.labels.length > 10 ? 30 : 0 }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: 'Delta Spread',
+            nameTextStyle: { color: '#64748b', fontSize: 10 },
+            splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+            axisLabel: { color: '#64748b', fontSize: 10 }
+          },
+          {
+            type: 'value',
+            name: 'Vega Spread',
+            nameTextStyle: { color: '#64748b', fontSize: 10 },
+            splitLine: { show: false },
+            axisLabel: { color: '#64748b', fontSize: 10 }
+          }
+        ],
+        series: [
+          {
+            name: 'Delta Spread',
+            type: 'line',
+            smooth: 0.3,
+            data: data.deltaSpreads,
+            symbol: 'circle',
+            symbolSize: 6,
+            itemStyle: { color: '#2563eb' },
+            lineStyle: { width: 2.2, color: '#2563eb' },
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(37, 99, 235, 0.18)' },
+                { offset: 1, color: 'rgba(37, 99, 235, 0.01)' }
+              ])
+            }
+          },
+          {
+            name: 'Vega Spread',
+            type: 'line',
+            yAxisIndex: 1,
+            smooth: 0.3,
+            data: data.vegaSpreads,
+            symbol: 'circle',
+            symbolSize: 6,
+            itemStyle: { color: '#d97706' },
+            lineStyle: { width: 2.2, color: '#d97706' }
+          }
+        ]
+      };
+    }
+
+    function renderCalendarChart() {
+      if (chartLayoutMode === 'layout-hidden') return;
+      const chartDom = document.getElementById('calendarEChart');
+      const emptyDom = document.getElementById('chartEmptyPlaceholder');
+      if (!chartDom) return;
+
+      if (typeof echarts === 'undefined') {
+        console.warn("ECharts library not loaded yet.");
+        return;
+      }
+
+      if (!calendarChartInstance) {
+        calendarChartInstance = echarts.init(chartDom, null, { renderer: 'canvas' });
+        calendarChartInstance.on('click', function(params) {
+          if (params && params.dataIndex !== undefined) {
+            const ds = extractChartDatasetFromGrid();
+            if (ds && ds.strikePairs && ds.strikePairs[params.dataIndex]) {
+              const rowIdx = ds.strikePairs[params.dataIndex].row;
+              if (sheet && typeof sheet.updateSelectionFromCoords === 'function') {
+                sheet.updateSelectionFromCoords(0, rowIdx, 16, rowIdx);
+                const targetTd = document.querySelector(`#spreadsheetGrid tbody tr[data-y="${rowIdx}"] td[data-x="1"]`);
+                if (targetTd) {
+                  targetTd.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
+            }
+          }
+        });
+
+        window.addEventListener('resize', () => {
+          if (calendarChartInstance) calendarChartInstance.resize();
+        });
+      }
+
+      const data = extractChartDatasetFromGrid();
+      if (!data || data.strikes.length === 0) {
+        if (emptyDom) emptyDom.style.display = 'flex';
+        calendarChartInstance.clear();
+        return;
+      }
+
+      if (emptyDom) emptyDom.style.display = 'none';
+      updateChartKpis(data);
+
+      let option;
+      if (currentChartTab === 'iv') {
+        option = buildIvChartOption(data);
+      } else if (currentChartTab === 'greeks') {
+        option = buildGreeksChartOption(data);
+      } else {
+        option = buildSpreadCurveChartOption(data);
+      }
+
+      calendarChartInstance.setOption(option, true);
+      calendarChartInstance.resize();
+    }
+
+    function scheduleChartUpdate() {
+      if (chartLayoutMode === 'layout-hidden') return;
+      clearTimeout(chartUpdateDebounce);
+      chartUpdateDebounce = setTimeout(() => {
+        renderCalendarChart();
+      }, 60);
+    }
+
+    function highlightChartPoint(rowIndex) {
+      if (!calendarChartInstance || chartLayoutMode === 'layout-hidden') return;
+      const ds = extractChartDatasetFromGrid();
+      if (!ds || !ds.strikePairs) return;
+      const pairIdx = ds.strikePairs.findIndex(p => p.row === rowIndex);
+      if (pairIdx >= 0) {
+        calendarChartInstance.dispatchAction({
+          type: 'showTip',
+          seriesIndex: 0,
+          dataIndex: pairIdx
+        });
+      }
+    }
+
+    function switchChartTab(tabKey) {
+      currentChartTab = tabKey;
+      ['tabChartSpread', 'tabChartIv', 'tabChartGreeks'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+      });
+
+      if (tabKey === 'spread') {
+        const el = document.getElementById('tabChartSpread');
+        if (el) el.classList.add('active');
+      } else if (tabKey === 'iv') {
+        const el = document.getElementById('tabChartIv');
+        if (el) el.classList.add('active');
+      } else if (tabKey === 'greeks') {
+        const el = document.getElementById('tabChartGreeks');
+        if (el) el.classList.add('active');
+      }
+
+      try {
+        localStorage.setItem('calendar_chart_tab', currentChartTab);
+      } catch (e) {}
+
+      renderCalendarChart();
+    }
+
+    function cycleChartLayout() {
+      const modes = ['layout-side', 'layout-bottom', 'layout-max'];
+      let curIdx = modes.indexOf(chartLayoutMode);
+      if (curIdx === -1) curIdx = 0;
+      const nextMode = modes[(curIdx + 1) % modes.length];
+      setChartLayoutMode(nextMode);
+    }
+
+    function toggleChartPane(forceState) {
+      const container = document.getElementById('csWorkspaceSplit');
+      if (!container) return;
+
+      let nextState;
+      if (forceState !== undefined) {
+        nextState = forceState ? 'layout-side' : 'layout-hidden';
+      } else {
+        nextState = (chartLayoutMode === 'layout-hidden') ? 'layout-side' : 'layout-hidden';
+      }
+
+      setChartLayoutMode(nextState);
+    }
+
+    function setChartLayoutMode(mode) {
+      chartLayoutMode = mode;
+      const splitContainer = document.getElementById('csWorkspaceSplit');
+      const btnRibbon = document.getElementById('btnRibbonToggleChart');
+      const btnLayout = document.getElementById('btnChartLayout');
+
+      if (splitContainer) {
+        splitContainer.className = `cs-workspace-split ${chartLayoutMode}`;
+      }
+
+      if (btnRibbon) {
+        if (chartLayoutMode === 'layout-hidden') {
+          btnRibbon.classList.remove('chart-active');
+          btnRibbon.innerHTML = '📊 Spread Charts';
+        } else {
+          btnRibbon.classList.add('chart-active');
+          btnRibbon.innerHTML = '📊 Spread Charts ●';
+        }
+      }
+
+      if (btnLayout) {
+        if (chartLayoutMode === 'layout-side') btnLayout.innerHTML = '◫ Split: Side';
+        else if (chartLayoutMode === 'layout-bottom') btnLayout.innerHTML = '⬒ Split: Bottom';
+        else if (chartLayoutMode === 'layout-max') btnLayout.innerHTML = '🗖 Maximized';
+      }
+
+      try {
+        localStorage.setItem('calendar_chart_layout', chartLayoutMode);
+      } catch (e) {}
+
+      setTimeout(() => {
+        if (calendarChartInstance && chartLayoutMode !== 'layout-hidden') {
+          calendarChartInstance.resize();
+          renderCalendarChart();
+        }
+      }, 80);
+    }
+
+    function exportChartImage() {
+      if (!calendarChartInstance) return;
+      try {
+        const dataUrl = calendarChartInstance.getDataURL({
+          type: 'png',
+          pixelRatio: 2,
+          backgroundColor: '#ffffff'
+        });
+        const sym = document.getElementById('cfgUnderlying').value || 'NIFTY';
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `${sym}_Calendar_Spread_${currentChartTab}_${new Date().toISOString().slice(0, 10)}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("Chart exported as PNG!");
+      } catch (e) {
+        console.warn("Chart export error:", e);
+      }
+    }
+
     // DOMContentLoaded: Instant state restore + live feeds
     window.addEventListener('DOMContentLoaded', async () => {
       initStoresFromStorage();
       checkAdminBrokerStatus();
+
+      try {
+        const savedLayout = localStorage.getItem('calendar_chart_layout');
+        if (savedLayout && ['layout-side', 'layout-bottom', 'layout-max', 'layout-hidden'].includes(savedLayout)) {
+          chartLayoutMode = savedLayout;
+        }
+        const savedTab = localStorage.getItem('calendar_chart_tab');
+        if (savedTab && ['spread', 'iv', 'greeks'].includes(savedTab)) {
+          currentChartTab = savedTab;
+        }
+      } catch (e) {}
+
+      setChartLayoutMode(chartLayoutMode);
+      switchChartTab(currentChartTab);
 
       let restored = false;
       try {
