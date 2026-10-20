@@ -366,3 +366,22 @@ def load_angel_session_from_supabase() -> dict | None:
         pass
     return None
 
+def delete_angel_session_from_supabase() -> bool:
+    """Delete cleared/invalid Angel One session from Supabase app_config."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return False
+    url = f"{cfg['url']}/rest/v1/app_config?key=eq.angel_session"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+    }
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="DELETE")
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            return resp.status in (200, 204)
+    except Exception:
+        pass
+    return False
+

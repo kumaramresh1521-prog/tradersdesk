@@ -900,18 +900,29 @@ class AngelClient(brokers.BaseBrokerClient):
         self.jwt_token = data.get("jwtToken", "")
         self.refresh_token = data.get("refreshToken", "")
         self.feed_token = data.get("feedToken", "")
-        if not self.jwt_token:
+        # Require genuine JWT structure (at least 2 dots, min 50 chars)
+        if not self.jwt_token or len(self.jwt_token) < 50 or self.jwt_token.count(".") < 2:
+            self.jwt_token = ""
             return False
         try:
-            created_at = datetime.fromisoformat(created)
+            created_at = datetime.fromisoformat(str(created).strip())
+            # Ensure timezone-aware IST datetime to prevent naive vs aware subtraction errors
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=INDIA_TZ)
+            else:
+                created_at = created_at.astimezone(INDIA_TZ)
         except Exception:
             return False
-        # If older than 8 hours, try silent renewal first
-        if now_ist() - created_at > timedelta(hours=8):
-            if self.refresh_token and self.renew_token():
-                return True
-            if now_ist() - created_at > timedelta(hours=18):
-                return False
+        try:
+            # If older than 8 hours, try silent renewal first
+            age = now_ist() - created_at
+            if age > timedelta(hours=8):
+                if self.refresh_token and self.renew_token():
+                    return True
+                if age > timedelta(hours=18):
+                    return False
+        except Exception:
+            return False
         return bool(self.jwt_token)
 
     def save_session(self, response_data) -> None:
@@ -940,6 +951,10 @@ class AngelClient(brokers.BaseBrokerClient):
                 self.session_path.unlink()
             except Exception:
                 pass
+        try:
+            supabase_engine.delete_angel_session_from_supabase()
+        except Exception:
+            pass
 
     def ensure_session(self) -> None:
         if not angel_configured():
