@@ -9855,7 +9855,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             import chart_engine
             query = urllib.parse.parse_qs(parsed.query)
             sym = query.get("symbol", ["NIFTY"])[0]
-            return self.send_json(200, chart_engine.chart_engine.get_symbol_history(sym))
+            res = query.get("resolution", query.get("interval", query.get("tf", ["1D"])))[0]
+            return self.send_json(200, chart_engine.chart_engine.get_symbol_history(sym, res))
         if path == "/api/indices-overview":
             query = urllib.parse.parse_qs(parsed.query)
             payload = {

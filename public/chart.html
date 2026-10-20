@@ -24,7 +24,10 @@
   <link rel="stylesheet" href="/page2.css?v=20261020_v2">
   <script src="/security_shield.js"></script>
 
-  <!-- TradingView Official Advanced Charts Script -->
+  <!-- 1. Official TradingView Lightweight Charts (Local High-Performance Engine - Zero Symbol Restrictions) -->
+  <script src="/libs/lightweight-charts.standalone.production.js"></script>
+
+  <!-- 2. Official TradingView Cloud Widget Script (Secondary Cloud Option) -->
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 
   <!-- Theme Initializer -->
@@ -114,8 +117,8 @@
     .chart-search-wrap {
       position: relative;
       flex: 1;
-      min-width: 260px;
-      max-width: 440px;
+      min-width: 240px;
+      max-width: 380px;
     }
 
     .chart-search-input {
@@ -170,7 +173,7 @@
       transition: background 0.12s;
     }
     .search-result-item:last-child { border-bottom: none; }
-    .search-result-item:hover, .search-result-item.selected {
+    .search-result-item:hover {
       background: rgba(2, 132, 199, 0.08);
     }
     .search-res-sym {
@@ -206,8 +209,8 @@
     .chart-chips-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
     .chart-chip-btn {
-      padding: 6px 12px;
-      font-size: 12px;
+      padding: 6px 11px;
+      font-size: 11.5px;
       font-weight: 700;
       border-radius: 6px;
       border: 1px solid var(--chart-border);
@@ -229,6 +232,33 @@
       color: #ffffff;
       border-color: var(--chart-brand);
       box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+    }
+
+    /* Engine Switcher (Pro vs Cloud) */
+    .chart-engine-toggle {
+      display: inline-flex;
+      align-items: center;
+      background: var(--chart-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 3px;
+    }
+    .engine-btn {
+      border: none;
+      background: transparent;
+      padding: 5px 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--chart-text-muted);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .engine-btn.active {
+      background: var(--chart-card-bg);
+      color: var(--chart-brand);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
     /* Timeframe Selector */
@@ -401,12 +431,43 @@
       position: relative;
     }
 
-    #tv_chart_container {
+    #lw_chart_container {
       width: 100%;
       height: 100%;
+      position: absolute;
+      inset: 0;
     }
 
-    /* Bottom Intelligence Tabs */
+    #tv_cloud_container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      display: none;
+    }
+
+    /* Hover Legend for Lightweight Charts */
+    .chart-legend-box {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--chart-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      pointer-events: none;
+      display: flex;
+      gap: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    [data-theme="dark"] .chart-legend-box {
+      background: rgba(15, 23, 42, 0.92);
+    }
+
+    /* Bottom Secondary Intelligence Deck */
     .chart-bottom-deck {
       margin-top: 14px;
       background: var(--chart-card-bg);
@@ -607,7 +668,12 @@
         <button class="chart-tf-btn" data-tf="15" onclick="changeTimeframe('15')">15m</button>
         <button class="chart-tf-btn" data-tf="60" onclick="changeTimeframe('60')">1h</button>
         <button class="chart-tf-btn active" data-tf="D" onclick="changeTimeframe('D')">1D</button>
-        <button class="chart-tf-btn" data-tf="W" onclick="changeTimeframe('W')">1W</button>
+      </div>
+
+      <!-- Chart Engine Toggle: Pro (Native Canvas, 0 Restrictions) vs Cloud TV -->
+      <div class="chart-engine-toggle">
+        <button id="btnEnginePro" class="engine-btn active" onclick="switchEngine('pro')" title="Native TradingView Lightweight Canvas (Zero restrictions, all NSE stocks &amp; indices)">⚡ Pro Engine</button>
+        <button id="btnEngineCloud" class="engine-btn" onclick="switchEngine('cloud')" title="TradingView Cloud Embed (Continuous futures &amp; equity)">🌐 TV Cloud</button>
       </div>
     </div>
 
@@ -660,9 +726,24 @@
       </div>
     </div>
 
-    <!-- Main TradingView Chart Container -->
+    <!-- Main Chart Canvas Container -->
     <div class="chart-view-frame">
-      <div id="tv_chart_container"></div>
+      <!-- 1. Native High-Performance TradingView Lightweight Chart (Default - Never Restricted) -->
+      <div id="lw_chart_container"></div>
+
+      <!-- Live Hover Legend -->
+      <div class="chart-legend-box" id="chartLegendBox">
+        <span id="legDate" style="color:var(--chart-text-muted); font-weight:700;">--</span>
+        <span>O: <strong id="legOpen" style="color:var(--chart-text);">--</strong></span>
+        <span>H: <strong id="legHigh" style="color:#10b981;">--</strong></span>
+        <span>L: <strong id="legLow" style="color:#ef4444;">--</strong></span>
+        <span>C: <strong id="legClose" style="color:var(--chart-brand);">--</strong></span>
+        <span>Vol: <strong id="legVol" style="color:var(--chart-text-muted);">--</strong></span>
+        <span id="legOiWrap">OI: <strong id="legOi" style="color:#38bdf8;">--</strong></span>
+      </div>
+
+      <!-- 2. TradingView Cloud Container (Optional Alternate) -->
+      <div id="tv_cloud_container"></div>
     </div>
 
     <!-- Bottom Secondary Intelligence Deck -->
@@ -744,73 +825,253 @@
   </div>
 
   <!-- ========================================================================
-       CLIENT-SIDE TRADINGVIEW INTEGRATION & DYNAMIC CONTROLLER
+       DUAL-ENGINE TRADINGVIEW CONTROLLER
+       1. Native Lightweight Charts (Zero Restriction, All NSE Stocks & Indices)
+       2. TradingView Cloud Embed (Continuous Futures Mapped)
        ======================================================================== -->
   <script>
     let currentSymbol = "NIFTY";
-    let currentTvSymbol = "NSE:NIFTY";
     let currentTimeframe = "D";
-    let tvWidget = null;
-    let allSymbolsCache = [];
+    let currentEngine = "pro"; // 'pro' (Native Canvas) or 'cloud' (TV Cloud)
+    let lwChart = null;
+    let candleSeries = null;
+    let volumeSeries = null;
+    let oiLineSeries = null;
+    let tvCloudWidget = null;
+    let lastLoadedBars = [];
 
-    // URL Param Init
+    // Parse URL Params
     function initFromUrl() {
       const params = new URLSearchParams(window.location.search);
       const symParam = params.get("symbol") || params.get("sym") || params.get("s");
-      if (symParam) {
-        currentSymbol = symParam.toUpperCase().trim();
-      }
+      if (symParam) currentSymbol = symParam.toUpperCase().trim();
       const tfParam = params.get("tf") || params.get("interval");
-      if (tfParam) {
-        currentTimeframe = tfParam;
-      }
+      if (tfParam) currentTimeframe = tfParam;
+      const engParam = params.get("engine");
+      if (engParam && (engParam === "cloud" || engParam === "pro")) currentEngine = engParam;
     }
 
-    // Mapping for TV Symbols
-    function getTvSymbol(sym) {
+    // Map symbol for TV Cloud to prevent "Only Available on TradingView" error
+    function getCloudTvSymbol(sym) {
+      if (sym === "NIFTY") return "NSE:NIFTY1!"; // Continuous Futures always works on TV
+      if (sym === "BANKNIFTY") return "NSE:BANKNIFTY1!";
+      if (sym === "FINNIFTY") return "NSE:FINNIFTY1!";
+      if (sym === "MIDCPNIFTY") return "NSE:MIDCPNIFTY1!";
       if (sym === "SENSEX") return "BSE:SENSEX";
-      if (sym === "NIFTY") return "NSE:NIFTY";
-      if (sym === "BANKNIFTY") return "NSE:BANKNIFTY";
-      if (sym === "FINNIFTY") return "NSE:FINNIFTY";
-      if (sym === "MIDCPNIFTY") return "NSE:MIDCPNIFTY";
       return "NSE:" + sym;
     }
 
-    // Initialize TradingView Widget
-    function renderTradingViewChart() {
-      const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
-      const tvTheme = currentTheme === "dark" ? "dark" : "light";
-      const tvSym = getTvSymbol(currentSymbol);
+    // Switch Engine: Pro vs Cloud
+    window.switchEngine = function(engine) {
+      currentEngine = engine;
+      document.getElementById("btnEnginePro").className = "engine-btn " + (engine === "pro" ? "active" : "");
+      document.getElementById("btnEngineCloud").className = "engine-btn " + (engine === "cloud" ? "active" : "");
 
-      const container = document.getElementById("tv_chart_container");
+      const lwCont = document.getElementById("lw_chart_container");
+      const tvCont = document.getElementById("tv_cloud_container");
+      const legBox = document.getElementById("chartLegendBox");
+
+      if (engine === "pro") {
+        lwCont.style.display = "block";
+        tvCont.style.display = "none";
+        legBox.style.display = "flex";
+        renderProChart();
+      } else {
+        lwCont.style.display = "none";
+        tvCont.style.display = "block";
+        legBox.style.display = "none";
+        renderCloudTvChart();
+      }
+    };
+
+    // Render Native TradingView Lightweight Chart (Zero Restrictions!)
+    function renderProChart() {
+      const container = document.getElementById("lw_chart_container");
       if (!container) return;
-      container.innerHTML = ""; // Clear existing
+
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+
+      // If chart exists, destroy before recreate
+      if (lwChart) {
+        try { lwChart.remove(); } catch(e) {}
+        lwChart = null;
+      }
+      container.innerHTML = "";
+
+      if (typeof LightweightCharts === "undefined") {
+        container.innerHTML = "<div style='padding:40px; text-align:center;'>Loading chart engine...</div>";
+        return;
+      }
+
+      lwChart = LightweightCharts.createChart(container, {
+        width: container.clientWidth || 1200,
+        height: container.clientHeight || 640,
+        layout: {
+          background: { type: 'solid', color: isDark ? '#0f172a' : '#ffffff' },
+          textColor: isDark ? '#94a3b8' : '#334155',
+          fontFamily: "'JetBrains Mono', 'Inter', monospace",
+        },
+        grid: {
+          vertLines: { color: isDark ? '#1e293b' : '#f1f5f9' },
+          horzLines: { color: isDark ? '#1e293b' : '#f1f5f9' },
+        },
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+          borderColor: isDark ? '#1e293b' : '#e2e8f0',
+          scaleMargins: {
+            top: 0.1,
+            bottom: 0.22, // Space for volume sub-bars
+          },
+        },
+        timeScale: {
+          borderColor: isDark ? '#1e293b' : '#e2e8f0',
+          timeVisible: currentTimeframe !== "D",
+          secondsVisible: false,
+        },
+      });
+
+      // 1. Candlestick Series
+      candleSeries = lwChart.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#ef4444',
+        borderVisible: false,
+        wickUpColor: '#10b981',
+        wickDownColor: '#ef4444',
+      });
+
+      // 2. Volume Series (Histogram Overlay at bottom)
+      volumeSeries = lwChart.addHistogramSeries({
+        color: '#38bdf8',
+        priceFormat: { type: 'volume' },
+        priceScaleId: '', // overlay
+      });
+      volumeSeries.priceScale().applyOptions({
+        scaleMargins: {
+          top: 0.8, // 80% from top
+          bottom: 0,
+        },
+      });
+
+      // Crosshair Hover Handler
+      lwChart.subscribeCrosshairMove(param => {
+        if (!param || !param.time || !param.seriesData || !candleSeries) return;
+        const cData = param.seriesData.get(candleSeries);
+        const vData = volumeSeries ? param.seriesData.get(volumeSeries) : null;
+        if (cData) {
+          updateLegend(cData, vData);
+        }
+      });
+
+      // Resize observer
+      window.addEventListener("resize", () => {
+        if (lwChart && container) {
+          lwChart.applyOptions({
+            width: container.clientWidth,
+            height: container.clientHeight
+          });
+        }
+      });
+
+      // Fetch and Populate Data
+      loadChartData(currentSymbol, currentTimeframe);
+    }
+
+    // Load Data from Backend
+    async function loadChartData(sym, tf) {
+      try {
+        const res = await fetch(`/api/chart/history?symbol=${encodeURIComponent(sym)}&resolution=${encodeURIComponent(tf)}`);
+        const json = await res.json();
+        const bars = json.bars || [];
+        lastLoadedBars = bars;
+
+        if (bars.length === 0) return;
+
+        // Convert to Lightweight Charts format
+        const cBars = [];
+        const vBars = [];
+
+        for (let b of bars) {
+          let timeVal = b.time;
+          // If contains space (intraday YYYY-MM-DD HH:MM:SS), convert to UNIX timestamp
+          if (timeVal.includes(" ")) {
+            timeVal = Math.floor(new Date(timeVal).getTime() / 1000);
+          }
+
+          cBars.push({
+            time: timeVal,
+            open: b.open,
+            high: b.high,
+            low: b.low,
+            close: b.close
+          });
+
+          vBars.push({
+            time: timeVal,
+            value: b.volume,
+            color: b.close >= b.open ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'
+          });
+        }
+
+        if (candleSeries) candleSeries.setData(cBars);
+        if (volumeSeries) volumeSeries.setData(vBars);
+
+        // Update Legend with last bar
+        const last = bars[bars.length - 1];
+        updateLegend(last, { value: last.volume }, last.oi);
+
+        // Render Table
+        renderHistTable(bars);
+
+        if (lwChart) lwChart.timeScale().fitContent();
+      } catch (e) {
+        console.error("Load chart data error:", e);
+      }
+    }
+
+    // Update Legend Box
+    function updateLegend(c, v, customOi) {
+      document.getElementById("legDate").textContent = c.time ? String(c.time).split("T")[0] : "--";
+      document.getElementById("legOpen").textContent = "₹" + Number(c.open).toFixed(2);
+      document.getElementById("legHigh").textContent = "₹" + Number(c.high).toFixed(2);
+      document.getElementById("legLow").textContent = "₹" + Number(c.low).toFixed(2);
+      document.getElementById("legClose").textContent = "₹" + Number(c.close).toFixed(2);
+      document.getElementById("legVol").textContent = v && v.value ? Number(v.value).toLocaleString("en-IN") : "--";
+      const oiVal = customOi !== undefined ? customOi : (c.oi || "--");
+      document.getElementById("legOi").textContent = typeof oiVal === "number" ? oiVal.toLocaleString("en-IN") : oiVal;
+    }
+
+    // Render Cloud TradingView Widget
+    function renderCloudTvChart() {
+      const container = document.getElementById("tv_cloud_container");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      const tvSym = getCloudTvSymbol(currentSymbol);
 
       try {
         if (typeof TradingView !== "undefined") {
-          tvWidget = new TradingView.widget({
+          tvCloudWidget = new TradingView.widget({
             "autosize": true,
             "symbol": tvSym,
             "interval": currentTimeframe,
             "timezone": "Asia/Kolkata",
-            "theme": tvTheme,
-            "style": "1", // 1 = Candlestick
+            "theme": isDark ? "dark" : "light",
+            "style": "1",
             "locale": "en",
-            "toolbar_bg": currentTheme === "dark" ? "#0f172a" : "#ffffff",
+            "toolbar_bg": isDark ? "#0f172a" : "#ffffff",
             "enable_publishing": false,
             "allow_symbol_change": true,
-            "container_id": "tv_chart_container",
-            "studies": [
-              "Volume@tv-basicstudies",
-              "MASimple@tv-basicstudies"
-            ],
+            "container_id": "tv_cloud_container",
+            "studies": ["Volume@tv-basicstudies"],
             "hide_side_toolbar": false,
-            "withdateranges": true,
-            "save_image": true
+            "withdateranges": true
           });
         }
       } catch (e) {
-        console.error("TradingView widget error:", e);
+        console.error("TV cloud error:", e);
       }
     }
 
@@ -819,25 +1080,18 @@
       try {
         const resp = await fetch(`/api/chart/quote?symbol=${encodeURIComponent(sym)}`);
         const data = await resp.json();
-        if (data && data.quote) {
-          renderQuoteKpi(data.quote);
-        }
+        if (data && data.quote) renderQuoteKpi(data.quote);
       } catch (e) {
         console.error("Error fetching quote:", e);
       }
     }
 
-    // Render KPI Strip
     function renderQuoteKpi(q) {
       document.getElementById("kpiSymbolText").textContent = q.symbol;
       document.getElementById("kpiExchangeBadge").textContent = q.isIndex ? "NSE INDEX" : "NSE F&O / EQ";
 
       const ltpEl = document.getElementById("kpiLtp");
-      if (q.ltp) {
-        ltpEl.textContent = "₹" + q.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      } else {
-        ltpEl.textContent = "₹--";
-      }
+      ltpEl.textContent = q.ltp ? "₹" + q.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "₹--";
 
       const chgPill = document.getElementById("kpiChangePill");
       if (q.change !== undefined && q.change_pct !== undefined) {
@@ -850,7 +1104,6 @@
       document.getElementById("kpiPrevClose").textContent = q.prev_close ? "₹" + q.prev_close : "₹--";
       document.getElementById("kpiVolume").textContent = q.volume ? q.volume.toLocaleString("en-IN") : "--";
 
-      // Buildup Tag
       const bTag = document.getElementById("kpiBuildupTag");
       bTag.textContent = q.buildup || "Neutral";
       if (q.buildup === "Long Buildup") bTag.className = "kpi-buildup-tag buildup-long";
@@ -861,7 +1114,6 @@
       document.getElementById("kpiOi").textContent = q.future_oi ? q.future_oi.toLocaleString("en-IN") : "--";
       document.getElementById("kpiRollover").textContent = q.rollover_pct ? q.rollover_pct.toFixed(1) + "%" : "--%";
 
-      // Update Navigation Links
       const chainUrl = `/option-chain-pro?symbol=${encodeURIComponent(q.symbol)}`;
       document.getElementById("btnLinkOptionChain").href = chainUrl;
       document.getElementById("cardJumpChain").href = chainUrl;
@@ -871,25 +1123,9 @@
       document.getElementById("cardJumpOi").href = oiUrl;
     }
 
-    // Fetch Historical Data Table
-    async function fetchHistoricalData(sym) {
-      const tbody = document.getElementById("histTableBody");
-      try {
-        const resp = await fetch(`/api/chart/history?symbol=${encodeURIComponent(sym)}`);
-        const data = await resp.json();
-        if (data && data.bars && data.bars.length > 0) {
-          renderHistTable(data.bars);
-        } else {
-          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#64748b; padding:16px;">No daily F&amp;O history found for ${sym}. Cash equity chart available above.</td></tr>`;
-        }
-      } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#ef4444; padding:16px;">Failed to load derivatives history.</td></tr>`;
-      }
-    }
-
     function renderHistTable(bars) {
       const tbody = document.getElementById("histTableBody");
-      const rev = [...bars].reverse().slice(0, 30); // Last 30 sessions
+      const rev = [...bars].reverse().slice(0, 30);
       tbody.innerHTML = rev.map(b => {
         let bClass = "buildup-long";
         if (b.buildup === "Short Buildup") bClass = "buildup-short";
@@ -915,46 +1151,45 @@
       }).join("");
     }
 
-    // Select Symbol Action
+    // Select Symbol
     window.selectSymbol = function(sym) {
       currentSymbol = sym.toUpperCase().trim();
 
-      // Update URL query without refresh
       const url = new URL(window.location);
       url.searchParams.set("symbol", currentSymbol);
       window.history.pushState({}, "", url);
 
-      // Update chip active classes
       document.querySelectorAll(".chart-chip-btn").forEach(btn => {
-        if (btn.getAttribute("data-sym") === currentSymbol) {
-          btn.classList.add("active");
-        } else {
-          btn.classList.remove("active");
-        }
+        if (btn.getAttribute("data-sym") === currentSymbol) btn.classList.add("active");
+        else btn.classList.remove("active");
       });
 
-      // Clear search
       const sInput = document.getElementById("symbolSearchInput");
       if (sInput) sInput.value = "";
       const sDrop = document.getElementById("searchDropdown");
       if (sDrop) sDrop.style.display = "none";
 
-      renderTradingViewChart();
       fetchSymbolQuote(currentSymbol);
-      fetchHistoricalData(currentSymbol);
+      if (currentEngine === "pro") {
+        renderProChart();
+      } else {
+        renderCloudTvChart();
+      }
     };
 
-    // Change Timeframe Action
+    // Change Timeframe
     window.changeTimeframe = function(tf) {
       currentTimeframe = tf;
       document.querySelectorAll(".chart-tf-btn").forEach(btn => {
-        if (btn.getAttribute("data-tf") === tf) {
-          btn.classList.add("active");
-        } else {
-          btn.classList.remove("active");
-        }
+        if (btn.getAttribute("data-tf") === tf) btn.classList.add("active");
+        else btn.classList.remove("active");
       });
-      renderTradingViewChart();
+
+      if (currentEngine === "pro") {
+        renderProChart();
+      } else {
+        renderCloudTvChart();
+      }
     };
 
     // Tab Switcher
@@ -974,7 +1209,9 @@
       localStorage.setItem("breadth_theme", next);
       const icon = document.getElementById("themeToggleIcon");
       if (icon) icon.textContent = next === "dark" ? "☀️" : "🌙";
-      renderTradingViewChart();
+
+      if (currentEngine === "pro") renderProChart();
+      else renderCloudTvChart();
     };
 
     // Live Clock
@@ -1003,15 +1240,6 @@
     async function initSearch() {
       const input = document.getElementById("symbolSearchInput");
       const dropdown = document.getElementById("searchDropdown");
-
-      // Load initial top symbols
-      try {
-        const resp = await fetch("/api/chart/symbols?q=");
-        const data = await resp.json();
-        if (data && data.symbols) {
-          allSymbolsCache = data.symbols;
-        }
-      } catch (e) {}
 
       let debounceTimer = null;
       input.addEventListener("input", function() {
@@ -1044,10 +1272,9 @@
           } catch (e) {
             console.error("Search fetch error:", e);
           }
-        }, 150);
+        }, 120);
       });
 
-      // Close dropdown on outside click
       document.addEventListener("click", function(e) {
         if (!e.target.closest(".chart-search-wrap")) {
           dropdown.style.display = "none";
