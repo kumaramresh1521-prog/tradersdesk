@@ -484,15 +484,22 @@ def load_dotenv() -> None:
             except Exception:
                 pass
 
-    # Priority 4: Supabase cloud persistence (if configured & table exists)
+    # Priority 4: Supabase cloud persistence (permanent cross-device global storage)
     try:
         sb_config = supabase_engine.load_broker_settings_from_supabase()
         if sb_config and isinstance(sb_config, dict):
             for k, v in sb_config.items():
                 if v and (k not in os.environ or not os.environ[k]):
                     os.environ[k] = str(v)
-    except Exception:
-        pass
+            try:
+                ensure_cache()
+                CONFIG_BACKUP_FILE.write_text(json.dumps(sb_config, indent=2), encoding="utf-8")
+                DATA_DIR.mkdir(parents=True, exist_ok=True)
+                DATA_BACKUP_FILE.write_text(json.dumps(sb_config, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[SupabaseInit] Could not load initial settings from Supabase: {e}")
 
     # Default DATA_BROKER if credentials exist
     if not os.environ.get("DATA_BROKER"):
@@ -503,6 +510,29 @@ def load_dotenv() -> None:
 
 
 load_dotenv()
+
+
+_LAST_SUPABASE_SYNC_TS = 0.0
+
+def sync_broker_settings_from_supabase_if_needed(force: bool = False) -> bool:
+    """Periodically check Supabase to ensure all instances/workers have the latest broker credentials."""
+    global _LAST_SUPABASE_SYNC_TS
+    now = time.time()
+    if not force and (now - _LAST_SUPABASE_SYNC_TS < 30.0):
+        return False
+    _LAST_SUPABASE_SYNC_TS = now
+    try:
+        sb_config = supabase_engine.load_broker_settings_from_supabase()
+        if sb_config and isinstance(sb_config, dict):
+            updated = False
+            for k, v in sb_config.items():
+                if v and os.environ.get(k) != str(v):
+                    os.environ[k] = str(v)
+                    updated = True
+            return updated
+    except Exception:
+        pass
+    return False
 
 
 def save_dotenv(updates: dict[str, str]) -> None:
@@ -561,11 +591,11 @@ def save_dotenv(updates: dict[str, str]) -> None:
     except Exception:
         pass
 
-    # Priority 4: Sync to Supabase cloud in background
+    # Priority 4: Sync to Supabase cloud permanently (Synchronous to guarantee write completes before response)
     try:
-        threading.Thread(target=supabase_engine.save_broker_settings_to_supabase, args=(backup,), daemon=True).start()
-    except Exception:
-        pass
+        supabase_engine.save_broker_settings_to_supabase(backup)
+    except Exception as e:
+        print(f"[SupabaseSync] Warning saving to Supabase: {e}")
 
     # Clear Upstox invalid token cache if Upstox token was updated
     if "UPSTOX_ACCESS_TOKEN" in updates:
@@ -853,6 +883,18 @@ class AngelClient(brokers.BaseBrokerClient):
     def load_session(self) -> bool:
         data = read_json(self.session_path, {})
         created = data.get("created_at", "")
+        if not created or not data.get("jwtToken"):
+            try:
+                sb_session = supabase_engine.load_angel_session_from_supabase()
+                if sb_session and isinstance(sb_session, dict) and sb_session.get("jwtToken"):
+                    data = sb_session
+                    created = data.get("created_at", "")
+                    try:
+                        write_json(self.session_path, data)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
         if not created:
             return False
         self.jwt_token = data.get("jwtToken", "")
@@ -877,15 +919,17 @@ class AngelClient(brokers.BaseBrokerClient):
         self.jwt_token = data.get("jwtToken", "")
         self.refresh_token = data.get("refreshToken", "")
         self.feed_token = data.get("feedToken", "")
-        write_json(
-            self.session_path,
-            {
-                "created_at": now_ist().isoformat(),
-                "jwtToken": self.jwt_token,
-                "refreshToken": self.refresh_token,
-                "feedToken": self.feed_token,
-            },
-        )
+        session_obj = {
+            "created_at": now_ist().isoformat(),
+            "jwtToken": self.jwt_token,
+            "refreshToken": self.refresh_token,
+            "feedToken": self.feed_token,
+        }
+        write_json(self.session_path, session_obj)
+        try:
+            supabase_engine.save_angel_session_to_supabase(session_obj)
+        except Exception as e:
+            print(f"[AngelSession] Failed to save session to Supabase: {e}")
 
     def clear_session(self) -> None:
         self.jwt_token = ""
@@ -1177,12 +1221,29 @@ def is_active_broker_configured() -> bool:
     b = brokers.get_active_broker_name(env)
     if b == "UPSTOX":
         tok = env("UPSTOX_ACCESS_TOKEN", "").strip()
-        return bool(tok and len(tok) > 40 and not tok.isdigit())
+        is_cfg = bool(tok and len(tok) > 40 and not tok.isdigit())
+        if not is_cfg:
+            sync_broker_settings_from_supabase_if_needed()
+            tok = env("UPSTOX_ACCESS_TOKEN", "").strip()
+            return bool(tok and len(tok) > 40 and not tok.isdigit())
+        return is_cfg
     elif b in ("KOTAK", "KOTAK_NEO"):
-        return bool(env("KOTAK_ACCESS_TOKEN") or (env("KOTAK_CONSUMER_KEY") and env("KOTAK_MOBILE_NO")))
+        is_cfg = bool(env("KOTAK_ACCESS_TOKEN") or (env("KOTAK_CONSUMER_KEY") and env("KOTAK_MOBILE_NO")))
+        if not is_cfg:
+            sync_broker_settings_from_supabase_if_needed()
+            return bool(env("KOTAK_ACCESS_TOKEN") or (env("KOTAK_CONSUMER_KEY") and env("KOTAK_MOBILE_NO")))
+        return is_cfg
     elif b == "FYERS":
-        return bool(env("FYERS_APP_ID") and env("FYERS_ACCESS_TOKEN"))
-    return angel_configured()
+        is_cfg = bool(env("FYERS_APP_ID") and env("FYERS_ACCESS_TOKEN"))
+        if not is_cfg:
+            sync_broker_settings_from_supabase_if_needed()
+            return bool(env("FYERS_APP_ID") and env("FYERS_ACCESS_TOKEN"))
+        return is_cfg
+    is_cfg = angel_configured()
+    if not is_cfg:
+        sync_broker_settings_from_supabase_if_needed()
+        return angel_configured()
+    return is_cfg
 
 
 class ResilientBrokerClient(brokers.BaseBrokerClient):
@@ -9585,16 +9646,28 @@ class RequestHandler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         if path == "/api/status":
+            sync_broker_settings_from_supabase_if_needed()
             active_broker = brokers.get_active_broker_name(env)
             angel_cfg = angel_configured()
-            broker_configured = angel_cfg
+            upstox_cfg = bool(env("UPSTOX_ACCESS_TOKEN", "").strip())
+            kotak_cfg = bool(env("KOTAK_ACCESS_TOKEN", "").strip() or (env("KOTAK_CONSUMER_KEY", "").strip() and env("KOTAK_MOBILE_NO", "").strip()))
+            fyers_cfg = bool(env("FYERS_APP_ID", "").strip() and env("FYERS_ACCESS_TOKEN", "").strip())
+
             has_active_session = False
-            if angel_cfg:
+            if active_broker == "ANGEL" and angel_cfg:
                 try:
                     ac = AngelClient()
                     has_active_session = bool(ac.load_session() and ac.jwt_token)
                 except Exception:
                     has_active_session = False
+            elif active_broker == "UPSTOX":
+                has_active_session = upstox_cfg
+            elif active_broker in ("KOTAK", "KOTAK_NEO"):
+                has_active_session = kotak_cfg
+            elif active_broker == "FYERS":
+                has_active_session = fyers_cfg
+
+            broker_configured = is_active_broker_configured()
             broker_connected = has_active_session
             return self.send_json(
                 200,
@@ -9604,10 +9677,13 @@ class RequestHandler(BaseHTTPRequestHandler):
                     "brokerConfigured": broker_configured,
                     "brokerConnected": broker_connected,
                     "angelConfigured": angel_cfg,
-                    "angelConnected": has_active_session,
-                    "upstoxConfigured": False,
-                    "kotakConfigured": False,
-                    "fyersConfigured": False,
+                    "angelConnected": (has_active_session if active_broker == "ANGEL" else False),
+                    "upstoxConfigured": upstox_cfg,
+                    "upstoxConnected": (has_active_session if active_broker == "UPSTOX" else False),
+                    "kotakConfigured": kotak_cfg,
+                    "kotakConnected": (has_active_session if active_broker in ("KOTAK", "KOTAK_NEO") else False),
+                    "fyersConfigured": fyers_cfg,
+                    "fyersConnected": (has_active_session if active_broker == "FYERS" else False),
                     "clientCode": mask(env("ANGEL_CLIENT_CODE")),
                     "baseUrl": env("ANGEL_BASE_URL", ANGEL_ROOT),
                     "hasTotpSecret": bool(env("ANGEL_TOTP_SECRET")),
@@ -9621,6 +9697,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 },
             )
         if path == "/api/settings":
+            sync_broker_settings_from_supabase_if_needed()
             active_broker = brokers.get_active_broker_name(env)
             # Never send credentials back to the browser.  Status is enough to
             # confirm that a persisted server-side configuration survived a
@@ -10699,10 +10776,19 @@ class RequestHandler(BaseHTTPRequestHandler):
                 
                 # Create client for specified broker
                 if broker_name == "UPSTOX":
+                    ut = str(payload.get("accessToken") or "").strip()
+                    if ut and not is_masked_or_empty(ut):
+                        save_dotenv({"UPSTOX_ACCESS_TOKEN": ut})
                     client = brokers.UpstoxClient(cache_dir=CACHE_DIR, env_func=env)
                 elif broker_name in ("KOTAK", "KOTAK_NEO"):
+                    kt = str(payload.get("accessToken") or "").strip()
+                    if kt and not is_masked_or_empty(kt):
+                        save_dotenv({"KOTAK_ACCESS_TOKEN": kt})
                     client = brokers.KotakNeoClient(cache_dir=CACHE_DIR, env_func=env)
                 elif broker_name == "FYERS":
+                    ft = str(payload.get("accessToken") or "").strip()
+                    if ft and not is_masked_or_empty(ft):
+                        save_dotenv({"FYERS_ACCESS_TOKEN": ft})
                     client = brokers.FyersClient(cache_dir=CACHE_DIR, env_func=env)
                 else:
                     client = AngelClient()

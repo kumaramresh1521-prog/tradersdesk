@@ -35,12 +35,15 @@ def get_env_var(key: str, default: str = "") -> str:
         return val.strip()
     return default
 
+DEFAULT_SUPABASE_URL = "https://vjslcbfvcwwiovvxnhyc.supabase.co"
+DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_0sitpsM9eh7mMwsjusLsbA_H4m6FCrG"
+
 def get_supabase_config() -> dict:
-    url = get_env_var("SUPABASE_URL", "")
-    anon_key = get_env_var("SUPABASE_ANON_KEY", "") or get_env_var("SUPABASE_KEY", "")
+    url = get_env_var("SUPABASE_URL", DEFAULT_SUPABASE_URL).rstrip("/")
+    anon_key = get_env_var("SUPABASE_ANON_KEY", "") or get_env_var("SUPABASE_KEY", "") or DEFAULT_SUPABASE_ANON_KEY
     service_key = get_env_var("SUPABASE_SERVICE_ROLE_KEY", "")
     return {
-        "url": url.rstrip("/"),
+        "url": url,
         "anonKey": anon_key,
         "serviceRoleKey": service_key,
         "isConfigured": bool(url and (anon_key or service_key))
@@ -255,7 +258,65 @@ def load_user_workspace(user_id: str, token: str | None = None) -> dict:
 # =====================================================================
 
 def save_broker_settings_to_supabase(config_data: dict) -> dict:
-    """Save global broker settings to Supabase app_config table."""
+    """Save global broker settings to Supabase app_config table, safely merging existing settings."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return {"ok": False, "message": "Supabase not configured"}
+    
+    # 1. Load existing to ensure we never overwrite or erase existing credentials
+    existing = load_broker_settings_from_supabase() or {}
+    merged = dict(existing)
+    for k, v in config_data.items():
+        if v is not None and str(v).strip():
+            merged[k] = str(v).strip()
+
+    url = f"{cfg['url']}/rest/v1/app_config"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+    payload = {
+        "key": "global_broker_settings",
+        "value": merged,
+        "updated_at": "now()"
+    }
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+    try:
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=req_headers, method="POST")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return {"ok": True, "message": "Broker settings backed up permanently to Supabase cloud."}
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+
+def load_broker_settings_from_supabase() -> dict | None:
+    """Load global broker settings from Supabase app_config table."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return None
+    url = f"{cfg['url']}/rest/v1/app_config?key=eq.global_broker_settings&select=value"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Accept": "application/json"
+    }
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="GET")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            raw = resp.read().decode("utf-8")
+            items = json.loads(raw or "[]")
+            if items and isinstance(items, list) and len(items) > 0:
+                val = items[0].get("value")
+                if isinstance(val, dict):
+                    return val
+    except Exception:
+        pass
+    return None
+
+def save_angel_session_to_supabase(session_data: dict) -> dict:
+    """Save active Angel One authenticated JWT session to Supabase app_config table."""
     cfg = get_supabase_config()
     if not cfg["isConfigured"]:
         return {"ok": False, "message": "Supabase not configured"}
@@ -263,8 +324,8 @@ def save_broker_settings_to_supabase(config_data: dict) -> dict:
     url = f"{cfg['url']}/rest/v1/app_config"
     key = cfg["serviceRoleKey"] or cfg["anonKey"]
     payload = {
-        "key": "global_broker_settings",
-        "value": config_data,
+        "key": "angel_session",
+        "value": session_data,
         "updated_at": "now()"
     }
     req_headers = {
@@ -276,16 +337,16 @@ def save_broker_settings_to_supabase(config_data: dict) -> dict:
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=req_headers, method="POST")
         with urllib.request.urlopen(req, timeout=6) as resp:
-            return {"ok": True, "message": "Broker settings backed up to Supabase."}
+            return {"ok": True, "message": "Angel session backed up to Supabase."}
     except Exception as e:
         return {"ok": False, "message": str(e)}
 
-def load_broker_settings_from_supabase() -> dict | None:
-    """Load global broker settings from Supabase app_config table."""
+def load_angel_session_from_supabase() -> dict | None:
+    """Load active Angel One authenticated JWT session from Supabase app_config table."""
     cfg = get_supabase_config()
     if not cfg["isConfigured"]:
         return None
-    url = f"{cfg['url']}/rest/v1/app_config?key=eq.global_broker_settings&select=value"
+    url = f"{cfg['url']}/rest/v1/app_config?key=eq.angel_session&select=value"
     key = cfg["serviceRoleKey"] or cfg["anonKey"]
     req_headers = {
         "apikey": key,

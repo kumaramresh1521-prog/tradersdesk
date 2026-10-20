@@ -15,9 +15,8 @@ if [ -f ".env" ]; then
     ENV_VARS_LIST=$(python3 pack_deploy_env.py "${PROJECT_ID}" 2>/dev/null || python pack_deploy_env.py "${PROJECT_ID}")
     echo "✅ Global broker credentials successfully prepared for Cloud Run deployment!"
 else
-    echo "ℹ️ No .env file found in $(pwd)."
-    echo "   Tip: If you have broker credentials, save them in .env before deploying so Cloud Run stays configured globally."
-    ENV_VARS_LIST="GOOGLE_CLOUD_PROJECT=${PROJECT_ID}"
+    echo "ℹ️ No .env file found in $(pwd). Supabase cloud connection will be attached by default."
+    ENV_VARS_LIST=$(python3 pack_deploy_env.py "${PROJECT_ID}" 2>/dev/null || python pack_deploy_env.py "${PROJECT_ID}" || echo "GOOGLE_CLOUD_PROJECT=${PROJECT_ID},SUPABASE_URL=https://vjslcbfvcwwiovvxnhyc.supabase.co,SUPABASE_ANON_KEY=sb_publishable_0sitpsM9eh7mMwsjusLsbA_H4m6FCrG")
 fi
 
 echo "Starting Cloud Run build and deploy (this normally takes 2–4 minutes)..."
