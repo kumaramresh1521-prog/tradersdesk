@@ -243,17 +243,17 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
         "keywords": "stock delivery inspector, security delivery position, delivery history chart, reliance delivery percentage",
         "canonical": "https://tradersdesk.in/delivery/inspect",
     },
-    "/global-markets": {
-        "title": "Global Markets Desk - GIFT Nifty & World Indices Macro Radar | TradersDesk",
-        "desc": "Real-time GIFT Nifty, US markets (S&P 500, Nasdaq, Dow), Asian & European indices, Brent Crude, US 10Y Yield, and global macro pulse.",
-        "keywords": "gift nifty, global markets, world indices, us markets, brent crude, dxy, macro pulse",
-        "canonical": "https://tradersdesk.in/global-markets",
+    "/open-interest": {
+        "title": "Open Interest Analysis - Nifty & Bank Nifty Live Call vs Put OI Charts | TradersDesk",
+        "desc": "Live NSE Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.",
+        "keywords": "open interest, nifty oi, banknifty oi, call vs put chart, pcr, max pain, oi buildup, options oi",
+        "canonical": "https://tradersdesk.in/open-interest/nifty",
     },
-    "/global": {
-        "title": "Global Markets Desk - GIFT Nifty & World Indices Macro Radar | TradersDesk",
-        "desc": "Real-time GIFT Nifty, US markets (S&P 500, Nasdaq, Dow), Asian & European indices, Brent Crude, US 10Y Yield, and global macro pulse.",
-        "keywords": "global markets, gift nifty, world indices",
-        "canonical": "https://tradersdesk.in/global-markets",
+    "/open-interest/nifty": {
+        "title": "Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk",
+        "desc": "Live NSE Nifty Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.",
+        "keywords": "nifty open interest, nifty oi, call vs put chart, nifty pcr, max pain strike, nifty support resistance",
+        "canonical": "https://tradersdesk.in/open-interest/nifty",
     },
     "/straddle": {
         "title": "Straddle Desk - Live Options Premium Decay, IV Crush & Greeks | TradersDesk",
@@ -383,8 +383,8 @@ def _detect_category(path: str) -> str:
         return "delivery"
     if "/breadth" in p or p.startswith("/breadth") or "/contribution" in p:
         return "breadth"
-    if "global" in p:
-        return "global"
+    if "open-interest" in p or "oi" in p:
+        return "derivatives"
     if "fii" in p or "smart-money" in p:
         return "smart-money"
     if any(k in p for k in ("about", "privacy", "terms", "disclaimer")):
@@ -464,8 +464,8 @@ def load_all_seo_routes() -> dict[str, dict]:
             "og_desc": meta.get("desc", ""),
             "robots": "index, follow",
             "category": _detect_category(clean_p),
-            "priority": "1.0" if clean_p == "/" else ("0.9" if clean_p in ("/futures", "/option-chain-pro", "/global-markets", "/mtf", "/breadth") else "0.8"),
-            "changefreq": "always" if clean_p in ("/", "/futures", "/option-chain-pro", "/global-markets") else "daily",
+            "priority": "1.0" if clean_p == "/" else ("0.9" if clean_p in ("/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/mtf", "/breadth") else "0.8"),
+            "changefreq": "always" if clean_p in ("/", "/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty") else "daily",
             "custom": False,
             "last_updated": "2026-10-10 07:00:00 IST"
         }
@@ -873,9 +873,9 @@ def get_dynamic_meta_for_path(path: str, snapshot: dict) -> dict:
     elif clean_p.startswith("/breadth") or clean_p.startswith("/contribution"):
         base_meta["title"] = "Market Breadth Pro - Point & Figure Advance-Decline Engine | TradersDesk"
         base_meta["desc"] = f"Institutional Indian market breadth with Point & Figure (PnF) matrices, advance-decline momentum, and heavyweight point contribution."
-    elif clean_p.startswith("/global"):
-        base_meta["title"] = "Global Markets Desk - GIFT Nifty & World Indices Macro Radar | TradersDesk"
-        base_meta["desc"] = f"Real-time GIFT Nifty, US markets (S&P 500, Nasdaq), Asian & European indices, Brent Crude, US 10Y Yield, and global macro pulse."
+    elif clean_p.startswith("/open-interest") or clean_p.startswith("/oi"):
+        base_meta["title"] = "Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk"
+        base_meta["desc"] = f"Live NSE Open Interest (OI) distribution, strike-by-strike Call vs Put accumulation, Put-Call Ratio (PCR), Max Pain, and key resistance/support levels ({date_str})."
 
     base_meta["og_title"] = base_meta["title"]
     base_meta["og_desc"] = base_meta["desc"]
@@ -1170,8 +1170,6 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
         "/": "panelDashboard",
         "/dashboard": "panelDashboard",
         "/futures": "panelFutures",
-        "/global-markets": "panelGlobalMarkets",
-        "/global": "panelGlobalMarkets",
         "/option-chain-pro": "panelUpstoxChain",
         "/options": "panelUpstoxChain",
         "/fii-dii": "panelSmartMoney",
@@ -1183,7 +1181,7 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
 
     target_panel = route_panel_map.get(clean_p)
     if not target_panel:
-        for pfx, pnl in (("/futures", "panelFutures"), ("/delivery", "panelDelivery"), ("/mtf", "panelMtf"), ("/option", "panelUpstoxChain"), ("/fii", "panelSmartMoney"), ("/breadth", "panelBreadth"), ("/global", "panelGlobalMarkets")):
+        for pfx, pnl in (("/futures", "panelFutures"), ("/delivery", "panelDelivery"), ("/mtf", "panelMtf"), ("/option", "panelUpstoxChain"), ("/fii", "panelSmartMoney"), ("/breadth", "panelBreadth")):
             if clean_p.startswith(pfx):
                 target_panel = pnl
                 break
@@ -1215,7 +1213,6 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
         "panelDelivery": "Cash Delivery Volume Absorption &amp; Accumulation Scanner",
         "panelMtf": "Margin Trading Facility (MTF) &amp; Systemic Leverage Book",
         "panelBreadth": "Market Breadth &amp; Point and Figure Analytics Desk",
-        "panelGlobalMarkets": "Real-Time Global Markets &amp; World Indices Macro Radar",
     }
     target_h1 = desk_h1_map.get(target_panel)
     if target_h1:

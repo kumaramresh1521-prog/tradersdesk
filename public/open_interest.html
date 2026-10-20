@@ -1,0 +1,2026 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk</title>
+  <meta name="description" content="Live NSE Nifty and F&O Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.">
+  <meta name="keywords" content="nifty open interest, banknifty oi, call vs put chart, pcr, max pain strike, nifty support resistance, options oi buildup, tradersdesk">
+  <meta name="author" content="TradersDesk.in Quantitative Analytics">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <link rel="canonical" href="https://tradersdesk.in/open-interest/nifty">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tradersdesk.in/open-interest/nifty">
+  <meta property="og:title" content="Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk">
+  <meta property="og:description" content="Live NSE Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.">
+  <meta property="og:site_name" content="TradersDesk.in">
+  <meta property="og:image" content="https://tradersdesk.in/tradersdesk-logo.jpg">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk">
+  <meta name="twitter:description" content="Live NSE Open Interest (OI) distribution, Put-Call Ratio (PCR), Max Pain, and key resistance/support levels.">
+  <meta name="twitter:image" content="https://tradersdesk.in/tradersdesk-logo.jpg">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Core Page Stylesheets -->
+  <link rel="stylesheet" href="/styles.css?v=20261011_v1">
+  <link rel="stylesheet" href="/page2.css?v=20261011_v1">
+  <script src="/security_shield.js"></script>
+
+  <!-- Instant Theme Initializer (Defaults to Clean White Mode) -->
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('breadth_theme');
+        var theme = savedTheme ? savedTheme : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Structured Data: JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "TradersDesk Open Interest Analysis Terminal",
+    "url": "https://tradersdesk.in/open-interest/nifty",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "All",
+    "description": "Institutional Call vs Put Open Interest analytics, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls for NSE Nifty, Bank Nifty and F&O equities."
+  }
+  </script>
+
+  <style>
+    /* ==========================================================================
+       🏛️ STOCKMOJO-STYLE INSTITUTIONAL OPEN INTEREST DESK STYLING
+       Ultra-clean White Aesthetics, Crisp Typography, Modern Slate Borders
+       ========================================================================== */
+    :root {
+      --oi-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --oi-font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --oi-bg: #f8fafc;
+      --oi-card-bg: #ffffff;
+      --oi-card-border: #e2e8f0;
+      --oi-text: #0f172a;
+      --oi-text-muted: #64748b;
+      --oi-text-dim: #94a3b8;
+      --oi-call-red: #ef4444;
+      --oi-call-red-bg: #fef2f2;
+      --oi-call-red-border: #fecaca;
+      --oi-put-green: #10b981;
+      --oi-put-green-bg: #ecfdf5;
+      --oi-put-green-border: #a7f3d0;
+      --oi-atm-gold: #f59e0b;
+      --oi-atm-gold-bg: #fffbeb;
+      --oi-atm-gold-border: #fde68a;
+      --oi-blue-accent: #0284c7;
+      --oi-blue-accent-bg: #f0f9ff;
+    }
+
+    [data-theme="dark"] {
+      --oi-bg: #0b1120;
+      --oi-card-bg: #111a2e;
+      --oi-card-border: #1e293b;
+      --oi-text: #f8fafc;
+      --oi-text-muted: #94a3b8;
+      --oi-text-dim: #64748b;
+      --oi-call-red: #f87171;
+      --oi-call-red-bg: rgba(239, 68, 68, 0.12);
+      --oi-call-red-border: rgba(239, 68, 68, 0.28);
+      --oi-put-green: #34d399;
+      --oi-put-green-bg: rgba(16, 185, 129, 0.12);
+      --oi-put-green-border: rgba(16, 185, 129, 0.28);
+      --oi-atm-gold: #fbbf24;
+      --oi-atm-gold-bg: rgba(245, 158, 11, 0.12);
+      --oi-atm-gold-border: rgba(245, 158, 11, 0.28);
+      --oi-blue-accent: #38bdf8;
+      --oi-blue-accent-bg: rgba(56, 189, 248, 0.12);
+    }
+
+    body {
+      background-color: var(--oi-bg);
+      color: var(--oi-text);
+      font-family: var(--oi-font-sans);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Outer Container */
+    .oi-desk-wrapper {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 16px 20px 48px;
+    }
+
+    /* Sub-nav & Breadcrumb Header */
+    .oi-breadcrumb-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 6px 0;
+    }
+    .oi-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--oi-text-muted);
+    }
+    .oi-breadcrumb a {
+      color: var(--oi-blue-accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .oi-breadcrumb a:hover {
+      text-decoration: underline;
+    }
+    .oi-breadcrumb .sep {
+      color: var(--oi-text-dim);
+    }
+    .oi-breadcrumb .cur {
+      color: var(--oi-text);
+      font-weight: 600;
+    }
+
+    /* Control Toolbar */
+    .oi-toolbar {
+      background: var(--oi-card-bg);
+      border: 1px solid var(--oi-card-border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .oi-toolbar-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .oi-toolbar-right {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Symbol Quick Pills */
+    .oi-sym-pills {
+      display: inline-flex;
+      background: var(--oi-bg);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--oi-card-border);
+      gap: 2px;
+    }
+    .oi-sym-pill {
+      border: none;
+      background: transparent;
+      color: var(--oi-text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .oi-sym-pill:hover {
+      color: var(--oi-text);
+      background: rgba(0, 0, 0, 0.04);
+    }
+    .oi-sym-pill.active {
+      background: var(--oi-card-bg);
+      color: var(--oi-blue-accent);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      font-weight: 700;
+    }
+
+    /* Select Controls */
+    .oi-select-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .oi-select-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--oi-text-muted);
+    }
+    .oi-select {
+      background: var(--oi-card-bg);
+      color: var(--oi-text);
+      border: 1px solid var(--oi-card-border);
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .oi-select:focus {
+      border-color: var(--oi-blue-accent);
+    }
+
+    /* Strike Range Button Group */
+    .oi-range-group {
+      display: inline-flex;
+      background: var(--oi-bg);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--oi-card-border);
+      gap: 2px;
+    }
+    .oi-range-btn {
+      border: none;
+      background: transparent;
+      color: var(--oi-text-muted);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 9px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .oi-range-btn:hover {
+      color: var(--oi-text);
+    }
+    .oi-range-btn.active {
+      background: var(--oi-card-bg);
+      color: var(--oi-blue-accent);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      font-weight: 700;
+    }
+
+    /* Action Buttons */
+    .oi-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--oi-card-border);
+      background: var(--oi-card-bg);
+      color: var(--oi-text);
+      transition: all 0.15s ease;
+    }
+    .oi-action-btn:hover {
+      background: var(--oi-bg);
+      border-color: #cbd5e1;
+    }
+    .oi-action-btn.primary {
+      background: var(--oi-blue-accent);
+      color: #ffffff;
+      border-color: var(--oi-blue-accent);
+    }
+    .oi-action-btn.primary:hover {
+      opacity: 0.92;
+    }
+
+    /* KPI Summary Cards Grid (StockMojo style) */
+    .oi-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .oi-kpi-card {
+      background: var(--oi-card-bg);
+      border: 1px solid var(--oi-card-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .oi-kpi-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: transparent;
+    }
+    .oi-kpi-card.kpi-spot::before { background: var(--oi-blue-accent); }
+    .oi-kpi-card.kpi-pcr::before { background: #8b5cf6; }
+    .oi-kpi-card.kpi-maxpain::before { background: var(--oi-atm-gold); }
+    .oi-kpi-card.kpi-resistance::before { background: var(--oi-call-red); }
+    .oi-kpi-card.kpi-support::before { background: var(--oi-put-green); }
+    .oi-kpi-card.kpi-ratio::before { background: linear-gradient(90deg, var(--oi-call-red), var(--oi-put-green)); }
+
+    .oi-kpi-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .oi-kpi-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--oi-text-muted);
+    }
+    .oi-kpi-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      text-transform: uppercase;
+    }
+    .oi-kpi-val {
+      font-family: var(--oi-font-mono);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--oi-text);
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .oi-kpi-sub {
+      font-size: 11.5px;
+      color: var(--oi-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Sentiment badges */
+    .badge-bullish {
+      background: var(--oi-put-green-bg);
+      color: var(--oi-put-green);
+      border: 1px solid var(--oi-put-green-border);
+    }
+    .badge-bearish {
+      background: var(--oi-call-red-bg);
+      color: var(--oi-call-red);
+      border: 1px solid var(--oi-call-red-border);
+    }
+    .badge-neutral {
+      background: var(--oi-atm-gold-bg);
+      color: var(--oi-atm-gold);
+      border: 1px solid var(--oi-atm-gold-border);
+    }
+    .badge-blue {
+      background: var(--oi-blue-accent-bg);
+      color: var(--oi-blue-accent);
+      border: 1px solid #bae6fd;
+    }
+
+    /* Call vs Put Ratio Bar */
+    .oi-ratio-bar-wrap {
+      margin-top: 6px;
+    }
+    .oi-ratio-bar-track {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+    .oi-ratio-bar-call {
+      background: var(--oi-call-red);
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .oi-ratio-bar-put {
+      background: var(--oi-put-green);
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .oi-ratio-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 4px;
+      font-family: var(--oi-font-mono);
+    }
+    .oi-ratio-call-lbl { color: var(--oi-call-red); }
+    .oi-ratio-put-lbl { color: var(--oi-put-green); }
+
+    /* Chart Section */
+    .oi-chart-card {
+      background: var(--oi-card-bg);
+      border: 1px solid var(--oi-card-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .oi-chart-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--oi-card-border);
+    }
+    .oi-chart-title-group h2 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--oi-text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .oi-chart-title-group p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--oi-text-muted);
+    }
+
+    /* Mode View Switcher */
+    .oi-view-pills {
+      display: inline-flex;
+      background: var(--oi-bg);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--oi-card-border);
+      gap: 2px;
+    }
+    .oi-view-pill {
+      border: none;
+      background: transparent;
+      color: var(--oi-text-muted);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .oi-view-pill:hover {
+      color: var(--oi-text);
+    }
+    .oi-view-pill.active {
+      background: var(--oi-card-bg);
+      color: var(--oi-text);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      font-weight: 700;
+    }
+
+    /* Chart Legend */
+    .oi-chart-legend {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .oi-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .oi-legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+    .oi-legend-dot.call { background: var(--oi-call-red); }
+    .oi-legend-dot.put { background: var(--oi-put-green); }
+    .oi-legend-dot.atm { background: var(--oi-atm-gold); width: 14px; height: 3px; }
+
+    /* Canvas / Chart Container */
+    .oi-canvas-container {
+      position: relative;
+      width: 100%;
+      height: 420px;
+      margin: 10px 0 6px;
+    }
+    #oiMainChartCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Custom Tooltip */
+    .oi-chart-tooltip {
+      position: absolute;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      pointer-events: none;
+      display: none;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      min-width: 180px;
+    }
+    .oi-tip-header {
+      font-weight: 800;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      color: #38bdf8;
+    }
+    .oi-tip-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 3px;
+    }
+    .oi-tip-row.call { color: #f87171; }
+    .oi-tip-row.put { color: #4ade80; }
+    .oi-tip-val {
+      font-family: var(--oi-font-mono);
+      font-weight: 700;
+    }
+
+    /* Table Section */
+    .oi-table-card {
+      background: var(--oi-card-bg);
+      border: 1px solid var(--oi-card-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .oi-table-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .oi-table-search {
+      background: var(--oi-bg);
+      border: 1px solid var(--oi-card-border);
+      border-radius: 7px;
+      padding: 6px 12px;
+      font-size: 12.5px;
+      color: var(--oi-text);
+      outline: none;
+      width: 220px;
+    }
+    .oi-table-search:focus {
+      border-color: var(--oi-blue-accent);
+      background: var(--oi-card-bg);
+    }
+
+    .oi-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--oi-card-border);
+      border-radius: 8px;
+    }
+    .oi-matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .oi-matrix-table thead th {
+      background: #f1f5f9;
+      color: var(--oi-text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 10.5px;
+      letter-spacing: 0.5px;
+      padding: 9px 10px;
+      border-bottom: 2px solid var(--oi-card-border);
+      text-align: right;
+    }
+    [data-theme="dark"] .oi-matrix-table thead th {
+      background: #1e293b;
+      color: var(--oi-text-muted);
+    }
+    .oi-matrix-table thead th.group-call {
+      background: var(--oi-call-red-bg);
+      color: var(--oi-call-red);
+      text-align: center;
+      border-bottom: 2px solid var(--oi-call-red);
+    }
+    .oi-matrix-table thead th.group-strike {
+      background: var(--oi-atm-gold-bg);
+      color: var(--oi-atm-gold);
+      text-align: center;
+      border-bottom: 2px solid var(--oi-atm-gold);
+    }
+    .oi-matrix-table thead th.group-put {
+      background: var(--oi-put-green-bg);
+      color: var(--oi-put-green);
+      text-align: center;
+      border-bottom: 2px solid var(--oi-put-green);
+    }
+
+    .oi-matrix-table tbody tr {
+      border-bottom: 1px solid var(--oi-card-border);
+      transition: background 0.1s;
+    }
+    .oi-matrix-table tbody tr:hover {
+      background: rgba(2, 132, 199, 0.04);
+    }
+    .oi-matrix-table tbody tr.is-atm-row {
+      background: var(--oi-atm-gold-bg) !important;
+      font-weight: 700;
+    }
+    .oi-matrix-table tbody tr.is-res-row {
+      background: var(--oi-call-red-bg);
+    }
+    .oi-matrix-table tbody tr.is-sup-row {
+      background: var(--oi-put-green-bg);
+    }
+
+    .oi-matrix-table td {
+      padding: 8px 10px;
+      text-align: right;
+      font-family: var(--oi-font-mono);
+      font-size: 12px;
+    }
+    .oi-matrix-table td.strike-cell {
+      text-align: center;
+      font-weight: 800;
+      font-size: 13px;
+      background: rgba(0, 0, 0, 0.02);
+      color: var(--oi-text);
+      border-left: 1px solid var(--oi-card-border);
+      border-right: 1px solid var(--oi-card-border);
+    }
+    .oi-atm-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--oi-atm-gold);
+      color: #ffffff;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .oi-cell-bar-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+    .oi-cell-bar-wrap.left {
+      justify-content: flex-start;
+    }
+    .oi-cell-bar {
+      height: 5px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .oi-cell-bar.call { background: var(--oi-call-red); }
+    .oi-cell-bar.put { background: var(--oi-put-green); }
+
+    /* Buildup Badges */
+    .buildup-badge {
+      display: inline-block;
+      font-family: var(--oi-font-sans);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .buildup-long { background: #dcfce7; color: #15803d; }
+    .buildup-short { background: #fee2e2; color: #b91c1c; }
+    .buildup-covering { background: #dbeafe; color: #1d4ed8; }
+    .buildup-unwinding { background: #fef3c7; color: #b45309; }
+
+    [data-theme="dark"] .buildup-long { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    [data-theme="dark"] .buildup-short { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    [data-theme="dark"] .buildup-covering { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    [data-theme="dark"] .buildup-unwinding { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+    /* Helper delta colors */
+    .delta-pos { color: var(--oi-put-green); font-weight: 700; }
+    .delta-neg { color: var(--oi-call-red); font-weight: 700; }
+    .delta-neu { color: var(--oi-text-muted); }
+
+    /* Educational Guide Cards */
+    .oi-guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 10px;
+    }
+    .oi-guide-card {
+      background: var(--oi-card-bg);
+      border: 1px solid var(--oi-card-border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 12.5px;
+    }
+    .oi-guide-card h4 {
+      margin: 0 0 6px 0;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--oi-text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .oi-guide-card p {
+      margin: 0;
+      color: var(--oi-text-muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 860px) {
+      .oi-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .oi-toolbar-left, .oi-toolbar-right {
+        justify-content: flex-start;
+      }
+      .oi-canvas-container {
+        height: 320px;
+      }
+      .oi-kpi-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    @media (max-width: 520px) {
+      .oi-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+      .oi-canvas-container {
+        height: 280px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================
+       TOP HEADER: LOGO, MARKET CLOCK, STATUS & UTILITIES
+       ======================================================================== -->
+  <header class="inst-header" id="instTopHeader">
+    <div class="inst-top-bar">
+
+      <!-- Left: Logo & Brand -->
+      <div class="inst-brand">
+        <a href="/" class="inst-logo-link" title="TradersDesk Institutional Terminal">
+          <img src="/tradersdesk-logo.jpg" alt="TradersDesk" class="inst-logo-img" />
+          <div class="inst-logo-text-group">
+            <span class="inst-logo-title">TRADERSDESK</span>
+            <span class="inst-logo-subtitle">INSTITUTIONAL QUANT SUITE</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Center: Live Indian Market Clock & Session Status -->
+      <div class="inst-market-clock-wrap" id="topMarketClockWrap">
+        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE / BSE Regular Trading Session (09:15 - 15:30 IST)">
+          <span class="market-dot" id="marketDot"></span>
+          <span id="marketStatusText">NSE LIVE</span>
+        </div>
+        <div class="inst-clock-pill" title="Indian Standard Time (IST)">
+          <span class="clock-icon">🕒</span>
+          <span id="instLiveClock" class="clock-digits">--:--:-- IST</span>
+        </div>
+      </div>
+
+      <!-- Right: Utilities & Navigation Menu -->
+      <div class="inst-right-controls">
+        <!-- 6-DOT APP LAUNCHER (MOBILE ONLY) -->
+        <button id="oiDotMenuBtn" type="button" class="inst-dot-menu-btn" onclick="openMobileDotMenu()" aria-label="Open Navigation Drawer" title="All Desks &amp; Menus">
+          <svg class="dot-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="8" cy="5" r="2.2" />
+            <circle cx="16" cy="5" r="2.2" />
+            <circle cx="8" cy="12" r="2.2" />
+            <circle cx="16" cy="12" r="2.2" />
+            <circle cx="8" cy="19" r="2.2" />
+            <circle cx="16" cy="19" r="2.2" />
+          </svg>
+          <span class="dot-menu-label">Menu</span>
+        </button>
+
+        <div class="status inst-api-status" id="apiStatus" title="System Connection State">Connected</div>
+        <button id="btnTopRefresh" type="button" class="inst-util-btn" onclick="refreshOiDesk();" title="Refresh Live Open Interest Data">
+          <span class="util-icon">🔄</span>
+          <span class="util-text">Refresh</span>
+        </button>
+        <button id="themeToggleBtn" type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle White / Dark Theme">
+          <span id="themeToggleIcon">🌙</span>
+          <span class="theme-btn-text" id="themeToggleText">Theme</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mega-Menu Navigation Bar -->
+    <nav class="inst-nav" aria-label="Main Navigation" id="mainInstNav">
+      <!-- 1. DASHBOARD -->
+      <div class="inst-nav-item">
+        <a href="/" class="inst-nav-btn" id="navDashboard">
+          <span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+
+      <!-- 2. FUTURES DASHBOARD -->
+      <div class="inst-nav-item has-dropdown">
+        <a href="/futures" class="inst-nav-btn" id="navFutures">
+          <span class="inst-nav-icon">📈</span> <span class="nav-label">Futures</span>
+          <span class="inst-nav-arrow">▾</span>
+        </a>
+        <div class="inst-dropdown inst-dropdown-md">
+          <div class="inst-dropdown-col">
+            <span class="inst-dropdown-header">Futures Market &amp; Structure</span>
+            <a href="/futures" class="inst-dd-item">
+              <span class="dd-icon">📊</span>
+              <div class="dd-text">
+                <span class="dd-title">Future Marketwatch</span>
+                <span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span>
+              </div>
+            </a>
+            <a href="/futures/buildup" class="inst-dd-item">
+              <span class="dd-icon">⚡</span>
+              <div class="dd-text">
+                <span class="dd-title">Buildup Quadrants</span>
+                <span class="dd-sub">Long/Short buildup, covering &amp; unwinding radar</span>
+              </div>
+            </a>
+            <a href="/futures/rollover" class="inst-dd-item">
+              <span class="dd-icon">📑</span>
+              <div class="dd-text">
+                <span class="dd-title">Futures Rollover Matrix <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">PRO</span></span>
+                <span class="dd-sub">Expiry rollover %, 3M/6M averages &amp; historical velocity</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. OPEN INTEREST DESK (ACTIVE) -->
+      <div class="inst-nav-item">
+        <a href="/open-interest/nifty" class="inst-nav-btn inst-nav-btn-blue active" id="navOpenInterest">
+          <span class="inst-nav-icon">📊</span> <span class="nav-label">Open Interest</span>
+          <span class="p2-badge p2-badge-blue">OI</span>
+        </a>
+      </div>
+
+      <!-- 4. OPTIONS SUITE -->
+      <div class="inst-nav-item has-dropdown">
+        <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight" id="navOptions">
+          <span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span>
+          <span class="inst-nav-arrow">▾</span>
+        </a>
+        <div class="inst-dropdown inst-dropdown-md">
+          <div class="inst-dropdown-col">
+            <span class="inst-dropdown-header">Derivatives Suite</span>
+            <a href="/option-chain-pro" class="inst-dd-item">
+              <span class="dd-icon">⚡</span>
+              <div class="dd-text">
+                <span class="dd-title">Option Chain Pro <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
+                <span class="dd-sub">Multi-broker live chain, Greeks, PCR &amp; IV skew</span>
+              </div>
+            </a>
+            <a href="/straddle" class="inst-dd-item">
+              <span class="dd-icon">📉</span>
+              <div class="dd-text">
+                <span class="dd-title">Straddle Desk</span>
+                <span class="dd-sub">Combined CE+PE premium decay, IV crush &amp; Greeks</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. BREADTH & PARTICIPANT DESKS -->
+      <div class="inst-nav-item">
+        <a href="/breadth" class="inst-nav-btn">
+          <span class="inst-nav-icon">📉</span> <span class="nav-label">Breadth Pro</span>
+        </a>
+      </div>
+      <div class="inst-nav-item">
+        <a href="/fii-dii" class="inst-nav-btn">
+          <span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII &amp; DII</span>
+        </a>
+      </div>
+      <div class="inst-nav-item">
+        <a href="/delivery" class="inst-nav-btn">
+          <span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery</span>
+        </a>
+      </div>
+      <div class="inst-nav-item">
+        <a href="/mtf" class="inst-nav-btn">
+          <span class="inst-nav-icon">💳</span> <span class="nav-label">MTF Book</span>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ========================================================================
+       MAIN OPEN INTEREST DESK
+       ======================================================================== -->
+  <main class="oi-desk-wrapper">
+
+    <!-- Breadcrumb & Status -->
+    <div class="oi-breadcrumb-bar">
+      <div class="oi-breadcrumb">
+        <a href="/">Terminal</a>
+        <span class="sep">/</span>
+        <a href="/futures">Derivatives</a>
+        <span class="sep">/</span>
+        <span class="cur">Open Interest Analysis</span>
+      </div>
+      <div style="font-size:12px; color:var(--oi-text-muted); font-weight:600; display:flex; align-items:center; gap:6px;">
+        <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#10b981;"></span>
+        <span id="oiLastUpdatedText">NSE EOD MASTER LOADED</span>
+      </div>
+    </div>
+
+    <!-- Control Toolbar (StockMojo style) -->
+    <section class="oi-toolbar" aria-label="Open Interest Controls">
+      <div class="oi-toolbar-left">
+        <!-- Quick Index Selector Pills -->
+        <div class="oi-sym-pills" id="oiSymPills">
+          <button type="button" class="oi-sym-pill active" data-sym="NIFTY">NIFTY 50</button>
+          <button type="button" class="oi-sym-pill" data-sym="BANKNIFTY">BANK NIFTY</button>
+          <button type="button" class="oi-sym-pill" data-sym="FINNIFTY">FIN NIFTY</button>
+          <button type="button" class="oi-sym-pill" data-sym="MIDCPNIFTY">MIDCAP NIFTY</button>
+          <button type="button" class="oi-sym-pill" data-sym="SENSEX">SENSEX</button>
+        </div>
+
+        <!-- Custom F&O Symbol Dropdown -->
+        <div class="oi-select-group">
+          <label for="oiSymbolSelect" class="oi-select-label">Symbol</label>
+          <select id="oiSymbolSelect" class="oi-select" style="min-width: 130px;">
+            <optgroup label="Major Indices">
+              <option value="NIFTY" selected>NIFTY 50</option>
+              <option value="BANKNIFTY">BANK NIFTY</option>
+              <option value="FINNIFTY">FIN NIFTY</option>
+              <option value="MIDCPNIFTY">MIDCAP NIFTY</option>
+              <option value="SENSEX">BSE SENSEX</option>
+            </optgroup>
+            <optgroup label="Top F&O Heavyweights">
+              <option value="RELIANCE">RELIANCE</option>
+              <option value="HDFCBANK">HDFCBANK</option>
+              <option value="ICICIBANK">ICICIBANK</option>
+              <option value="INFY">INFY</option>
+              <option value="TCS">TCS</option>
+              <option value="SBIN">SBIN</option>
+              <option value="BHARTIARTL">BHARTIARTL</option>
+              <option value="ITC">ITC</option>
+              <option value="LT">LT</option>
+              <option value="TATAMOTORS">TATAMOTORS</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- Expiry Dropdown -->
+        <div class="oi-select-group">
+          <label for="oiExpirySelect" class="oi-select-label">Expiry</label>
+          <select id="oiExpirySelect" class="oi-select">
+            <option value="">Loading expiries...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="oi-toolbar-right">
+        <!-- Strike Range Selector -->
+        <div class="oi-select-group">
+          <span class="oi-select-label">Strikes</span>
+          <div class="oi-range-group" id="oiRangeGroup">
+            <button type="button" class="oi-range-btn" data-range="5">±5</button>
+            <button type="button" class="oi-range-btn active" data-range="10">±10</button>
+            <button type="button" class="oi-range-btn" data-range="15">±15</button>
+            <button type="button" class="oi-range-btn" data-range="20">±20</button>
+            <button type="button" class="oi-range-btn" data-range="0">All</button>
+          </div>
+        </div>
+
+        <!-- Export CSV Button -->
+        <button type="button" class="oi-action-btn" id="oiExportCsvBtn" onclick="exportOiToCsv()" title="Download Strike Matrix to CSV">
+          <span>📥</span> <span>Export CSV</span>
+        </button>
+
+        <!-- Refresh Button -->
+        <button type="button" class="oi-action-btn primary" onclick="refreshOiDesk()" title="Fetch Fresh Quotes &amp; Strikes">
+          <span>🔄</span> <span>Refresh</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Top Institutional KPI Strip (StockMojo style) -->
+    <section class="oi-kpi-grid" aria-label="Open Interest Summary Metrics">
+
+      <!-- Card 1: Spot Price -->
+      <div class="oi-kpi-card kpi-spot">
+        <div class="oi-kpi-header">
+          <span class="oi-kpi-label" id="kpiSpotSymbol">NIFTY 50 SPOT</span>
+          <span class="oi-kpi-badge badge-blue" id="kpiAtmBadge">ATM: --</span>
+        </div>
+        <div class="oi-kpi-val" id="kpiSpotPrice">--</div>
+        <div class="oi-kpi-sub" id="kpiSpotDelta">
+          <span>-- pts (--%)</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Put-Call Ratio (PCR) -->
+      <div class="oi-kpi-card kpi-pcr">
+        <div class="oi-kpi-header">
+          <span class="oi-kpi-label">Put-Call Ratio (PCR)</span>
+          <span class="oi-kpi-badge badge-neutral" id="kpiPcrBadge">Neutral</span>
+        </div>
+        <div class="oi-kpi-val" id="kpiPcrVal">--</div>
+        <div class="oi-kpi-sub" id="kpiPcrSub">
+          <span>Total Put OI / Total Call OI</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Max Pain Strike -->
+      <div class="oi-kpi-card kpi-maxpain">
+        <div class="oi-kpi-header">
+          <span class="oi-kpi-label">Max Pain Strike</span>
+          <span class="oi-kpi-badge badge-neutral">EXPOSURE</span>
+        </div>
+        <div class="oi-kpi-val" id="kpiMaxPainVal">--</div>
+        <div class="oi-kpi-sub" id="kpiMaxPainSub">
+          <span>Least option writer liability</span>
+        </div>
+      </div>
+
+      <!-- Card 4: Major Resistance Wall -->
+      <div class="oi-kpi-card kpi-resistance">
+        <div class="oi-kpi-header">
+          <span class="oi-kpi-label">Major Resistance</span>
+          <span class="oi-kpi-badge badge-bearish">MAX CALL OI</span>
+        </div>
+        <div class="oi-kpi-val" id="kpiResistanceVal">--</div>
+        <div class="oi-kpi-sub" id="kpiResistanceSub">
+          <span>Highest Call Wall hurdle</span>
+        </div>
+      </div>
+
+      <!-- Card 5: Major Support Wall -->
+      <div class="oi-kpi-card kpi-support">
+        <div class="oi-kpi-header">
+          <span class="oi-kpi-label">Major Support</span>
+          <span class="oi-kpi-badge badge-bullish">MAX PUT OI</span>
+        </div>
+        <div class="oi-kpi-val" id="kpiSupportVal">--</div>
+        <div class="oi-kpi-sub" id="kpiSupportSub">
+          <span>Highest Put Wall floor</span>
+        </div>
+      </div>
+
+      <!-- Card 6: Call vs Put Total OI Ratio -->
+      <div class="oi-kpi-card kpi-ratio">
+        <div class="oi-kpi-header">
+          <span class="oi-kpi-label">Call vs Put Balance</span>
+          <span class="oi-kpi-badge badge-blue" id="kpiNetDiffBadge">-- Net</span>
+        </div>
+        <div class="oi-ratio-bar-wrap">
+          <div class="oi-ratio-bar-track">
+            <div class="oi-ratio-bar-call" id="kpiCallRatioBar" style="width: 50%;"></div>
+            <div class="oi-ratio-bar-put" id="kpiPutRatioBar" style="width: 50%;"></div>
+          </div>
+          <div class="oi-ratio-labels">
+            <span class="oi-ratio-call-lbl" id="kpiCallRatioText">CE: 50%</span>
+            <span class="oi-ratio-put-lbl" id="kpiPutRatioText">PE: 50%</span>
+          </div>
+        </div>
+        <div class="oi-kpi-sub" id="kpiTotalOiSub" style="margin-top:6px;">
+          <span>Tot Call: -- | Tot Put: --</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Interactive Call vs Put Chart (StockMojo style) -->
+    <section class="oi-chart-card" aria-label="Interactive Open Interest Chart">
+      <div class="oi-chart-header">
+        <div class="oi-chart-title-group">
+          <h2>📊 Strike-Wise Open Interest Distribution</h2>
+          <p id="oiChartSubtitle">Comparing Call Open Interest (Resistance / Supply) vs Put Open Interest (Support / Demand)</p>
+        </div>
+
+        <!-- Chart View Modes Switcher -->
+        <div class="oi-view-pills" id="oiChartModeGroup">
+          <button type="button" class="oi-view-pill active" data-mode="total">Total OI</button>
+          <button type="button" class="oi-view-pill" data-mode="change">OI Change</button>
+          <button type="button" class="oi-view-pill" data-mode="net">Net OI (PE - CE)</button>
+        </div>
+
+        <!-- Chart Legend -->
+        <div class="oi-chart-legend">
+          <div class="oi-legend-item" id="legendCallItem" onclick="toggleSeries('call')">
+            <span class="oi-legend-dot call"></span>
+            <span>Call OI (Resistance)</span>
+          </div>
+          <div class="oi-legend-item" id="legendPutItem" onclick="toggleSeries('put')">
+            <span class="oi-legend-dot put"></span>
+            <span>Put OI (Support)</span>
+          </div>
+          <div class="oi-legend-item">
+            <span class="oi-legend-dot atm"></span>
+            <span>ATM Strike</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- High-DPI Interactive Canvas Chart -->
+      <div class="oi-canvas-container" id="oiChartContainer">
+        <canvas id="oiMainChartCanvas"></canvas>
+        <div class="oi-chart-tooltip" id="oiChartTooltip"></div>
+      </div>
+    </section>
+
+    <!-- Detailed Strike Buildup & Greek Matrix Table -->
+    <section class="oi-table-card" aria-label="Strike Matrix Table">
+      <div class="oi-table-header">
+        <div class="oi-chart-title-group">
+          <h2>📋 Detailed Strike Matrix &amp; Buildup Quadrants</h2>
+          <p>Complete multi-strike open interest buildup, Put-Call Ratio per strike, and estimated premium</p>
+        </div>
+
+        <div>
+          <input type="text" id="oiTableSearchInput" class="oi-table-search" placeholder="🔍 Filter Strike (e.g. 23000)..." oninput="filterMatrixTable()" />
+        </div>
+      </div>
+
+      <div class="oi-table-wrap">
+        <table class="oi-matrix-table" id="oiMatrixTable">
+          <thead>
+            <tr>
+              <th colspan="4" class="group-call">CALLS (CE) - Overhead Supply</th>
+              <th colspan="2" class="group-strike">STRIKE PRICE</th>
+              <th colspan="4" class="group-put">PUTS (PE) - Foundational Support</th>
+            </tr>
+            <tr>
+              <!-- Calls -->
+              <th style="text-align:left;">Buildup</th>
+              <th>LTP (₹)</th>
+              <th>OI Chg</th>
+              <th>Call OI</th>
+
+              <!-- Strike -->
+              <th style="text-align:center;">Strike</th>
+              <th style="text-align:center;">PCR</th>
+
+              <!-- Puts -->
+              <th style="text-align:left;">Put OI</th>
+              <th>OI Chg</th>
+              <th>LTP (₹)</th>
+              <th style="text-align:right;">Buildup</th>
+            </tr>
+          </thead>
+          <tbody id="oiMatrixTableBody">
+            <tr>
+              <td colspan="10" style="text-align:center; padding:30px; color:var(--oi-text-muted);">
+                Loading strike data from NSE Bhavcopy engine...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Educational & Institutional Context Strip -->
+    <section class="oi-guide-grid">
+      <div class="oi-guide-card">
+        <h4>⚡ Understanding Open Interest Walls</h4>
+        <p>The strike with the highest <strong>Call Open Interest</strong> acts as the strongest overhead resistance wall, where writers defend premiums. Conversely, the strike with highest <strong>Put Open Interest</strong> creates the primary floor support.</p>
+      </div>
+      <div class="oi-guide-card">
+        <h4>⚖️ Put-Call Ratio (PCR) Interpretation</h4>
+        <p>A PCR &gt; 1.2 indicates aggressive put writing relative to calls, signaling bullish institutional sentiment. A PCR &lt; 0.8 signals heavy call writing and cautious or bearish bias. Range 0.8–1.2 reflects balanced market equilibrium.</p>
+      </div>
+      <div class="oi-guide-card">
+        <h4>🎯 Max Pain Strike Significance</h4>
+        <p>The Max Pain strike is the theoretical price point where option buyers suffer maximum financial loss upon contract expiry, maximizing cumulative profits for institutional options sellers.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+       FOOTER (4-COLUMN INSTITUTIONAL MATRIX)
+       ======================================================================== -->
+  <footer class="inst-footer" style="background:#0f172a; color:#94a3b8; padding:40px 20px 24px; margin-top:40px; border-top:1px solid #1e293b; font-size:12.5px;">
+    <div style="max-width:1440px; margin:0 auto;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:24px; margin-bottom:30px;">
+        <!-- Col 1 -->
+        <div>
+          <h4 style="color:#38bdf8; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">🏛️ Institutional Desks</h4>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <a href="/breadth" style="color:inherit; text-decoration:none;">Market Breadth Pro</a>
+            <a href="/fii-dii" style="color:inherit; text-decoration:none;">FII &amp; DII Smart Money</a>
+            <a href="/delivery" style="color:inherit; text-decoration:none;">Cash Delivery Absorption</a>
+            <a href="/mtf" style="color:inherit; text-decoration:none;">MTF Margin Trading Book</a>
+            <a href="/open-interest/nifty" style="color:#38bdf8; font-weight:700; text-decoration:none;">Open Interest Desk</a>
+            <a href="/dashboard" style="color:inherit; text-decoration:none;">Institutional Dashboard</a>
+          </div>
+        </div>
+        <!-- Col 2 -->
+        <div>
+          <h4 style="color:#a78bfa; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">⚡ Derivatives &amp; Options</h4>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <a href="/option-chain-pro" style="color:inherit; text-decoration:none;">Option Chain Pro</a>
+            <a href="/futures" style="color:inherit; text-decoration:none;">Future Marketwatch Matrix</a>
+            <a href="/straddle" style="color:inherit; text-decoration:none;">Straddle Analytics Engine</a>
+            <a href="/futures/buildup" style="color:inherit; text-decoration:none;">Future Buildup Quadrants</a>
+            <a href="/futures/rollover" style="color:inherit; text-decoration:none;">Historical Rollover Matrix</a>
+          </div>
+        </div>
+        <!-- Col 3 -->
+        <div>
+          <h4 style="color:#34d399; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">📊 Market Analytics</h4>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <a href="/breadth-contribution" style="color:inherit; text-decoration:none;">Breadth &amp; Net Contribution</a>
+            <a href="/calendar_studio.html" style="color:inherit; text-decoration:none;">NSE Trading Holiday Calendar</a>
+            <a href="/fii-dii#oi" style="color:inherit; text-decoration:none;">Participant OI Matrix</a>
+            <a href="/futures/heatmap" style="color:inherit; text-decoration:none;">F&amp;O Sector Heatmap</a>
+          </div>
+        </div>
+        <!-- Col 4 -->
+        <div>
+          <h4 style="color:#f59e0b; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">🛡️ Governance &amp; Legal</h4>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <a href="/about" style="color:inherit; text-decoration:none;">About TradersDesk</a>
+            <a href="/disclaimer" style="color:inherit; text-decoration:none;">SEBI &amp; Market Disclaimer</a>
+            <a href="/privacy" style="color:inherit; text-decoration:none;">Privacy Policy</a>
+            <a href="/terms" style="color:inherit; text-decoration:none;">Terms of Service</a>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center; padding-top:20px; border-top:1px solid #1e293b; color:#64748b; font-size:11.5px;">
+        © 2026 TradersDesk.in. All rights reserved. Data sourced directly from National Stock Exchange of India (NSE). For institutional analytical and educational purposes only.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       MOBILE 6-DOT MENU MODAL DRAWER
+       ======================================================================== -->
+  <div id="mobileDotMenuModal" class="dot-menu-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; backdrop-filter:blur(4px); align-items:flex-end;">
+    <div class="dot-menu-drawer" style="background:var(--oi-card-bg); border-top:1px solid var(--oi-card-border); border-radius:16px 16px 0 0; width:100%; max-height:85vh; overflow-y:auto; padding:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:16px; font-weight:800; color:var(--oi-text);">Terminal Directory</h3>
+        <button type="button" onclick="closeMobileDotMenu()" style="border:none; background:transparent; font-size:20px; color:var(--oi-text-muted); cursor:pointer;">✕</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <a href="/" class="oi-action-btn" style="text-decoration:none;">⬛ Dashboard</a>
+        <a href="/open-interest/nifty" class="oi-action-btn primary" style="text-decoration:none;">📊 Open Interest</a>
+        <a href="/futures" class="oi-action-btn" style="text-decoration:none;">📈 Futures Matrix</a>
+        <a href="/futures/buildup" class="oi-action-btn" style="text-decoration:none;">⚡ Buildup Quadrants</a>
+        <a href="/futures/rollover" class="oi-action-btn" style="text-decoration:none;">📑 Futures Rollover</a>
+        <a href="/option-chain-pro" class="oi-action-btn" style="text-decoration:none;">⚡ Option Chain Pro</a>
+        <a href="/straddle" class="oi-action-btn" style="text-decoration:none;">📉 Straddle Desk</a>
+        <a href="/breadth" class="oi-action-btn" style="text-decoration:none;">📉 Breadth Pro</a>
+        <a href="/fii-dii" class="oi-action-btn" style="text-decoration:none;">🏛️ FII &amp; DII Flow</a>
+        <a href="/delivery" class="oi-action-btn" style="text-decoration:none;">📦 Cash Delivery</a>
+        <a href="/mtf" class="oi-action-btn" style="text-decoration:none;">💳 MTF Loan Book</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       CORE JAVASCRIPT CONTROLLER FOR OPEN INTEREST DESK
+       ======================================================================== -->
+  <script>
+    // State management
+    let currentSymbol = "NIFTY";
+    let currentExpiry = "";
+    let currentStrikeRange = 10;
+    let currentChartMode = "total"; // 'total', 'change', 'net'
+    let oiData = null;
+    let seriesVisibility = { call: true, put: true };
+
+    // Formatters
+    function formatNumber(num) {
+      if (num == null || isNaN(num)) return "--";
+      return Number(num).toLocaleString('en-IN');
+    }
+
+    function formatOiLakhs(num) {
+      if (num == null || isNaN(num)) return "--";
+      const absVal = Math.abs(num);
+      if (absVal >= 10000000) {
+        return (num / 10000000).toFixed(2) + " Cr";
+      }
+      if (absVal >= 100000) {
+        return (num / 100000).toFixed(2) + " L";
+      }
+      return formatNumber(num);
+    }
+
+    // Live IST Clock
+    function updateLiveClock() {
+      const now = new Date();
+      const istOptions = { timeZone: "Asia/Kolkata", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" };
+      const clockEl = document.getElementById("instLiveClock");
+      if (clockEl) {
+        clockEl.textContent = now.toLocaleTimeString("en-GB", istOptions) + " IST";
+      }
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    // Theme Toggle
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute("data-theme") || "light";
+      const next = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("breadth_theme", next);
+      const icon = document.getElementById("themeToggleIcon");
+      if (icon) icon.textContent = next === "dark" ? "☀️" : "🌙";
+      // Redraw chart with theme colors
+      drawOiChart();
+    }
+
+    // Mobile Menu Controls
+    window.openMobileDotMenu = function() {
+      const m = document.getElementById("mobileDotMenuModal");
+      if (m) m.style.display = "flex";
+    };
+    window.closeMobileDotMenu = function() {
+      const m = document.getElementById("mobileDotMenuModal");
+      if (m) m.style.display = "none";
+    };
+
+    // Load Data from Server
+    async function loadOpenInterestData(isSilent = false) {
+      const lastUpText = document.getElementById("oiLastUpdatedText");
+      if (!isSilent && lastUpText) lastUpText.textContent = "FETCHING NSE LIVE QUOTES...";
+
+      try {
+        const url = `/api/open-interest?symbol=${encodeURIComponent(currentSymbol)}&range=${currentStrikeRange}` + (currentExpiry ? `&expiry=${encodeURIComponent(currentExpiry)}` : "");
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (!data || !data.ok) throw new Error("Invalid response");
+
+        oiData = data;
+        updateHeaderAndKpis(data);
+        populateExpiryDropdown(data.expiries, data.selected_expiry);
+        drawOiChart();
+        renderMatrixTable(data.strikes, data.atm_strike);
+
+        if (lastUpText) {
+          const nowStr = new Date().toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+          lastUpText.textContent = `LIVE NSE QUOTES UPDATED ${nowStr} IST (${data.execution_time_ms}ms)`;
+        }
+      } catch (err) {
+        console.error("Failed to load OI data:", err);
+        if (lastUpText) lastUpText.textContent = "DATA FETCH FAILED - RETRYING...";
+      }
+    }
+
+    function refreshOiDesk() {
+      loadOpenInterestData(false);
+    }
+
+    // Populate Expiry Dropdown
+    function populateExpiryDropdown(expiries, selected) {
+      const sel = document.getElementById("oiExpirySelect");
+      if (!sel || !Array.isArray(expiries)) return;
+      sel.innerHTML = "";
+      expiries.forEach(exp => {
+        const opt = document.createElement("option");
+        opt.value = exp.date;
+        opt.textContent = exp.label || exp.date;
+        if (exp.date === selected) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      currentExpiry = sel.value;
+    }
+
+    // Update Top KPIs
+    function updateHeaderAndKpis(d) {
+      // Spot
+      const spotSym = document.getElementById("kpiSpotSymbol");
+      if (spotSym) spotSym.textContent = `${d.symbol} SPOT`;
+
+      const atmBadge = document.getElementById("kpiAtmBadge");
+      if (atmBadge) atmBadge.textContent = `ATM: ${formatNumber(d.atm_strike)}`;
+
+      const spotVal = document.getElementById("kpiSpotPrice");
+      if (spotVal) spotVal.textContent = formatNumber(d.spot);
+
+      const spotDelta = document.getElementById("kpiSpotDelta");
+      if (spotDelta) {
+        const isUp = d.change_pts >= 0;
+        const sign = isUp ? "+" : "";
+        spotDelta.className = "oi-kpi-sub " + (isUp ? "delta-pos" : "delta-neg");
+        spotDelta.innerHTML = `<span>${sign}${d.change_pts.toFixed(2)} pts (${sign}${d.change_pct.toFixed(2)}%)</span>`;
+      }
+
+      // PCR
+      const pcrVal = document.getElementById("kpiPcrVal");
+      if (pcrVal) pcrVal.textContent = d.overall_pcr ? d.overall_pcr.toFixed(2) : "--";
+
+      const pcrBadge = document.getElementById("kpiPcrBadge");
+      if (pcrBadge) {
+        pcrBadge.textContent = d.pcr_sentiment || "Neutral";
+        pcrBadge.className = "oi-kpi-badge " + (
+          d.pcr_badge_class.includes("bullish") ? "badge-bullish" :
+          d.pcr_badge_class.includes("bearish") ? "badge-bearish" : "badge-neutral"
+        );
+      }
+
+      const pcrSub = document.getElementById("kpiPcrSub");
+      if (pcrSub) {
+        pcrSub.textContent = d.overall_pcr >= 1.05 ? "Support Heavy (Put OI dominant)" : (d.overall_pcr <= 0.85 ? "Resistance Heavy (Call OI dominant)" : "Neutral Equilibrium");
+      }
+
+      // Max Pain
+      const mpVal = document.getElementById("kpiMaxPainVal");
+      if (mpVal) mpVal.textContent = formatNumber(d.max_pain);
+
+      const mpSub = document.getElementById("kpiMaxPainSub");
+      if (mpSub && d.max_pain && d.spot) {
+        const diff = d.max_pain - d.spot;
+        const sign = diff >= 0 ? "+" : "";
+        mpSub.textContent = `${sign}${diff.toFixed(1)} pts distance from spot`;
+      }
+
+      // Resistance & Support
+      const resVal = document.getElementById("kpiResistanceVal");
+      if (resVal && d.key_resistance) {
+        resVal.textContent = formatNumber(d.key_resistance.strike) + " CE";
+      }
+      const resSub = document.getElementById("kpiResistanceSub");
+      if (resSub && d.key_resistance) {
+        resSub.textContent = `${formatOiLakhs(d.key_resistance.oi)} contracts OI`;
+      }
+
+      const supVal = document.getElementById("kpiSupportVal");
+      if (supVal && d.key_support) {
+        supVal.textContent = formatNumber(d.key_support.strike) + " PE";
+      }
+      const supSub = document.getElementById("kpiSupportSub");
+      if (supSub && d.key_support) {
+        supSub.textContent = `${formatOiLakhs(d.key_support.oi)} contracts OI`;
+      }
+
+      // Call vs Put Ratio Bar
+      const cBar = document.getElementById("kpiCallRatioBar");
+      const pBar = document.getElementById("kpiPutRatioBar");
+      if (cBar && pBar) {
+        cBar.style.width = `${d.call_oi_pct}%`;
+        pBar.style.width = `${d.put_oi_pct}%`;
+      }
+      const cTxt = document.getElementById("kpiCallRatioText");
+      const pTxt = document.getElementById("kpiPutRatioText");
+      if (cTxt && pTxt) {
+        cTxt.textContent = `CE: ${d.call_oi_pct}% (${formatOiLakhs(d.total_call_oi)})`;
+        pTxt.textContent = `PE: ${d.put_oi_pct}% (${formatOiLakhs(d.total_put_oi)})`;
+      }
+
+      const netBadge = document.getElementById("kpiNetDiffBadge");
+      if (netBadge) {
+        const diff = d.net_oi_diff || 0;
+        const sign = diff >= 0 ? "+" : "";
+        netBadge.textContent = `${sign}${formatOiLakhs(diff)} Net`;
+        netBadge.className = "oi-kpi-badge " + (diff >= 0 ? "badge-bullish" : "badge-bearish");
+      }
+
+      const totSub = document.getElementById("kpiTotalOiSub");
+      if (totSub) {
+        totSub.textContent = `Total OI: ${formatOiLakhs(d.total_call_oi + d.total_put_oi)} contracts`;
+      }
+    }
+
+    // ========================================================================
+    // HIGH-DPI CANVAS CHART RENDERING (STOCKMOJO DUAL BAR ARCHITECTURE)
+    // ========================================================================
+    let chartHoverInfo = null;
+
+    function drawOiChart() {
+      const canvas = document.getElementById("oiMainChartCanvas");
+      if (!canvas || !oiData || !Array.isArray(oiData.strikes) || oiData.strikes.length === 0) return;
+
+      const strikes = oiData.strikes;
+      const ctx = canvas.getContext("2d");
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+
+      // Clear
+      ctx.clearRect(0, 0, w, h);
+
+      // Margins
+      const padTop = 36;
+      const padBottom = 42;
+      const padLeft = 60;
+      const padRight = 30;
+      const plotW = w - padLeft - padRight;
+      const plotH = h - padTop - padBottom;
+
+      // Color definitions
+      const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
+      const textColor = isDark ? "#94a3b8" : "#64748b";
+      const textBoldColor = isDark ? "#f8fafc" : "#0f172a";
+      const callColor = isDark ? "#f87171" : "#ef4444";
+      const putColor = isDark ? "#34d399" : "#10b981";
+      const atmColor = isDark ? "#fbbf24" : "#f59e0b";
+
+      // Compute Y Scale depending on currentChartMode
+      let maxVal = 0;
+      let minVal = 0;
+
+      if (currentChartMode === "net") {
+        strikes.forEach(s => {
+          const net = s.net_oi;
+          if (net > maxVal) maxVal = net;
+          if (net < minVal) minVal = net;
+        });
+        const absLimit = Math.max(Math.abs(maxVal), Math.abs(minVal)) * 1.15 || 100000;
+        maxVal = absLimit;
+        minVal = -absLimit;
+      } else if (currentChartMode === "change") {
+        strikes.forEach(s => {
+          const c = Math.abs(s.call_oi_change);
+          const p = Math.abs(s.put_oi_change);
+          if (c > maxVal) maxVal = c;
+          if (p > maxVal) maxVal = p;
+        });
+        maxVal = maxVal * 1.18 || 100000;
+        minVal = 0;
+      } else {
+        // total OI
+        strikes.forEach(s => {
+          if (s.call_oi > maxVal) maxVal = s.call_oi;
+          if (s.put_oi > maxVal) maxVal = s.put_oi;
+        });
+        maxVal = maxVal * 1.15 || 100000;
+        minVal = 0;
+      }
+
+      // Horizontal Grid Lines & Y-Axis Labels
+      const gridSteps = 5;
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.font = `600 11px ${getComputedStyle(document.body).getPropertyValue('--oi-font-mono')}`;
+
+      for (let i = 0; i <= gridSteps; i++) {
+        const ratio = i / gridSteps;
+        const y = padTop + plotH * (1 - ratio);
+        const val = minVal + ratio * (maxVal - minVal);
+
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padLeft, y);
+        ctx.lineTo(w - padRight, y);
+        ctx.stroke();
+
+        ctx.fillStyle = textColor;
+        ctx.fillText(formatOiLakhs(val), padLeft - 8, y);
+      }
+
+      // Bar Geometries
+      const n = strikes.length;
+      const slotW = plotW / n;
+      const barPadding = Math.max(2, slotW * 0.12);
+      const groupW = slotW - barPadding * 2;
+      const singleBarW = Math.max(3, (groupW / 2) - 2);
+
+      let atmLineX = null;
+
+      // Draw Bars
+      strikes.forEach((s, idx) => {
+        const slotX = padLeft + idx * slotW;
+        const centerX = slotX + slotW / 2;
+
+        if (s.is_atm) {
+          atmLineX = centerX;
+        }
+
+        if (currentChartMode === "net") {
+          // Single net bar centered per strike
+          const net = s.net_oi;
+          const zeroY = padTop + plotH * (maxVal / (maxVal - minVal));
+          const netY = padTop + plotH * (1 - (net - minVal) / (maxVal - minVal));
+          const barH = Math.abs(netY - zeroY);
+          const barY = Math.min(zeroY, netY);
+
+          ctx.fillStyle = net >= 0 ? putColor : callColor;
+          ctx.beginPath();
+          ctx.roundRect(centerX - groupW / 2, barY, groupW, Math.max(2, barH), [3, 3, 0, 0]);
+          ctx.fill();
+
+        } else if (currentChartMode === "change") {
+          // Change bars
+          const cChg = s.call_oi_change;
+          const pChg = s.put_oi_change;
+
+          const cH = (Math.abs(cChg) / maxVal) * plotH;
+          const pH = (Math.abs(pChg) / maxVal) * plotH;
+
+          // Call change bar
+          if (seriesVisibility.call) {
+            ctx.fillStyle = cChg >= 0 ? callColor : "rgba(239, 68, 68, 0.4)";
+            ctx.beginPath();
+            ctx.roundRect(centerX - singleBarW - 1, padTop + plotH - cH, singleBarW, Math.max(2, cH), [3, 3, 0, 0]);
+            ctx.fill();
+          }
+
+          // Put change bar
+          if (seriesVisibility.put) {
+            ctx.fillStyle = pChg >= 0 ? putColor : "rgba(16, 185, 129, 0.4)";
+            ctx.beginPath();
+            ctx.roundRect(centerX + 1, padTop + plotH - pH, singleBarW, Math.max(2, pH), [3, 3, 0, 0]);
+            ctx.fill();
+          }
+
+        } else {
+          // Total OI Dual Bars
+          const cH = (s.call_oi / maxVal) * plotH;
+          const pH = (s.put_oi / maxVal) * plotH;
+
+          // Call bar (Left)
+          if (seriesVisibility.call) {
+            ctx.fillStyle = callColor;
+            ctx.beginPath();
+            ctx.roundRect(centerX - singleBarW - 1, padTop + plotH - cH, singleBarW, Math.max(2, cH), [3, 3, 0, 0]);
+            ctx.fill();
+          }
+
+          // Put bar (Right)
+          if (seriesVisibility.put) {
+            ctx.fillStyle = putColor;
+            ctx.beginPath();
+            ctx.roundRect(centerX + 1, padTop + plotH - pH, singleBarW, Math.max(2, pH), [3, 3, 0, 0]);
+            ctx.fill();
+          }
+        }
+
+        // X-Axis Strike Label
+        ctx.fillStyle = s.is_atm ? atmColor : textColor;
+        ctx.font = s.is_atm ? "bold 11px var(--oi-font-mono)" : "500 10.5px var(--oi-font-mono)";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(formatNumber(s.strike), centerX, padTop + plotH + 8);
+      });
+
+      // Draw ATM Golden Dashed Line
+      if (atmLineX !== null) {
+        ctx.save();
+        ctx.strokeStyle = atmColor;
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(atmLineX, padTop - 12);
+        ctx.lineTo(atmLineX, padTop + plotH);
+        ctx.stroke();
+        ctx.restore();
+
+        // ATM Tag flag
+        ctx.fillStyle = atmColor;
+        ctx.beginPath();
+        ctx.roundRect(atmLineX - 28, padTop - 26, 56, 18, 4);
+        ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 10px var(--oi-font-sans)";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("ATM SPOT", atmLineX, padTop - 17);
+      }
+
+      // Resistance & Support Badges over highest strikes
+      if (oiData.key_resistance && currentChartMode === "total") {
+        const resK = oiData.key_resistance.strike;
+        const resIdx = strikes.findIndex(s => s.strike === resK);
+        if (resIdx !== -1) {
+          const resX = padLeft + resIdx * slotW + slotW / 2;
+          ctx.fillStyle = callColor;
+          ctx.beginPath();
+          ctx.roundRect(resX - 24, padTop + 2, 48, 16, 4);
+          ctx.fill();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 9.5px var(--oi-font-sans)";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("RES (CE)", resX, padTop + 10);
+        }
+      }
+
+      if (oiData.key_support && currentChartMode === "total") {
+        const supK = oiData.key_support.strike;
+        const supIdx = strikes.findIndex(s => s.strike === supK);
+        if (supIdx !== -1) {
+          const supX = padLeft + supIdx * slotW + slotW / 2;
+          ctx.fillStyle = putColor;
+          ctx.beginPath();
+          ctx.roundRect(supX - 24, padTop + 22, 48, 16, 4);
+          ctx.fill();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 9.5px var(--oi-font-sans)";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("SUP (PE)", supX, padTop + 30);
+        }
+      }
+    }
+
+    // Chart Mouse Hover Interaction
+    const chartContainer = document.getElementById("oiChartContainer");
+    const chartTooltip = document.getElementById("oiChartTooltip");
+
+    if (chartContainer) {
+      chartContainer.addEventListener("mousemove", (e) => {
+        if (!oiData || !oiData.strikes) return;
+        const rect = chartContainer.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const padLeft = 60;
+        const padRight = 30;
+        const plotW = rect.width - padLeft - padRight;
+
+        if (mouseX < padLeft || mouseX > rect.width - padRight) {
+          chartTooltip.style.display = "none";
+          return;
+        }
+
+        const slotW = plotW / oiData.strikes.length;
+        const idx = Math.floor((mouseX - padLeft) / slotW);
+        const s = oiData.strikes[idx];
+        if (!s) {
+          chartTooltip.style.display = "none";
+          return;
+        }
+
+        chartTooltip.style.display = "block";
+        chartTooltip.style.left = `${Math.min(rect.width - 200, Math.max(10, mouseX + 14))}px`;
+        chartTooltip.style.top = `${Math.min(rect.height - 130, Math.max(10, mouseY - 20))}px`;
+
+        chartTooltip.innerHTML = `
+          <div class="oi-tip-header">
+            <span>STRIKE ${formatNumber(s.strike)} ${s.is_atm ? '(ATM)' : ''}</span>
+            <span style="color:#ffffff;">PCR ${s.pcr}</span>
+          </div>
+          <div class="oi-tip-row call">
+            <span>Call OI:</span>
+            <span class="oi-tip-val">${formatNumber(s.call_oi)} (${s.call_oi_change >= 0 ? '+' : ''}${formatNumber(s.call_oi_change)})</span>
+          </div>
+          <div class="oi-tip-row put">
+            <span>Put OI:</span>
+            <span class="oi-tip-val">${formatNumber(s.put_oi)} (${s.put_oi_change >= 0 ? '+' : ''}${formatNumber(s.put_oi_change)})</span>
+          </div>
+          <div class="oi-tip-row" style="color:#cbd5e1; font-size:11px; margin-top:4px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">
+            <span>Net (PE - CE):</span>
+            <span class="oi-tip-val ${s.net_oi >= 0 ? 'delta-pos' : 'delta-neg'}">${s.net_oi >= 0 ? '+' : ''}${formatOiLakhs(s.net_oi)}</span>
+          </div>
+        `;
+      });
+
+      chartContainer.addEventListener("mouseleave", () => {
+        chartTooltip.style.display = "none";
+      });
+    }
+
+    // Toggle Series Visibility (Legend click)
+    function toggleSeries(type) {
+      if (type === 'call') {
+        seriesVisibility.call = !seriesVisibility.call;
+        document.getElementById("legendCallItem").style.opacity = seriesVisibility.call ? "1" : "0.4";
+      } else if (type === 'put') {
+        seriesVisibility.put = !seriesVisibility.put;
+        document.getElementById("legendPutItem").style.opacity = seriesVisibility.put ? "1" : "0.4";
+      }
+      drawOiChart();
+    }
+
+    // Render Matrix Table
+    function renderMatrixTable(strikes, atmStrike) {
+      const tbody = document.getElementById("oiMatrixTableBody");
+      if (!tbody) return;
+
+      if (!Array.isArray(strikes) || strikes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:30px; color:var(--oi-text-muted);">No strike records available.</td></tr>`;
+        return;
+      }
+
+      // Max values for relative bar widths
+      let maxC = 1;
+      let maxP = 1;
+      strikes.forEach(s => {
+        if (s.call_oi > maxC) maxC = s.call_oi;
+        if (s.put_oi > maxP) maxP = s.put_oi;
+      });
+
+      let html = "";
+      strikes.forEach(s => {
+        const isAtm = (s.strike === atmStrike);
+        const cBarPct = Math.round((s.call_oi / maxC) * 60);
+        const pBarPct = Math.round((s.put_oi / maxP) * 60);
+
+        const cBuildupClass = (s.call_buildup || "").toLowerCase().replace(" ", "-");
+        const pBuildupClass = (s.put_buildup || "").toLowerCase().replace(" ", "-");
+
+        const cChgSign = s.call_oi_change >= 0 ? "+" : "";
+        const pChgSign = s.put_oi_change >= 0 ? "+" : "";
+
+        html += `
+          <tr class="${isAtm ? 'is-atm-row' : ''}" data-strike="${s.strike}">
+            <!-- Calls Left -->
+            <td style="text-align:left;">
+              <span class="buildup-badge buildup-${cBuildupClass}">${s.call_buildup || 'Neutral'}</span>
+            </td>
+            <td>₹${s.call_ltp.toFixed(2)}</td>
+            <td class="${s.call_oi_change >= 0 ? 'delta-pos' : 'delta-neg'}">${cChgSign}${formatNumber(s.call_oi_change)}</td>
+            <td>
+              <div class="oi-cell-bar-wrap">
+                <span>${formatNumber(s.call_oi)}</span>
+                <div class="oi-cell-bar call" style="width: ${cBarPct}px;"></div>
+              </div>
+            </td>
+
+            <!-- Strike Center -->
+            <td class="strike-cell">
+              <span>${formatNumber(s.strike)}</span>
+              ${isAtm ? '<span class="oi-atm-badge">ATM</span>' : ''}
+            </td>
+            <td style="text-align:center; font-weight:700; color:${s.pcr >= 1.05 ? 'var(--oi-put-green)' : (s.pcr <= 0.85 ? 'var(--oi-call-red)' : 'var(--oi-text)')};">
+              ${s.pcr.toFixed(2)}
+            </td>
+
+            <!-- Puts Right -->
+            <td>
+              <div class="oi-cell-bar-wrap left">
+                <div class="oi-cell-bar put" style="width: ${pBarPct}px;"></div>
+                <span>${formatNumber(s.put_oi)}</span>
+              </div>
+            </td>
+            <td class="${s.put_oi_change >= 0 ? 'delta-pos' : 'delta-neg'}">${pChgSign}${formatNumber(s.put_oi_change)}</td>
+            <td>₹${s.put_ltp.toFixed(2)}</td>
+            <td style="text-align:right;">
+              <span class="buildup-badge buildup-${pBuildupClass}">${s.put_buildup || 'Neutral'}</span>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    // Filter Table Strikes
+    function filterMatrixTable() {
+      const q = (document.getElementById("oiTableSearchInput").value || "").trim();
+      const rows = document.querySelectorAll("#oiMatrixTableBody tr");
+      rows.forEach(r => {
+        const k = r.getAttribute("data-strike") || "";
+        if (!q || k.includes(q)) {
+          r.style.display = "";
+        } else {
+          r.style.display = "none";
+        }
+      });
+    }
+
+    // Export CSV Function
+    function exportOiToCsv() {
+      if (!oiData || !oiData.strikes) return;
+      const headers = ["Strike", "ATM", "PCR", "Call_OI", "Call_OI_Change", "Call_LTP", "Call_Buildup", "Put_OI", "Put_OI_Change", "Put_LTP", "Put_Buildup", "Net_OI"];
+      const rows = oiData.strikes.map(s => [
+        s.strike,
+        s.is_atm ? "YES" : "NO",
+        s.pcr,
+        s.call_oi,
+        s.call_oi_change,
+        s.call_ltp,
+        `"${s.call_buildup}"`,
+        s.put_oi,
+        s.put_oi_change,
+        s.put_ltp,
+        `"${s.put_buildup}"`,
+        s.net_oi
+      ]);
+
+      const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${currentSymbol}_Open_Interest_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // ========================================================================
+    // INITIALIZATION & EVENT LISTENERS
+    // ========================================================================
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Symbol quick pills
+      const pills = document.querySelectorAll("#oiSymPills .oi-sym-pill");
+      pills.forEach(p => {
+        p.addEventListener("click", () => {
+          pills.forEach(x => x.classList.remove("active"));
+          p.classList.add("active");
+          currentSymbol = p.getAttribute("data-sym") || "NIFTY";
+          const symSel = document.getElementById("oiSymbolSelect");
+          if (symSel) symSel.value = currentSymbol;
+          loadOpenInterestData(false);
+        });
+      });
+
+      // 2. Symbol select
+      const symSelect = document.getElementById("oiSymbolSelect");
+      if (symSelect) {
+        symSelect.addEventListener("change", (e) => {
+          currentSymbol = e.target.value;
+          pills.forEach(p => {
+            p.classList.toggle("active", p.getAttribute("data-sym") === currentSymbol);
+          });
+          loadOpenInterestData(false);
+        });
+      }
+
+      // 3. Expiry select
+      const expSelect = document.getElementById("oiExpirySelect");
+      if (expSelect) {
+        expSelect.addEventListener("change", (e) => {
+          currentExpiry = e.target.value;
+          loadOpenInterestData(false);
+        });
+      }
+
+      // 4. Strike range buttons
+      const rangeBtns = document.querySelectorAll("#oiRangeGroup .oi-range-btn");
+      rangeBtns.forEach(b => {
+        b.addEventListener("click", () => {
+          rangeBtns.forEach(x => x.classList.remove("active"));
+          b.classList.add("active");
+          currentStrikeRange = parseInt(b.getAttribute("data-range") || "10", 10);
+          loadOpenInterestData(false);
+        });
+      });
+
+      // 5. Chart mode buttons
+      const modeBtns = document.querySelectorAll("#oiChartModeGroup .oi-view-pill");
+      modeBtns.forEach(b => {
+        b.addEventListener("click", () => {
+          modeBtns.forEach(x => x.classList.remove("active"));
+          b.classList.add("active");
+          currentChartMode = b.getAttribute("data-mode") || "total";
+          const subtitle = document.getElementById("oiChartSubtitle");
+          if (subtitle) {
+            subtitle.textContent = currentChartMode === "change" ?
+              "Intraday Open Interest Shifts (Buildup, Short Covering, Long Unwinding per Strike)" :
+              (currentChartMode === "net" ?
+                "Net Open Interest Difference (Put OI minus Call OI: Green = Put Dominance, Red = Call Dominance)" :
+                "Comparing Call Open Interest (Resistance / Supply) vs Put Open Interest (Support / Demand)");
+          }
+          drawOiChart();
+        });
+      });
+
+      // Window resize re-draw
+      window.addEventListener("resize", () => {
+        drawOiChart();
+      });
+
+      // Initial Data Fetch
+      loadOpenInterestData(false);
+    });
+  </script>
+</body>
+</html>

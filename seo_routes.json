@@ -509,36 +509,6 @@
     "custom": false,
     "last_updated": "2026-10-10 07:00:00 IST"
   },
-  "/global-markets": {
-    "path": "/global-markets",
-    "title": "Global Markets Desk - GIFT Nifty & World Indices Macro Radar | TradersDesk",
-    "desc": "Real-time GIFT Nifty, US markets (S&P 500, Nasdaq, Dow), Asian & European indices, Brent Crude, US 10Y Yield, and global macro pulse.",
-    "keywords": "gift nifty, global markets, world indices, us markets, brent crude, dxy, macro pulse",
-    "canonical": "https://tradersdesk.in/global-markets",
-    "og_title": "Global Markets Desk - GIFT Nifty & World Indices Macro Radar | TradersDesk",
-    "og_desc": "Real-time GIFT Nifty, US markets (S&P 500, Nasdaq, Dow), Asian & European indices, Brent Crude, US 10Y Yield, and global macro pulse.",
-    "robots": "index, follow",
-    "category": "global",
-    "priority": "0.9",
-    "changefreq": "always",
-    "custom": false,
-    "last_updated": "2026-10-10 07:00:00 IST"
-  },
-  "/global": {
-    "path": "/global",
-    "title": "Global Markets Desk - GIFT Nifty & World Indices Macro Radar | TradersDesk",
-    "desc": "Real-time GIFT Nifty, US markets (S&P 500, Nasdaq, Dow), Asian & European indices, Brent Crude, US 10Y Yield, and global macro pulse.",
-    "keywords": "global markets, gift nifty, world indices",
-    "canonical": "https://tradersdesk.in/global-markets",
-    "og_title": "Global Markets Desk - GIFT Nifty & World Indices Macro Radar | TradersDesk",
-    "og_desc": "Real-time GIFT Nifty, US markets (S&P 500, Nasdaq, Dow), Asian & European indices, Brent Crude, US 10Y Yield, and global macro pulse.",
-    "robots": "index, follow",
-    "category": "global",
-    "priority": "0.8",
-    "changefreq": "daily",
-    "custom": false,
-    "last_updated": "2026-10-10 07:00:00 IST"
-  },
   "/straddle": {
     "path": "/straddle",
     "title": "Straddle Desk - Live Options Premium Decay, IV Crush & Greeks | TradersDesk",
@@ -838,5 +808,35 @@
     "changefreq": "weekly",
     "custom": true,
     "last_updated": "2026-10-10 08:28:19 IST"
+  },
+  "/open-interest": {
+    "path": "/open-interest",
+    "title": "Open Interest Analysis - Nifty & Bank Nifty Live Call vs Put OI Charts | TradersDesk",
+    "desc": "Live NSE Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.",
+    "keywords": "open interest, nifty oi, banknifty oi, call vs put chart, pcr, max pain, oi buildup, options oi",
+    "canonical": "https://tradersdesk.in/open-interest/nifty",
+    "og_title": "Open Interest Analysis - Nifty & Bank Nifty Live Call vs Put OI Charts | TradersDesk",
+    "og_desc": "Live NSE Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.",
+    "robots": "index, follow",
+    "category": "derivatives",
+    "priority": "0.9",
+    "changefreq": "always",
+    "custom": false,
+    "last_updated": "2026-10-20 09:00:00 IST"
+  },
+  "/open-interest/nifty": {
+    "path": "/open-interest/nifty",
+    "title": "Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk",
+    "desc": "Live NSE Nifty Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.",
+    "keywords": "nifty open interest, nifty oi, call vs put chart, nifty pcr, max pain strike, nifty support resistance",
+    "canonical": "https://tradersdesk.in/open-interest/nifty",
+    "og_title": "Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk",
+    "og_desc": "Live NSE Nifty Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls.",
+    "robots": "index, follow",
+    "category": "derivatives",
+    "priority": "0.9",
+    "changefreq": "always",
+    "custom": false,
+    "last_updated": "2026-10-20 09:00:00 IST"
   }
 }

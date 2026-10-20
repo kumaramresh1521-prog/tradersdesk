@@ -8269,14 +8269,9 @@ function switchTab(tab) {
         window.futuresDesk.init();
       }
     } catch(e){}
-  } else if (tab === "globalMarkets" || tab === "global") {
-    isOptionsTabActive = false;
-    showPanel("panelGlobalMarkets", "navGlobalMarkets");
-    try {
-      if (window.globalMarketsDesk && typeof window.globalMarketsDesk.init === "function") {
-        window.globalMarketsDesk.init();
-      }
-    } catch(e){}
+  } else if (tab === "globalMarkets" || tab === "global" || tab === "openInterest" || tab === "oi") {
+    window.location.href = "/open-interest/nifty";
+    return;
   } else if (tab === "options" || tab === "upstoxChain") {
     isOptionsTabActive = true;
     showPanel("panelUpstoxChain", "navOptions");
@@ -12151,15 +12146,15 @@ const ROUTE_CONFIG = {
     title: "Market Dashboard | Live Nifty 50 & Real-Time Institutional Intelligence - TradersDesk",
     desc: "Real-time executive trading dashboard with live Nifty 50, GIFT Nifty, India VIX, FII/DII flow, MTF book, and market breadth pulse."
   },
-  "/global-markets": {
-    desk: "globalMarkets",
-    title: "Global Markets & Macro Desk | World Indices, Commodities & Currencies - TradersDesk",
-    desc: "Real-time global market tracker for Indian traders. Live GIFT Nifty, US Futures (S&P 500, Nasdaq, Dow), European & Asian Indices, Brent Crude, Gold, US 10Y Yields, DXY, and Indian ADRs."
+  "/open-interest": {
+    desk: "openInterest",
+    title: "Open Interest Analysis - Nifty & Bank Nifty Live Call vs Put OI Charts | TradersDesk",
+    desc: "Live NSE Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls."
   },
-  "/global": {
-    desk: "globalMarkets",
-    title: "Global Markets & Macro Desk | World Indices, Commodities & Currencies - TradersDesk",
-    desc: "Real-time global market tracker for Indian traders. Live GIFT Nifty, US Futures (S&P 500, Nasdaq, Dow), European & Asian Indices, Brent Crude, Gold, US 10Y Yields, DXY, and Indian ADRs."
+  "/open-interest/nifty": {
+    desk: "openInterest",
+    title: "Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk",
+    desc: "Live NSE Nifty Open Interest (OI) analysis, strike-wise Call vs Put distribution, Put-Call Ratio (PCR), Max Pain calculation, and key resistance/support walls."
   },
   "/option-chain-pro": {
     desk: "upstoxChain",
@@ -12407,8 +12402,10 @@ const ROUTE_CONFIG = {
 
 const DESK_TO_URL = {
   dashboard:     "/",
-  globalMarkets: "/global-markets",
-  global:        "/global-markets",
+  openInterest:  "/open-interest/nifty",
+  oi:            "/open-interest/nifty",
+  globalMarkets: "/open-interest/nifty",
+  global:        "/open-interest/nifty",
   upstoxChain:   "/option-chain-pro",
   options:       "/option-chain-pro",
   straddle:      "/straddle",
@@ -12683,84 +12680,27 @@ window.addEventListener("popstate", (e) => {
 
 async function loadDashboardMacroRibbon() {
   try {
-    const res = await fetch("/api/global-markets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({})
+    const res = await fetch("/api/open-interest?symbol=NIFTY&range=10", {
+      headers: { "Content-Type": "application/json" }
     });
     if (!res.ok) return;
     const data = await res.json();
-    const hm = data.headlineMetrics || {};
-    if (hm.giftNifty) {
-      const el = document.getElementById("macroGiftNifty");
-      const chg = document.getElementById("macroGiftChg");
-      if (el && hm.giftNifty.ltp) el.textContent = hm.giftNifty.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2 });
-      if (chg && hm.giftNifty.changePct !== undefined) {
-        chg.textContent = (hm.giftNifty.changePct >= 0 ? "+" : "") + hm.giftNifty.changePct + "%";
-        chg.className = "mp-chg " + (hm.giftNifty.changePct >= 0 ? "positive" : "negative");
-      }
+    if (!data || !data.ok) return;
 
-      // Live GIFT NIFTY KPI Card (just like India VIX)
-      const kVal = document.getElementById("dashKpiGiftNifty");
-      const kSub = document.getElementById("dashKpiGiftNiftySub");
-      if (kVal && hm.giftNifty.ltp) {
-        kVal.textContent = hm.giftNifty.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2 });
-      }
-      if (kSub && hm.giftNifty.changePct !== undefined) {
-        const sign = hm.giftNifty.changePct >= 0 ? "+" : "";
-        const ptStr = hm.giftNifty.change !== undefined ? `${sign}${Number(hm.giftNifty.change).toFixed(1)} ` : "";
-        kSub.textContent = `${ptStr}(${sign}${Number(hm.giftNifty.changePct).toFixed(2)}%)`;
-        kSub.style.color = hm.giftNifty.changePct >= 0 ? "#10b981" : "#ef4444";
-        kSub.style.fontWeight = "700";
-      }
+    const kVal = document.getElementById("dashKpiOiPcr");
+    const kSub = document.getElementById("dashKpiOiSub");
+    if (kVal && data.pcr != null) {
+      kVal.textContent = `PCR ${data.pcr.toFixed(2)}`;
     }
-    if (hm.brentCrude) {
-      const el = document.getElementById("macroBrent");
-      const chg = document.getElementById("macroBrentChg");
-      if (el && hm.brentCrude.ltp) el.textContent = hm.brentCrude.ltp.toFixed(2);
-      if (chg && hm.brentCrude.changePct !== undefined) {
-        chg.textContent = (hm.brentCrude.changePct >= 0 ? "+" : "") + hm.brentCrude.changePct + "%";
-        chg.className = "mp-chg " + (hm.brentCrude.changePct >= 0 ? "positive" : "negative");
-      }
-    }
-    if (hm.gold) {
-      const el = document.getElementById("macroGold");
-      const chg = document.getElementById("macroGoldChg");
-      if (el && hm.gold.ltp) el.textContent = hm.gold.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2 });
-      if (chg && hm.gold.changePct !== undefined) {
-        chg.textContent = (hm.gold.changePct >= 0 ? "+" : "") + hm.gold.changePct + "%";
-        chg.className = "mp-chg " + (hm.gold.changePct >= 0 ? "positive" : "negative");
-      }
-    }
-    if (hm.us10y) {
-      const el = document.getElementById("macroUs10y");
-      const chg = document.getElementById("macroUs10yChg");
-      if (el && hm.us10y.ltp) el.textContent = hm.us10y.ltp.toFixed(2) + "%";
-      if (chg && hm.us10y.changePct !== undefined) {
-        chg.textContent = (hm.us10y.changePct >= 0 ? "+" : "") + hm.us10y.changePct + "%";
-        chg.className = "mp-chg " + (hm.us10y.changePct >= 0 ? "positive" : "negative");
-      }
-    }
-    if (hm.dxy) {
-      const el = document.getElementById("macroDxy");
-      const chg = document.getElementById("macroDxyChg");
-      if (el && hm.dxy.ltp) el.textContent = hm.dxy.ltp.toFixed(2);
-      if (chg && hm.dxy.changePct !== undefined) {
-        chg.textContent = (hm.dxy.changePct >= 0 ? "+" : "") + hm.dxy.changePct + "%";
-        chg.className = "mp-chg " + (hm.dxy.changePct >= 0 ? "positive" : "negative");
-      }
-    }
-    if (hm.btc) {
-      const el = document.getElementById("macroBtc");
-      const chg = document.getElementById("macroBtcChg");
-      if (el && hm.btc.ltp) el.textContent = "$" + hm.btc.ltp.toLocaleString("en-IN");
-      if (chg && hm.btc.changePct !== undefined) {
-        chg.textContent = (hm.btc.changePct >= 0 ? "+" : "") + hm.btc.changePct + "%";
-        chg.className = "mp-chg " + (hm.btc.changePct >= 0 ? "positive" : "negative");
-      }
+    if (kSub) {
+      const sent = data.pcrSentiment || "Neutral";
+      const mp = data.maxPainStrike;
+      kSub.textContent = `${sent} • Max Pain ${mp ? mp.toLocaleString("en-IN") : "--"}`;
+      kSub.style.color = sent === "Bullish" ? "#10b981" : sent === "Bearish" ? "#ef4444" : "#f59e0b";
+      kSub.style.fontWeight = "700";
     }
   } catch(e) {
-    console.warn("Macro ribbon load failed:", e);
+    // silent fallback
   }
 }
 

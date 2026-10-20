@@ -37,7 +37,7 @@ import supabase_engine
 import seo_engine
 import straddle_engine
 import breadth_contribution_engine
-import global_markets_engine
+import open_interest_engine
 import fii_dii_engine
 import upstox_engine
 import futures_engine
@@ -155,7 +155,7 @@ def get_default_footer_links() -> dict:
                     {"label": "FII & DII Smart Money", "url": "/fii-dii", "type": "inst", "target": "smartMoney"},
                     {"label": "Cash Delivery Absorption", "url": "/delivery", "type": "inst", "target": "delivery"},
                     {"label": "MTF Margin Trading Book", "url": "/mtf", "type": "inst", "target": "mtf"},
-                    {"label": "Global Markets Desk", "url": "/global-markets", "type": "inst", "target": "globalMarkets"},
+                    {"label": "Open Interest Desk", "url": "/open-interest/nifty", "type": "link", "target": "_self"},
                     {"label": "Institutional Dashboard", "url": "/dashboard", "type": "inst", "target": "dashboard"}
                 ]
             },
@@ -9829,10 +9829,15 @@ class RequestHandler(BaseHTTPRequestHandler):
             date_param = query.get("date", [""])[0] or now_ist().strftime("%Y-%m-%d")
             force = query.get("refresh", ["false"])[0].lower() in ("1", "true")
             return self.send_json(200, get_cached_breadth_contribution(idx, date_param, force))
-        if path == "/api/global-markets":
+        if path in ("/api/open-interest", "/api/open-interest/nifty"):
             query = urllib.parse.parse_qs(parsed.query)
-            cat = query.get("category", ["all"])[0]
-            return self.send_json(200, global_markets_engine.get_global_markets_data(cat))
+            sym = query.get("symbol", ["NIFTY"])[0]
+            exp = query.get("expiry", [None])[0]
+            try:
+                s_range = int(query.get("range", query.get("strike_range", [10]))[0])
+            except Exception:
+                s_range = 10
+            return self.send_json(200, open_interest_engine.get_open_interest_data(sym, exp, s_range))
         if path == "/api/indices-overview":
             query = urllib.parse.parse_qs(parsed.query)
             payload = {
@@ -10453,8 +10458,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/quant-tools",
             "/tools",
             "/settings",
-            "/global-markets",
-            "/global",
         }
 
         PAGE2_ROUTES = {
@@ -10481,6 +10484,14 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/futures-rollover",
         }
 
+        OI_ROUTES = {
+            "/open-interest",
+            "/open-interest.html",
+            "/open-interest/nifty",
+            "/oi-analysis",
+            "/oi",
+        }
+
         STATIC_PAGE_ROUTES = {
             "/about": "/about.html",
             "/contact": "/contact.html",
@@ -10502,7 +10513,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/fii-dii/derivatives": "/fii-dii",
             "/mtf-analytics": "/mtf",
             "/delivery-analytics": "/delivery",
-            "/global": "/global-markets",
+            "/global": "/open-interest/nifty",
+            "/global-markets": "/open-interest/nifty",
             "/atm-straddle": "/straddle",
             "/contribution": "/breadth-contribution",
             "/about.html": "/about",
@@ -10530,6 +10542,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             return self.serve_html_with_seo("/calendar_studio.html", clean_path)
         elif clean_path in ROLLOVER_ROUTES:
             return self.serve_html_with_seo("/futures_rollover.html", clean_path)
+        elif clean_path in OI_ROUTES:
+            return self.serve_html_with_seo("/open_interest.html", clean_path)
         elif clean_path in STATIC_PAGE_ROUTES:
             return self.serve_html_with_seo(STATIC_PAGE_ROUTES[clean_path], clean_path)
         return self.serve_static(path)
@@ -10579,10 +10593,15 @@ class RequestHandler(BaseHTTPRequestHandler):
                 date_param = payload.get("date") or now_ist().strftime("%Y-%m-%d")
                 force = bool(payload.get("refresh") or payload.get("fastRefresh"))
                 return self.send_json(200, get_cached_breadth_contribution(idx, date_param, force))
-            if parsed.path == "/api/global-markets":
+            if parsed.path in ("/api/open-interest", "/api/open-interest/nifty"):
                 payload = self.read_body()
-                cat = payload.get("category", "all")
-                return self.send_json(200, global_markets_engine.get_global_markets_data(cat))
+                sym = payload.get("symbol", "NIFTY")
+                exp = payload.get("expiry")
+                try:
+                    s_range = int(payload.get("range", payload.get("strike_range", 10)))
+                except Exception:
+                    s_range = 10
+                return self.send_json(200, open_interest_engine.get_open_interest_data(sym, exp, s_range))
             if parsed.path == "/api/login-test":
                 if not check_admin_request(self):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized: Admin authorization required to test broker session."})
