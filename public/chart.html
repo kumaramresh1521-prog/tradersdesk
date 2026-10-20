@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Technical Charts &amp; Historical Analysis - Nifty, F&amp;O &amp; Stocks | TradersDesk</title>
+  <meta name="description" content="Institutional TradingView interactive technical charts for NSE Nifty, Bank Nifty, Stock Futures &amp; Options. Analyze candlestick action, indicators, Open Interest and volume delivery.">
+  <link rel="canonical" href="https://tradersdesk.in/chart">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Technical Charts &amp; Historical Analysis | TradersDesk">
+  <meta property="og:description" content="Live &amp; historical interactive TradingView charts for all NSE stocks, indices, and derivatives with built-in F&amp;O intelligence.">
+  <meta property="og:url" content="https://tradersdesk.in/chart">
+  <meta property="og:site_name" content="TradersDesk.in">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Core Page Stylesheets -->
+  <link rel="stylesheet" href="/styles.css?v=20261020_v2">
+  <link rel="stylesheet" href="/page2.css?v=20261020_v2">
+  <script src="/security_shield.js"></script>
+
+  <!-- TradingView Official Advanced Charts Script -->
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+
+  <!-- Theme Initializer -->
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('breadth_theme');
+        var theme = savedTheme ? savedTheme : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+    :root {
+      --chart-bg: #f8fafc;
+      --chart-card-bg: #ffffff;
+      --chart-border: #e2e8f0;
+      --chart-text: #0f172a;
+      --chart-text-muted: #64748b;
+      --chart-brand: #0284c7;
+      --chart-bull-green: #10b981;
+      --chart-bear-red: #ef4444;
+      --chart-buildup-bg: rgba(16, 185, 129, 0.1);
+    }
+
+    [data-theme="dark"] {
+      --chart-bg: #090d16;
+      --chart-card-bg: #0f172a;
+      --chart-border: #1e293b;
+      --chart-text: #f1f5f9;
+      --chart-text-muted: #94a3b8;
+      --chart-brand: #38bdf8;
+      --chart-bull-green: #10b981;
+      --chart-bear-red: #f87171;
+      --chart-buildup-bg: rgba(16, 185, 129, 0.18);
+    }
+
+    body {
+      background-color: var(--chart-bg);
+      color: var(--chart-text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    /* Fixed Logo Height Constraint */
+    .inst-brand-logo-img, .inst-logo-img {
+      height: 28px !important;
+      width: auto !important;
+      max-height: 28px !important;
+      object-fit: contain !important;
+      display: block;
+    }
+    html[data-theme="light"] .inst-brand-logo-dark,
+    body[data-theme="light"] .inst-brand-logo-dark { display: none !important; }
+    html[data-theme="light"] .inst-brand-logo-light,
+    body[data-theme="light"] .inst-brand-logo-light { display: block !important; }
+    html:not([data-theme="light"]) .inst-brand-logo-light,
+    body:not([data-theme="light"]) .inst-brand-logo-light { display: none !important; }
+    html:not([data-theme="light"]) .inst-brand-logo-dark,
+    body:not([data-theme="light"]) .inst-brand-logo-dark { display: block !important; }
+
+    /* Chart Desk Main Wrapper */
+    .chart-desk-wrapper {
+      max-width: 1720px;
+      margin: 0 auto;
+      padding: 12px 18px 30px 18px;
+    }
+
+    /* Top Control Toolbar */
+    .chart-control-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      background: var(--chart-card-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 12px;
+      padding: 10px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      flex-wrap: wrap;
+    }
+
+    .chart-search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 260px;
+      max-width: 440px;
+    }
+
+    .chart-search-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 14px 9px 38px;
+      background: var(--chart-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 8px;
+      color: var(--chart-text);
+      font-size: 13.5px;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    .chart-search-input:focus {
+      border-color: var(--chart-brand);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+    .chart-search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--chart-text-muted);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    /* Search Dropdown */
+    .chart-search-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--chart-card-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 8px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+      max-height: 380px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--chart-border);
+      transition: background 0.12s;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover, .search-result-item.selected {
+      background: rgba(2, 132, 199, 0.08);
+    }
+    .search-res-sym {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--chart-text);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .search-res-name {
+      font-size: 11.5px;
+      color: var(--chart-text-muted);
+      margin-left: 8px;
+    }
+    .search-res-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(100, 116, 139, 0.15);
+      color: var(--chart-text-muted);
+      font-weight: 700;
+    }
+
+    /* Quick Selector Chips */
+    .chart-chips-scroll {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 2px 0;
+    }
+    .chart-chips-scroll::-webkit-scrollbar { height: 4px; }
+    .chart-chips-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    .chart-chip-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid var(--chart-border);
+      background: var(--chart-card-bg);
+      color: var(--chart-text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .chart-chip-btn:hover {
+      background: rgba(2, 132, 199, 0.08);
+      border-color: var(--chart-brand);
+    }
+    .chart-chip-btn.active {
+      background: var(--chart-brand);
+      color: #ffffff;
+      border-color: var(--chart-brand);
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+    }
+
+    /* Timeframe Selector */
+    .chart-tf-group {
+      display: flex;
+      align-items: center;
+      background: var(--chart-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .chart-tf-btn {
+      border: none;
+      background: transparent;
+      padding: 5px 9px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--chart-text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.1s;
+    }
+    .chart-tf-btn:hover {
+      color: var(--chart-text);
+      background: rgba(0,0,0,0.05);
+    }
+    .chart-tf-btn.active {
+      background: var(--chart-card-bg);
+      color: var(--chart-brand);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* Live Institutional Quote Strip */
+    .chart-kpi-ribbon {
+      display: grid;
+      grid-template-columns: auto auto auto auto 1fr;
+      align-items: center;
+      gap: 16px;
+      background: var(--chart-card-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .kpi-symbol-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .kpi-symbol-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--chart-text);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .kpi-symbol-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(2, 132, 199, 0.12);
+      color: var(--chart-brand);
+    }
+
+    .kpi-price-block {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .kpi-ltp {
+      font-size: 20px;
+      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--chart-text);
+    }
+    .kpi-change-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .kpi-change-pill.pos {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+    }
+    .kpi-change-pill.neg {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+    }
+
+    .kpi-metric-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-left: 1px solid var(--chart-border);
+      padding-left: 16px;
+    }
+    .kpi-metric-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .kpi-metric-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--chart-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .kpi-metric-val {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: var(--chart-text);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .kpi-buildup-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 5px;
+    }
+    .buildup-long { background: rgba(16, 185, 129, 0.14); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .buildup-short { background: rgba(239, 68, 68, 0.14); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .buildup-covering { background: rgba(2, 132, 199, 0.14); color: #0284c7; border: 1px solid rgba(2, 132, 199, 0.3); }
+    .buildup-unwinding { background: rgba(245, 158, 11, 0.14); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .kpi-right-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .kpi-action-link {
+      text-decoration: none;
+      padding: 6px 11px;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid var(--chart-border);
+      background: var(--chart-bg);
+      color: var(--chart-text);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .kpi-action-link:hover {
+      background: rgba(2, 132, 199, 0.08);
+      border-color: var(--chart-brand);
+      color: var(--chart-brand);
+    }
+
+    /* Main Chart Canvas Container */
+    .chart-view-frame {
+      background: var(--chart-card-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+      height: 640px;
+      position: relative;
+    }
+
+    #tv_chart_container {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Bottom Intelligence Tabs */
+    .chart-bottom-deck {
+      margin-top: 14px;
+      background: var(--chart-card-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .deck-tab-bar {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--chart-border);
+      background: var(--chart-bg);
+      padding: 0 12px;
+    }
+    .deck-tab-btn {
+      padding: 11px 18px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--chart-text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.12s;
+    }
+    .deck-tab-btn.active {
+      color: var(--chart-brand);
+      border-bottom-color: var(--chart-brand);
+      background: var(--chart-card-bg);
+    }
+    .deck-tab-pane {
+      padding: 16px;
+      display: none;
+    }
+    .deck-tab-pane.active {
+      display: block;
+    }
+
+    .hist-table-wrap {
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .hist-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .hist-table th {
+      position: sticky;
+      top: 0;
+      background: var(--chart-bg);
+      text-align: right;
+      padding: 8px 12px;
+      font-weight: 700;
+      color: var(--chart-text-muted);
+      border-bottom: 1px solid var(--chart-border);
+    }
+    .hist-table th:first-child, .hist-table td:first-child { text-align: left; }
+    .hist-table th:last-child, .hist-table td:last-child { text-align: center; }
+    .hist-table td {
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--chart-border);
+      text-align: right;
+    }
+    .hist-table tr:hover {
+      background: rgba(2, 132, 199, 0.04);
+    }
+
+    @media (max-width: 960px) {
+      .chart-kpi-ribbon {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .kpi-right-actions {
+        grid-column: span 2;
+        justify-content: flex-start;
+      }
+      .chart-view-frame { height: 500px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header class="inst-header" id="instTopHeader">
+    <div class="inst-brand-bar">
+      <div class="inst-brand-left">
+        <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in — Institutional Quant &amp; Derivatives Terminal">
+          <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <div class="inst-brand-fallback-text" id="instBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
+            <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk<svg style="width:13px; height:13px; vertical-align:middle; transform:translateY(-2px); margin-left:-1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg></span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
+          </div>
+        </a>
+        <div class="inst-terminal-tag">
+          <span class="inst-tag-pulse"></span>
+          <span class="inst-tag-text">QUANT TERMINAL</span>
+        </div>
+      </div>
+
+      <div class="inst-market-clock-wrap" id="topMarketClockWrap">
+        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE Regular Trading Session">
+          <span class="market-dot" id="marketDot"></span>
+          <span id="marketStatusText">NSE LIVE</span>
+        </div>
+        <div class="inst-clock-pill" title="Indian Standard Time (IST)">
+          <span class="clock-icon">🕒</span>
+          <span id="instLiveClock" class="clock-digits">--:--:-- IST</span>
+        </div>
+      </div>
+
+      <div class="inst-right-controls">
+        <button id="chartDotMenuBtn" type="button" class="inst-dot-menu-btn" onclick="openMobileDotMenu()" aria-label="Open Navigation Drawer" title="All Desks &amp; Menus">
+          <svg class="dot-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="8" cy="5" r="2.2" /><circle cx="16" cy="5" r="2.2" /><circle cx="8" cy="12" r="2.2" /><circle cx="16" cy="12" r="2.2" /><circle cx="8" cy="19" r="2.2" /><circle cx="16" cy="19" r="2.2" />
+          </svg>
+          <span class="dot-menu-label">Menu</span>
+        </button>
+        <button id="themeToggleBtn" type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle White / Dark Theme">
+          <span id="themeToggleIcon">🌙</span>
+          <span class="theme-btn-text" id="themeToggleText">Theme</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mega-Menu Navigation Bar -->
+    <nav class="inst-nav" aria-label="Main Navigation" id="mainInstNav">
+      <div class="inst-nav-item"><a href="/" class="inst-nav-btn"><span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span></a></div>
+      <div class="inst-nav-item has-dropdown">
+        <a href="/futures" class="inst-nav-btn"><span class="inst-nav-icon">📈</span> <span class="nav-label">Futures</span><span class="inst-nav-arrow">▾</span></a>
+        <div class="inst-dropdown inst-dropdown-md">
+          <div class="inst-dropdown-col">
+            <span class="inst-dropdown-header">Futures Market &amp; Structure</span>
+            <a href="/futures" class="inst-dd-item"><span class="dd-icon">📊</span><div class="dd-text"><span class="dd-title">Future Marketwatch</span><span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span></div></a>
+            <a href="/futures/buildup" class="inst-dd-item"><span class="dd-icon">⚡</span><div class="dd-text"><span class="dd-title">Buildup Quadrants</span><span class="dd-sub">Long/Short buildup, covering &amp; unwinding radar</span></div></a>
+            <a href="/futures/rollover" class="inst-dd-item"><span class="dd-icon">📑</span><div class="dd-text"><span class="dd-title">Futures Rollover Matrix</span><span class="dd-sub">Expiry rollover %, 3M/6M averages &amp; historical velocity</span></div></a>
+          </div>
+        </div>
+      </div>
+      <div class="inst-nav-item has-dropdown">
+        <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight" id="navOptions"><span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span><span class="inst-nav-arrow">▾</span></a>
+        <div class="inst-dropdown inst-dropdown-md">
+          <div class="inst-dropdown-col">
+            <span class="inst-dropdown-header">Derivatives Suite</span>
+            <a href="/open-interest/nifty" class="inst-dd-item"><span class="dd-icon">📊</span><div class="dd-text"><span class="dd-title">Open Interest Analysis <span class="p2-badge p2-badge-blue" style="margin-left:4px;">OI</span></span><span class="dd-sub">Live Call vs Put distribution, PCR &amp; Max Pain</span></div></a>
+            <a href="/option-chain-pro" class="inst-dd-item"><span class="dd-icon">⚡</span><div class="dd-text"><span class="dd-title">Option Chain Pro <span class="p2-badge p2-badge-teal" style="margin-left:4px;">LIVE</span></span><span class="dd-sub">Multi-broker live chain, Greeks, PCR &amp; IV skew</span></div></a>
+            <a href="/straddle" class="inst-dd-item"><span class="dd-icon">📉</span><div class="dd-text"><span class="dd-title">Straddle Desk</span><span class="dd-sub">Combined CE+PE premium decay, IV crush &amp; Greeks</span></div></a>
+          </div>
+        </div>
+      </div>
+      <!-- ACTIVE CHARTS TAB -->
+      <div class="inst-nav-item">
+        <a href="/chart" class="inst-nav-btn inst-nav-btn-blue active" id="navChartsTab" title="Interactive TradingView Technical &amp; Historical Charts">
+          <span class="inst-nav-icon">📈</span> <span class="nav-label">Charts</span>
+          <span class="p2-badge p2-badge-teal">PRO</span>
+        </a>
+      </div>
+      <div class="inst-nav-item"><a href="/breadth" class="inst-nav-btn"><span class="inst-nav-icon">📉</span> <span class="nav-label">Breadth Pro</span></a></div>
+      <div class="inst-nav-item"><a href="/fii-dii" class="inst-nav-btn"><span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII &amp; DII</span></a></div>
+      <div class="inst-nav-item"><a href="/delivery" class="inst-nav-btn"><span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery</span></a></div>
+      <div class="inst-nav-item"><a href="/mtf" class="inst-nav-btn"><span class="inst-nav-icon">💳</span> <span class="nav-label">MTF Book</span></a></div>
+    </nav>
+  </header>
+
+  <!-- ========================================================================
+       MAIN CHART WORKSPACE
+       ======================================================================== -->
+  <main class="chart-desk-wrapper">
+
+    <!-- Top Universal Search & Quick Chip Bar -->
+    <div class="chart-control-bar">
+      <!-- Search Input with Live Dropdown -->
+      <div class="chart-search-wrap">
+        <span class="chart-search-icon">🔍</span>
+        <input type="text" id="symbolSearchInput" class="chart-search-input" placeholder="Search any Stock or Index (e.g. RELIANCE, NIFTY 50)..." autocomplete="off" spellcheck="false" />
+        <div id="searchDropdown" class="chart-search-dropdown"></div>
+      </div>
+
+      <!-- Quick Selector Chips -->
+      <div class="chart-chips-scroll" id="quickChipsContainer">
+        <button class="chart-chip-btn active" data-sym="NIFTY" onclick="selectSymbol('NIFTY')">NIFTY 50</button>
+        <button class="chart-chip-btn" data-sym="BANKNIFTY" onclick="selectSymbol('BANKNIFTY')">BANK NIFTY</button>
+        <button class="chart-chip-btn" data-sym="FINNIFTY" onclick="selectSymbol('FINNIFTY')">FINNIFTY</button>
+        <button class="chart-chip-btn" data-sym="SENSEX" onclick="selectSymbol('SENSEX')">SENSEX</button>
+        <button class="chart-chip-btn" data-sym="RELIANCE" onclick="selectSymbol('RELIANCE')">RELIANCE</button>
+        <button class="chart-chip-btn" data-sym="HDFCBANK" onclick="selectSymbol('HDFCBANK')">HDFCBANK</button>
+        <button class="chart-chip-btn" data-sym="TCS" onclick="selectSymbol('TCS')">TCS</button>
+        <button class="chart-chip-btn" data-sym="TATAMOTORS" onclick="selectSymbol('TATAMOTORS')">TATAMOTORS</button>
+        <button class="chart-chip-btn" data-sym="SBIN" onclick="selectSymbol('SBIN')">SBIN</button>
+        <button class="chart-chip-btn" data-sym="INFY" onclick="selectSymbol('INFY')">INFY</button>
+      </div>
+
+      <!-- Timeframe Selector -->
+      <div class="chart-tf-group">
+        <button class="chart-tf-btn" data-tf="1" onclick="changeTimeframe('1')">1m</button>
+        <button class="chart-tf-btn" data-tf="5" onclick="changeTimeframe('5')">5m</button>
+        <button class="chart-tf-btn" data-tf="15" onclick="changeTimeframe('15')">15m</button>
+        <button class="chart-tf-btn" data-tf="60" onclick="changeTimeframe('60')">1h</button>
+        <button class="chart-tf-btn active" data-tf="D" onclick="changeTimeframe('D')">1D</button>
+        <button class="chart-tf-btn" data-tf="W" onclick="changeTimeframe('W')">1W</button>
+      </div>
+    </div>
+
+    <!-- Live Institutional KPI Ribbon -->
+    <div class="chart-kpi-ribbon" id="chartKpiRibbon">
+      <div class="kpi-symbol-block">
+        <span class="kpi-symbol-title" id="kpiSymbolText">NIFTY</span>
+        <span class="kpi-symbol-badge" id="kpiExchangeBadge">NSE INDEX</span>
+      </div>
+
+      <div class="kpi-price-block">
+        <span class="kpi-ltp" id="kpiLtp">₹--</span>
+        <span class="kpi-change-pill" id="kpiChangePill">--</span>
+      </div>
+
+      <div class="kpi-metric-group">
+        <div class="kpi-metric-item">
+          <span class="kpi-metric-label">Open / High / Low</span>
+          <span class="kpi-metric-val" id="kpiOhl">-- / -- / --</span>
+        </div>
+        <div class="kpi-metric-item">
+          <span class="kpi-metric-label">Prev Close</span>
+          <span class="kpi-metric-val" id="kpiPrevClose">₹--</span>
+        </div>
+        <div class="kpi-metric-item">
+          <span class="kpi-metric-label">Volume</span>
+          <span class="kpi-metric-val" id="kpiVolume">--</span>
+        </div>
+      </div>
+
+      <div class="kpi-metric-group" id="kpiFoBlock">
+        <div class="kpi-metric-item">
+          <span class="kpi-metric-label">Future OI</span>
+          <span class="kpi-metric-val" id="kpiOi">--</span>
+        </div>
+        <div class="kpi-metric-item">
+          <span class="kpi-metric-label">Buildup Radar</span>
+          <span id="kpiBuildupTag" class="kpi-buildup-tag buildup-long">Long Buildup</span>
+        </div>
+        <div class="kpi-metric-item" id="kpiRolloverItem">
+          <span class="kpi-metric-label">Rollover %</span>
+          <span class="kpi-metric-val" id="kpiRollover">--%</span>
+        </div>
+      </div>
+
+      <div class="kpi-right-actions">
+        <a id="btnLinkOptionChain" href="/option-chain-pro" class="kpi-action-link" title="Open Multi-broker Option Chain Pro for this symbol">⚡ Option Chain</a>
+        <a id="btnLinkOpenInterest" href="/open-interest/nifty" class="kpi-action-link" title="Open Call vs Put OI Analysis">📊 OI Analysis</a>
+        <a id="btnLinkFutures" href="/futures" class="kpi-action-link" title="Open Futures Marketwatch">📈 Futures</a>
+      </div>
+    </div>
+
+    <!-- Main TradingView Chart Container -->
+    <div class="chart-view-frame">
+      <div id="tv_chart_container"></div>
+    </div>
+
+    <!-- Bottom Secondary Intelligence Deck -->
+    <div class="chart-bottom-deck">
+      <div class="deck-tab-bar">
+        <button class="deck-tab-btn active" onclick="switchDeckTab(event, 'tabBuildup')">Derivatives &amp; OI Buildup History</button>
+        <button class="deck-tab-btn" onclick="switchDeckTab(event, 'tabCrossDesk')">Cross-Desk Quick Navigation</button>
+      </div>
+
+      <!-- Tab 1: Buildup History -->
+      <div id="tabBuildup" class="deck-tab-pane active">
+        <div class="hist-table-wrap">
+          <table class="hist-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Open</th>
+                <th>High</th>
+                <th>Low</th>
+                <th>Close</th>
+                <th>Volume</th>
+                <th>Total OI</th>
+                <th>OI Change</th>
+                <th>Buildup Signal</th>
+              </tr>
+            </thead>
+            <tbody id="histTableBody">
+              <tr><td colspan="9" style="text-align:center; color:#64748b; padding:20px;">Loading historical derivatives dataset...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Cross Desk Jump -->
+      <div id="tabCrossDesk" class="deck-tab-pane">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+          <a id="cardJumpChain" href="/option-chain-pro" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">⚡ Option Chain Pro</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Multi-broker live chain, Greeks, PCR &amp; IV skew</span>
+          </a>
+          <a id="cardJumpOi" href="/open-interest/nifty" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">📊 Open Interest Analysis</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Call vs Put distribution, PCR &amp; Max Pain</span>
+          </a>
+          <a href="/futures/rollover" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">📑 Futures Rollover Matrix</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Expiry rollover %, 3M/6M averages &amp; velocity</span>
+          </a>
+          <a href="/delivery" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">📦 Cash Delivery Analytics</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Security-wise delivery %, block volume &amp; turnover</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Mobile Drawer Modal -->
+  <div id="mobileDotMenuModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; backdrop-filter:blur(4px); align-items:flex-end;">
+    <div style="background:var(--chart-card-bg); border-top:1px solid var(--chart-border); border-radius:16px 16px 0 0; width:100%; max-height:85vh; overflow-y:auto; padding:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:16px; font-weight:800;">Terminal Directory</h3>
+        <button type="button" onclick="closeMobileDotMenu()" style="border:none; background:transparent; font-size:20px; cursor:pointer;">✕</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <a href="/" class="kpi-action-link" style="text-decoration:none;">⬛ Dashboard</a>
+        <a href="/chart" class="kpi-action-link" style="text-decoration:none; background:rgba(2,132,199,0.12); color:#0284c7; font-weight:800;">📈 Technical Charts</a>
+        <a href="/futures" class="kpi-action-link" style="text-decoration:none;">📈 Futures Matrix</a>
+        <a href="/open-interest/nifty" class="kpi-action-link" style="text-decoration:none;">📊 Open Interest</a>
+        <a href="/option-chain-pro" class="kpi-action-link" style="text-decoration:none;">⚡ Option Chain Pro</a>
+        <a href="/straddle" class="kpi-action-link" style="text-decoration:none;">📉 Straddle Desk</a>
+        <a href="/breadth" class="kpi-action-link" style="text-decoration:none;">📉 Breadth Pro</a>
+        <a href="/fii-dii" class="kpi-action-link" style="text-decoration:none;">🏛️ FII &amp; DII</a>
+        <a href="/delivery" class="kpi-action-link" style="text-decoration:none;">📦 Delivery</a>
+        <a href="/mtf" class="kpi-action-link" style="text-decoration:none;">💳 MTF Book</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       CLIENT-SIDE TRADINGVIEW INTEGRATION & DYNAMIC CONTROLLER
+       ======================================================================== -->
+  <script>
+    let currentSymbol = "NIFTY";
+    let currentTvSymbol = "NSE:NIFTY";
+    let currentTimeframe = "D";
+    let tvWidget = null;
+    let allSymbolsCache = [];
+
+    // URL Param Init
+    function initFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const symParam = params.get("symbol") || params.get("sym") || params.get("s");
+      if (symParam) {
+        currentSymbol = symParam.toUpperCase().trim();
+      }
+      const tfParam = params.get("tf") || params.get("interval");
+      if (tfParam) {
+        currentTimeframe = tfParam;
+      }
+    }
+
+    // Mapping for TV Symbols
+    function getTvSymbol(sym) {
+      if (sym === "SENSEX") return "BSE:SENSEX";
+      if (sym === "NIFTY") return "NSE:NIFTY";
+      if (sym === "BANKNIFTY") return "NSE:BANKNIFTY";
+      if (sym === "FINNIFTY") return "NSE:FINNIFTY";
+      if (sym === "MIDCPNIFTY") return "NSE:MIDCPNIFTY";
+      return "NSE:" + sym;
+    }
+
+    // Initialize TradingView Widget
+    function renderTradingViewChart() {
+      const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+      const tvTheme = currentTheme === "dark" ? "dark" : "light";
+      const tvSym = getTvSymbol(currentSymbol);
+
+      const container = document.getElementById("tv_chart_container");
+      if (!container) return;
+      container.innerHTML = ""; // Clear existing
+
+      try {
+        if (typeof TradingView !== "undefined") {
+          tvWidget = new TradingView.widget({
+            "autosize": true,
+            "symbol": tvSym,
+            "interval": currentTimeframe,
+            "timezone": "Asia/Kolkata",
+            "theme": tvTheme,
+            "style": "1", // 1 = Candlestick
+            "locale": "en",
+            "toolbar_bg": currentTheme === "dark" ? "#0f172a" : "#ffffff",
+            "enable_publishing": false,
+            "allow_symbol_change": true,
+            "container_id": "tv_chart_container",
+            "studies": [
+              "Volume@tv-basicstudies",
+              "MASimple@tv-basicstudies"
+            ],
+            "hide_side_toolbar": false,
+            "withdateranges": true,
+            "save_image": true
+          });
+        }
+      } catch (e) {
+        console.error("TradingView widget error:", e);
+      }
+    }
+
+    // Fetch Live Quote & Snapshot
+    async function fetchSymbolQuote(sym) {
+      try {
+        const resp = await fetch(`/api/chart/quote?symbol=${encodeURIComponent(sym)}`);
+        const data = await resp.json();
+        if (data && data.quote) {
+          renderQuoteKpi(data.quote);
+        }
+      } catch (e) {
+        console.error("Error fetching quote:", e);
+      }
+    }
+
+    // Render KPI Strip
+    function renderQuoteKpi(q) {
+      document.getElementById("kpiSymbolText").textContent = q.symbol;
+      document.getElementById("kpiExchangeBadge").textContent = q.isIndex ? "NSE INDEX" : "NSE F&O / EQ";
+
+      const ltpEl = document.getElementById("kpiLtp");
+      if (q.ltp) {
+        ltpEl.textContent = "₹" + q.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } else {
+        ltpEl.textContent = "₹--";
+      }
+
+      const chgPill = document.getElementById("kpiChangePill");
+      if (q.change !== undefined && q.change_pct !== undefined) {
+        const sign = q.change >= 0 ? "+" : "";
+        chgPill.textContent = `${sign}${q.change.toFixed(2)} (${sign}${q.change_pct.toFixed(2)}%)`;
+        chgPill.className = "kpi-change-pill " + (q.change >= 0 ? "pos" : "neg");
+      }
+
+      document.getElementById("kpiOhl").textContent = `${q.open || '--'} / ${q.high || '--'} / ${q.low || '--'}`;
+      document.getElementById("kpiPrevClose").textContent = q.prev_close ? "₹" + q.prev_close : "₹--";
+      document.getElementById("kpiVolume").textContent = q.volume ? q.volume.toLocaleString("en-IN") : "--";
+
+      // Buildup Tag
+      const bTag = document.getElementById("kpiBuildupTag");
+      bTag.textContent = q.buildup || "Neutral";
+      if (q.buildup === "Long Buildup") bTag.className = "kpi-buildup-tag buildup-long";
+      else if (q.buildup === "Short Buildup") bTag.className = "kpi-buildup-tag buildup-short";
+      else if (q.buildup === "Short Covering") bTag.className = "kpi-buildup-tag buildup-covering";
+      else bTag.className = "kpi-buildup-tag buildup-unwinding";
+
+      document.getElementById("kpiOi").textContent = q.future_oi ? q.future_oi.toLocaleString("en-IN") : "--";
+      document.getElementById("kpiRollover").textContent = q.rollover_pct ? q.rollover_pct.toFixed(1) + "%" : "--%";
+
+      // Update Navigation Links
+      const chainUrl = `/option-chain-pro?symbol=${encodeURIComponent(q.symbol)}`;
+      document.getElementById("btnLinkOptionChain").href = chainUrl;
+      document.getElementById("cardJumpChain").href = chainUrl;
+
+      const oiUrl = `/open-interest/nifty?symbol=${encodeURIComponent(q.symbol)}`;
+      document.getElementById("btnLinkOpenInterest").href = oiUrl;
+      document.getElementById("cardJumpOi").href = oiUrl;
+    }
+
+    // Fetch Historical Data Table
+    async function fetchHistoricalData(sym) {
+      const tbody = document.getElementById("histTableBody");
+      try {
+        const resp = await fetch(`/api/chart/history?symbol=${encodeURIComponent(sym)}`);
+        const data = await resp.json();
+        if (data && data.bars && data.bars.length > 0) {
+          renderHistTable(data.bars);
+        } else {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#64748b; padding:16px;">No daily F&amp;O history found for ${sym}. Cash equity chart available above.</td></tr>`;
+        }
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#ef4444; padding:16px;">Failed to load derivatives history.</td></tr>`;
+      }
+    }
+
+    function renderHistTable(bars) {
+      const tbody = document.getElementById("histTableBody");
+      const rev = [...bars].reverse().slice(0, 30); // Last 30 sessions
+      tbody.innerHTML = rev.map(b => {
+        let bClass = "buildup-long";
+        if (b.buildup === "Short Buildup") bClass = "buildup-short";
+        else if (b.buildup === "Short Covering") bClass = "buildup-covering";
+        else if (b.buildup === "Long Unwinding") bClass = "buildup-unwinding";
+
+        const oiChgSign = b.oi_change >= 0 ? "+" : "";
+        const oiChgColor = b.oi_change >= 0 ? "#10b981" : "#ef4444";
+
+        return `
+          <tr>
+            <td><strong>${b.time}</strong></td>
+            <td>₹${b.open.toFixed(2)}</td>
+            <td>₹${b.high.toFixed(2)}</td>
+            <td>₹${b.low.toFixed(2)}</td>
+            <td style="font-weight:700;">₹${b.close.toFixed(2)}</td>
+            <td>${b.volume.toLocaleString("en-IN")}</td>
+            <td style="font-weight:700;">${b.oi ? b.oi.toLocaleString("en-IN") : '--'}</td>
+            <td style="color:${oiChgColor}; font-weight:700;">${oiChgSign}${b.oi_change ? b.oi_change.toLocaleString("en-IN") : '--'}</td>
+            <td><span class="kpi-buildup-tag ${bClass}">${b.buildup}</span></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // Select Symbol Action
+    window.selectSymbol = function(sym) {
+      currentSymbol = sym.toUpperCase().trim();
+
+      // Update URL query without refresh
+      const url = new URL(window.location);
+      url.searchParams.set("symbol", currentSymbol);
+      window.history.pushState({}, "", url);
+
+      // Update chip active classes
+      document.querySelectorAll(".chart-chip-btn").forEach(btn => {
+        if (btn.getAttribute("data-sym") === currentSymbol) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+
+      // Clear search
+      const sInput = document.getElementById("symbolSearchInput");
+      if (sInput) sInput.value = "";
+      const sDrop = document.getElementById("searchDropdown");
+      if (sDrop) sDrop.style.display = "none";
+
+      renderTradingViewChart();
+      fetchSymbolQuote(currentSymbol);
+      fetchHistoricalData(currentSymbol);
+    };
+
+    // Change Timeframe Action
+    window.changeTimeframe = function(tf) {
+      currentTimeframe = tf;
+      document.querySelectorAll(".chart-tf-btn").forEach(btn => {
+        if (btn.getAttribute("data-tf") === tf) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+      renderTradingViewChart();
+    };
+
+    // Tab Switcher
+    window.switchDeckTab = function(e, tabId) {
+      document.querySelectorAll(".deck-tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".deck-tab-pane").forEach(p => p.classList.remove("active"));
+      e.target.classList.add("active");
+      const targetPane = document.getElementById(tabId);
+      if (targetPane) targetPane.classList.add("active");
+    };
+
+    // Theme Toggle
+    window.toggleTheme = function() {
+      const current = document.documentElement.getAttribute("data-theme") || "light";
+      const next = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("breadth_theme", next);
+      const icon = document.getElementById("themeToggleIcon");
+      if (icon) icon.textContent = next === "dark" ? "☀️" : "🌙";
+      renderTradingViewChart();
+    };
+
+    // Live Clock
+    function updateLiveClock() {
+      const now = new Date();
+      const istOptions = { timeZone: "Asia/Kolkata", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" };
+      const clockEl = document.getElementById("instLiveClock");
+      if (clockEl) {
+        clockEl.textContent = now.toLocaleTimeString("en-GB", istOptions) + " IST";
+      }
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    // Mobile Drawer
+    window.openMobileDotMenu = function() {
+      const m = document.getElementById("mobileDotMenuModal");
+      if (m) m.style.display = "flex";
+    };
+    window.closeMobileDotMenu = function() {
+      const m = document.getElementById("mobileDotMenuModal");
+      if (m) m.style.display = "none";
+    };
+
+    // Global Search Autocomplete Setup
+    async function initSearch() {
+      const input = document.getElementById("symbolSearchInput");
+      const dropdown = document.getElementById("searchDropdown");
+
+      // Load initial top symbols
+      try {
+        const resp = await fetch("/api/chart/symbols?q=");
+        const data = await resp.json();
+        if (data && data.symbols) {
+          allSymbolsCache = data.symbols;
+        }
+      } catch (e) {}
+
+      let debounceTimer = null;
+      input.addEventListener("input", function() {
+        const q = this.value.trim();
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+          if (!q) {
+            dropdown.style.display = "none";
+            return;
+          }
+          try {
+            const res = await fetch(`/api/chart/symbols?q=${encodeURIComponent(q)}`);
+            const json = await res.json();
+            const items = json.symbols || [];
+            if (items.length === 0) {
+              dropdown.innerHTML = `<div style="padding:12px; color:#64748b; font-size:12px;">No matching stock or index found.</div>`;
+              dropdown.style.display = "block";
+              return;
+            }
+            dropdown.innerHTML = items.map(it => `
+              <div class="search-result-item" onclick="selectSymbol('${it.symbol}')">
+                <div>
+                  <span class="search-res-sym">${it.symbol}</span>
+                  <span class="search-res-name">${it.name}</span>
+                </div>
+                <span class="search-res-badge">${it.category}</span>
+              </div>
+            `).join("");
+            dropdown.style.display = "block";
+          } catch (e) {
+            console.error("Search fetch error:", e);
+          }
+        }, 150);
+      });
+
+      // Close dropdown on outside click
+      document.addEventListener("click", function(e) {
+        if (!e.target.closest(".chart-search-wrap")) {
+          dropdown.style.display = "none";
+        }
+      });
+    }
+
+    // On Load Initializer
+    window.addEventListener("DOMContentLoaded", function() {
+      initFromUrl();
+      initSearch();
+      selectSymbol(currentSymbol);
+    });
+  </script>
+</body>
+</html>

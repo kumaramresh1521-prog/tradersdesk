@@ -12402,6 +12402,9 @@ const ROUTE_CONFIG = {
 
 const DESK_TO_URL = {
   dashboard:     "/",
+  chart:         "/chart",
+  charts:        "/chart",
+  technicals:    "/chart",
   openInterest:  "/open-interest/nifty",
   oi:            "/open-interest/nifty",
   globalMarkets: "/open-interest/nifty",
@@ -12632,6 +12635,7 @@ function navigateDesk(targetKey, subview, explicitUrl, ev) {
   }
 
   const standalonePages = [
+    "/chart", "/charts", "/historical-chart",
     "/straddle", "/atm-straddle", "/breadth-contribution", "/contribution",
     "/fii-dii-cash", "/calendar_studio.html", "/calendar", "/calendar-studio",
     "/admin.html", "/admin", "/disclaimer.html", "/privacy.html", "/terms.html", "/about.html"

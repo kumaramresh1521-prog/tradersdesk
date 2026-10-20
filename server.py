@@ -9838,6 +9838,24 @@ class RequestHandler(BaseHTTPRequestHandler):
             except Exception:
                 s_range = 10
             return self.send_json(200, open_interest_engine.get_open_interest_data(sym, exp, s_range))
+
+        if path == "/api/chart/symbols":
+            import chart_engine
+            query = urllib.parse.parse_qs(parsed.query)
+            q = query.get("q", query.get("query", [""]))[0]
+            return self.send_json(200, {"ok": True, "symbols": chart_engine.chart_engine.get_symbols(q)})
+
+        if path == "/api/chart/quote":
+            import chart_engine
+            query = urllib.parse.parse_qs(parsed.query)
+            sym = query.get("symbol", ["NIFTY"])[0]
+            return self.send_json(200, {"ok": True, "quote": chart_engine.chart_engine.get_symbol_quote(sym)})
+
+        if path == "/api/chart/history":
+            import chart_engine
+            query = urllib.parse.parse_qs(parsed.query)
+            sym = query.get("symbol", ["NIFTY"])[0]
+            return self.send_json(200, chart_engine.chart_engine.get_symbol_history(sym))
         if path == "/api/indices-overview":
             query = urllib.parse.parse_qs(parsed.query)
             payload = {
@@ -10492,6 +10510,15 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/oi",
         }
 
+        CHART_ROUTES = {
+            "/chart",
+            "/chart.html",
+            "/charts",
+            "/historical-chart",
+            "/historical-chart.html",
+            "/technical-chart",
+        }
+
         STATIC_PAGE_ROUTES = {
             "/about": "/about.html",
             "/contact": "/contact.html",
@@ -10544,6 +10571,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             return self.serve_html_with_seo("/futures_rollover.html", clean_path)
         elif clean_path in OI_ROUTES:
             return self.serve_html_with_seo("/open_interest.html", clean_path)
+        elif clean_path in CHART_ROUTES:
+            return self.serve_html_with_seo("/chart.html", clean_path)
         elif clean_path in STATIC_PAGE_ROUTES:
             return self.serve_html_with_seo(STATIC_PAGE_ROUTES[clean_path], clean_path)
         return self.serve_static(path)
