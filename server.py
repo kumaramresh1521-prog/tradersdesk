@@ -164,6 +164,7 @@ def get_default_footer_links() -> dict:
                 "title": "⚡ Derivatives & Options",
                 "links": [
                     {"label": "Upstox Option Chain Pro", "url": "/option-chain-pro", "type": "inst", "target": "upstoxChain"},
+                    {"label": "Future Intraday Analytics", "url": "/futures/future-intraday", "type": "inst", "target": "futures:futureIntraday"},
                     {"label": "Future Marketwatch Matrix", "url": "/futures", "type": "inst", "target": "futures:matrix"},
                     {"label": "Straddle Analytics Engine", "url": "/straddle", "type": "link", "target": "_self"},
                     {"label": "Future Buildup Quadrants", "url": "/futures/buildup", "type": "inst", "target": "futures:buildup"},
@@ -10096,6 +10097,22 @@ class RequestHandler(BaseHTTPRequestHandler):
             dash = futures_engine.get_futures_dashboard(force_refresh=force)
             return self.send_json(200, {"ok": True, "movers": dash.get("marketMovers", {}), "date": dash.get("date"), "asOfDate": dash.get("asOfDate"), "isLive": dash.get("isLive")})
 
+        if path == "/api/futures/intraday":
+            import future_intraday_engine
+            query = urllib.parse.parse_qs(parsed.query)
+            sym = query.get("symbol", ["NIFTY"])[0].strip().upper()
+            try:
+                interval = int(query.get("interval", [5])[0])
+            except Exception:
+                interval = 5
+            date_param = query.get("date", [None])[0]
+            force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
+            return self.send_json(200, future_intraday_engine.compute_future_intraday_analytics(symbol=sym, interval=interval, date_str=date_param, force_refresh=force))
+
+        if path == "/api/futures/intraday/indices":
+            import future_intraday_engine
+            return self.send_json(200, {"ok": True, "indices": future_intraday_engine.get_supported_indices_summary()})
+
         if path == "/api/futures/open-interest":
             import future_oi_engine
             query = urllib.parse.parse_qs(parsed.query)
@@ -10454,6 +10471,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/futures/openinterest",
             "/futures/oi",
             "/futures/future-oi",
+            "/futures/future-intraday",
+            "/futures/intraday",
             "/market-breadth",
             "/breadth",
             "/smart-money",
@@ -10993,6 +11012,22 @@ class RequestHandler(BaseHTTPRequestHandler):
                 force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
                 dash = futures_engine.get_futures_dashboard(force_refresh=force)
                 return self.send_json(200, {"ok": True, "movers": dash.get("marketMovers", {}), "date": dash.get("date"), "asOfDate": dash.get("asOfDate"), "isLive": dash.get("isLive")})
+
+            if parsed.path == "/api/futures/intraday":
+                import future_intraday_engine
+                payload = self.read_body()
+                sym = str(payload.get("symbol", "NIFTY")).strip().upper()
+                try:
+                    interval = int(payload.get("interval", 5))
+                except Exception:
+                    interval = 5
+                date_param = payload.get("date")
+                force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
+                return self.send_json(200, future_intraday_engine.compute_future_intraday_analytics(symbol=sym, interval=interval, date_str=date_param, force_refresh=force))
+
+            if parsed.path == "/api/futures/intraday/indices":
+                import future_intraday_engine
+                return self.send_json(200, {"ok": True, "indices": future_intraday_engine.get_supported_indices_summary()})
 
             if parsed.path == "/api/futures/open-interest":
                 import future_oi_engine

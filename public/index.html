@@ -290,6 +290,14 @@
                     <span class="dd-sub">Interactive EOD &amp; Live multi-panel chart, OI Buildup &amp; Option Chain</span>
                   </div>
                 </a>
+                <!-- Submenu 5: Future Intraday Price vs OI -->
+                <a href="/futures/future-intraday" class="inst-dd-item" onclick="return window.instNavClick(event, 'futures', 'futureIntraday')">
+                  <span class="dd-icon">⚡</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future Intraday <span class="p2-badge p2-badge-teal" style="margin-left:4px;">LIVE</span></span>
+                    <span class="dd-sub">Intraday Price vs OI Buildup, VWAP &amp; Basis (7 NSE + BSE Indices)</span>
+                  </div>
+                </a>
               </div>
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">F&amp;O Analytics &amp; Risk</span>
@@ -1217,6 +1225,7 @@
           <div class="fut-subtabs-nav" style="display:flex; gap:6px; margin:0 0 14px 0; padding:6px; border-radius:8px; overflow-x:auto;">
             <a href="/futures" class="fut-tab-btn active" data-tab="matrix" onclick="return window.futuresDeskTabClick(event, 'matrix')">📊 Marketwatch</a>
             <a href="/futures/open-interest" class="fut-tab-btn" data-tab="openInterest" onclick="return window.futuresDeskTabClick(event, 'openInterest')">⚡ Future Open Interest</a>
+            <a href="/futures/future-intraday" class="fut-tab-btn" data-tab="futureIntraday" onclick="return window.futuresDeskTabClick(event, 'futureIntraday')">📊 Future Intraday</a>
             <a href="/futures/indices" class="fut-tab-btn" data-tab="indices" onclick="return window.futuresDeskTabClick(event, 'indices')">📈 Index Term Structure</a>
             <a href="/futures/buildup" class="fut-tab-btn" data-tab="buildup" onclick="return window.futuresDeskTabClick(event, 'buildup')">⚡ Buildup Quadrants</a>
             <a href="/futures/heatmap" class="fut-tab-btn" data-tab="heatmap" onclick="return window.futuresDeskTabClick(event, 'heatmap')">🗺️ Heatmap</a>
@@ -1615,6 +1624,81 @@
               </div>
             </div>
           </div>
+
+          <!-- ================================================================
+               VIEW: FUTURE INTRADAY PRICE vs OI (7 NSE+BSE Indices)
+               ================================================================ -->
+          <div id="futView_futureIntraday" class="fut-view-panel" style="display:none;">
+            <div class="fut-intraday-wrap">
+
+              <!-- Index Selector Ribbon -->
+              <div class="fut-intraday-index-ribbon" id="futIntradayIndexRibbon">
+                <!-- JS populated -->
+              </div>
+
+              <!-- Controls Bar -->
+              <div class="fut-intraday-controls">
+                <div class="fut-intraday-header-left">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span id="futIntradayTitle" style="font-weight:800;font-size:17px;color:#f8fafc;">NIFTY &middot; NIFTY 50 Futures</span>
+                    <span id="futIntradayExchangeBadge" style="font-size:10px;font-weight:700;background:#1e3a5f;color:#38bdf8;padding:2px 7px;border-radius:4px;">NSE</span>
+                    <span id="futIntradayLiveBadge" style="display:none;font-size:10px;font-weight:700;background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);padding:2px 7px;border-radius:4px;">&#9679; LIVE</span>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px;">
+                    <span id="futIntradayLtp" style="font-size:24px;font-weight:800;font-family:'JetBrains Mono',monospace;color:#f8fafc;">--</span>
+                    <span id="futIntradayChg" style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#94a3b8;">--</span>
+                  </div>
+                </div>
+                <div class="fut-oi-bar" id="futIntradayControlBar" style="flex-wrap:wrap;gap:6px;">
+                  <div id="futIntradayIntervalBar" style="display:flex;gap:4px;">
+                    <button type="button" class="fut-oi-b" data-iv="1">1m</button>
+                    <button type="button" class="fut-oi-b on" data-iv="5">5m</button>
+                    <button type="button" class="fut-oi-b" data-iv="15">15m</button>
+                    <button type="button" class="fut-oi-b" data-iv="30">30m</button>
+                  </div>
+                  <span class="sep"></span>
+                  <select id="futIntradayDateSel" class="fut-oi-b" style="min-width:160px;background:#0c1322;color:#f8fafc;border:1px solid #1e3a5f;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;"></select>
+                  <span class="sep"></span>
+                  <button type="button" class="fut-oi-b on" id="futIntradayRefreshBtn">&#128260; Refresh</button>
+                  <span id="futIntradayHelpMsg" class="fut-oi-sub" style="font-size:11px;color:#64748b;margin-left:4px;">Loading...</span>
+                </div>
+              </div>
+
+              <!-- Stats Grid -->
+              <div id="futIntradayStats" class="fut-oi-stats" style="grid-template-columns:repeat(auto-fit,minmax(105px,1fr));margin-bottom:0;"></div>
+
+              <!-- Dual-Panel Canvas (Price + OI) -->
+              <div class="fut-intraday-canvas-wrap" id="futIntradayCanvasBox">
+                <canvas id="futIntradayPriceCanvas" style="width:100%;height:300px;display:block;cursor:crosshair;touch-action:pan-y;"></canvas>
+                <div class="fut-intraday-canvas-divider"></div>
+                <canvas id="futIntradayOiCanvas" style="width:100%;height:140px;display:block;cursor:crosshair;touch-action:pan-y;"></canvas>
+                <div id="futIntradayTip"></div>
+              </div>
+
+              <!-- Regime Breakdown -->
+              <div id="futIntradayRegimeBar" class="fut-intraday-regime-bar"></div>
+
+              <!-- Data Table -->
+              <div class="fut-intraday-table-wrap">
+                <table class="fut-intraday-table" id="futIntradayTable">
+                  <thead>
+                    <tr>
+                      <th style="text-align:left;">Time</th>
+                      <th>Open</th><th>High</th><th>Low</th><th>Close</th>
+                      <th>Chg%</th><th>VWAP</th><th>Spot</th><th>Basis</th>
+                      <th>OI (L)</th><th>OI Chg</th><th>OI%</th><th>Vol</th>
+                      <th style="text-align:center;">Regime</th>
+                    </tr>
+                  </thead>
+                  <tbody id="futIntradayTableBody">
+                    <tr><td colspan="14" style="text-align:center;color:#64748b;padding:24px;">Select an index to load intraday data</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+
 
         </div>
       </div>

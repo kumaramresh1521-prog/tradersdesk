@@ -22874,3 +22874,197 @@ body[data-theme="light"] .inst-dot-menu-btn:hover {
     transform: scale(1.15);
   }
 }
+
+/* ================================================================
+   FUTURE INTRADAY PRICE vs OI — StockMojo-style terminal
+   ================================================================ */
+.fut-intraday-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 2px;
+}
+.fut-intraday-index-ribbon {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: #080d18;
+  border: 1px solid #1a2538;
+  border-radius: 10px;
+}
+.fut-intraday-idx-pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid #1e3a5f;
+  background: #0c1322;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 80px;
+  text-align: center;
+}
+.fut-intraday-idx-pill:hover { border-color: #38bdf8; background: #0f1f36; }
+.fut-intraday-idx-pill.active { border-color: #38bdf8; background: rgba(56,189,248,0.12); }
+.fut-intraday-idx-pill .pill-sym {
+  font-weight: 800;
+  font-size: 12px;
+  color: #f8fafc;
+  font-family: 'JetBrains Mono', monospace;
+}
+.fut-intraday-idx-pill .pill-ltp {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: #94a3b8;
+}
+.fut-intraday-idx-pill .pill-chg {
+  font-size: 10px;
+  font-weight: 700;
+}
+.fut-intraday-idx-pill.active .pill-sym { color: #38bdf8; }
+.fut-intraday-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: #080d18;
+  border: 1px solid #1a2538;
+  border-radius: 10px;
+}
+.fut-intraday-header-left { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 200px; }
+.fut-intraday-canvas-wrap {
+  position: relative;
+  background: #060b14;
+  border: 1px solid #1a2538;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fut-intraday-canvas-divider {
+  height: 1px;
+  background: #1a2538;
+  margin: 0;
+}
+#futIntradayTip {
+  display: none;
+  position: absolute;
+  pointer-events: none;
+  background: #080d18;
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #f8fafc;
+  z-index: 50;
+  min-width: 200px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.fut-intraday-tip-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 2px; }
+.fut-intraday-tip-label { color: #64748b; font-size: 11px; }
+.fut-intraday-tip-val { font-weight: 700; font-size: 11px; }
+.fut-intraday-regime-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: #080d18;
+  border: 1px solid #1a2538;
+  border-radius: 10px;
+  align-items: center;
+}
+.fut-intraday-regime-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.fut-intraday-regime-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+}
+.fut-intraday-regime-pct-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 4px;
+  gap: 4px;
+}
+.fut-intraday-regime-pct-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.fut-intraday-regime-pct-label { width: 120px; color: #94a3b8; font-weight: 600; }
+.fut-intraday-regime-pct-bar-wrap {
+  flex: 1;
+  height: 10px;
+  background: #1a2538;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.fut-intraday-regime-pct-bar { height: 100%; border-radius: 99px; transition: width 0.4s; }
+.fut-intraday-regime-pct-num { width: 40px; text-align: right; color: #f8fafc; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.fut-intraday-dominant-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+.fut-intraday-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid #1a2538;
+}
+.fut-intraday-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.fut-intraday-table th {
+  padding: 8px 10px;
+  background: #0c1322;
+  color: #64748b;
+  text-align: right;
+  font-weight: 700;
+  font-size: 11px;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.fut-intraday-table th:first-child { text-align: left; }
+.fut-intraday-table td {
+  padding: 6px 10px;
+  text-align: right;
+  border-bottom: 1px solid #0c1322;
+  white-space: nowrap;
+  color: #cbd5e1;
+}
+.fut-intraday-table td:first-child { text-align: left; color: #94a3b8; }
+.fut-intraday-table tr:hover td { background: rgba(56,189,248,0.04); }
+.fut-intraday-table .regime-cell {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+.fut-intraday-crosshair-line {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(148,163,184,0.3);
+  z-index: 10;
+}
+@media (max-width: 768px) {
+  .fut-intraday-idx-pill { min-width: 60px; padding: 5px 8px; }
+  .fut-intraday-controls { gap: 6px; }
+}

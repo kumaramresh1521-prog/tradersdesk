@@ -120,6 +120,13 @@
       icon: "🔄",
       desc: "Comprehensive monthly expiry rollover percentages, 3M/6M averages & institutional rollover velocity across all NSE F&O equities and indices.",
       showSearch: false
+    },
+    futureIntraday: {
+      title: "FUTURE INTRADAY PRICE vs OI",
+      countBadge: "7 INDICES",
+      icon: "📊",
+      desc: "Live 1m/5m intraday futures price vs open interest buildup — Long Buildup, Short Buildup, Short Covering & Long Unwinding with VWAP, Basis & OI change.",
+      showSearch: false
     }
   };
 
@@ -129,6 +136,7 @@
     if (tabName === 'dashboard' || tabName === 'screener' || tabName === 'marketwatch') tabName = 'matrix';
     if (tabName === 'termstructure' || tabName === 'basis') tabName = 'indices';
     if (tabName === 'openinterest' || tabName === 'open-interest' || tabName === 'oi' || tabName === 'future-oi' || tabName === 'future-open-interest') tabName = 'openInterest';
+    if (tabName === 'intraday' || tabName === 'future-intraday' || tabName === 'futintraday') tabName = 'futureIntraday';
 
     state.activeSubTab = tabName;
 
@@ -149,7 +157,7 @@
       btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    const views = ['matrix', 'openInterest', 'indices', 'buildup', 'heatmap', 'mwpl', 'rollover'];
+    const views = ['matrix', 'openInterest', 'futureIntraday', 'indices', 'buildup', 'heatmap', 'mwpl', 'rollover'];
     views.forEach(v => {
       const el = document.getElementById(`futView_${v}`);
       if (el) {
@@ -162,7 +170,7 @@
     // Sync clean URL when navigating within Futures Desk
     try {
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/futures")) {
-        const futSubUrl = tabName === "matrix" ? "/futures" : (tabName === "openInterest" ? "/futures/open-interest" : `/futures/${tabName}`);
+        const futSubUrl = tabName === "matrix" ? "/futures" : (tabName === "openInterest" ? "/futures/open-interest" : (tabName === "futureIntraday" ? "/futures/future-intraday" : `/futures/${tabName}`));
         if (window.location.pathname !== futSubUrl && typeof history !== "undefined" && history.pushState) {
           history.pushState({ desk: "futures", subview: tabName }, document.title, futSubUrl);
         }
@@ -175,6 +183,7 @@
     let p2;
     if (state.activeSubTab === 'matrix') p2 = loadMatrix(forceRefresh);
     else if (state.activeSubTab === 'openInterest') p2 = loadFutureOpenInterestView(forceRefresh);
+    else if (state.activeSubTab === 'futureIntraday') p2 = loadFutureIntradayView();
     else if (state.activeSubTab === 'indices') p2 = loadIndicesDetailView(forceRefresh);
     else if (state.activeSubTab === 'buildup') p2 = loadBuildupView(forceRefresh);
     else if (state.activeSubTab === 'heatmap') p2 = loadHeatmapView(forceRefresh);
@@ -2723,9 +2732,12 @@
     const symParam = urlParams.get('symbol') || urlParams.get('s');
     if (symParam) {
       oiState.currentSymbol = symParam.toUpperCase();
+      futIntraState.currentSymbol = symParam.toUpperCase();
     }
     if (initPath.includes('/rollover')) {
       state.activeSubTab = 'rollover';
+    } else if (initPath.includes('/future-intraday') || initPath.includes('/intraday')) {
+      state.activeSubTab = 'futureIntraday';
     } else if (initPath.includes('/open-interest') || initPath.includes('/oi') || initPath.includes('/future-oi')) {
       state.activeSubTab = 'openInterest';
     } else if (initPath.includes('/buildup')) {
@@ -2778,6 +2790,584 @@
 
   window.toggleFutIndexStrip = toggleFutIndexStrip;
 
+  // ================================================================
+  // FUTURE INTRADAY PRICE vs OI MODULE
+  // StockMojo-style 7-index terminal with VWAP, Basis, 4-regime OI
+  // ================================================================
+
+  const futIntraState = {
+    currentSymbol: 'NIFTY',
+    currentInterval: 5,
+    currentDate: null, // null = today/live
+    data: null,
+    isLoading: false,
+    initializedEvents: false,
+    hoverBarIdx: -1,
+    indices: []
+  };
+
+  const REGIME_COLORS = {
+    longBuildup:   '#10b981',
+    shortBuildup:  '#ef4444',
+    shortCovering: '#3b82f6',
+    longUnwinding: '#f59e0b',
+    neutral:       '#475569'
+  };
+
+  function futIntradayFmt(n, dec=0) {
+    if (n == null || isNaN(n)) return '--';
+    const v = Math.abs(n);
+    if (v >= 1e7) return (n/1e7).toFixed(dec) + 'Cr';
+    if (v >= 1e5) return (n/1e5).toFixed(dec) + 'L';
+    if (v >= 1e3) return (n/1e3).toFixed(dec) + 'K';
+    return n.toFixed(dec);
+  }
+
+  async function loadFutureIntradayView() {
+    if (futIntraState.isLoading) return;
+    if (!futIntraState.initializedEvents) {
+      initFutIntradayEvents();
+      futIntraState.initializedEvents = true;
+    }
+    // If no data yet, fetch indices first then load data
+    if (!futIntraState.data) {
+      await fetchFutIntradayIndices();
+    }
+    await fetchAndRenderFutIntraday();
+  }
+
+  async function fetchFutIntradayIndices() {
+    try {
+      const res = await fetch('/api/futures/intraday/indices');
+      if (!res.ok) return;
+      const d = await res.json();
+      const indices = d.indices || d.availableIndices || [];
+      futIntraState.indices = indices;
+      renderFutIntradayIndexRibbon(indices);
+      renderFutIntradayDateOptions(d.availableDates || []);
+    } catch(e) {
+      console.warn('FutIntraday: indices fetch failed', e);
+    }
+  }
+
+  function renderFutIntradayIndexRibbon(indices) {
+    const ribbon = document.getElementById('futIntradayIndexRibbon');
+    if (!ribbon || !indices.length) return;
+    ribbon.innerHTML = indices.map(idx => {
+      const chg = idx.change || 0;
+      const chgPct = idx.changePct || 0;
+      const color = chg >= 0 ? '#10b981' : '#ef4444';
+      const sign = chg >= 0 ? '+' : '';
+      const active = idx.symbol === futIntraState.currentSymbol ? ' active' : '';
+      return `<div class="fut-intraday-idx-pill${active}" data-symbol="${idx.symbol}" onclick="window._futIntradaySelectIndex('${idx.symbol}')">
+        <span class="pill-sym">${idx.shortName || idx.symbol}</span>
+        <span class="pill-ltp" style="color:${color};">${idx.ltp ? idx.ltp.toLocaleString('en-IN', {maximumFractionDigits:0}) : '--'}</span>
+        <span class="pill-chg" style="color:${color};">${sign}${chgPct.toFixed(2)}%</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderFutIntradayDateOptions(dates) {
+    const sel = document.getElementById('futIntradayDateSel');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Today (Live)</option>' +
+      (dates || []).slice(0, 30).map(d =>
+        `<option value="${d.date}">${d.label}</option>`
+      ).join('');
+    sel.value = futIntraState.currentDate || '';
+  }
+
+  async function fetchAndRenderFutIntraday() {
+    const helpEl = document.getElementById('futIntradayHelpMsg');
+    if (helpEl) helpEl.textContent = 'Loading...';
+    futIntraState.isLoading = true;
+    try {
+      const params = new URLSearchParams({
+        symbol: futIntraState.currentSymbol,
+        interval: futIntraState.currentInterval
+      });
+      if (futIntraState.currentDate) params.set('date', futIntraState.currentDate);
+      const res = await fetch(`/api/futures/intraday?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || 'API error');
+      futIntraState.data = d;
+
+      // Update ribbon prices if we got fresh index data
+      if (d.availableIndices && d.availableIndices.length) {
+        futIntraState.indices = d.availableIndices;
+        renderFutIntradayIndexRibbon(d.availableIndices);
+      }
+      if (d.availableDates) {
+        renderFutIntradayDateOptions(d.availableDates);
+      }
+
+      renderFutIntradayHeader(d);
+      renderFutIntradayStats(d.summary);
+      renderFutIntradayRegimeBar(d.regimeBreakdown, d.summary);
+      drawFutIntradayCharts(d.bars);
+      renderFutIntradayTable(d.bars);
+
+      const isLive = d.isLive;
+      const liveBadge = document.getElementById('futIntradayLiveBadge');
+      if (liveBadge) liveBadge.style.display = isLive ? 'inline-flex' : 'none';
+      if (helpEl) helpEl.textContent = `${d.bars ? d.bars.length : 0} bars · ${d.dateDisplay || ''}`;
+    } catch(e) {
+      console.error('FutIntraday fetch error:', e);
+      if (helpEl) helpEl.textContent = `Error: ${e.message}`;
+    } finally {
+      futIntraState.isLoading = false;
+    }
+  }
+
+  function renderFutIntradayHeader(d) {
+    const titleEl = document.getElementById('futIntradayTitle');
+    if (titleEl) titleEl.textContent = `${d.symbol || ''} · ${d.name || ''}`;
+    const exchEl = document.getElementById('futIntradayExchangeBadge');
+    if (exchEl) exchEl.textContent = d.exchange || 'NSE';
+    const ltpEl = document.getElementById('futIntradayLtp');
+    const chgEl = document.getElementById('futIntradayChg');
+    const s = d.summary || {};
+    if (ltpEl && s.ltp != null) {
+      ltpEl.textContent = s.ltp.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+      ltpEl.style.color = '#ffffff';
+    }
+    if (chgEl && s.change != null) {
+      const sign = s.change >= 0 ? '+' : '';
+      chgEl.textContent = `${sign}${s.change.toFixed(2)} (${sign}${(s.changePct||0).toFixed(2)}%)`;
+      chgEl.style.color = s.change >= 0 ? '#10b981' : '#ef4444';
+    }
+  }
+
+  function renderFutIntradayStats(s) {
+    const el = document.getElementById('futIntradayStats');
+    if (!el || !s) return;
+    const fmt = (n, d=2) => n != null ? n.toLocaleString('en-IN', {minimumFractionDigits:d,maximumFractionDigits:d}) : '--';
+    const basisColor = (s.basis || 0) >= 0 ? '#10b981' : '#ef4444';
+    const vwapColor = (s.vwapStance === 'Above VWAP') ? '#10b981' : '#ef4444';
+    const oiColor = (s.dayOiChange || 0) >= 0 ? '#10b981' : '#ef4444';
+    const stats = [
+      { label: 'Open',     val: fmt(s.dayOpen, 0),           color: '#f8fafc' },
+      { label: 'High',     val: fmt(s.dayHigh, 0),           color: '#10b981' },
+      { label: 'Low',      val: fmt(s.dayLow, 0),            color: '#ef4444' },
+      { label: 'VWAP',     val: fmt(s.vwap, 0),              color: vwapColor },
+      { label: 'Spot',     val: fmt(s.spotPrice, 0),         color: '#38bdf8' },
+      { label: 'Basis',    val: (s.basis >= 0 ? '+' : '') + fmt(s.basis, 1) + ' (' + (s.basisType||'') + ')', color: basisColor },
+      { label: 'OI (L)',   val: futIntradayFmt(s.currentOi, 1), color: '#f8fafc' },
+      { label: 'OI Chg',  val: (s.dayOiChange >= 0 ? '+' : '') + futIntradayFmt(s.dayOiChange, 1), color: oiColor },
+      { label: 'Volume',   val: futIntradayFmt(s.totalVolume, 1), color: '#94a3b8' },
+      { label: 'T/O (Cr)', val: s.turnoverCr != null ? '₹' + s.turnoverCr.toFixed(0) : '--', color: '#94a3b8' }
+    ];
+    el.innerHTML = stats.map(st => `
+      <div class="fut-oi-stat-card">
+        <div class="fut-oi-stat-label">${st.label}</div>
+        <div class="fut-oi-stat-val" style="color:${st.color};">${st.val}</div>
+      </div>`).join('');
+  }
+
+  function renderFutIntradayRegimeBar(rb, summary) {
+    const el = document.getElementById('futIntradayRegimeBar');
+    if (!el || !rb) return;
+    const regimes = [
+      { key: 'longBuildup',   label: 'Long Buildup',   color: REGIME_COLORS.longBuildup },
+      { key: 'shortBuildup',  label: 'Short Buildup',  color: REGIME_COLORS.shortBuildup },
+      { key: 'shortCovering', label: 'Short Covering', color: REGIME_COLORS.shortCovering },
+      { key: 'longUnwinding', label: 'Long Unwinding', color: REGIME_COLORS.longUnwinding }
+    ];
+    const dominant = summary && summary.dominantRegime ? summary.dominantRegime : '';
+    const domColor = summary && summary.dominantColor ? summary.dominantColor : '#475569';
+
+    const rows = regimes.map(r => {
+      const info = rb[r.key] || {};
+      const pct = info.pct || 0;
+      const count = info.count || 0;
+      return `<div class="fut-intraday-regime-pct-row">
+        <span class="fut-intraday-regime-pct-label" style="color:${r.color};">● ${r.label}</span>
+        <div class="fut-intraday-regime-pct-bar-wrap">
+          <div class="fut-intraday-regime-pct-bar" style="width:${pct}%;background:${r.color};"></div>
+        </div>
+        <span class="fut-intraday-regime-pct-num">${pct.toFixed(0)}%</span>
+        <span style="color:#64748b;font-size:10px;margin-left:4px;">(${count})</span>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;width:100%;flex-wrap:wrap;">
+        <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;">Regime Breakdown</div>
+        <div class="fut-intraday-dominant-badge" style="background:${domColor}22;color:${domColor};border:1px solid ${domColor}44;">
+          ▶ ${dominant || 'Mixed'}
+        </div>
+        <div class="fut-intraday-regime-pct-wrap">${rows}</div>
+      </div>`;
+  }
+
+  function drawFutIntradayCharts(bars) {
+    if (!bars || !bars.length) return;
+    drawFutIntradayPriceCanvas(bars);
+    drawFutIntradayOiCanvas(bars);
+  }
+
+  function drawFutIntradayPriceCanvas(bars) {
+    const canvas = document.getElementById('futIntradayPriceCanvas');
+    if (!canvas) return;
+    const box = canvas.parentElement;
+    const dpr = window.devicePixelRatio || 1;
+    const W = box.clientWidth || 900;
+    const H = 300;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const PAD_L = 10, PAD_R = 70, PAD_T = 16, PAD_B = 24;
+    const chartW = W - PAD_L - PAD_R;
+    const chartH = H - PAD_T - PAD_B;
+
+    // Background
+    ctx.fillStyle = '#060b14';
+    ctx.fillRect(0, 0, W, H);
+
+    if (!bars.length) return;
+
+    const prices = bars.flatMap(b => [b.h, b.l, b.vwap, b.spot].filter(v => v != null));
+    const pMin = Math.min(...prices) * 0.9995;
+    const pMax = Math.max(...prices) * 1.0005;
+    const pRange = pMax - pMin || 1;
+
+    const n = bars.length;
+    const barW = chartW / n;
+    const candleW = Math.max(1.5, barW * 0.6);
+
+    function px(price) { return PAD_T + chartH - (price - pMin) / pRange * chartH; }
+    function bx(i) { return PAD_L + (i + 0.5) * barW; }
+
+    // Grid lines
+    ctx.strokeStyle = '#1a2538';
+    ctx.lineWidth = 1;
+    const gridLevels = 5;
+    for (let g = 0; g <= gridLevels; g++) {
+      const y = PAD_T + (g / gridLevels) * chartH;
+      ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+      const priceAtGrid = pMax - (g / gridLevels) * pRange;
+      ctx.fillStyle = '#475569';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(priceAtGrid.toFixed(0), W - PAD_R + 4, y + 3);
+    }
+
+    // Vertical grid (time labels)
+    const step = Math.max(1, Math.floor(n / 8));
+    bars.forEach((b, i) => {
+      if (i % step === 0) {
+        const x = bx(i);
+        ctx.strokeStyle = '#1a2538';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
+        ctx.fillStyle = '#475569';
+        ctx.font = '9px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(b.time || '', x, H - PAD_B + 12);
+      }
+    });
+
+    // Spot line (dashed)
+    ctx.strokeStyle = '#38bdf888';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    bars.forEach((b, i) => {
+      if (b.spot == null) return;
+      const y = px(b.spot);
+      if (i === 0) ctx.moveTo(bx(i), y); else ctx.lineTo(bx(i), y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // VWAP line
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    let firstVwap = true;
+    bars.forEach((b, i) => {
+      if (b.vwap == null) return;
+      const y = px(b.vwap);
+      if (firstVwap) { ctx.moveTo(bx(i), y); firstVwap = false; } else ctx.lineTo(bx(i), y);
+    });
+    ctx.stroke();
+
+    // Candlesticks
+    bars.forEach((b, i) => {
+      const x = bx(i);
+      const isGreen = b.c >= b.o;
+      const bullColor = '#10b981';
+      const bearColor = '#ef4444';
+      const color = isGreen ? bullColor : bearColor;
+
+      // Wick
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, px(b.h));
+      ctx.lineTo(x, px(b.l));
+      ctx.stroke();
+
+      // Body
+      const bodyTop = px(Math.max(b.o, b.c));
+      const bodyBot = px(Math.min(b.o, b.c));
+      const bodyH = Math.max(1, bodyBot - bodyTop);
+      ctx.fillStyle = color;
+      ctx.fillRect(x - candleW / 2, bodyTop, candleW, bodyH);
+    });
+
+    // VWAP label
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.textAlign = 'left';
+    const lastBar = bars[bars.length - 1];
+    if (lastBar && lastBar.vwap) {
+      ctx.fillText('VWAP', W - PAD_R + 4, px(lastBar.vwap) + 3);
+    }
+
+    // Crosshair on hover
+    const hIdx = futIntraState.hoverBarIdx;
+    if (hIdx >= 0 && hIdx < bars.length) {
+      const x = bx(hIdx);
+      ctx.strokeStyle = 'rgba(148,163,184,0.4)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  function drawFutIntradayOiCanvas(bars) {
+    const canvas = document.getElementById('futIntradayOiCanvas');
+    if (!canvas) return;
+    const box = canvas.parentElement;
+    const dpr = window.devicePixelRatio || 1;
+    const W = box.clientWidth || 900;
+    const H = 140;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const PAD_L = 10, PAD_R = 70, PAD_T = 10, PAD_B = 24;
+    const chartW = W - PAD_L - PAD_R;
+    const chartH = H - PAD_T - PAD_B;
+
+    ctx.fillStyle = '#060b14';
+    ctx.fillRect(0, 0, W, H);
+
+    if (!bars.length) return;
+
+    const oiChanges = bars.map(b => b.oiChange || 0);
+    const maxAbs = Math.max(1, ...oiChanges.map(Math.abs));
+
+    const n = bars.length;
+    const barW = chartW / n;
+    const bW = Math.max(1.5, barW * 0.65);
+
+    function bx(i) { return PAD_L + (i + 0.5) * barW; }
+
+    // Zero line
+    const zeroY = PAD_T + chartH / 2;
+    ctx.strokeStyle = '#1a2538';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD_L, zeroY); ctx.lineTo(W - PAD_R, zeroY); ctx.stroke();
+
+    // Grid
+    ctx.strokeStyle = '#1a2538';
+    ctx.lineWidth = 0.5;
+    [0.25, 0.75].forEach(frac => {
+      const y = PAD_T + frac * chartH;
+      ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    });
+
+    // OI bars
+    bars.forEach((b, i) => {
+      const oi = b.oiChange || 0;
+      const regColor = b.regimeColor || REGIME_COLORS[b.regime] || REGIME_COLORS.neutral;
+      const barH = (Math.abs(oi) / maxAbs) * (chartH / 2);
+      const x = bx(i);
+      const y = oi >= 0 ? zeroY - barH : zeroY;
+      ctx.fillStyle = regColor;
+      ctx.fillRect(x - bW / 2, oi >= 0 ? zeroY - barH : zeroY, bW, barH);
+
+      // Hover highlight
+      if (i === futIntraState.hoverBarIdx) {
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - bW / 2, oi >= 0 ? zeroY - barH : zeroY, bW, barH);
+      }
+    });
+
+    // Labels
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('OI Δ', W - PAD_R + 4, PAD_T + 10);
+    ctx.fillText('+' + futIntradayFmt(maxAbs, 0), W - PAD_R + 4, PAD_T + 3);
+    ctx.fillText('-' + futIntradayFmt(maxAbs, 0), W - PAD_R + 4, H - PAD_B - 3);
+
+    // Crosshair
+    if (futIntraState.hoverBarIdx >= 0) {
+      const x = bx(futIntraState.hoverBarIdx);
+      ctx.strokeStyle = 'rgba(148,163,184,0.4)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  function renderFutIntradayTable(bars) {
+    const tbody = document.getElementById('futIntradayTableBody');
+    if (!tbody) return;
+    if (!bars || !bars.length) {
+      tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:#64748b;padding:20px;">No data</td></tr>';
+      return;
+    }
+    const fmt2 = v => v != null ? v.toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2}) : '--';
+    const fmt0 = v => v != null ? v.toLocaleString('en-IN', {maximumFractionDigits:0}) : '--';
+    const fmtOI = v => v != null ? futIntradayFmt(v, 1) : '--';
+    const fmtChg = (v, pct) => {
+      if (v == null) return '--';
+      const sign = v >= 0 ? '+' : '';
+      const color = v >= 0 ? '#10b981' : '#ef4444';
+      return `<span style="color:${color}">${sign}${pct != null ? pct.toFixed(2) : v.toFixed(0)}%</span>`;
+    };
+    // Descending order (latest first)
+    const reversed = [...bars].reverse();
+    tbody.innerHTML = reversed.map((b, i) => {
+      const isGreen = (b.priceChange || 0) >= 0;
+      const rc = b.regimeColor || REGIME_COLORS[b.regime] || REGIME_COLORS.neutral;
+      const oiChgColor = (b.oiChange || 0) >= 0 ? '#10b981' : '#ef4444';
+      return `<tr>
+        <td style="color:#94a3b8;font-weight:700;">${b.time || ''}</td>
+        <td>${fmt0(b.o)}</td>
+        <td style="color:#10b981">${fmt0(b.h)}</td>
+        <td style="color:#ef4444">${fmt0(b.l)}</td>
+        <td style="color:${isGreen?'#10b981':'#ef4444'};font-weight:700;">${fmt0(b.c)}</td>
+        <td>${fmtChg(b.priceChange, b.priceChangePct)}</td>
+        <td style="color:#f59e0b;">${fmt0(b.vwap)}</td>
+        <td style="color:#38bdf8;">${fmt0(b.spot)}</td>
+        <td style="color:${(b.basis||0)>=0?'#10b981':'#ef4444'};">${b.basis!=null?((b.basis>=0?'+':'')+b.basis.toFixed(1)):'--'}</td>
+        <td>${fmtOI(b.oi)}</td>
+        <td style="color:${oiChgColor};">${b.oiChange!=null?((b.oiChange>=0?'+':'')+fmtOI(b.oiChange)):'--'}</td>
+        <td style="color:${oiChgColor};">${b.oiChangePct!=null?((b.oiChangePct>=0?'+':'')+b.oiChangePct.toFixed(1)+'%'):'--'}</td>
+        <td style="color:#94a3b8;">${fmtOI(b.v)}</td>
+        <td style="text-align:center;"><span class="regime-cell" style="background:${rc}22;color:${rc};border:1px solid ${rc}44;">${b.regimeShort||b.cat||'--'}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function initFutIntradayEvents() {
+    // Interval buttons
+    const intervalBar = document.getElementById('futIntradayIntervalBar');
+    if (intervalBar) {
+      intervalBar.addEventListener('click', e => {
+        const btn = e.target.closest('[data-iv]');
+        if (!btn) return;
+        const iv = parseInt(btn.dataset.iv);
+        futIntraState.currentInterval = iv;
+        intervalBar.querySelectorAll('[data-iv]').forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+        fetchAndRenderFutIntraday();
+      });
+    }
+
+    // Date selector
+    const dateSel = document.getElementById('futIntradayDateSel');
+    if (dateSel) {
+      dateSel.addEventListener('change', () => {
+        futIntraState.currentDate = dateSel.value || null;
+        fetchAndRenderFutIntraday();
+      });
+    }
+
+    // Refresh button
+    const refreshBtn = document.getElementById('futIntradayRefreshBtn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        fetchFutIntradayIndices().then(() => fetchAndRenderFutIntraday());
+      });
+    }
+
+    // Canvas hover for crosshair + tooltip
+    const priceCanvas = document.getElementById('futIntradayPriceCanvas');
+    const oiCanvas = document.getElementById('futIntradayOiCanvas');
+    [priceCanvas, oiCanvas].forEach(canvas => {
+      if (!canvas) return;
+      canvas.addEventListener('mousemove', e => {
+        if (!futIntraState.data || !futIntraState.data.bars) return;
+        const bars = futIntraState.data.bars;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const W = canvas.offsetWidth;
+        const PAD_L = 10, PAD_R = 70;
+        const chartW = W - PAD_L - PAD_R;
+        const barW = chartW / bars.length;
+        const idx = Math.floor((x - PAD_L) / barW);
+        if (idx >= 0 && idx < bars.length) {
+          futIntraState.hoverBarIdx = idx;
+          showFutIntradayTooltip(bars[idx], e.clientX, e.clientY);
+          drawFutIntradayCharts(bars);
+        }
+      });
+      canvas.addEventListener('mouseleave', () => {
+        futIntraState.hoverBarIdx = -1;
+        const tip = document.getElementById('futIntradayTip');
+        if (tip) tip.style.display = 'none';
+        if (futIntraState.data && futIntraState.data.bars) drawFutIntradayCharts(futIntraState.data.bars);
+      });
+    });
+
+    // Global handler for index pill clicks
+    window._futIntradaySelectIndex = function(symbol) {
+      futIntraState.currentSymbol = symbol;
+      futIntraState.data = null;
+      document.querySelectorAll('.fut-intraday-idx-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.symbol === symbol);
+      });
+      fetchAndRenderFutIntraday();
+    };
+  }
+
+  function showFutIntradayTooltip(bar, clientX, clientY) {
+    const tip = document.getElementById('futIntradayTip');
+    if (!tip || !bar) return;
+    const rc = bar.regimeColor || REGIME_COLORS[bar.regime] || '#475569';
+    const sign = (bar.priceChange || 0) >= 0 ? '+' : '';
+    tip.innerHTML = `
+      <div style="font-weight:800;color:#f8fafc;margin-bottom:6px;border-bottom:1px solid #1a2538;padding-bottom:4px;">
+        ⏱ ${bar.time || ''} &nbsp;<span style="background:${rc}22;color:${rc};padding:2px 6px;border-radius:4px;font-size:10px;">${bar.regimeShort || bar.cat || ''}</span>
+      </div>
+      <div class="fut-intraday-tip-row"><span class="fut-intraday-tip-label">O/H/L/C</span><span class="fut-intraday-tip-val">${bar.o?.toFixed(0)}/${bar.h?.toFixed(0)}/${bar.l?.toFixed(0)}/${bar.c?.toFixed(0)}</span></div>
+      <div class="fut-intraday-tip-row"><span class="fut-intraday-tip-label">Chg</span><span class="fut-intraday-tip-val" style="color:${(bar.priceChange||0)>=0?'#10b981':'#ef4444'}">${sign}${(bar.priceChangePct||0).toFixed(2)}%</span></div>
+      <div class="fut-intraday-tip-row"><span class="fut-intraday-tip-label">VWAP</span><span class="fut-intraday-tip-val" style="color:#f59e0b">${bar.vwap?.toFixed(0)||'--'}</span></div>
+      <div class="fut-intraday-tip-row"><span class="fut-intraday-tip-label">Spot</span><span class="fut-intraday-tip-val" style="color:#38bdf8">${bar.spot?.toFixed(0)||'--'}</span></div>
+      <div class="fut-intraday-tip-row"><span class="fut-intraday-tip-label">Basis</span><span class="fut-intraday-tip-val" style="color:${(bar.basis||0)>=0?'#10b981':'#ef4444'}">${bar.basis!=null?((bar.basis>=0?'+':'')+bar.basis.toFixed(1)):'--'}</span></div>
+      <div class="fut-intraday-tip-row"><span class="fut-intraday-tip-label">OI</span><span class="fut-intraday-tip-val">${futIntradayFmt(bar.oi,1)}</span></div>
+      <div class="fut-intraday-tip-row"><span class="fut-intraday-tip-label">OI Chg</span><span class="fut-intraday-tip-val" style="color:${(bar.oiChange||0)>=0?'#10b981':'#ef4444'}">${bar.oiChange!=null?((bar.oiChange>=0?'+':'')+futIntradayFmt(bar.oiChange,1)):'--'}</span></div>
+      <div class="fut-intraday-tip-row"><span class="fut-intraday-tip-label">Volume</span><span class="fut-intraday-tip-val">${futIntradayFmt(bar.v,1)}</span></div>`;
+    tip.style.display = 'block';
+    const box = tip.closest('.fut-intraday-canvas-wrap');
+    if (box) {
+      const br = box.getBoundingClientRect();
+      let tx = clientX - br.left + 16;
+      let ty = clientY - br.top + 16;
+      if (tx + 230 > br.width) tx = clientX - br.left - 240;
+      if (ty + 240 > br.height) ty = clientY - br.top - 250;
+      tip.style.left = Math.max(0, tx) + 'px';
+      tip.style.top = Math.max(0, ty) + 'px';
+    }
+  }
+
   // Export to global scope
   window.futuresDesk = {
     init,
@@ -2788,6 +3378,7 @@
     inspectContract,
     selectOiSymbol,
     loadFutureOpenInterestView,
+    loadFutureIntradayView,
     loadBenchmarkRibbon,
     loadMatrix,
     loadBuildupView,
