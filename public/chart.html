@@ -899,13 +899,17 @@
       container.innerHTML = "";
 
       if (typeof LightweightCharts === "undefined") {
-        container.innerHTML = "<div style='padding:40px; text-align:center;'>Loading chart engine...</div>";
+        container.innerHTML = "<div style='display:flex; align-items:center; justify-content:center; height:100%; color:var(--chart-text-muted); font-size:13px;'>⏳ Initializing TradingView Engine...</div>";
+        setTimeout(renderProChart, 100);
         return;
       }
 
+      const w = container.clientWidth || 1000;
+      const h = container.clientHeight || 640;
+
       lwChart = LightweightCharts.createChart(container, {
-        width: container.clientWidth || 1200,
-        height: container.clientHeight || 640,
+        width: w,
+        height: h,
         layout: {
           background: { type: 'solid', color: isDark ? '#0f172a' : '#ffffff' },
           textColor: isDark ? '#94a3b8' : '#334155',
@@ -966,7 +970,7 @@
 
       // Resize observer
       window.addEventListener("resize", () => {
-        if (lwChart && container) {
+        if (lwChart && container && container.clientWidth > 0) {
           lwChart.applyOptions({
             width: container.clientWidth,
             height: container.clientHeight
@@ -980,51 +984,92 @@
 
     // Load Data from Backend
     async function loadChartData(sym, tf) {
+      const container = document.getElementById("lw_chart_container");
       try {
         const res = await fetch(`/api/chart/history?symbol=${encodeURIComponent(sym)}&resolution=${encodeURIComponent(tf)}`);
         const json = await res.json();
         const bars = json.bars || [];
         lastLoadedBars = bars;
 
-        if (bars.length === 0) return;
+        if (!bars || bars.length === 0) {
+          if (container) {
+            container.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--chart-text-muted); padding:20px; text-align:center;">
+              <div style="font-size:36px; margin-bottom:10px;">📈</div>
+              <div style="font-weight:700; font-size:15px; color:var(--chart-text);">No Historical Bars Available for ${sym}</div>
+              <div style="font-size:12px; margin-top:6px; max-width:400px; color:var(--chart-text-muted);">Historical data is indexed for all 222+ F&O underlyings, indices, and active NSE equities.</div>
+              <button onclick="switchEngine('cloud')" style="margin-top:16px; padding:7px 16px; background:var(--chart-brand); color:#ffffff; border:none; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px;">Launch TradingView Cloud</button>
+            </div>`;
+          }
+          return;
+        }
 
-        // Convert to Lightweight Charts format
+        // Convert to Lightweight Charts format with strict invariant validations
         const cBars = [];
         const vBars = [];
+        const seenTimes = new Set();
 
         for (let b of bars) {
           let timeVal = b.time;
           // If contains space (intraday YYYY-MM-DD HH:MM:SS), convert to UNIX timestamp
-          if (timeVal.includes(" ")) {
-            timeVal = Math.floor(new Date(timeVal).getTime() / 1000);
+          if (typeof timeVal === "string" && timeVal.includes(" ")) {
+            const iso = timeVal.replace(" ", "T") + "+05:30";
+            const parsed = Date.parse(iso);
+            timeVal = !isNaN(parsed) ? Math.floor(parsed / 1000) : Math.floor(new Date(timeVal).getTime() / 1000);
           }
+
+          if (timeVal === undefined || timeVal === null || seenTimes.has(timeVal)) continue;
+          seenTimes.add(timeVal);
+
+          const o = Number(b.open) || 0;
+          const c = Number(b.close) || 0;
+          let h = Number(b.high) || Math.max(o, c);
+          let l = Number(b.low) || Math.min(o, c);
+
+          // Absolute invariant guarantees: high >= max(open, close), low <= min(open, close)
+          h = Math.max(h, o, c);
+          l = Math.min(l, o, c);
+          if (l <= 0) l = Math.min(o, c) * 0.99;
 
           cBars.push({
             time: timeVal,
-            open: b.open,
-            high: b.high,
-            low: b.low,
-            close: b.close
+            open: o,
+            high: h,
+            low: l,
+            close: c
           });
 
           vBars.push({
             time: timeVal,
-            value: b.volume,
-            color: b.close >= b.open ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'
+            value: Number(b.volume) || 0,
+            color: c >= o ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'
           });
         }
 
-        if (candleSeries) candleSeries.setData(cBars);
-        if (volumeSeries) volumeSeries.setData(vBars);
+        // Sort ascending by time
+        if (typeof cBars[0]?.time === "number") {
+          cBars.sort((a, b) => a.time - b.time);
+          vBars.sort((a, b) => a.time - b.time);
+        } else {
+          cBars.sort((a, b) => String(a.time).localeCompare(String(b.time)));
+          vBars.sort((a, b) => String(a.time).localeCompare(String(b.time)));
+        }
+
+        try {
+          if (candleSeries && cBars.length > 0) candleSeries.setData(cBars);
+          if (volumeSeries && vBars.length > 0) volumeSeries.setData(vBars);
+          if (lwChart) lwChart.timeScale().fitContent();
+        } catch (setErr) {
+          console.error("LightweightCharts setData error:", setErr);
+        }
 
         // Update Legend with last bar
-        const last = bars[bars.length - 1];
-        updateLegend(last, { value: last.volume }, last.oi);
+        if (bars.length > 0) {
+          const last = bars[bars.length - 1];
+          updateLegend(last, { value: last.volume }, last.oi);
+        }
 
         // Render Table
         renderHistTable(bars);
-
-        if (lwChart) lwChart.timeScale().fitContent();
       } catch (e) {
         console.error("Load chart data error:", e);
       }
@@ -1032,12 +1077,17 @@
 
     // Update Legend Box
     function updateLegend(c, v, customOi) {
-      document.getElementById("legDate").textContent = c.time ? String(c.time).split("T")[0] : "--";
-      document.getElementById("legOpen").textContent = "₹" + Number(c.open).toFixed(2);
-      document.getElementById("legHigh").textContent = "₹" + Number(c.high).toFixed(2);
-      document.getElementById("legLow").textContent = "₹" + Number(c.low).toFixed(2);
-      document.getElementById("legClose").textContent = "₹" + Number(c.close).toFixed(2);
-      document.getElementById("legVol").textContent = v && v.value ? Number(v.value).toLocaleString("en-IN") : "--";
+      if (!c) return;
+      const dStr = c.time ? (typeof c.time === "number" ? new Date(c.time * 1000).toLocaleDateString("en-IN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : String(c.time).split("T")[0]) : "--";
+      document.getElementById("legDate").textContent = dStr;
+      document.getElementById("legOpen").textContent = "₹" + Number(c.open || 0).toFixed(2);
+      document.getElementById("legHigh").textContent = "₹" + Number(c.high || 0).toFixed(2);
+      document.getElementById("legLow").textContent = "₹" + Number(c.low || 0).toFixed(2);
+      document.getElementById("legClose").textContent = "₹" + Number(c.close || 0).toFixed(2);
+      document.getElementById("legVol").textContent = v && v.value ? Number(v.value).toLocaleString("en-IN") : (c.volume ? Number(c.volume).toLocaleString("en-IN") : "--");
+      const oiVal = customOi !== undefined ? customOi : (c.oi || "--");
+      document.getElementById("legOi").textContent = typeof oiVal === "number" ? oiVal.toLocaleString("en-IN") : oiVal;
+    }
       const oiVal = customOi !== undefined ? customOi : (c.oi || "--");
       document.getElementById("legOi").textContent = typeof oiVal === "number" ? oiVal.toLocaleString("en-IN") : oiVal;
     }
