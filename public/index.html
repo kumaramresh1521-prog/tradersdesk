@@ -1667,31 +1667,31 @@
               <!-- Stats Grid -->
               <div id="futIntradayStats" class="fut-oi-stats" style="grid-template-columns:repeat(auto-fit,minmax(105px,1fr));margin-bottom:0;"></div>
 
-              <!-- Dual-Panel Canvas (Price + OI) -->
-              <div class="fut-intraday-canvas-wrap" id="futIntradayCanvasBox">
-                <canvas id="futIntradayPriceCanvas" style="width:100%;height:300px;display:block;cursor:crosshair;touch-action:pan-y;"></canvas>
-                <div class="fut-intraday-canvas-divider"></div>
-                <canvas id="futIntradayOiCanvas" style="width:100%;height:140px;display:block;cursor:crosshair;touch-action:pan-y;"></canvas>
-                <div id="futIntradayTip"></div>
-              </div>
-
-              <!-- Regime Breakdown -->
-              <div id="futIntradayRegimeBar" class="fut-intraday-regime-bar"></div>
-
-              <!-- Data Table -->
+              <!-- Detailed Intraday Price vs OI Buildup Table -->
               <div class="fut-intraday-table-wrap">
                 <table class="fut-intraday-table" id="futIntradayTable">
                   <thead>
                     <tr>
                       <th style="text-align:left;">Time</th>
-                      <th>Open</th><th>High</th><th>Low</th><th>Close</th>
-                      <th>Chg%</th><th>VWAP</th><th>Spot</th><th>Basis</th>
-                      <th>OI (L)</th><th>OI Chg</th><th>OI%</th><th>Vol</th>
-                      <th style="text-align:center;">Regime</th>
+                      <th>Open</th>
+                      <th>High</th>
+                      <th>Low</th>
+                      <th>Close</th>
+                      <th>Chg (Pts)</th>
+                      <th>Chg%</th>
+                      <th>VWAP</th>
+                      <th>Spot</th>
+                      <th>Basis</th>
+                      <th>OI (Shares)</th>
+                      <th>OI (Contracts)</th>
+                      <th>OI Chg</th>
+                      <th>OI%</th>
+                      <th>Volume</th>
+                      <th style="text-align:center;">Buildup</th>
                     </tr>
                   </thead>
                   <tbody id="futIntradayTableBody">
-                    <tr><td colspan="14" style="text-align:center;color:#64748b;padding:24px;">Select an index to load intraday data</td></tr>
+                    <tr><td colspan="16" style="text-align:center;padding:24px;">Select an index to load intraday data</td></tr>
                   </tbody>
                 </table>
               </div>

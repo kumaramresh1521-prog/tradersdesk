@@ -22876,153 +22876,190 @@ body[data-theme="light"] .inst-dot-menu-btn:hover {
 }
 
 /* ================================================================
-   FUTURE INTRADAY PRICE vs OI — StockMojo-style terminal
+   FUTURE INTRADAY PRICE vs OI — Clean Dual-Theme Institutional Desk
    ================================================================ */
 .fut-intraday-wrap {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   padding: 0 2px;
 }
+
+/* Horizontal Index Selector Ribbon (No Cards, Sleek Segmented Buttons) */
 .fut-intraday-index-ribbon {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
-  padding: 8px 10px;
-  background: #080d18;
-  border: 1px solid #1a2538;
-  border-radius: 10px;
-}
-.fut-intraday-idx-pill {
-  display: inline-flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 7px 14px;
+  padding: 8px 12px;
+  background: #0b1325;
+  border: 1px solid #1e2f52;
   border-radius: 8px;
-  border: 1px solid #1e3a5f;
-  background: #0c1322;
-  cursor: pointer;
-  transition: all 0.15s;
-  min-width: 80px;
-  text-align: center;
 }
-.fut-intraday-idx-pill:hover { border-color: #38bdf8; background: #0f1f36; }
-.fut-intraday-idx-pill.active { border-color: #38bdf8; background: rgba(56,189,248,0.12); }
-.fut-intraday-idx-pill .pill-sym {
-  font-weight: 800;
-  font-size: 12px;
+[data-theme="light"] .fut-intraday-index-ribbon {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.fut-intraday-idx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #1e2f52;
+  background: #0d172e;
   color: #f8fafc;
-  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 12px;
+  white-space: nowrap;
+  user-select: none;
 }
-.fut-intraday-idx-pill .pill-ltp {
+.fut-intraday-idx-btn:hover {
+  border-color: #3b82f6;
+  background: #111c36;
+}
+.fut-intraday-idx-btn.active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.16);
+  font-weight: 700;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
+}
+
+[data-theme="light"] .fut-intraday-idx-btn {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+[data-theme="light"] .fut-intraday-idx-btn:hover {
+  background: #f1f5f9;
+  border-color: #2563eb;
+}
+[data-theme="light"] .fut-intraday-idx-btn.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+}
+
+.fut-intraday-idx-btn .pill-sym {
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.fut-intraday-idx-btn .pill-ltp {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+.fut-intraday-idx-btn .pill-chg {
   font-size: 11px;
   font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  color: #94a3b8;
+  padding: 1px 5px;
+  border-radius: 3px;
 }
-.fut-intraday-idx-pill .pill-chg {
-  font-size: 10px;
-  font-weight: 700;
-}
-.fut-intraday-idx-pill.active .pill-sym { color: #38bdf8; }
+
+/* Controls Bar */
 .fut-intraday-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
-  padding: 10px 12px;
-  background: #080d18;
-  border: 1px solid #1a2538;
-  border-radius: 10px;
-}
-.fut-intraday-header-left { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 200px; }
-.fut-intraday-canvas-wrap {
-  position: relative;
-  background: #060b14;
-  border: 1px solid #1a2538;
-  border-radius: 10px;
-  overflow: hidden;
-}
-.fut-intraday-canvas-divider {
-  height: 1px;
-  background: #1a2538;
-  margin: 0;
-}
-#futIntradayTip {
-  display: none;
-  position: absolute;
-  pointer-events: none;
-  background: #080d18;
-  border: 1px solid #1e3a5f;
+  padding: 12px 14px;
+  background: #0b1325;
+  border: 1px solid #1e2f52;
   border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
-  color: #f8fafc;
-  z-index: 50;
-  min-width: 200px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
 }
-.fut-intraday-tip-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 2px; }
-.fut-intraday-tip-label { color: #64748b; font-size: 11px; }
-.fut-intraday-tip-val { font-weight: 700; font-size: 11px; }
-.fut-intraday-regime-bar {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 10px 12px;
-  background: #080d18;
-  border: 1px solid #1a2538;
-  border-radius: 10px;
-  align-items: center;
+[data-theme="light"] .fut-intraday-controls {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
-.fut-intraday-regime-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-}
-.fut-intraday-regime-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-}
-.fut-intraday-regime-pct-wrap {
+
+.fut-intraday-header-left {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  margin-top: 4px;
-  gap: 4px;
-}
-.fut-intraday-regime-pct-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-}
-.fut-intraday-regime-pct-label { width: 120px; color: #94a3b8; font-weight: 600; }
-.fut-intraday-regime-pct-bar-wrap {
+  gap: 3px;
   flex: 1;
-  height: 10px;
-  background: #1a2538;
-  border-radius: 99px;
-  overflow: hidden;
+  min-width: 220px;
 }
-.fut-intraday-regime-pct-bar { height: 100%; border-radius: 99px; transition: width 0.4s; }
-.fut-intraday-regime-pct-num { width: 40px; text-align: right; color: #f8fafc; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-.fut-intraday-dominant-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 99px;
-  font-size: 12px;
+
+#futIntradayTitle {
   font-weight: 800;
+  font-size: 17px;
+  color: #f8fafc;
+}
+[data-theme="light"] #futIntradayTitle {
+  color: #0f172a;
+}
+
+#futIntradayLtp {
+  font-size: 24px;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: #ffffff;
+}
+[data-theme="light"] #futIntradayLtp {
+  color: #0f172a;
+}
+
+/* Stats Cards (Adaptive Light/Dark Grid) */
+.fut-intraday-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+.fut-intraday-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  background: #0d172e;
+  border: 1px solid #1e2f52;
+  border-radius: 6px;
+}
+[data-theme="light"] .fut-intraday-stat-item {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+.fut-intraday-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+[data-theme="light"] .fut-intraday-stat-label {
+  color: #64748b;
+}
+.fut-intraday-stat-val {
+  font-size: 14px;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: #f8fafc;
+}
+[data-theme="light"] .fut-intraday-stat-val {
+  color: #0f172a;
+}
+.fut-intraday-stat-sub {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* Detailed Intraday Table */
 .fut-intraday-table-wrap {
   overflow-x: auto;
-  border-radius: 10px;
-  border: 1px solid #1a2538;
+  border-radius: 8px;
+  border: 1px solid #1e2f52;
+  background: #0b1325;
 }
+[data-theme="light"] .fut-intraday-table-wrap {
+  border-color: #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
 .fut-intraday-table {
   width: 100%;
   border-collapse: collapse;
@@ -23030,9 +23067,9 @@ body[data-theme="light"] .inst-dot-menu-btn:hover {
   font-family: 'JetBrains Mono', monospace;
 }
 .fut-intraday-table th {
-  padding: 8px 10px;
-  background: #0c1322;
-  color: #64748b;
+  padding: 9px 10px;
+  background: #0f1b34;
+  color: #94a3b8;
   text-align: right;
   font-weight: 700;
   font-size: 11px;
@@ -23040,31 +23077,65 @@ body[data-theme="light"] .inst-dot-menu-btn:hover {
   position: sticky;
   top: 0;
   z-index: 2;
+  border-bottom: 1px solid #1e2f52;
 }
 .fut-intraday-table th:first-child { text-align: left; }
+
+[data-theme="light"] .fut-intraday-table th {
+  background: #f1f5f9;
+  color: #475569;
+  border-bottom-color: #cbd5e1;
+}
+
 .fut-intraday-table td {
-  padding: 6px 10px;
+  padding: 7px 10px;
   text-align: right;
-  border-bottom: 1px solid #0c1322;
+  border-bottom: 1px solid #15223c;
   white-space: nowrap;
   color: #cbd5e1;
 }
-.fut-intraday-table td:first-child { text-align: left; color: #94a3b8; }
-.fut-intraday-table tr:hover td { background: rgba(56,189,248,0.04); }
-.fut-intraday-table .regime-cell {
-  text-align: center;
-  font-size: 10px;
+.fut-intraday-table td:first-child {
+  text-align: left;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+[data-theme="light"] .fut-intraday-table td {
+  border-bottom-color: #f1f5f9;
+  color: #1e293b;
+}
+[data-theme="light"] .fut-intraday-table td:first-child {
+  color: #0f172a;
+}
+
+.fut-intraday-table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.015);
+}
+[data-theme="light"] .fut-intraday-table tbody tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+.fut-intraday-table tr:hover td {
+  background: rgba(56, 189, 248, 0.06) !important;
+}
+[data-theme="light"] .fut-intraday-table tr:hover td {
+  background: #f1f5f9 !important;
+}
+
+/* Regime Badges */
+.fut-intraday-table .regime-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
   font-weight: 800;
-  padding: 3px 6px;
+  padding: 2px 8px;
   border-radius: 4px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
 }
-.fut-intraday-crosshair-line {
-  position: absolute;
-  pointer-events: none;
-  background: rgba(148,163,184,0.3);
-  z-index: 10;
-}
+
 @media (max-width: 768px) {
-  .fut-intraday-idx-pill { min-width: 60px; padding: 5px 8px; }
-  .fut-intraday-controls { gap: 6px; }
+  .fut-intraday-idx-btn { font-size: 11px; padding: 5px 10px; }
+  .fut-intraday-controls { gap: 8px; }
 }

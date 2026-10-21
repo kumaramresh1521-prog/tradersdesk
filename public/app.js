@@ -12231,6 +12231,18 @@ const ROUTE_CONFIG = {
     title: "Futures Rollover Matrix - Expiry Rollover Tracker | TradersDesk",
     desc: "Institutional expiry rollover matrix, rollover percentage, and rollover cost tracking."
   },
+  "/futures/future-intraday": {
+    desk: "futures",
+    subview: "futureIntraday",
+    title: "Future Intraday Price vs OI Analytics | TradersDesk",
+    desc: "Real-time index futures intraday Price vs Open Interest buildup terminal with VWAP, Basis, and volume metrics (NSE & BSE)."
+  },
+  "/futures/intraday": {
+    desk: "futures",
+    subview: "futureIntraday",
+    title: "Future Intraday Price vs OI Analytics | TradersDesk",
+    desc: "Real-time index futures intraday Price vs Open Interest buildup terminal with VWAP, Basis, and volume metrics (NSE & BSE)."
+  },
   "/futures/open-interest": {
     desk: "futures",
     subview: "openInterest",
@@ -12425,6 +12437,8 @@ const DESK_TO_URL = {
 
 function getUrlForDesk(key, subview) {
   if (key === "futures" && subview) {
+    if (subview === "futureIntraday" || subview === "intraday") return "/futures/future-intraday";
+    if (subview === "openInterest" || subview === "oi") return "/futures/open-interest";
     if (subview === "buildup") return "/futures/buildup";
     if (subview === "heatmap") return "/futures/heatmap";
     if (subview === "mwpl") return "/futures/mwpl";
