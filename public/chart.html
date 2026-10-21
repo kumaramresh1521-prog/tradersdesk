@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Technical Charts &amp; Historical Analysis - Nifty, F&amp;O &amp; Stocks | TradersDesk</title>
-  <meta name="description" content="Institutional TradingView interactive technical charts for NSE Nifty, Bank Nifty, Stock Futures &amp; Options. Analyze candlestick action, indicators, Open Interest and volume delivery.">
+  <title>Technical Charts &amp; 10+ Year Historical Analysis - Nifty, F&amp;O &amp; Stocks | TradersDesk</title>
+  <meta name="description" content="Institutional TradingView interactive technical charts for NSE Nifty, Bank Nifty, Stock Futures &amp; Options. Analyze 10+ years of candlestick action, indicators, Open Interest and volume delivery.">
   <link rel="canonical" href="https://tradersdesk.in/chart">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="Technical Charts &amp; Historical Analysis | TradersDesk">
-  <meta property="og:description" content="Live &amp; historical interactive TradingView charts for all NSE stocks, indices, and derivatives with built-in F&amp;O intelligence.">
+  <meta property="og:description" content="Live &amp; 10+ year historical interactive TradingView charts for all NSE stocks, indices, and derivatives with built-in F&amp;O intelligence.">
   <meta property="og:url" content="https://tradersdesk.in/chart">
   <meta property="og:site_name" content="TradersDesk.in">
 
@@ -20,15 +20,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Core Page Stylesheets -->
-  <link rel="stylesheet" href="/styles.css?v=20261020_v2">
-  <link rel="stylesheet" href="/page2.css?v=20261020_v2">
+  <link rel="stylesheet" href="/styles.css?v=20261021_v1">
+  <link rel="stylesheet" href="/page2.css?v=20261021_v1">
   <script src="/security_shield.js"></script>
 
-  <!-- 1. Official TradingView Lightweight Charts (Local High-Performance Engine - Zero Symbol Restrictions) -->
+  <!-- Official TradingView Lightweight Charts (Pro Institutional Engine - Zero Symbol Restrictions) -->
   <script src="/libs/lightweight-charts.standalone.production.js"></script>
-
-  <!-- 2. Official TradingView Cloud Widget Script (Secondary Cloud Option) -->
-  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 
   <!-- Theme Initializer -->
   <script>
@@ -104,7 +101,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
+      gap: 12px;
       background: var(--chart-card-bg);
       border: 1px solid var(--chart-border);
       border-radius: 12px;
@@ -118,7 +115,7 @@
       position: relative;
       flex: 1;
       min-width: 240px;
-      max-width: 380px;
+      max-width: 360px;
     }
 
     .chart-search-input {
@@ -234,33 +231,6 @@
       box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
     }
 
-    /* Engine Switcher (Pro vs Cloud) */
-    .chart-engine-toggle {
-      display: inline-flex;
-      align-items: center;
-      background: var(--chart-bg);
-      border: 1px solid var(--chart-border);
-      border-radius: 8px;
-      padding: 3px;
-      gap: 3px;
-    }
-    .engine-btn {
-      border: none;
-      background: transparent;
-      padding: 5px 10px;
-      font-size: 11.5px;
-      font-weight: 700;
-      color: var(--chart-text-muted);
-      border-radius: 5px;
-      cursor: pointer;
-      transition: all 0.12s;
-    }
-    .engine-btn.active {
-      background: var(--chart-card-bg);
-      color: var(--chart-brand);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
     /* Timeframe Selector */
     .chart-tf-group {
       display: flex;
@@ -293,11 +263,78 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    /* Live Institutional Quote Strip */
-    .chart-kpi-ribbon {
-      display: grid;
-      grid-template-columns: auto auto auto auto 1fr;
+    /* Range Selector (10+ Years EOD) */
+    .chart-range-group {
+      display: flex;
       align-items: center;
+      background: var(--chart-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .range-group-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--chart-text-muted);
+      padding: 0 6px 0 8px;
+      letter-spacing: 0.5px;
+    }
+    .chart-range-btn {
+      border: none;
+      background: transparent;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--chart-text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.12s;
+    }
+    .chart-range-btn:hover {
+      color: var(--chart-text);
+      background: rgba(0,0,0,0.06);
+    }
+    .chart-range-btn.active {
+      background: var(--chart-brand);
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(2, 132, 199, 0.3);
+    }
+
+    /* Live Pro Engine Badge */
+    .chart-live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #10b981;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .live-dot-pulse {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse-dot 1.8s infinite;
+    }
+    @keyframes pulse-dot {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Live Institutional Quote Ribbon */
+    .chart-kpi-ribbon {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 16px;
       background: var(--chart-card-bg);
       border: 1px solid var(--chart-border);
@@ -305,6 +342,14 @@
       padding: 12px 18px;
       margin-bottom: 12px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      flex-wrap: wrap;
+    }
+
+    .kpi-left-cluster {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
     }
 
     .kpi-symbol-block {
@@ -313,7 +358,7 @@
       gap: 10px;
     }
     .kpi-symbol-title {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 800;
       color: var(--chart-text);
       font-family: 'JetBrains Mono', monospace;
@@ -321,10 +366,14 @@
     .kpi-symbol-badge {
       font-size: 10.5px;
       font-weight: 800;
-      padding: 2px 7px;
+      padding: 3px 8px;
       border-radius: 4px;
       background: rgba(2, 132, 199, 0.12);
       color: var(--chart-brand);
+    }
+    .badge-cash {
+      background: rgba(168, 85, 247, 0.12) !important;
+      color: #a855f7 !important;
     }
 
     .kpi-price-block {
@@ -333,10 +382,11 @@
       gap: 8px;
     }
     .kpi-ltp {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 900;
       font-family: 'JetBrains Mono', monospace;
       color: var(--chart-text);
+      transition: color 0.3s;
     }
     .kpi-change-pill {
       font-size: 12px;
@@ -360,6 +410,7 @@
       gap: 16px;
       border-left: 1px solid var(--chart-border);
       padding-left: 16px;
+      flex-wrap: wrap;
     }
     .kpi-metric-item {
       display: flex;
@@ -402,8 +453,8 @@
     }
     .kpi-action-link {
       text-decoration: none;
-      padding: 6px 11px;
-      font-size: 11.5px;
+      padding: 7px 12px;
+      font-size: 12px;
       font-weight: 700;
       border-radius: 6px;
       border: 1px solid var(--chart-border);
@@ -411,7 +462,7 @@
       color: var(--chart-text);
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       transition: all 0.15s;
     }
     .kpi-action-link:hover {
@@ -442,33 +493,56 @@
       background: transparent !important;
     }
 
-    #tv_cloud_container {
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      inset: 0;
-      display: none;
-    }
-
     /* Hover Legend for Lightweight Charts */
     .chart-legend-box {
       position: absolute;
       top: 12px;
       left: 14px;
       z-index: 10;
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.94);
       border: 1px solid var(--chart-border);
-      border-radius: 6px;
-      padding: 6px 12px;
+      border-radius: 8px;
+      padding: 7px 14px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11.5px;
+      font-size: 12px;
       pointer-events: none;
       display: flex;
+      align-items: center;
       gap: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      backdrop-filter: blur(8px);
+      flex-wrap: wrap;
     }
     [data-theme="dark"] .chart-legend-box {
-      background: rgba(15, 23, 42, 0.92);
+      background: rgba(15, 23, 42, 0.94);
+    }
+    .leg-date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(2, 132, 199, 0.08);
+      color: var(--chart-brand);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 800;
+    }
+
+    /* Bottom Range & Status Bar */
+    .chart-range-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: var(--chart-bg);
+      border-top: 1px solid var(--chart-border);
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 5;
+      font-size: 11px;
+      color: var(--chart-text-muted);
+      font-family: 'JetBrains Mono', monospace;
     }
 
     /* Bottom Secondary Intelligence Deck */
@@ -511,7 +585,7 @@
     }
 
     .hist-table-wrap {
-      max-height: 240px;
+      max-height: 280px;
       overflow-y: auto;
     }
     .hist-table {
@@ -543,14 +617,15 @@
 
     @media (max-width: 960px) {
       .chart-kpi-ribbon {
-        grid-template-columns: 1fr 1fr;
+        flex-direction: column;
+        align-items: flex-start;
         gap: 12px;
       }
       .kpi-right-actions {
-        grid-column: span 2;
+        width: 100%;
         justify-content: flex-start;
       }
-      .chart-view-frame { height: 500px; }
+      .chart-view-frame { height: 520px; }
     }
   </style>
 </head>
@@ -623,7 +698,6 @@
           </div>
         </div>
       </div>
-      <!-- ACTIVE CHARTS TAB -->
       <div class="inst-nav-item">
         <a href="/chart" class="inst-nav-btn inst-nav-btn-blue active" id="navChartsTab" title="Interactive TradingView Technical &amp; Historical Charts">
           <span class="inst-nav-icon">📈</span> <span class="nav-label">Charts</span>
@@ -681,71 +755,112 @@
         <button id="btnEma200" class="chart-tf-btn" onclick="toggleIndicator('ema200')" title="Toggle 200 EMA overlay" style="color:#8b5cf6;">EMA 200</button>
       </div>
 
-      <!-- Chart Engine Toggle: Pro (Native Canvas, 0 Restrictions) vs Cloud TV -->
-      <div class="chart-engine-toggle">
-        <button id="btnEnginePro" class="engine-btn active" onclick="switchEngine('pro')" title="Native TradingView Lightweight Canvas (Zero restrictions, all NSE stocks &amp; indices)">⚡ Pro Engine</button>
-        <button id="btnEngineCloud" class="engine-btn" onclick="switchEngine('cloud')" title="TradingView Cloud Embed (Continuous futures &amp; equity)">🌐 TV Cloud</button>
-        <a id="btnExternalTv" href="https://in.tradingview.com/chart/?symbol=NSE:NIFTY" target="_blank" rel="noopener noreferrer" class="engine-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:3px;" title="Open directly on TradingView official website">↗ TV.com</a>
+      <!-- Range Selector (10+ Year History) -->
+      <div class="chart-range-group" id="rangeGroup">
+        <span class="range-group-label">RANGE:</span>
+        <button class="chart-range-btn" data-range="1M" onclick="setChartRange('1M')" title="Zoom to 1 Month">1M</button>
+        <button class="chart-range-btn" data-range="3M" onclick="setChartRange('3M')" title="Zoom to 3 Months">3M</button>
+        <button class="chart-range-btn" data-range="6M" onclick="setChartRange('6M')" title="Zoom to 6 Months">6M</button>
+        <button class="chart-range-btn" data-range="1Y" onclick="setChartRange('1Y')" title="Zoom to 1 Year">1Y</button>
+        <button class="chart-range-btn" data-range="3Y" onclick="setChartRange('3Y')" title="Zoom to 3 Years">3Y</button>
+        <button class="chart-range-btn" data-range="5Y" onclick="setChartRange('5Y')" title="Zoom to 5 Years">5Y</button>
+        <button class="chart-range-btn" data-range="10Y" onclick="setChartRange('10Y')" title="Zoom to 10 Years">10Y</button>
+        <button class="chart-range-btn active" data-range="ALL" onclick="setChartRange('ALL')" title="All Available 10+ Year History">ALL</button>
+      </div>
+
+      <!-- Real-Time Desk Status Badge -->
+      <div class="chart-live-badge" title="Live forming candle &amp; 3s auto-refresh active">
+        <span class="live-dot-pulse"></span>
+        <span>PRO LIVE</span>
       </div>
     </div>
 
-    <!-- Live Institutional KPI Ribbon -->
+    <!-- Live Institutional Quote Ribbon -->
     <div class="chart-kpi-ribbon" id="chartKpiRibbon">
-      <div class="kpi-symbol-block">
-        <span class="kpi-symbol-title" id="kpiSymbolText">NIFTY</span>
-        <span class="kpi-symbol-badge" id="kpiExchangeBadge">NSE INDEX</span>
+      <div class="kpi-left-cluster">
+        <div class="kpi-symbol-block">
+          <span class="kpi-symbol-title" id="kpiSymbolText">NIFTY</span>
+          <span class="kpi-symbol-badge" id="kpiExchangeBadge">NSE INDEX</span>
+        </div>
+
+        <div class="kpi-price-block">
+          <span class="kpi-ltp" id="kpiLtp">₹--</span>
+          <span class="kpi-change-pill" id="kpiChangePill">--</span>
+        </div>
+
+        <div class="kpi-metric-group">
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Open / High / Low</span>
+            <span class="kpi-metric-val" id="kpiOhl">-- / -- / --</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Prev Close</span>
+            <span class="kpi-metric-val" id="kpiPrevClose">₹--</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Volume</span>
+            <span class="kpi-metric-val" id="kpiVolume">--</span>
+          </div>
+        </div>
+
+        <!-- Conditional F&O Derivatives Metrics Block -->
+        <div class="kpi-metric-group" id="kpiFoBlock">
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Future OI</span>
+            <span class="kpi-metric-val" id="kpiOi">--</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Buildup Radar</span>
+            <span id="kpiBuildupTag" class="kpi-buildup-tag buildup-long">Long Buildup</span>
+          </div>
+          <div class="kpi-metric-item" id="kpiRolloverItem">
+            <span class="kpi-metric-label">Rollover %</span>
+            <span class="kpi-metric-val" id="kpiRollover">--%</span>
+          </div>
+        </div>
+
+        <!-- Conditional Cash Equities Metrics Block -->
+        <div class="kpi-metric-group" id="kpiCashBlock" style="display:none;">
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">52W High / Low</span>
+            <span class="kpi-metric-val" id="kpi52wHl" style="color:var(--chart-brand);">₹-- / ₹--</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Delivery %</span>
+            <span class="kpi-metric-val" id="kpiDeliveryPct" style="color:#10b981;">--%</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Delivery Qty</span>
+            <span class="kpi-metric-val" id="kpiDeliveryQty">--</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Est. Turnover</span>
+            <span class="kpi-metric-val" id="kpiTurnover">₹-- Cr</span>
+          </div>
+        </div>
       </div>
 
-      <div class="kpi-price-block">
-        <span class="kpi-ltp" id="kpiLtp">₹--</span>
-        <span class="kpi-change-pill" id="kpiChangePill">--</span>
-      </div>
-
-      <div class="kpi-metric-group">
-        <div class="kpi-metric-item">
-          <span class="kpi-metric-label">Open / High / Low</span>
-          <span class="kpi-metric-val" id="kpiOhl">-- / -- / --</span>
-        </div>
-        <div class="kpi-metric-item">
-          <span class="kpi-metric-label">Prev Close</span>
-          <span class="kpi-metric-val" id="kpiPrevClose">₹--</span>
-        </div>
-        <div class="kpi-metric-item">
-          <span class="kpi-metric-label">Volume</span>
-          <span class="kpi-metric-val" id="kpiVolume">--</span>
-        </div>
-      </div>
-
-      <div class="kpi-metric-group" id="kpiFoBlock">
-        <div class="kpi-metric-item">
-          <span class="kpi-metric-label">Future OI</span>
-          <span class="kpi-metric-val" id="kpiOi">--</span>
-        </div>
-        <div class="kpi-metric-item">
-          <span class="kpi-metric-label">Buildup Radar</span>
-          <span id="kpiBuildupTag" class="kpi-buildup-tag buildup-long">Long Buildup</span>
-        </div>
-        <div class="kpi-metric-item" id="kpiRolloverItem">
-          <span class="kpi-metric-label">Rollover %</span>
-          <span class="kpi-metric-val" id="kpiRollover">--%</span>
-        </div>
-      </div>
-
-      <div class="kpi-right-actions">
+      <!-- Conditional Action Buttons: F&O vs Cash -->
+      <div class="kpi-right-actions" id="kpiFoActions">
         <a id="btnLinkOptionChain" href="/option-chain-pro" class="kpi-action-link" title="Open Multi-broker Option Chain Pro for this symbol">⚡ Option Chain</a>
         <a id="btnLinkOpenInterest" href="/open-interest/nifty" class="kpi-action-link" title="Open Call vs Put OI Analysis">📊 OI Analysis</a>
         <a id="btnLinkFutures" href="/futures" class="kpi-action-link" title="Open Futures Marketwatch">📈 Futures</a>
+      </div>
+      <div class="kpi-right-actions" id="kpiCashActions" style="display:none;">
+        <a href="/delivery" class="kpi-action-link" title="Open Security Delivery Analytics">📦 Delivery Analysis</a>
+        <a href="/mtf" class="kpi-action-link" title="Open MTF Leverage Book">💳 MTF Leverage</a>
+        <a href="/breadth" class="kpi-action-link" title="Open Market Breadth Pro">📉 Breadth Pro</a>
       </div>
     </div>
 
     <!-- Main Chart Canvas Container -->
     <div class="chart-view-frame">
-      <!-- 1. Native High-Performance TradingView Lightweight Chart (Default - Never Restricted) -->
+      <!-- Pro TradingView Lightweight Charts Canvas -->
       <div id="lw_chart_container"></div>
 
-      <!-- Live Hover Legend -->
+      <!-- Live Hover Legend Box -->
       <div class="chart-legend-box" id="chartLegendBox">
-        <span id="legDate" style="color:var(--chart-text-muted); font-weight:700;">--</span>
+        <span class="leg-date-badge">📅 <span id="legDate">--</span></span>
         <span>O: <strong id="legOpen" style="color:var(--chart-text);">--</strong></span>
         <span>H: <strong id="legHigh" style="color:#10b981;">--</strong></span>
         <span>L: <strong id="legLow" style="color:#ef4444;">--</strong></span>
@@ -757,28 +872,25 @@
         <span id="legEma200Wrap" style="display:none; color:#8b5cf6;">EMA200: <strong id="legEma200">--</strong></span>
       </div>
 
-      <!-- 2. TradingView Cloud Container (Optional Alternate) -->
-      <div id="tv_cloud_container"></div>
-
-      <!-- TV Cloud Embed Info Notice -->
-      <div id="tvCloudNotice" style="display:none; position:absolute; bottom:10px; left:14px; right:14px; z-index:15; padding:8px 14px; background:rgba(15,23,42,0.88); border:1px solid #334155; border-radius:8px; font-size:12px; color:#e2e8f0; backdrop-filter:blur(6px); display:none; align-items:center; justify-content:space-between; gap:12px;">
-        <span>ℹ️ <strong>TradingView Cloud Notice:</strong> TradingView restricts raw NSE tags in free 3rd-party embeds. We map Indian equities to BSE feeds &amp; indices to continuous futures to keep charts unlocked. For 100% pure NSE cash and derivatives, switch to <strong>⚡ Pro Engine</strong>.</span>
-        <button onclick="switchEngine('pro')" style="padding:4px 10px; background:#0284c7; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:700; font-size:11.5px; white-space:nowrap;">Switch to ⚡ Pro Engine</button>
+      <!-- Bottom Range & Status Bar -->
+      <div class="chart-range-bar" id="chartRangeBar">
+        <span id="dataSpanText">📊 Loading historical dataset...</span>
+        <span id="livePulseText">🟢 LIVE FEED • Real-time forming candle active</span>
       </div>
     </div>
 
     <!-- Bottom Secondary Intelligence Deck -->
     <div class="chart-bottom-deck">
       <div class="deck-tab-bar">
-        <button class="deck-tab-btn active" onclick="switchDeckTab(event, 'tabBuildup')">Derivatives &amp; OI Buildup History</button>
-        <button class="deck-tab-btn" onclick="switchDeckTab(event, 'tabCrossDesk')">Cross-Desk Quick Navigation</button>
+        <button id="deckTab1Btn" class="deck-tab-btn active" onclick="switchDeckTab(event, 'tabBuildup')">Derivatives &amp; OI Buildup History</button>
+        <button id="deckTab2Btn" class="deck-tab-btn" onclick="switchDeckTab(event, 'tabCrossDesk')">Cross-Desk Quick Navigation</button>
       </div>
 
-      <!-- Tab 1: Buildup History -->
+      <!-- Tab 1: Buildup / Cash Delivery History -->
       <div id="tabBuildup" class="deck-tab-pane active">
         <div class="hist-table-wrap">
           <table class="hist-table">
-            <thead>
+            <thead id="histTableHead">
               <tr>
                 <th>Date</th>
                 <th>Open</th>
@@ -792,7 +904,7 @@
               </tr>
             </thead>
             <tbody id="histTableBody">
-              <tr><td colspan="9" style="text-align:center; color:#64748b; padding:20px;">Loading historical derivatives dataset...</td></tr>
+              <tr><td colspan="9" style="text-align:center; color:#64748b; padding:20px;">Loading historical dataset...</td></tr>
             </tbody>
           </table>
         </div>
@@ -809,13 +921,21 @@
             <span style="font-weight:800; font-size:14px;">📊 Open Interest Analysis</span>
             <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Call vs Put distribution, PCR &amp; Max Pain</span>
           </a>
-          <a href="/futures/rollover" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+          <a id="cardJumpFutures" href="/futures/rollover" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
             <span style="font-weight:800; font-size:14px;">📑 Futures Rollover Matrix</span>
             <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Expiry rollover %, 3M/6M averages &amp; velocity</span>
           </a>
           <a href="/delivery" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
             <span style="font-weight:800; font-size:14px;">📦 Cash Delivery Analytics</span>
             <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Security-wise delivery %, block volume &amp; turnover</span>
+          </a>
+          <a href="/mtf" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">💳 MTF Margin Book</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Leverage haircuts, MTF holding volume &amp; stocks</span>
+          </a>
+          <a href="/breadth" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">📉 Market Breadth Pro</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Advance/Decline velocity, 52W high/low ratio</span>
           </a>
         </div>
       </div>
@@ -846,19 +966,16 @@
   </div>
 
   <!-- ========================================================================
-       DUAL-ENGINE TRADINGVIEW CONTROLLER
-       1. Native Lightweight Charts (Zero Restriction, All NSE Stocks & Indices)
-       2. TradingView Cloud Embed (Continuous Futures Mapped)
+       PRO INSTITUTIONAL TRADINGVIEW LIGHTWEIGHT ENGINE
        ======================================================================== -->
   <script>
     let currentSymbol = "NIFTY";
     let currentTimeframe = "D";
-    let currentEngine = "pro"; // 'pro' (Native Canvas) or 'cloud' (TV Cloud)
+    let currentRange = "ALL";
+    let currentQuote = null;
     let lwChart = null;
     let candleSeries = null;
     let volumeSeries = null;
-    let oiLineSeries = null;
-    let tvCloudWidget = null;
     let lastLoadedBars = [];
 
     // Technical Indicators State
@@ -869,6 +986,9 @@
     let ema50Series = null;
     let ema200Series = null;
 
+    // Real-Time Polling Interval ID
+    let liveQuoteInterval = null;
+
     // Parse URL Params
     function initFromUrl() {
       const params = new URLSearchParams(window.location.search);
@@ -876,20 +996,8 @@
       if (symParam) currentSymbol = symParam.toUpperCase().trim();
       const tfParam = params.get("tf") || params.get("interval");
       if (tfParam) currentTimeframe = tfParam;
-      const engParam = params.get("engine");
-      if (engParam && (engParam === "cloud" || engParam === "pro")) currentEngine = engParam;
-    }
-
-    // Map symbol for TV Cloud to prevent "Only Available on TradingView" error
-    // TradingView restricts raw NSE: tags in 3rd-party embeds due to NSE data fees.
-    // Mapping Indian cash stocks to BSE: and indices to continuous futures keeps TV Cloud unlocked!
-    function getCloudTvSymbol(sym) {
-      if (sym === "NIFTY") return "NSE:NIFTY1!"; // Continuous Futures always works on TV
-      if (sym === "BANKNIFTY") return "NSE:BANKNIFTY1!";
-      if (sym === "FINNIFTY") return "NSE:FINNIFTY1!";
-      if (sym === "MIDCPNIFTY") return "NSE:MIDCPNIFTY1!";
-      if (sym === "SENSEX") return "BSE:SENSEX";
-      return "BSE:" + sym; // BSE prefix bypasses the third-party embed restriction that TradingView places on NSE cash stocks
+      const rangeParam = params.get("range");
+      if (rangeParam) currentRange = rangeParam.toUpperCase();
     }
 
     // Calculate Exponential Moving Average
@@ -928,48 +1036,99 @@
         const btn = document.getElementById('btnEma200');
         if (btn) btn.classList.toggle('active', showEma200);
       }
-      if (currentEngine === 'pro') {
-        renderProChart();
-      }
+      renderProChart();
     };
 
-    // Switch Engine: Pro vs Cloud
-    window.switchEngine = function(engine) {
-      currentEngine = engine;
-      document.getElementById("btnEnginePro").className = "engine-btn " + (engine === "pro" ? "active" : "");
-      document.getElementById("btnEngineCloud").className = "engine-btn " + (engine === "cloud" ? "active" : "");
+    // Range Selector (1M, 3M, 6M, 1Y, 3Y, 5Y, 10Y, ALL)
+    window.setChartRange = function(rangeKey) {
+      currentRange = rangeKey;
+      document.querySelectorAll(".chart-range-btn").forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-range") === rangeKey);
+      });
 
-      const lwCont = document.getElementById("lw_chart_container");
-      const tvCont = document.getElementById("tv_cloud_container");
-      const legBox = document.getElementById("chartLegendBox");
-      const tvNotice = document.getElementById("tvCloudNotice");
-      const indGroup = document.getElementById("indicatorGroup");
-
-      if (engine === "pro") {
-        lwCont.style.display = "block";
-        tvCont.style.display = "none";
-        legBox.style.display = "flex";
-        if (tvNotice) tvNotice.style.display = "none";
-        if (indGroup) indGroup.style.display = "flex";
-        renderProChart();
-      } else {
-        lwCont.style.display = "none";
-        tvCont.style.display = "block";
-        legBox.style.display = "none";
-        if (tvNotice) tvNotice.style.display = "flex";
-        if (indGroup) indGroup.style.display = "none";
-        renderCloudTvChart();
+      if (currentTimeframe !== "D") {
+        changeTimeframe("D");
+        return;
       }
+      applyRangeZoom(rangeKey);
     };
 
-    // Render Native TradingView Lightweight Chart (Zero Restrictions!)
+    function applyRangeZoom(rangeKey) {
+      if (!lwChart || !lastLoadedBars || lastLoadedBars.length === 0) return;
+
+      const n = lastLoadedBars.length;
+      let barCount = n;
+
+      if (rangeKey === "1M") barCount = 22;
+      else if (rangeKey === "3M") barCount = 66;
+      else if (rangeKey === "6M") barCount = 132;
+      else if (rangeKey === "1Y") barCount = 252;
+      else if (rangeKey === "3Y") barCount = 756;
+      else if (rangeKey === "5Y") barCount = 1260;
+      else if (rangeKey === "10Y" || rangeKey === "ALL") barCount = n;
+
+      if (barCount >= n) {
+        lwChart.timeScale().fitContent();
+        return;
+      }
+
+      const startIndex = Math.max(0, n - barCount);
+      const startBar = lastLoadedBars[startIndex];
+      const endBar = lastLoadedBars[n - 1];
+
+      try {
+        lwChart.timeScale().setVisibleRange({
+          from: startBar.time,
+          to: endBar.time
+        });
+      } catch (e) {
+        lwChart.timeScale().fitContent();
+      }
+    }
+
+    // Format Date string nicely: "Wednesday, 21 Oct 2026"
+    function formatPrettyDate(rawTime) {
+      if (!rawTime) return "--";
+      try {
+        let d;
+        if (typeof rawTime === "number") {
+          d = new Date(rawTime * 1000);
+        } else if (typeof rawTime === "string") {
+          d = new Date(rawTime.includes(" ") ? rawTime.replace(" ", "T") + "+05:30" : rawTime + "T00:00:00+05:30");
+        } else {
+          return String(rawTime);
+        }
+        if (isNaN(d.getTime())) return String(rawTime);
+
+        if (currentTimeframe !== "D") {
+          return d.toLocaleDateString("en-IN", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+          });
+        }
+        return d.toLocaleDateString("en-IN", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          year: "numeric"
+        });
+      } catch (e) {
+        return String(rawTime);
+      }
+    }
+
+    // Render Native TradingView Lightweight Chart
     function renderProChart() {
       const container = document.getElementById("lw_chart_container");
       if (!container) return;
 
       const isDark = document.documentElement.getAttribute("data-theme") === "dark";
 
-      // If chart exists, destroy before recreate
       if (lwChart) {
         try { lwChart.remove(); } catch(e) {}
         lwChart = null;
@@ -990,7 +1149,7 @@
         height: h,
         layout: {
           background: { type: 'solid', color: isDark ? '#0f172a' : '#ffffff' },
-          textColor: isDark ? '#94a3b8' : '#334155',
+          textColor: isDark ? '#cbd5e1' : '#1e293b',
           fontFamily: "'JetBrains Mono', 'Inter', monospace",
         },
         grid: {
@@ -1001,16 +1160,21 @@
           mode: LightweightCharts.CrosshairMode.Normal,
         },
         rightPriceScale: {
-          borderColor: isDark ? '#1e293b' : '#e2e8f0',
+          borderColor: isDark ? '#334155' : '#cbd5e1',
           scaleMargins: {
-            top: 0.1,
-            bottom: 0.22, // Space for volume sub-bars
+            top: 0.08,
+            bottom: 0.22,
           },
         },
         timeScale: {
-          borderColor: isDark ? '#1e293b' : '#e2e8f0',
+          borderColor: isDark ? '#334155' : '#cbd5e1',
+          visible: true,
+          borderVisible: true,
           timeVisible: currentTimeframe !== "D",
           secondsVisible: false,
+          rightOffset: 12,
+          barSpacing: 8,
+          minBarSpacing: 2,
         },
       });
 
@@ -1023,7 +1187,7 @@
         wickDownColor: '#ef4444',
       });
 
-      // 2. Volume Series (Separate 'volume' price scale overlay at bottom 20%)
+      // 2. Volume Series (PriceScale 'volume' at bottom 20%)
       volumeSeries = lwChart.addHistogramSeries({
         color: '#38bdf8',
         priceFormat: { type: 'volume' },
@@ -1036,7 +1200,7 @@
         },
       });
 
-      // 3. EMA Overlay Lines
+      // 3. Technical EMA Overlay Lines
       if (showEma20) {
         ema20Series = lwChart.addLineSeries({
           color: '#0284c7',
@@ -1072,15 +1236,27 @@
 
       // Crosshair Hover Handler
       lwChart.subscribeCrosshairMove(param => {
-        if (!param || !param.time || !param.seriesData || !candleSeries) return;
+        if (!param || !param.time || !param.seriesData || !candleSeries) {
+          // If cursor left canvas, reset to last available bar
+          if (lastLoadedBars.length > 0) {
+            const last = lastLoadedBars[lastLoadedBars.length - 1];
+            updateLegend(last, { value: last.volume }, last.oi);
+          }
+          return;
+        }
         const cData = param.seriesData.get(candleSeries);
         const vData = volumeSeries ? param.seriesData.get(volumeSeries) : null;
         if (cData) {
-          updateLegend(cData, vData);
+          let oiVal = "--";
+          if (param.time) {
+            const found = lastLoadedBars.find(b => b.time === param.time);
+            if (found && found.oi) oiVal = found.oi;
+          }
+          updateLegend(cData, vData, oiVal);
         }
       });
 
-      // Resize observer
+      // Window Resize Listener
       window.addEventListener("resize", () => {
         if (lwChart && container && container.clientWidth > 0) {
           lwChart.applyOptions({
@@ -1090,7 +1266,7 @@
         }
       });
 
-      // Fetch and Populate Data
+      // Fetch Data
       loadChartData(currentSymbol, currentTimeframe);
     }
 
@@ -1098,10 +1274,11 @@
     async function loadChartData(sym, tf) {
       const container = document.getElementById("lw_chart_container");
       try {
-        const res = await fetch(`/api/chart/history?symbol=${encodeURIComponent(sym)}&resolution=${encodeURIComponent(tf)}`);
+        const res = await fetch(`/api/chart/history?symbol=${encodeURIComponent(sym)}&resolution=${encodeURIComponent(tf)}&range=10y`);
         const json = await res.json();
         const bars = json.bars || [];
         lastLoadedBars = bars;
+        const isFno = json.is_fno;
 
         if (!bars || bars.length === 0) {
           if (container) {
@@ -1109,20 +1286,18 @@
               <div style="font-size:36px; margin-bottom:10px;">📈</div>
               <div style="font-weight:700; font-size:15px; color:var(--chart-text);">No Historical Bars Available for ${sym}</div>
               <div style="font-size:12px; margin-top:6px; max-width:400px; color:var(--chart-text-muted);">Historical data is indexed for all 222+ F&O underlyings, indices, and active NSE equities.</div>
-              <button onclick="switchEngine('cloud')" style="margin-top:16px; padding:7px 16px; background:var(--chart-brand); color:#ffffff; border:none; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px;">Launch TradingView Cloud</button>
             </div>`;
           }
           return;
         }
 
-        // Convert to Lightweight Charts format with strict invariant validations
+        // Convert to Lightweight Charts format with invariant validation
         const cBars = [];
         const vBars = [];
         const seenTimes = new Set();
 
         for (let b of bars) {
           let timeVal = b.time;
-          // If contains space (intraday YYYY-MM-DD HH:MM:SS), convert to UNIX timestamp
           if (typeof timeVal === "string" && timeVal.includes(" ")) {
             const iso = timeVal.replace(" ", "T") + "+05:30";
             const parsed = Date.parse(iso);
@@ -1137,19 +1312,11 @@
           let h = Number(b.high) || Math.max(o, c);
           let l = Number(b.low) || Math.min(o, c);
 
-          // Absolute invariant guarantees: high >= max(open, close), low <= min(open, close)
           h = Math.max(h, o, c);
           l = Math.min(l, o, c);
           if (l <= 0) l = Math.min(o, c) * 0.99;
 
-          cBars.push({
-            time: timeVal,
-            open: o,
-            high: h,
-            low: l,
-            close: c
-          });
-
+          cBars.push({ time: timeVal, open: o, high: h, low: l, close: c });
           vBars.push({
             time: timeVal,
             value: Number(b.volume) || 0,
@@ -1157,7 +1324,6 @@
           });
         }
 
-        // Sort ascending by time
         if (typeof cBars[0]?.time === "number") {
           cBars.sort((a, b) => a.time - b.time);
           vBars.sort((a, b) => a.time - b.time);
@@ -1166,24 +1332,21 @@
           vBars.sort((a, b) => String(a.time).localeCompare(String(b.time)));
         }
 
-        try {
-          if (candleSeries && cBars.length > 0) candleSeries.setData(cBars);
-          if (volumeSeries && vBars.length > 0) volumeSeries.setData(vBars);
+        if (candleSeries && cBars.length > 0) candleSeries.setData(cBars);
+        if (volumeSeries && vBars.length > 0) volumeSeries.setData(vBars);
 
-          if (ema20Series && showEma20 && cBars.length >= 20) {
-            ema20Series.setData(calculateEMA(cBars, 20));
-          }
-          if (ema50Series && showEma50 && cBars.length >= 50) {
-            ema50Series.setData(calculateEMA(cBars, 50));
-          }
-          if (ema200Series && showEma200 && cBars.length >= 200) {
-            ema200Series.setData(calculateEMA(cBars, 200));
-          }
-
-          if (lwChart) lwChart.timeScale().fitContent();
-        } catch (setErr) {
-          console.error("LightweightCharts setData error:", setErr);
+        if (ema20Series && showEma20 && cBars.length >= 20) {
+          ema20Series.setData(calculateEMA(cBars, 20));
         }
+        if (ema50Series && showEma50 && cBars.length >= 50) {
+          ema50Series.setData(calculateEMA(cBars, 50));
+        }
+        if (ema200Series && showEma200 && cBars.length >= 200) {
+          ema200Series.setData(calculateEMA(cBars, 200));
+        }
+
+        // Apply range zoom
+        applyRangeZoom(currentRange);
 
         // Update Legend with last bar
         if (bars.length > 0) {
@@ -1191,8 +1354,16 @@
           updateLegend(last, { value: last.volume }, last.oi);
         }
 
-        // Render Table
-        renderHistTable(bars);
+        // Update Bottom Range Bar
+        const spanEl = document.getElementById("dataSpanText");
+        if (spanEl && bars.length > 0) {
+          const firstD = bars[0].time;
+          const lastD = bars[bars.length - 1].time;
+          spanEl.textContent = `📊 Historical Span: ${firstD} to ${lastD} • ${bars.length.toLocaleString("en-IN")} Trading Sessions`;
+        }
+
+        // Render Table (F&O vs Cash)
+        renderIntelligenceTable(bars, json.cash_delivery_history, isFno);
       } catch (e) {
         console.error("Load chart data error:", e);
       }
@@ -1201,47 +1372,20 @@
     // Update Legend Box
     function updateLegend(c, v, customOi) {
       if (!c) return;
-      const dStr = c.time ? (typeof c.time === "number" ? new Date(c.time * 1000).toLocaleDateString("en-IN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : String(c.time).split("T")[0]) : "--";
-      document.getElementById("legDate").textContent = dStr;
+      document.getElementById("legDate").textContent = formatPrettyDate(c.time);
       document.getElementById("legOpen").textContent = "₹" + Number(c.open || 0).toFixed(2);
       document.getElementById("legHigh").textContent = "₹" + Number(c.high || 0).toFixed(2);
       document.getElementById("legLow").textContent = "₹" + Number(c.low || 0).toFixed(2);
       document.getElementById("legClose").textContent = "₹" + Number(c.close || 0).toFixed(2);
       document.getElementById("legVol").textContent = v && v.value ? Number(v.value).toLocaleString("en-IN") : (c.volume ? Number(c.volume).toLocaleString("en-IN") : "--");
-      const oiVal = customOi !== undefined ? customOi : (c.oi || "--");
-      document.getElementById("legOi").textContent = typeof oiVal === "number" ? oiVal.toLocaleString("en-IN") : oiVal;
-    }
 
-    // Render Cloud TradingView Widget
-    function renderCloudTvChart() {
-      const container = document.getElementById("tv_cloud_container");
-      if (!container) return;
-      container.innerHTML = "";
-
-      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-      const tvSym = getCloudTvSymbol(currentSymbol);
-
-      try {
-        if (typeof TradingView !== "undefined") {
-          tvCloudWidget = new TradingView.widget({
-            "autosize": true,
-            "symbol": tvSym,
-            "interval": currentTimeframe,
-            "timezone": "Asia/Kolkata",
-            "theme": isDark ? "dark" : "light",
-            "style": "1",
-            "locale": "en",
-            "toolbar_bg": isDark ? "#0f172a" : "#ffffff",
-            "enable_publishing": false,
-            "allow_symbol_change": true,
-            "container_id": "tv_cloud_container",
-            "studies": ["Volume@tv-basicstudies"],
-            "hide_side_toolbar": false,
-            "withdateranges": true
-          });
-        }
-      } catch (e) {
-        console.error("TV cloud error:", e);
+      const oiWrap = document.getElementById("legOiWrap");
+      if (currentQuote && currentQuote.is_fno === false) {
+        oiWrap.style.display = "none";
+      } else {
+        oiWrap.style.display = "inline";
+        const oiVal = customOi !== undefined ? customOi : (c.oi || "--");
+        document.getElementById("legOi").textContent = typeof oiVal === "number" ? oiVal.toLocaleString("en-IN") : oiVal;
       }
     }
 
@@ -1250,7 +1394,31 @@
       try {
         const resp = await fetch(`/api/chart/quote?symbol=${encodeURIComponent(sym)}`);
         const data = await resp.json();
-        if (data && data.quote) renderQuoteKpi(data.quote);
+        if (data && data.quote) {
+          currentQuote = data.quote;
+          renderQuoteKpi(data.quote);
+
+          // Real-time tick update to candle chart
+          if (candleSeries && data.quote.live_bar && currentTimeframe === "D") {
+            const lb = data.quote.live_bar;
+            try {
+              candleSeries.update({
+                time: lb.time,
+                open: Number(lb.open),
+                high: Number(lb.high),
+                low: Number(lb.low),
+                close: Number(lb.close)
+              });
+              if (volumeSeries && lb.volume > 0) {
+                volumeSeries.update({
+                  time: lb.time,
+                  value: Number(lb.volume),
+                  color: Number(lb.close) >= Number(lb.open) ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'
+                });
+              }
+            } catch (updErr) {}
+          }
+        }
       } catch (e) {
         console.error("Error fetching quote:", e);
       }
@@ -1258,10 +1426,30 @@
 
     function renderQuoteKpi(q) {
       document.getElementById("kpiSymbolText").textContent = q.symbol;
-      document.getElementById("kpiExchangeBadge").textContent = q.isIndex ? "NSE INDEX" : "NSE F&O / EQ";
 
+      const badgeEl = document.getElementById("kpiExchangeBadge");
+      if (q.isIndex) {
+        badgeEl.textContent = "NSE INDEX";
+        badgeEl.className = "kpi-symbol-badge";
+      } else if (q.is_fno) {
+        badgeEl.textContent = "NSE F&O DERIVATIVE";
+        badgeEl.className = "kpi-symbol-badge";
+      } else {
+        badgeEl.textContent = "NSE CASH EQUITY";
+        badgeEl.className = "kpi-symbol-badge badge-cash";
+      }
+
+      // LTP Flash & Update
       const ltpEl = document.getElementById("kpiLtp");
-      ltpEl.textContent = q.ltp ? "₹" + q.ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "₹--";
+      const prevLtp = parseFloat(ltpEl.getAttribute("data-val") || "0");
+      const newLtp = q.ltp || 0;
+      ltpEl.textContent = newLtp ? "₹" + newLtp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "₹--";
+      ltpEl.setAttribute("data-val", newLtp);
+
+      if (prevLtp > 0 && newLtp !== prevLtp) {
+        ltpEl.style.color = newLtp > prevLtp ? "#10b981" : "#ef4444";
+        setTimeout(() => { ltpEl.style.color = ""; }, 800);
+      }
 
       const chgPill = document.getElementById("kpiChangePill");
       if (q.change !== undefined && q.change_pct !== undefined) {
@@ -1274,51 +1462,138 @@
       document.getElementById("kpiPrevClose").textContent = q.prev_close ? "₹" + q.prev_close : "₹--";
       document.getElementById("kpiVolume").textContent = q.volume ? q.volume.toLocaleString("en-IN") : "--";
 
-      const bTag = document.getElementById("kpiBuildupTag");
-      bTag.textContent = q.buildup || "Neutral";
-      if (q.buildup === "Long Buildup") bTag.className = "kpi-buildup-tag buildup-long";
-      else if (q.buildup === "Short Buildup") bTag.className = "kpi-buildup-tag buildup-short";
-      else if (q.buildup === "Short Covering") bTag.className = "kpi-buildup-tag buildup-covering";
-      else bTag.className = "kpi-buildup-tag buildup-unwinding";
+      // F&O vs Cash UI Adaptation
+      const foBlock = document.getElementById("kpiFoBlock");
+      const cashBlock = document.getElementById("kpiCashBlock");
+      const foActions = document.getElementById("kpiFoActions");
+      const cashActions = document.getElementById("kpiCashActions");
+      const deckTab1 = document.getElementById("deckTab1Btn");
+      const cardChain = document.getElementById("cardJumpChain");
+      const cardOi = document.getElementById("cardJumpOi");
+      const cardFut = document.getElementById("cardJumpFutures");
 
-      document.getElementById("kpiOi").textContent = q.future_oi ? q.future_oi.toLocaleString("en-IN") : "--";
-      document.getElementById("kpiRollover").textContent = q.rollover_pct ? q.rollover_pct.toFixed(1) + "%" : "--%";
+      if (q.is_fno) {
+        foBlock.style.display = "flex";
+        cashBlock.style.display = "none";
+        foActions.style.display = "flex";
+        cashActions.style.display = "none";
+        deckTab1.textContent = "Derivatives & OI Buildup History";
 
-      const chainUrl = `/option-chain-pro?symbol=${encodeURIComponent(q.symbol)}`;
-      document.getElementById("btnLinkOptionChain").href = chainUrl;
-      document.getElementById("cardJumpChain").href = chainUrl;
+        if (cardChain) cardChain.style.display = "flex";
+        if (cardOi) cardOi.style.display = "flex";
+        if (cardFut) cardFut.style.display = "flex";
 
-      const oiUrl = `/open-interest/nifty?symbol=${encodeURIComponent(q.symbol)}`;
-      document.getElementById("btnLinkOpenInterest").href = oiUrl;
-      document.getElementById("cardJumpOi").href = oiUrl;
+        const bTag = document.getElementById("kpiBuildupTag");
+        bTag.textContent = q.buildup || "Neutral";
+        if (q.buildup === "Long Buildup") bTag.className = "kpi-buildup-tag buildup-long";
+        else if (q.buildup === "Short Buildup") bTag.className = "kpi-buildup-tag buildup-short";
+        else if (q.buildup === "Short Covering") bTag.className = "kpi-buildup-tag buildup-covering";
+        else bTag.className = "kpi-buildup-tag buildup-unwinding";
+
+        document.getElementById("kpiOi").textContent = q.future_oi ? q.future_oi.toLocaleString("en-IN") : "--";
+        document.getElementById("kpiRollover").textContent = q.rollover_pct ? q.rollover_pct.toFixed(1) + "%" : "--%";
+
+        const chainUrl = `/option-chain-pro?symbol=${encodeURIComponent(q.symbol)}`;
+        document.getElementById("btnLinkOptionChain").href = chainUrl;
+        if (cardChain) cardChain.href = chainUrl;
+
+        const oiUrl = `/open-interest/nifty?symbol=${encodeURIComponent(q.symbol)}`;
+        document.getElementById("btnLinkOpenInterest").href = oiUrl;
+        if (cardOi) cardOi.href = oiUrl;
+      } else {
+        // Non-F&O: CASH STOCK
+        foBlock.style.display = "none";
+        cashBlock.style.display = "flex";
+        foActions.style.display = "none";
+        cashActions.style.display = "flex";
+        deckTab1.textContent = "Cash Delivery & Trading History";
+
+        if (cardChain) cardChain.style.display = "none";
+        if (cardOi) cardOi.style.display = "none";
+        if (cardFut) cardFut.style.display = "none";
+
+        const h52 = q.high_52w ? "₹" + q.high_52w.toFixed(2) : "₹--";
+        const l52 = q.low_52w ? "₹" + q.low_52w.toFixed(2) : "₹--";
+        document.getElementById("kpi52wHl").textContent = `${h52} / ${l52}`;
+        document.getElementById("kpiDeliveryPct").textContent = q.delivery_pct ? q.delivery_pct.toFixed(2) + "%" : "--%";
+        document.getElementById("kpiDeliveryQty").textContent = q.delivery_qty ? q.delivery_qty.toLocaleString("en-IN") : "--";
+        document.getElementById("kpiTurnover").textContent = q.turnover_cr ? `₹${q.turnover_cr.toFixed(2)} Cr` : "--";
+      }
     }
 
-    function renderHistTable(bars) {
+    function renderIntelligenceTable(bars, cashHistory, isFno) {
+      const thead = document.getElementById("histTableHead");
       const tbody = document.getElementById("histTableBody");
-      const rev = [...bars].reverse().slice(0, 30);
-      tbody.innerHTML = rev.map(b => {
-        let bClass = "buildup-long";
-        if (b.buildup === "Short Buildup") bClass = "buildup-short";
-        else if (b.buildup === "Short Covering") bClass = "buildup-covering";
-        else if (b.buildup === "Long Unwinding") bClass = "buildup-unwinding";
 
-        const oiChgSign = b.oi_change >= 0 ? "+" : "";
-        const oiChgColor = b.oi_change >= 0 ? "#10b981" : "#ef4444";
-
-        return `
+      if (!isFno && cashHistory && cashHistory.length > 0) {
+        // Cash Delivery Table Headers
+        thead.innerHTML = `
           <tr>
-            <td><strong>${b.time}</strong></td>
-            <td>₹${b.open.toFixed(2)}</td>
-            <td>₹${b.high.toFixed(2)}</td>
-            <td>₹${b.low.toFixed(2)}</td>
-            <td style="font-weight:700;">₹${b.close.toFixed(2)}</td>
-            <td>${b.volume.toLocaleString("en-IN")}</td>
-            <td style="font-weight:700;">${b.oi ? b.oi.toLocaleString("en-IN") : '--'}</td>
-            <td style="color:${oiChgColor}; font-weight:700;">${oiChgSign}${b.oi_change ? b.oi_change.toLocaleString("en-IN") : '--'}</td>
-            <td><span class="kpi-buildup-tag ${bClass}">${b.buildup}</span></td>
+            <th>Date</th>
+            <th>Open</th>
+            <th>High</th>
+            <th>Low</th>
+            <th>Close</th>
+            <th>Traded Qty</th>
+            <th>Delivery Qty</th>
+            <th>Delivery %</th>
+            <th>Turnover (Cr)</th>
           </tr>
         `;
-      }).join("");
+        const rev = [...cashHistory].reverse().slice(0, 30);
+        tbody.innerHTML = rev.map(r => `
+          <tr>
+            <td><strong>${r.date}</strong></td>
+            <td>₹${Number(r.open).toFixed(2)}</td>
+            <td>₹${Number(r.high).toFixed(2)}</td>
+            <td>₹${Number(r.low).toFixed(2)}</td>
+            <td style="font-weight:700;">₹${Number(r.close).toFixed(2)}</td>
+            <td>${Number(r.volume).toLocaleString("en-IN")}</td>
+            <td style="font-weight:700; color:var(--chart-brand);">${Number(r.delivery_qty).toLocaleString("en-IN")}</td>
+            <td style="font-weight:800; color:#10b981;">${Number(r.delivery_pct).toFixed(2)}%</td>
+            <td>₹${Number(r.turnover_cr).toFixed(2)} Cr</td>
+          </tr>
+        `).join("");
+      } else {
+        // Derivatives & OI Buildup Headers
+        thead.innerHTML = `
+          <tr>
+            <th>Date</th>
+            <th>Open</th>
+            <th>High</th>
+            <th>Low</th>
+            <th>Close</th>
+            <th>Volume</th>
+            <th>Total OI</th>
+            <th>OI Change</th>
+            <th>Buildup Signal</th>
+          </tr>
+        `;
+        const rev = [...bars].reverse().slice(0, 30);
+        tbody.innerHTML = rev.map(b => {
+          let bClass = "buildup-long";
+          if (b.buildup === "Short Buildup") bClass = "buildup-short";
+          else if (b.buildup === "Short Covering") bClass = "buildup-covering";
+          else if (b.buildup === "Long Unwinding") bClass = "buildup-unwinding";
+
+          const oiChgSign = b.oi_change >= 0 ? "+" : "";
+          const oiChgColor = b.oi_change >= 0 ? "#10b981" : "#ef4444";
+
+          return `
+            <tr>
+              <td><strong>${b.time}</strong></td>
+              <td>₹${Number(b.open).toFixed(2)}</td>
+              <td>₹${Number(b.high).toFixed(2)}</td>
+              <td>₹${Number(b.low).toFixed(2)}</td>
+              <td style="font-weight:700;">₹${Number(b.close).toFixed(2)}</td>
+              <td>${Number(b.volume).toLocaleString("en-IN")}</td>
+              <td style="font-weight:700;">${b.oi ? Number(b.oi).toLocaleString("en-IN") : '--'}</td>
+              <td style="color:${oiChgColor}; font-weight:700;">${oiChgSign}${b.oi_change ? Number(b.oi_change).toLocaleString("en-IN") : '--'}</td>
+              <td><span class="kpi-buildup-tag ${bClass}">${b.buildup}</span></td>
+            </tr>
+          `;
+        }).join("");
+      }
     }
 
     // Select Symbol
@@ -1339,17 +1614,14 @@
       const sDrop = document.getElementById("searchDropdown");
       if (sDrop) sDrop.style.display = "none";
 
-      const extTv = document.getElementById("btnExternalTv");
-      if (extTv) {
-        extTv.href = "https://in.tradingview.com/chart/?symbol=NSE:" + encodeURIComponent(currentSymbol);
-      }
-
       fetchSymbolQuote(currentSymbol);
-      if (currentEngine === "pro") {
-        renderProChart();
-      } else {
-        renderCloudTvChart();
-      }
+      renderProChart();
+
+      // Reset live polling interval
+      if (liveQuoteInterval) clearInterval(liveQuoteInterval);
+      liveQuoteInterval = setInterval(() => {
+        fetchSymbolQuote(currentSymbol);
+      }, 4000);
     };
 
     // Change Timeframe
@@ -1360,11 +1632,12 @@
         else btn.classList.remove("active");
       });
 
-      if (currentEngine === "pro") {
-        renderProChart();
-      } else {
-        renderCloudTvChart();
+      const rangeGrp = document.getElementById("rangeGroup");
+      if (rangeGrp) {
+        rangeGrp.style.opacity = tf === "D" ? "1" : "0.5";
       }
+
+      renderProChart();
     };
 
     // Tab Switcher
@@ -1385,8 +1658,7 @@
       const icon = document.getElementById("themeToggleIcon");
       if (icon) icon.textContent = next === "dark" ? "☀️" : "🌙";
 
-      if (currentEngine === "pro") renderProChart();
-      else renderCloudTvChart();
+      renderProChart();
     };
 
     // Live Clock
