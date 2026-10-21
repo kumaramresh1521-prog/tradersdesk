@@ -437,6 +437,10 @@
       position: absolute;
       inset: 0;
     }
+    #lw_chart_container canvas,
+    .tv-lightweight-charts canvas {
+      background: transparent !important;
+    }
 
     #tv_cloud_container {
       width: 100%;
@@ -670,10 +674,18 @@
         <button class="chart-tf-btn active" data-tf="D" onclick="changeTimeframe('D')">1D</button>
       </div>
 
+      <!-- Overlays / Indicators -->
+      <div class="chart-tf-group" id="indicatorGroup">
+        <button id="btnEma20" class="chart-tf-btn active" onclick="toggleIndicator('ema20')" title="Toggle 20 EMA overlay" style="color:#0284c7;">EMA 20</button>
+        <button id="btnEma50" class="chart-tf-btn" onclick="toggleIndicator('ema50')" title="Toggle 50 EMA overlay" style="color:#f59e0b;">EMA 50</button>
+        <button id="btnEma200" class="chart-tf-btn" onclick="toggleIndicator('ema200')" title="Toggle 200 EMA overlay" style="color:#8b5cf6;">EMA 200</button>
+      </div>
+
       <!-- Chart Engine Toggle: Pro (Native Canvas, 0 Restrictions) vs Cloud TV -->
       <div class="chart-engine-toggle">
         <button id="btnEnginePro" class="engine-btn active" onclick="switchEngine('pro')" title="Native TradingView Lightweight Canvas (Zero restrictions, all NSE stocks &amp; indices)">⚡ Pro Engine</button>
         <button id="btnEngineCloud" class="engine-btn" onclick="switchEngine('cloud')" title="TradingView Cloud Embed (Continuous futures &amp; equity)">🌐 TV Cloud</button>
+        <a id="btnExternalTv" href="https://in.tradingview.com/chart/?symbol=NSE:NIFTY" target="_blank" rel="noopener noreferrer" class="engine-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:3px;" title="Open directly on TradingView official website">↗ TV.com</a>
       </div>
     </div>
 
@@ -740,10 +752,19 @@
         <span>C: <strong id="legClose" style="color:var(--chart-brand);">--</strong></span>
         <span>Vol: <strong id="legVol" style="color:var(--chart-text-muted);">--</strong></span>
         <span id="legOiWrap">OI: <strong id="legOi" style="color:#38bdf8;">--</strong></span>
+        <span id="legEma20Wrap" style="display:none; color:#0284c7;">EMA20: <strong id="legEma20">--</strong></span>
+        <span id="legEma50Wrap" style="display:none; color:#f59e0b;">EMA50: <strong id="legEma50">--</strong></span>
+        <span id="legEma200Wrap" style="display:none; color:#8b5cf6;">EMA200: <strong id="legEma200">--</strong></span>
       </div>
 
       <!-- 2. TradingView Cloud Container (Optional Alternate) -->
       <div id="tv_cloud_container"></div>
+
+      <!-- TV Cloud Embed Info Notice -->
+      <div id="tvCloudNotice" style="display:none; position:absolute; bottom:10px; left:14px; right:14px; z-index:15; padding:8px 14px; background:rgba(15,23,42,0.88); border:1px solid #334155; border-radius:8px; font-size:12px; color:#e2e8f0; backdrop-filter:blur(6px); display:none; align-items:center; justify-content:space-between; gap:12px;">
+        <span>ℹ️ <strong>TradingView Cloud Notice:</strong> TradingView restricts raw NSE tags in free 3rd-party embeds. We map Indian equities to BSE feeds &amp; indices to continuous futures to keep charts unlocked. For 100% pure NSE cash and derivatives, switch to <strong>⚡ Pro Engine</strong>.</span>
+        <button onclick="switchEngine('pro')" style="padding:4px 10px; background:#0284c7; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:700; font-size:11.5px; white-space:nowrap;">Switch to ⚡ Pro Engine</button>
+      </div>
     </div>
 
     <!-- Bottom Secondary Intelligence Deck -->
@@ -840,6 +861,14 @@
     let tvCloudWidget = null;
     let lastLoadedBars = [];
 
+    // Technical Indicators State
+    let showEma20 = true;
+    let showEma50 = false;
+    let showEma200 = false;
+    let ema20Series = null;
+    let ema50Series = null;
+    let ema200Series = null;
+
     // Parse URL Params
     function initFromUrl() {
       const params = new URLSearchParams(window.location.search);
@@ -852,14 +881,57 @@
     }
 
     // Map symbol for TV Cloud to prevent "Only Available on TradingView" error
+    // TradingView restricts raw NSE: tags in 3rd-party embeds due to NSE data fees.
+    // Mapping Indian cash stocks to BSE: and indices to continuous futures keeps TV Cloud unlocked!
     function getCloudTvSymbol(sym) {
       if (sym === "NIFTY") return "NSE:NIFTY1!"; // Continuous Futures always works on TV
       if (sym === "BANKNIFTY") return "NSE:BANKNIFTY1!";
       if (sym === "FINNIFTY") return "NSE:FINNIFTY1!";
       if (sym === "MIDCPNIFTY") return "NSE:MIDCPNIFTY1!";
       if (sym === "SENSEX") return "BSE:SENSEX";
-      return "NSE:" + sym;
+      return "BSE:" + sym; // BSE prefix bypasses the third-party embed restriction that TradingView places on NSE cash stocks
     }
+
+    // Calculate Exponential Moving Average
+    function calculateEMA(bars, period) {
+      if (!bars || bars.length < period) return [];
+      const k = 2 / (period + 1);
+      let sum = 0;
+      for (let i = 0; i < period; i++) {
+        sum += Number(bars[i].close);
+      }
+      let prevEma = sum / period;
+      const result = [];
+      result.push({ time: bars[period - 1].time, value: Math.round(prevEma * 100) / 100 });
+
+      for (let i = period; i < bars.length; i++) {
+        const val = Number(bars[i].close) * k + prevEma * (1 - k);
+        const rounded = Math.round(val * 100) / 100;
+        result.push({ time: bars[i].time, value: rounded });
+        prevEma = val;
+      }
+      return result;
+    }
+
+    // Toggle Technical Overlay Indicators
+    window.toggleIndicator = function(ind) {
+      if (ind === 'ema20') {
+        showEma20 = !showEma20;
+        const btn = document.getElementById('btnEma20');
+        if (btn) btn.classList.toggle('active', showEma20);
+      } else if (ind === 'ema50') {
+        showEma50 = !showEma50;
+        const btn = document.getElementById('btnEma50');
+        if (btn) btn.classList.toggle('active', showEma50);
+      } else if (ind === 'ema200') {
+        showEma200 = !showEma200;
+        const btn = document.getElementById('btnEma200');
+        if (btn) btn.classList.toggle('active', showEma200);
+      }
+      if (currentEngine === 'pro') {
+        renderProChart();
+      }
+    };
 
     // Switch Engine: Pro vs Cloud
     window.switchEngine = function(engine) {
@@ -870,16 +942,22 @@
       const lwCont = document.getElementById("lw_chart_container");
       const tvCont = document.getElementById("tv_cloud_container");
       const legBox = document.getElementById("chartLegendBox");
+      const tvNotice = document.getElementById("tvCloudNotice");
+      const indGroup = document.getElementById("indicatorGroup");
 
       if (engine === "pro") {
         lwCont.style.display = "block";
         tvCont.style.display = "none";
         legBox.style.display = "flex";
+        if (tvNotice) tvNotice.style.display = "none";
+        if (indGroup) indGroup.style.display = "flex";
         renderProChart();
       } else {
         lwCont.style.display = "none";
         tvCont.style.display = "block";
         legBox.style.display = "none";
+        if (tvNotice) tvNotice.style.display = "flex";
+        if (indGroup) indGroup.style.display = "none";
         renderCloudTvChart();
       }
     };
@@ -945,18 +1023,52 @@
         wickDownColor: '#ef4444',
       });
 
-      // 2. Volume Series (Histogram Overlay at bottom)
+      // 2. Volume Series (Separate 'volume' price scale overlay at bottom 20%)
       volumeSeries = lwChart.addHistogramSeries({
         color: '#38bdf8',
         priceFormat: { type: 'volume' },
-        priceScaleId: '', // overlay
+        priceScaleId: 'volume',
       });
-      volumeSeries.priceScale().applyOptions({
+      lwChart.priceScale('volume').applyOptions({
         scaleMargins: {
-          top: 0.8, // 80% from top
+          top: 0.8,
           bottom: 0,
         },
       });
+
+      // 3. EMA Overlay Lines
+      if (showEma20) {
+        ema20Series = lwChart.addLineSeries({
+          color: '#0284c7',
+          lineWidth: 2,
+          priceScaleId: 'right',
+          title: 'EMA 20',
+        });
+      } else {
+        ema20Series = null;
+      }
+
+      if (showEma50) {
+        ema50Series = lwChart.addLineSeries({
+          color: '#f59e0b',
+          lineWidth: 2,
+          priceScaleId: 'right',
+          title: 'EMA 50',
+        });
+      } else {
+        ema50Series = null;
+      }
+
+      if (showEma200) {
+        ema200Series = lwChart.addLineSeries({
+          color: '#8b5cf6',
+          lineWidth: 2,
+          priceScaleId: 'right',
+          title: 'EMA 200',
+        });
+      } else {
+        ema200Series = null;
+      }
 
       // Crosshair Hover Handler
       lwChart.subscribeCrosshairMove(param => {
@@ -1057,6 +1169,17 @@
         try {
           if (candleSeries && cBars.length > 0) candleSeries.setData(cBars);
           if (volumeSeries && vBars.length > 0) volumeSeries.setData(vBars);
+
+          if (ema20Series && showEma20 && cBars.length >= 20) {
+            ema20Series.setData(calculateEMA(cBars, 20));
+          }
+          if (ema50Series && showEma50 && cBars.length >= 50) {
+            ema50Series.setData(calculateEMA(cBars, 50));
+          }
+          if (ema200Series && showEma200 && cBars.length >= 200) {
+            ema200Series.setData(calculateEMA(cBars, 200));
+          }
+
           if (lwChart) lwChart.timeScale().fitContent();
         } catch (setErr) {
           console.error("LightweightCharts setData error:", setErr);
@@ -1085,9 +1208,6 @@
       document.getElementById("legLow").textContent = "₹" + Number(c.low || 0).toFixed(2);
       document.getElementById("legClose").textContent = "₹" + Number(c.close || 0).toFixed(2);
       document.getElementById("legVol").textContent = v && v.value ? Number(v.value).toLocaleString("en-IN") : (c.volume ? Number(c.volume).toLocaleString("en-IN") : "--");
-      const oiVal = customOi !== undefined ? customOi : (c.oi || "--");
-      document.getElementById("legOi").textContent = typeof oiVal === "number" ? oiVal.toLocaleString("en-IN") : oiVal;
-    }
       const oiVal = customOi !== undefined ? customOi : (c.oi || "--");
       document.getElementById("legOi").textContent = typeof oiVal === "number" ? oiVal.toLocaleString("en-IN") : oiVal;
     }
@@ -1219,6 +1339,11 @@
       const sDrop = document.getElementById("searchDropdown");
       if (sDrop) sDrop.style.display = "none";
 
+      const extTv = document.getElementById("btnExternalTv");
+      if (extTv) {
+        extTv.href = "https://in.tradingview.com/chart/?symbol=NSE:" + encodeURIComponent(currentSymbol);
+      }
+
       fetchSymbolQuote(currentSymbol);
       if (currentEngine === "pro") {
         renderProChart();
@@ -1333,11 +1458,17 @@
     }
 
     // On Load Initializer
-    window.addEventListener("DOMContentLoaded", function() {
+    function initChartApp() {
       initFromUrl();
       initSearch();
       selectSymbol(currentSymbol);
-    });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initChartApp);
+    } else {
+      initChartApp();
+    }
   </script>
 </body>
 </html>

@@ -416,7 +416,7 @@ body {
   color: var(--text-secondary) !important;
 }
 
-[data-theme="light"] canvas {
+[data-theme="light"] canvas:not(.tv-lightweight-charts canvas):not(#lw_chart_container canvas) {
   background: #f8fafc !important;
 }
 
@@ -8688,7 +8688,7 @@ body[data-theme="dark"] .filter-pill.active,
 }
 
 /* 🎨 Canvases & Charts in Dark Mode */
-[data-theme="dark"] canvas,
+[data-theme="dark"] canvas:not(.tv-lightweight-charts canvas):not(#lw_chart_container canvas),
 [data-theme="dark"] #straddleCanvas {
   background: #0c121e !important;
   border-color: #1e293b !important;
