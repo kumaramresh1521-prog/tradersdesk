@@ -1338,6 +1338,7 @@
           oi: Number(s.oi || 0),
           iv: s.iv !== null && s.iv !== undefined ? Number(s.iv) : 15.0,
           dv: s.dv !== null && s.dv !== undefined ? Number(s.dv) : 50.0,
+          deliv_qty: s.deliv_qty !== null && s.deliv_qty !== undefined ? Number(s.deliv_qty) : 0,
           pcr: s.pcr !== null && s.pcr !== undefined ? Number(s.pcr) : 1.0,
           m20: s.m20 !== null && s.m20 !== undefined ? Number(s.m20) : null,
           m50: s.m50 !== null && s.m50 !== undefined ? Number(s.m50) : null,
@@ -1757,8 +1758,12 @@
       }
     };
 
+    const b = vis[vis.length - 1];
+    const adv = vis.length ? (vis.reduce((t, d) => t + (d.dv || 0), 0) / vis.length) : 50;
+    const apc = vis.length ? (vis.reduce((t, d) => t + (d.pcr || 1.0), 0) / vis.length) : 1.0;
+
     if (oiState.indicators.dv && isStock && PN[4]) {
-      drawSubPanel(4, 'dv', 0, 100, '#6366f1', true, 50);
+      drawSubPanel(4, 'dv', 0, 100, '#6366f1', true, Math.round(adv));
     }
     if (oiState.indicators.iv && PN[5]) {
       const ivVals = vis.map(d => d.iv).filter(v => !isNaN(v));
@@ -1767,7 +1772,10 @@
       drawSubPanel(5, 'iv', ivMin, ivMax + (ivMin === ivMax ? 1 : 0), '#ec4899', false);
     }
     if (oiState.indicators.pcr && PN[6]) {
-      drawSubPanel(6, 'pcr', 0.4, 1.6, '#38bdf8', false, 1.0);
+      const pcrVals = vis.map(d => d.pcr).filter(v => !isNaN(v) && v > 0);
+      const pcrMin = Math.max(0.2, Math.floor((Math.min(...pcrVals, 0.6) - 0.1) * 10) / 10);
+      const pcrMax = Math.min(3.0, Math.ceil((Math.max(...pcrVals, 1.4) + 0.1) * 10) / 10);
+      drawSubPanel(6, 'pcr', pcrMin, pcrMax + (pcrMin === pcrMax ? 0.2 : 0), '#38bdf8', false, 1.0);
     }
 
     const panelHeaders = [
@@ -1775,9 +1783,9 @@
       [1, 'Futures Volume'],
       [2, 'Open Interest (Bar color = Institutional Buildup Flow)'],
       [3, 'RSI (14) · Momentum'],
-      [4, 'Delivery % · Delivery Qty / Total Traded Qty (50% Benchmark)'],
-      [5, 'ATM Implied Volatility (IV %)'],
-      [6, 'Put-Call Ratio (PCR) · 1.0 = Balanced']
+      [4, `Delivery % · Cash Delivery Ratio (Benchmark: ${fmtNum(adv, 1)}% Avg)`],
+      [5, `ATM Implied Volatility (IV %) · Latest ${fmtNum(b.iv, 1)}%`],
+      [6, `Put-Call Ratio (PCR) · Latest ${fmtNum(b.pcr, 2)} (Avg: ${fmtNum(apc, 2)}, 1.0 = Balanced)`]
     ];
 
     panelHeaders.forEach(([idx, title]) => {
@@ -1883,7 +1891,8 @@
         ['IV Rank', `${fmtNum(ivr, 0)}%`],
         ['IV Percentile', `${fmtNum(ivp, 0)}%`],
         ['IV − HV', `${(b.iv - vol) >= 0 ? '+' : ''}${fmtNum(b.iv - vol, 1)}`],
-        oiState.symbolMeta.k === 'Stock' ? ['Avg Delivery', `${fmtNum(adv, 0)}%`] : ['Avg PCR', fmtNum(apc, 2)]
+        ['PCR (OI)', `${fmtNum(b.pcr, 2)} (Avg: ${fmtNum(apc, 2)})`],
+        oiState.symbolMeta.k === 'Stock' ? ['Avg Delivery', `${fmtNum(adv, 1)}% (${fmtNum(b.dv, 1)}% today)`] : ['Max Pain Strike', `₹${fmtNum(oiState.maxPain, 0)}`]
       ];
 
       statsGrid.innerHTML = statsList.map(([lbl, val]) => `
@@ -1988,9 +1997,10 @@
         ? 'IV compressed (<30%): Favourable for option buying (Long Straddle / Debit Spread).'
         : 'IV balanced (30–60%): Directional vertical spreads optimal.');
 
-    const dt = isStock
+    const serverDelivComment = oiState.analyticsData?.optionsTraderPanel?.deliveryCommentary;
+    const dt = serverDelivComment || (isStock
       ? (adv > 55 ? 'Cash Delivery high (>55%): Strong institutional holding & absorption.' : (adv < 42 ? 'Cash Delivery low (<42%): Predominantly intraday speculative churn.' : 'Delivery within normal range.'))
-      : '';
+      : '');
 
     optPanel.innerHTML = `
       ${row('ATM Implied Vol (IV)', `${fmtNum(b.iv, 1)}%`)}
@@ -2076,18 +2086,28 @@
     const volStr = d.v >= 1e7 ? (d.v / 1e7).toFixed(2) + ' Cr' : (d.v / 1e6).toFixed(1) + ' M';
     const oiStr = d.oi >= 1e7 ? (d.oi / 1e7).toFixed(2) + ' Cr' : (d.oi / 1e6).toFixed(1) + ' M';
     const isStock = oiState.symbolMeta.k === 'Stock';
+    const formatShares = n => {
+      if (!n) return '';
+      if (n >= 1e7) return (n / 1e7).toFixed(2) + ' Cr';
+      if (n >= 1e5) return (n / 1e5).toFixed(2) + ' L';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + ' k';
+      return n.toLocaleString('en-IN');
+    };
+    const delivStr = isStock
+      ? ` &bull; Deliv: <b>${fmtNum(d.dv, 1)}%</b>${d.deliv_qty ? ' (' + formatShares(d.deliv_qty) + ')' : ''}`
+      : ` &bull; Deliv: <b>${fmtNum(d.dv, 1)}%</b>`;
 
     tip.innerHTML = `
       <div style="font-weight:700; color:#38bdf8; margin-bottom:3px;">${formatOiDate(d.dt)}</div>
       <div>O ₹${fmtNum(d.o, 1)} &bull; H ₹${fmtNum(d.h, 1)}</div>
       <div>L ₹${fmtNum(d.l, 1)} &bull; C ₹${fmtNum(d.c, 1)} <span style="color:${cg >= 0 ? '#10b981' : '#ef4444'}; font-weight:700;">(${cg >= 0 ? '+' : ''}${fmtNum(cg, 2)}%)</span></div>
       <div>Vol: ${volStr} &bull; OI: ${oiStr}</div>
-      <div>IV: ${fmtNum(d.iv, 1)}% &bull; PCR: ${fmtNum(d.pcr, 2)}${isStock ? ` &bull; Deliv: ${fmtNum(d.dv, 0)}%` : ''}</div>
+      <div>IV: ${fmtNum(d.iv, 1)}% &bull; PCR: ${fmtNum(d.pcr, 2)}${delivStr}</div>
       <div style="margin-top:4px; font-weight:700; color:${OI_COLORS[d.cat]};">● ${OI_NAMES[d.cat]}</div>
     `;
 
     tip.style.display = 'block';
-    const tipW = 200;
+    const tipW = 230;
     const tipX = Math.min(e.clientX - r.left + 16, (cv.clientWidth || 800) - tipW);
     const tipY = Math.max(10, e.clientY - r.top - 20);
     tip.style.left = tipX + 'px';
@@ -2699,6 +2719,11 @@
 
     // Initial View (Detect subview from URL pathname if specified)
     const initPath = (window.location.pathname || '').toLowerCase();
+    const urlParams = new URLSearchParams(window.location.search);
+    const symParam = urlParams.get('symbol') || urlParams.get('s');
+    if (symParam) {
+      oiState.currentSymbol = symParam.toUpperCase();
+    }
     if (initPath.includes('/rollover')) {
       state.activeSubTab = 'rollover';
     } else if (initPath.includes('/open-interest') || initPath.includes('/oi') || initPath.includes('/future-oi')) {
