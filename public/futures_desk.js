@@ -2814,7 +2814,8 @@
     data: null,
     isLoading: false,
     initializedEvents: false,
-    indices: []
+    indices: [],
+    refreshTimer: null
   };
 
   const REGIME_STYLES = {
@@ -2849,6 +2850,15 @@
       await fetchFutIntradayIndices();
     }
     await fetchAndRenderFutIntraday();
+
+    // Auto-refresh timer for live updates
+    if (!futIntraState.refreshTimer) {
+      futIntraState.refreshTimer = setInterval(() => {
+        if (state.activeSubTab === 'futureIntraday' && !futIntraState.isLoading && !futIntraState.currentDate) {
+          fetchFutIntradayIndices().then(() => fetchAndRenderFutIntraday());
+        }
+      }, 4000);
+    }
   }
 
   async function fetchFutIntradayIndices() {
@@ -2921,8 +2931,21 @@
 
       const isLive = d.isLive;
       const liveBadge = document.getElementById('futIntradayLiveBadge');
-      if (liveBadge) liveBadge.style.display = isLive ? 'inline-flex' : 'none';
-      if (helpEl) helpEl.textContent = `${d.bars ? d.bars.length : 0} bars · ${d.dateDisplay || ''} · F&O Timing: 09:15 - 15:40`;
+      if (liveBadge) {
+        liveBadge.style.display = 'inline-flex';
+        if (isLive) {
+          liveBadge.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:6px;box-shadow:0 0 8px #10b981;"></span> ${escapePvoHtml(d.marketStatusText || 'LIVE')}`;
+          liveBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+          liveBadge.style.color = '#10b981';
+          liveBadge.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+        } else {
+          liveBadge.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#94a3b8;margin-right:6px;"></span> ${escapePvoHtml(d.marketStatusText || 'CLOSED (EOD)')}`;
+          liveBadge.style.background = 'rgba(148, 163, 184, 0.12)';
+          liveBadge.style.color = '#94a3b8';
+          liveBadge.style.border = '1px solid rgba(148, 163, 184, 0.25)';
+        }
+      }
+      if (helpEl) helpEl.textContent = `${d.bars ? d.bars.length : 0} bars · ${d.dateDisplay || ''} · Timing: 09:15 - 15:40 IST · Status: ${d.marketStatusText || (isLive ? 'LIVE' : 'CLOSED')}`;
     } catch (e) {
       console.error('FutIntraday fetch error:', e);
       if (helpEl) helpEl.textContent = `Error: ${e.message}`;
@@ -3106,7 +3129,8 @@
     replaySpeed: 1,
     toggles: { price: true, oi: true, vwap: true, regime: true },
     hoverIndex: -1,
-    initializedEvents: false
+    initializedEvents: false,
+    refreshTimer: null
   };
 
   async function loadFutureVsOiView(forceRefresh = false) {
@@ -3115,6 +3139,14 @@
       pvoState.initializedEvents = true;
     }
     await fetchAndRenderPvo(forceRefresh);
+
+    if (!pvoState.refreshTimer) {
+      pvoState.refreshTimer = setInterval(() => {
+        if (state.activeSubTab === 'futureVsOi' && !pvoState.loading && pvoState.mode === 'live' && !pvoState.replayPlaying) {
+          fetchAndRenderPvo();
+        }
+      }, 4000);
+    }
   }
 
   async function fetchAndRenderPvo(forceRefresh = false) {
@@ -3169,7 +3201,18 @@
 
     const liveBadge = document.getElementById('pvoLiveStatus');
     if (liveBadge) {
-      liveBadge.textContent = data.mode === 'live' ? 'LIVE' : 'EOD';
+      const isLive = (data.mode === 'live' && data.isLive);
+      if (isLive) {
+        liveBadge.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:5px;box-shadow:0 0 8px #10b981;"></span> ${escapePvoHtml(data.marketStatusText || 'LIVE')}`;
+        liveBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+        liveBadge.style.color = '#10b981';
+        liveBadge.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+      } else {
+        liveBadge.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#94a3b8;margin-right:5px;"></span> ${data.mode === 'live' ? escapePvoHtml(data.marketStatusText || 'CLOSED (EOD)') : 'HISTORICAL EOD'}`;
+        liveBadge.style.background = 'rgba(148, 163, 184, 0.12)';
+        liveBadge.style.color = '#94a3b8';
+        liveBadge.style.border = '1px solid rgba(148, 163, 184, 0.25)';
+      }
     }
 
     // 2. Render Index Ribbon & Stocks
