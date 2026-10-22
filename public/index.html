@@ -298,6 +298,14 @@
                     <span class="dd-sub">Intraday Price vs OI Buildup, VWAP &amp; Basis (7 NSE + BSE Indices)</span>
                   </div>
                 </a>
+                <!-- Submenu 6: Future vs Open Interest -->
+                <a href="/futures/future-vs-oi" class="inst-dd-item" onclick="return window.instNavClick(event, 'futures', 'futureVsOi')">
+                  <span class="dd-icon">📈</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future vs Open Interest <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
+                    <span class="dd-sub">Dual-axis Price vs OI Divergence, Replay Engine &amp; Buildup Matrix</span>
+                  </div>
+                </a>
               </div>
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">F&amp;O Analytics &amp; Risk</span>
@@ -1226,6 +1234,7 @@
             <a href="/futures" class="fut-tab-btn active" data-tab="matrix" onclick="return window.futuresDeskTabClick(event, 'matrix')">📊 Marketwatch</a>
             <a href="/futures/open-interest" class="fut-tab-btn" data-tab="openInterest" onclick="return window.futuresDeskTabClick(event, 'openInterest')">⚡ Future Open Interest</a>
             <a href="/futures/future-intraday" class="fut-tab-btn" data-tab="futureIntraday" onclick="return window.futuresDeskTabClick(event, 'futureIntraday')">📊 Future Intraday</a>
+            <a href="/futures/future-vs-oi" class="fut-tab-btn" data-tab="futureVsOi" onclick="return window.futuresDeskTabClick(event, 'futureVsOi')">📈 Future vs Open Interest</a>
             <a href="/futures/indices" class="fut-tab-btn" data-tab="indices" onclick="return window.futuresDeskTabClick(event, 'indices')">📈 Index Term Structure</a>
             <a href="/futures/buildup" class="fut-tab-btn" data-tab="buildup" onclick="return window.futuresDeskTabClick(event, 'buildup')">⚡ Buildup Quadrants</a>
             <a href="/futures/heatmap" class="fut-tab-btn" data-tab="heatmap" onclick="return window.futuresDeskTabClick(event, 'heatmap')">🗺️ Heatmap</a>
@@ -1699,6 +1708,254 @@
             </div>
           </div>
 
+
+          <!-- ================================================================
+               VIEW: FUTURE VS OPEN INTEREST (PRICE VS OI TERMINAL)
+               ================================================================ -->
+          <div id="futView_futureVsOi" class="fut-view-panel" style="display:none;">
+            <div class="pvo-terminal-wrap">
+
+              <!-- Top Header & Meta Banner -->
+              <div class="pvo-header-row">
+                <div class="pvo-title-box">
+                  <div class="pvo-badge-tag">⚡ DUAL-AXIS INSTITUTIONAL TERMINAL</div>
+                  <h2 class="pvo-title"><span id="pvoHeaderSymbol">NIFTY</span> Futures Price vs Open Interest</h2>
+                  <p class="pvo-subtitle">Track real-time intraday &amp; historical divergence between Futures Price and Open Interest to pinpoint institutional positioning, breakout convictions, and reversal traps.</p>
+                </div>
+                <div class="pvo-header-meta">
+                  <div class="pvo-live-badge"><span class="pvo-live-dot"></span> <span id="pvoLiveStatus">LIVE</span></div>
+                  <div class="pvo-timestamp" id="pvoTimestamp">--</div>
+                  <button type="button" class="pvo-btn-refresh" id="pvoBtnRefresh" title="Force Refresh">🔄 Refresh</button>
+                </div>
+              </div>
+
+              <!-- Sleek Index & Stock Ribbon -->
+              <div class="pvo-selector-bar">
+                <div class="pvo-indices-ribbon" id="pvoIndexRibbon">
+                  <!-- Dynamic index buttons injected via JS -->
+                </div>
+                <div class="pvo-stock-select-wrap">
+                  <span class="pvo-search-icon">🔍</span>
+                  <input type="text" id="pvoStockSearch" class="pvo-stock-input" placeholder="Search F&amp;O Stock (e.g. RELIANCE)..." list="pvoStockList" autocomplete="off" />
+                  <datalist id="pvoStockList"></datalist>
+                </div>
+              </div>
+
+              <!-- Mode & Granularity Filter Toolbar -->
+              <div class="pvo-toolbar-row">
+                <!-- Mode Switcher -->
+                <div class="pvo-mode-group">
+                  <button type="button" class="pvo-mode-btn active" data-mode="live" id="pvoModeLive">⚡ Live Intraday</button>
+                  <button type="button" class="pvo-mode-btn" data-mode="historical" id="pvoModeHistorical">📅 Historical EOD</button>
+                </div>
+
+                <!-- Live Intervals -->
+                <div class="pvo-granularity-group" id="pvoLiveIntervals">
+                  <span class="pvo-gran-label">Interval:</span>
+                  <button type="button" class="pvo-tf-btn" data-interval="1">1m</button>
+                  <button type="button" class="pvo-tf-btn" data-interval="3">3m</button>
+                  <button type="button" class="pvo-tf-btn active" data-interval="5">5m</button>
+                  <button type="button" class="pvo-tf-btn" data-interval="15">15m</button>
+                  <button type="button" class="pvo-tf-btn" data-interval="30">30m</button>
+                </div>
+
+                <!-- Historical Days -->
+                <div class="pvo-granularity-group" id="pvoHistDays" style="display:none;">
+                  <span class="pvo-gran-label">Lookback:</span>
+                  <button type="button" class="pvo-day-btn" data-days="7">7D</button>
+                  <button type="button" class="pvo-day-btn" data-days="15">15D</button>
+                  <button type="button" class="pvo-day-btn active" data-days="30">30D</button>
+                  <button type="button" class="pvo-day-btn" data-days="60">60D</button>
+                  <button type="button" class="pvo-day-btn" data-days="0">All (68D)</button>
+                </div>
+
+                <!-- Expiry Callout -->
+                <div class="pvo-expiry-pill" id="pvoExpiryPill">
+                  <span>Expiry: <strong id="pvoExpiryText">--</strong></span>
+                </div>
+              </div>
+
+              <!-- 5 Institutional Stat Cards -->
+              <div class="pvo-stats-grid">
+                <!-- Card 1: Futures LTP -->
+                <div class="pvo-stat-card">
+                  <div class="pvo-stat-label">FUTURES LTP</div>
+                  <div class="pvo-stat-val" id="pvoStatPrice">--</div>
+                  <div class="pvo-stat-sub" id="pvoStatPriceSub">--</div>
+                </div>
+
+                <!-- Card 2: Total OI -->
+                <div class="pvo-stat-card">
+                  <div class="pvo-stat-label">OPEN INTEREST (OI)</div>
+                  <div class="pvo-stat-val oi-highlight" id="pvoStatOi">--</div>
+                  <div class="pvo-stat-sub" id="pvoStatOiSub">--</div>
+                </div>
+
+                <!-- Card 3: Basis vs Spot -->
+                <div class="pvo-stat-card">
+                  <div class="pvo-stat-label">BASIS (FUT - SPOT)</div>
+                  <div class="pvo-stat-val" id="pvoStatBasis">--</div>
+                  <div class="pvo-stat-sub" id="pvoStatSpot">Spot: --</div>
+                </div>
+
+                <!-- Card 4: VWAP -->
+                <div class="pvo-stat-card">
+                  <div class="pvo-stat-label">VWAP &amp; STANCE</div>
+                  <div class="pvo-stat-val" id="pvoStatVwap">--</div>
+                  <div class="pvo-stat-sub" id="pvoStatVwapSub">--</div>
+                </div>
+
+                <!-- Card 5: Dominant Regime -->
+                <div class="pvo-stat-card">
+                  <div class="pvo-stat-label">DOMINANT REGIME</div>
+                  <div class="pvo-stat-val" id="pvoStatRegime">--</div>
+                  <div class="pvo-stat-sub" id="pvoStatRegimeSub">Market Cycle</div>
+                </div>
+              </div>
+
+              <!-- Chart Controls & Replay Engine -->
+              <div class="pvo-chart-controls">
+                <div class="pvo-chart-toggles">
+                  <label class="pvo-toggle-label">
+                    <input type="checkbox" id="pvoTogglePrice" checked />
+                    <span class="pvo-toggle-indicator price-ind"></span>
+                    <span>Future Price</span>
+                  </label>
+                  <label class="pvo-toggle-label">
+                    <input type="checkbox" id="pvoToggleOi" checked />
+                    <span class="pvo-toggle-indicator oi-ind"></span>
+                    <span>Open Interest (OI)</span>
+                  </label>
+                  <label class="pvo-toggle-label">
+                    <input type="checkbox" id="pvoToggleVwap" checked />
+                    <span class="pvo-toggle-indicator vwap-ind"></span>
+                    <span>VWAP</span>
+                  </label>
+                  <label class="pvo-toggle-label">
+                    <input type="checkbox" id="pvoToggleRegime" checked />
+                    <span class="pvo-toggle-indicator regime-ind"></span>
+                    <span>Buildup Zones</span>
+                  </label>
+                </div>
+
+                <!-- Replay Controller (Live mode only) -->
+                <div class="pvo-replay-box" id="pvoReplayBox">
+                  <button type="button" class="pvo-replay-btn" id="pvoReplayBtn" title="Play / Pause Replay">▶ Replay</button>
+                  <button type="button" class="pvo-replay-reset" id="pvoReplayReset" title="Reset to Live">⏮</button>
+                  <input type="range" class="pvo-replay-slider" id="pvoReplaySlider" min="0" max="76" value="76" />
+                  <span class="pvo-replay-time" id="pvoReplayTime">15:40 / 15:40</span>
+                  <select class="pvo-replay-speed" id="pvoReplaySpeed">
+                    <option value="1">1x</option>
+                    <option value="2">2x</option>
+                    <option value="4">4x</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- High-Performance Dual-Axis Canvas Chart Container -->
+              <div class="pvo-chart-card">
+                <div class="pvo-chart-header">
+                  <div class="pvo-chart-legend">
+                    <span class="pvo-legend-item"><span class="legend-swatch price-swatch"></span> Price (Left Axis)</span>
+                    <span class="pvo-legend-item"><span class="legend-swatch oi-swatch"></span> OI (Right Axis)</span>
+                    <span class="pvo-legend-item"><span class="legend-swatch vwap-swatch"></span> VWAP</span>
+                  </div>
+                  <div class="pvo-chart-hint">💡 Hover anywhere to inspect exact Price vs OI &amp; Buildup</div>
+                </div>
+
+                <div class="pvo-canvas-wrapper" id="pvoCanvasWrapper">
+                  <canvas id="pvoChartCanvas" width="1200" height="520"></canvas>
+                  <div id="pvoTooltip" class="pvo-tooltip" style="display:none;"></div>
+                </div>
+              </div>
+
+              <!-- Educational Buildup Phase Matrix (Collapsible Guide) -->
+              <div class="pvo-matrix-section">
+                <div class="pvo-section-header" onclick="window.togglePvoMatrixGuide()">
+                  <div class="pvo-sec-title">
+                    <span>⚡ Price vs OI Buildup Matrix &amp; Institutional Interpretation</span>
+                    <span class="pvo-sec-tag">4 Core Phases</span>
+                  </div>
+                  <span class="pvo-toggle-icon" id="pvoMatrixToggleIcon">▼</span>
+                </div>
+
+                <div class="pvo-matrix-cards" id="pvoMatrixCards">
+                  <div class="pvo-matrix-card lb-card" id="pvoCardLB">
+                    <div class="pm-top">
+                      <span class="pm-icon">🟢</span>
+                      <strong class="pm-name">Long Buildup</strong>
+                      <span class="pm-pill lb-pill">Price ↑ &amp; OI ↑</span>
+                    </div>
+                    <p class="pm-desc">Fresh capital is entering aggressive long contracts. Strongest bullish conviction with high trend continuation probability.</p>
+                  </div>
+
+                  <div class="pvo-matrix-card sb-card" id="pvoCardSB">
+                    <div class="pm-top">
+                      <span class="pm-icon">🔴</span>
+                      <strong class="pm-name">Short Buildup</strong>
+                      <span class="pm-pill sb-pill">Price ↓ &amp; OI ↑</span>
+                    </div>
+                    <p class="pm-desc">Fresh shorts entering the market aggressively. Genuine bearish momentum with real institutional selling conviction.</p>
+                  </div>
+
+                  <div class="pvo-matrix-card sc-card" id="pvoCardSC">
+                    <div class="pm-top">
+                      <span class="pm-icon">🔵</span>
+                      <strong class="pm-name">Short Covering</strong>
+                      <span class="pm-pill sc-pill">Price ↑ &amp; OI ↓</span>
+                    </div>
+                    <p class="pm-desc">Trapped short-sellers are panicking and buying back to square off. Sharp explosive rally that often exhausts quickly.</p>
+                  </div>
+
+                  <div class="pvo-matrix-card lu-card" id="pvoCardLU">
+                    <div class="pm-top">
+                      <span class="pm-icon">🟡</span>
+                      <strong class="pm-name">Long Unwinding</strong>
+                      <span class="pm-pill lu-pill">Price ↓ &amp; OI ↓</span>
+                    </div>
+                    <p class="pm-desc">Long traders booking profits or hitting stop losses. Decline often near selling exhaustion rather than aggressive fresh shorting.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Time-Series Numerical Breakdown Drawer -->
+              <div class="pvo-table-section">
+                <div class="pvo-section-header" onclick="window.togglePvoTableDrawer()">
+                  <div class="pvo-sec-title">
+                    <span>📋 Underlying Time-Series Data Breakdown</span>
+                    <span class="pvo-sec-tag" id="pvoTableCount">-- Points</span>
+                  </div>
+                  <span class="pvo-toggle-icon" id="pvoTableToggleIcon">▶</span>
+                </div>
+
+                <div class="pvo-table-wrap" id="pvoTableDrawer" style="display:none;">
+                  <table class="pvo-data-table">
+                    <thead>
+                      <tr>
+                        <th>Time / Date</th>
+                        <th style="text-align:right;">Price</th>
+                        <th style="text-align:right;">Chg (Pts)</th>
+                        <th style="text-align:right;">Chg%</th>
+                        <th style="text-align:right;">VWAP</th>
+                        <th style="text-align:right;">Spot</th>
+                        <th style="text-align:right;">Basis</th>
+                        <th style="text-align:right;">OI (Shares)</th>
+                        <th style="text-align:right;">OI (Cr)</th>
+                        <th style="text-align:right;">OI Chg</th>
+                        <th style="text-align:right;">OI Chg%</th>
+                        <th style="text-align:right;">Volume</th>
+                        <th style="text-align:center;">Phase</th>
+                      </tr>
+                    </thead>
+                    <tbody id="pvoTableBody">
+                      <tr><td colspan="13" style="text-align:center;padding:20px;">Loading data...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          </div>
 
         </div>
       </div>

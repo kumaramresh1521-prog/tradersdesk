@@ -127,6 +127,13 @@
       icon: "📊",
       desc: "Live 1m/5m intraday futures price vs open interest buildup — Long Buildup, Short Buildup, Short Covering & Long Unwinding with VWAP, Basis & OI change.",
       showSearch: false
+    },
+    futureVsOi: {
+      title: "FUTURE VS OPEN INTEREST (PRICE VS OI)",
+      countBadge: "INSTITUTIONAL",
+      icon: "📈",
+      desc: "Institutional dual-axis Future Price vs Open Interest divergence terminal with interactive Replay Engine, Buildup Quadrants, and Live/Historical EOD modes.",
+      showSearch: false
     }
   };
 
@@ -137,6 +144,7 @@
     if (tabName === 'termstructure' || tabName === 'basis') tabName = 'indices';
     if (tabName === 'openinterest' || tabName === 'open-interest' || tabName === 'oi' || tabName === 'future-oi' || tabName === 'future-open-interest') tabName = 'openInterest';
     if (tabName === 'intraday' || tabName === 'future-intraday' || tabName === 'futintraday') tabName = 'futureIntraday';
+    if (tabName === 'future-vs-oi' || tabName === 'price-vs-oi' || tabName === 'futurevsoi' || tabName === 'pvo') tabName = 'futureVsOi';
 
     state.activeSubTab = tabName;
 
@@ -157,7 +165,7 @@
       btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    const views = ['matrix', 'openInterest', 'futureIntraday', 'indices', 'buildup', 'heatmap', 'mwpl', 'rollover'];
+    const views = ['matrix', 'openInterest', 'futureIntraday', 'futureVsOi', 'indices', 'buildup', 'heatmap', 'mwpl', 'rollover'];
     views.forEach(v => {
       const el = document.getElementById(`futView_${v}`);
       if (el) {
@@ -170,7 +178,7 @@
     // Sync clean URL when navigating within Futures Desk
     try {
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/futures")) {
-        const futSubUrl = tabName === "matrix" ? "/futures" : (tabName === "openInterest" ? "/futures/open-interest" : (tabName === "futureIntraday" ? "/futures/future-intraday" : `/futures/${tabName}`));
+        const futSubUrl = tabName === "matrix" ? "/futures" : (tabName === "openInterest" ? "/futures/open-interest" : (tabName === "futureIntraday" ? "/futures/future-intraday" : (tabName === "futureVsOi" ? "/futures/future-vs-oi" : `/futures/${tabName}`)));
         if (window.location.pathname !== futSubUrl && typeof history !== "undefined" && history.pushState) {
           history.pushState({ desk: "futures", subview: tabName }, document.title, futSubUrl);
         }
@@ -184,6 +192,7 @@
     if (state.activeSubTab === 'matrix') p2 = loadMatrix(forceRefresh);
     else if (state.activeSubTab === 'openInterest') p2 = loadFutureOpenInterestView(forceRefresh);
     else if (state.activeSubTab === 'futureIntraday') p2 = loadFutureIntradayView();
+    else if (state.activeSubTab === 'futureVsOi') p2 = loadFutureVsOiView(forceRefresh);
     else if (state.activeSubTab === 'indices') p2 = loadIndicesDetailView(forceRefresh);
     else if (state.activeSubTab === 'buildup') p2 = loadBuildupView(forceRefresh);
     else if (state.activeSubTab === 'heatmap') p2 = loadHeatmapView(forceRefresh);
@@ -2736,6 +2745,8 @@
     }
     if (initPath.includes('/rollover')) {
       state.activeSubTab = 'rollover';
+    } else if (initPath.includes('/future-vs-oi') || initPath.includes('/price-vs-oi')) {
+      state.activeSubTab = 'futureVsOi';
     } else if (initPath.includes('/future-intraday') || initPath.includes('/intraday')) {
       state.activeSubTab = 'futureIntraday';
     } else if (initPath.includes('/open-interest') || initPath.includes('/oi') || initPath.includes('/future-oi')) {
@@ -3070,6 +3081,894 @@
     };
   }
 
+
+  // =========================================================================
+  // VIEW: FUTURE VS OPEN INTEREST (PRICE VS OI DUAL-AXIS TERMINAL)
+  // =========================================================================
+  var fmtNumber = (n, d = 2) => {
+    if (n === null || n === undefined || isNaN(n)) return '--';
+    return Number(n).toLocaleString('en-IN', { minimumFractionDigits: (d === 0 ? 0 : (d || 2)), maximumFractionDigits: (d === 0 ? 0 : (d || 2)) });
+  };
+  var escapePvoHtml = (str) => {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  };
+  var pvoState = {
+    symbol: 'NIFTY',
+    mode: 'live', // 'live' or 'historical'
+    interval: 5,
+    days: 30,
+    data: null,
+    loading: false,
+    replayPlaying: false,
+    replayIndex: -1,
+    replayTimer: null,
+    replaySpeed: 1,
+    toggles: { price: true, oi: true, vwap: true, regime: true },
+    hoverIndex: -1,
+    initializedEvents: false
+  };
+
+  async function loadFutureVsOiView(forceRefresh = false) {
+    if (!pvoState.initializedEvents) {
+      initPvoDomEvents();
+      pvoState.initializedEvents = true;
+    }
+    await fetchAndRenderPvo(forceRefresh);
+  }
+
+  async function fetchAndRenderPvo(forceRefresh = false) {
+    const tableBody = document.getElementById('pvoTableBody');
+    if (tableBody && !pvoState.data) {
+      tableBody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:28px;color:#94a3b8;"><span class="fut-spinner"></span> Loading Future vs Open Interest data...</td></tr>';
+    }
+
+    try {
+      pvoState.loading = true;
+      const url = `/api/futures/price-vs-oi?symbol=${encodeURIComponent(pvoState.symbol)}&mode=${encodeURIComponent(pvoState.mode)}&interval=${pvoState.interval}&days=${pvoState.days}${forceRefresh ? '&refresh=true' : ''}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!json || !json.ok) {
+        throw new Error(json.error || 'Failed to load Price vs OI data');
+      }
+
+      pvoState.data = json;
+      pvoState.replayIndex = -1; // reset replay
+      if (pvoState.replayPlaying) {
+        stopPvoReplay();
+      }
+
+      renderPvoUI();
+    } catch (err) {
+      console.error('[PVO Engine] Fetch error:', err);
+      if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:24px;color:#ef4444;">⚠️ Error loading Price vs OI: ${escapePvoHtml(err.message || String(err))}</td></tr>`;
+      }
+    } finally {
+      pvoState.loading = false;
+    }
+  }
+
+  function renderPvoUI() {
+    const data = pvoState.data;
+    if (!data) return;
+
+    // 1. Header & meta
+    const symEl = document.getElementById('pvoHeaderSymbol');
+    if (symEl) symEl.textContent = data.symbol;
+
+    const timeEl = document.getElementById('pvoTimestamp');
+    if (timeEl) {
+      if (data.mode === 'live') {
+        const lastBar = data.series && data.series.length > 0 ? data.series[data.series.length - 1] : null;
+        timeEl.textContent = `${data.dateDisplay || data.date || ''} • ${lastBar ? lastBar.time : '15:40'}`;
+      } else {
+        timeEl.textContent = `${data.summary.startDate} to ${data.summary.endDate} (${data.summary.days} Sessions)`;
+      }
+    }
+
+    const liveBadge = document.getElementById('pvoLiveStatus');
+    if (liveBadge) {
+      liveBadge.textContent = data.mode === 'live' ? 'LIVE' : 'EOD';
+    }
+
+    // 2. Render Index Ribbon & Stocks
+    renderPvoIndexRibbon();
+
+    // 3. Expiry Pill
+    const expText = document.getElementById('pvoExpiryText');
+    if (expText) expText.textContent = data.summary.expiry || 'Near Expiry';
+
+    // 4. Render 5 Stat Cards
+    renderPvoStats();
+
+    // 5. Update Replay Controls Slider bounds
+    const series = data.series || [];
+    const slider = document.getElementById('pvoReplaySlider');
+    const replayTime = document.getElementById('pvoReplayTime');
+    if (slider && series.length > 0) {
+      slider.max = series.length - 1;
+      slider.value = series.length - 1;
+      const lastPoint = series[series.length - 1];
+      const timeLbl = data.mode === 'live' ? lastPoint.time : (lastPoint.displayDate || lastPoint.date);
+      if (replayTime) replayTime.textContent = `${timeLbl} / ${timeLbl}`;
+    }
+
+    const replayBox = document.getElementById('pvoReplayBox');
+    if (replayBox) {
+      replayBox.style.display = data.mode === 'live' ? 'flex' : 'none';
+    }
+
+    // 6. Draw Dual-Axis Chart
+    drawPvoCanvas();
+
+    // 7. Render Underlying Data Table
+    renderPvoTable();
+
+    // 8. Highlight Active Matrix Card
+    highlightPvoMatrixCard(data.summary.dominantRegime);
+  }
+
+  function renderPvoIndexRibbon() {
+    const ribbon = document.getElementById('pvoIndexRibbon');
+    if (!ribbon) return;
+
+    const indices = (pvoState.data && pvoState.data.availableIndices) || [
+      { symbol: "NIFTY", shortName: "NIFTY", lot: 65 },
+      { symbol: "BANKNIFTY", shortName: "BANK NIFTY", lot: 30 },
+      { symbol: "FINNIFTY", shortName: "FIN NIFTY", lot: 60 },
+      { symbol: "MIDCPNIFTY", shortName: "MIDCAP", lot: 120 },
+      { symbol: "NIFTYNXT50", shortName: "NEXT 50", lot: 25 },
+      { symbol: "SENSEX", shortName: "SENSEX", lot: 10 },
+      { symbol: "BANKEX", shortName: "BANKEX", lot: 15 }
+    ];
+
+    ribbon.innerHTML = indices.map(idx => {
+      const active = (idx.symbol === pvoState.symbol) ? 'active' : '';
+      return `<button type="button" class="pvo-idx-btn ${active}" data-symbol="${idx.symbol}" onclick="window._pvoSelectSymbol('${idx.symbol}')">
+        <span>${escapePvoHtml(idx.shortName)}</span>
+        <span class="pvo-idx-lot">(${idx.lot})</span>
+      </button>`;
+    }).join('');
+
+    // Populate stock datalist
+    const dl = document.getElementById('pvoStockList');
+    const stocks = (pvoState.data && pvoState.data.availableStocks) || [];
+    if (dl && stocks.length > 0 && dl.children.length === 0) {
+      dl.innerHTML = stocks.map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+  }
+
+  function renderPvoStats() {
+    const s = pvoState.data ? pvoState.data.summary : null;
+    if (!s) return;
+
+    const isLive = pvoState.mode === 'live';
+
+    // 1. Futures LTP
+    const priceVal = isLive ? s.ltp : s.currentPrice;
+    const priceChg = isLive ? s.change : s.netPriceChange;
+    const priceChgPct = isLive ? s.changePct : s.netPriceChangePct;
+    const isUp = priceChg >= 0;
+    const chgColor = isUp ? '#10b981' : '#ef4444';
+    const chgSign = isUp ? '+' : '';
+
+    const elPrice = document.getElementById('pvoStatPrice');
+    if (elPrice) elPrice.innerHTML = `<span style="color:${chgColor};">₹${fmtNumber(priceVal, 2)}</span>`;
+
+    const elPriceSub = document.getElementById('pvoStatPriceSub');
+    if (elPriceSub) {
+      elPriceSub.innerHTML = `<span style="color:${chgColor};font-weight:700;">${chgSign}${fmtNumber(priceChg, 2)} (${chgSign}${priceChgPct}%)</span> ${isLive ? `• Open: ₹${fmtNumber(s.dayOpen, 1)}` : `• Start: ₹${fmtNumber(s.startPrice, 1)}`}`;
+    }
+
+    // 2. Open Interest
+    const oiShares = isLive ? s.currentOi : s.currentOi;
+    const oiCr = isLive ? s.currentOiCr : s.currentOiCr;
+    const oiContracts = isLive ? s.currentOiContracts : s.currentOiContracts;
+    const oiChg = isLive ? s.dayOiChange : s.netOiChange;
+    const oiChgPct = isLive ? s.dayOiChangePct : s.netOiChangePct;
+    const oiUp = oiChg >= 0;
+    const oiColor = oiUp ? '#10b981' : '#ef4444';
+    const oiSign = oiUp ? '+' : '';
+
+    const elOi = document.getElementById('pvoStatOi');
+    if (elOi) elOi.textContent = `${fmtNumber(oiCr, 2)} Cr`;
+
+    const elOiSub = document.getElementById('pvoStatOiSub');
+    if (elOiSub) {
+      elOiSub.innerHTML = `<span style="color:${oiColor};font-weight:700;">${oiSign}${fmtNumber(oiChg, 0)} (${oiSign}${oiChgPct}%)</span> • ${fmtNumber(oiContracts, 0)} Lots`;
+    }
+
+    // 3. Basis vs Spot
+    const elBasis = document.getElementById('pvoStatBasis');
+    const elSpot = document.getElementById('pvoStatSpot');
+    if (isLive) {
+      const basis = s.basis || 0;
+      const bColor = basis >= 0 ? '#10b981' : '#f59e0b';
+      if (elBasis) elBasis.innerHTML = `<span style="color:${bColor};">${basis >= 0 ? '+' : ''}${fmtNumber(basis, 2)}</span>`;
+      if (elSpot) elSpot.innerHTML = `Spot: ₹${fmtNumber(s.spotPrice, 2)} • <span style="color:${bColor};font-weight:600;">${s.basisType || 'Basis'}</span>`;
+    } else {
+      if (elBasis) elBasis.textContent = `Lot: ${s.lotSize || 65}`;
+      if (elSpot) elSpot.textContent = `Expiry: ${s.expiry || '--'}`;
+    }
+
+    // 4. VWAP / Range
+    const elVwap = document.getElementById('pvoStatVwap');
+    const elVwapSub = document.getElementById('pvoStatVwapSub');
+    if (isLive) {
+      const vwap = s.vwap || s.ltp;
+      const dist = s.ltp - vwap;
+      const distColor = dist >= 0 ? '#10b981' : '#ef4444';
+      if (elVwap) elVwap.textContent = `₹${fmtNumber(vwap, 2)}`;
+      if (elVwapSub) elVwapSub.innerHTML = `<span style="color:${distColor};font-weight:700;">${dist >= 0 ? '+' : ''}${fmtNumber(dist, 1)} pts</span> vs VWAP (${s.vwapStance || 'Neutral'})`;
+    } else {
+      if (elVwap) elVwap.textContent = `${s.days} Sessions`;
+      if (elVwapSub) elVwapSub.textContent = `Window: ${s.startDate} → ${s.endDate}`;
+    }
+
+    // 5. Dominant Regime
+    const elRegime = document.getElementById('pvoStatRegime');
+    const elRegimeSub = document.getElementById('pvoStatRegimeSub');
+    const regColor = s.dominantColor || '#10b981';
+    if (elRegime) {
+      elRegime.innerHTML = `<span style="color:${regColor};font-weight:800;">${s.dominantRegime || 'Neutral'}</span>`;
+    }
+    if (elRegimeSub) {
+      if (s.regimeCounts) {
+        const total = Object.values(s.regimeCounts).reduce((a, b) => a + b, 0) || 1;
+        const domCount = s.regimeCounts[s.dominantRegime] || 0;
+        const domPct = Math.round((domCount / total) * 100);
+        elRegimeSub.textContent = `${domPct}% of points in session`;
+      } else {
+        elRegimeSub.textContent = 'Active Market Regime';
+      }
+    }
+  }
+
+  function highlightPvoMatrixCard(regimeName) {
+    document.querySelectorAll('.pvo-matrix-card').forEach(c => c.classList.remove('highlight'));
+    if (!regimeName) return;
+    const map = {
+      'Long Buildup': 'pvoCardLB',
+      'Short Buildup': 'pvoCardSB',
+      'Short Covering': 'pvoCardSC',
+      'Long Unwinding': 'pvoCardLU'
+    };
+    const id = map[regimeName];
+    if (id) {
+      const card = document.getElementById(id);
+      if (card) card.classList.add('highlight');
+    }
+  }
+
+  // =========================================================================
+  // HIGH-DPI DUAL-AXIS CANVAS RENDERER
+  // =========================================================================
+  function drawPvoCanvas() {
+    const canvas = document.getElementById('pvoChartCanvas');
+    if (!canvas || !pvoState.data || !pvoState.data.series || pvoState.data.series.length === 0) return;
+
+    let series = pvoState.data.series;
+    // Handle replay slicing
+    if (pvoState.replayIndex >= 0 && pvoState.replayIndex < series.length) {
+      series = series.slice(0, pvoState.replayIndex + 1);
+    }
+    if (series.length < 2) return;
+
+    const wrapper = document.getElementById('pvoCanvasWrapper');
+    const rect = wrapper ? wrapper.getBoundingClientRect() : canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = rect.width || 1160;
+    const h = 500;
+
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+
+    const ctx = canvas.getContext('2d');
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const gridColor = isDark ? 'rgba(51, 65, 85, 0.4)' : '#f1f5f9';
+    const axisTextColor = isDark ? '#94a3b8' : '#64748b';
+    const priceColor = isDark ? '#f1f5f9' : '#0f172a';
+    const oiColor = isDark ? '#38bdf8' : '#2563eb';
+    const vwapColor = isDark ? '#fbbf24' : '#d97706';
+
+    const padLeft = 75;
+    const padRight = 75;
+    const padTop = 32;
+    const padBottom = 38;
+    const plotW = w - padLeft - padRight;
+    const plotH = h - padTop - padBottom;
+
+    // Price Bounds
+    const prices = series.map(d => d.price);
+    let minPrice = Math.min(...prices);
+    let maxPrice = Math.max(...prices);
+    if (pvoState.toggles.vwap) {
+      const vwaps = series.map(d => d.vwap).filter(v => v > 0);
+      if (vwaps.length > 0) {
+        minPrice = Math.min(minPrice, ...vwaps);
+        maxPrice = Math.max(maxPrice, ...vwaps);
+      }
+    }
+    const priceRange = maxPrice - minPrice || 10;
+    const pricePad = priceRange * 0.08;
+    const pMin = minPrice - pricePad;
+    const pMax = maxPrice + pricePad;
+
+    // OI Bounds
+    const ois = series.map(d => d.oi);
+    const minOi = Math.min(...ois);
+    const maxOi = Math.max(...ois);
+    const oiRange = maxOi - minOi || 100000;
+    const oiPad = oiRange * 0.12;
+    const oMin = Math.max(0, minOi - oiPad);
+    const oMax = maxOi + oiPad;
+
+    const n = series.length;
+    const getX = (i) => padLeft + (i / (n - 1)) * plotW;
+    const getYPrice = (val) => padTop + plotH - ((val - pMin) / (pMax - pMin)) * plotH;
+    const getYOi = (val) => padTop + plotH - ((val - oMin) / (oMax - oMin)) * plotH;
+
+    // 1. Draw Background Grid Lines
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = gridColor;
+    const gridRows = 6;
+    for (let r = 0; r <= gridRows; r++) {
+      const y = padTop + (r / gridRows) * plotH;
+      ctx.beginPath();
+      ctx.moveTo(padLeft, y);
+      ctx.lineTo(padLeft + plotW, y);
+      ctx.stroke();
+
+      // Left Axis Price Label
+      const pVal = pMax - (r / gridRows) * (pMax - pMin);
+      ctx.fillStyle = axisTextColor;
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`₹${fmtNumber(pVal, pVal < 100 ? 2 : 1)}`, padLeft - 10, y);
+
+      // Right Axis OI Label (in Cr / Lakhs)
+      const oVal = oMax - (r / gridRows) * (oMax - oMin);
+      const oValCr = (oVal / 10000000).toFixed(2);
+      ctx.fillStyle = oiColor;
+      ctx.textAlign = 'left';
+      ctx.fillText(`${oValCr}Cr`, padLeft + plotW + 10, y);
+    }
+
+    // 2. Regime Background Zones
+    if (pvoState.toggles.regime && n > 1) {
+      for (let i = 0; i < n - 1; i++) {
+        const x1 = getX(i);
+        const x2 = getX(i + 1);
+        const reg = series[i].regime;
+        let fill = null;
+        if (reg === 'Long Buildup') fill = isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.06)';
+        else if (reg === 'Short Buildup') fill = isDark ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.06)';
+        else if (reg === 'Short Covering') fill = isDark ? 'rgba(6, 182, 212, 0.08)' : 'rgba(6, 182, 212, 0.06)';
+        else if (reg === 'Long Unwinding') fill = isDark ? 'rgba(245, 158, 11, 0.08)' : 'rgba(245, 158, 11, 0.06)';
+
+        if (fill) {
+          ctx.fillStyle = fill;
+          ctx.fillRect(x1, padTop, x2 - x1, plotH);
+        }
+      }
+    }
+
+    // 3. Draw OI Gradient Fill & Line
+    if (pvoState.toggles.oi && n > 0) {
+      // Area Fill
+      const grad = ctx.createLinearGradient(0, padTop, 0, padTop + plotH);
+      if (isDark) {
+        grad.addColorStop(0, 'rgba(56, 189, 248, 0.22)');
+        grad.addColorStop(1, 'rgba(56, 189, 248, 0.00)');
+      } else {
+        grad.addColorStop(0, 'rgba(37, 99, 235, 0.16)');
+        grad.addColorStop(1, 'rgba(37, 99, 235, 0.01)');
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(getX(0), padTop + plotH);
+      for (let i = 0; i < n; i++) {
+        ctx.lineTo(getX(i), getYOi(series[i].oi));
+      }
+      ctx.lineTo(getX(n - 1), padTop + plotH);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Line Stroke
+      ctx.beginPath();
+      ctx.strokeStyle = oiColor;
+      ctx.lineWidth = 2.5;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      for (let i = 0; i < n; i++) {
+        const x = getX(i);
+        const y = getYOi(series[i].oi);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Right Axis Callout Badge for Last OI
+      const lastOi = series[n - 1].oi;
+      const lastOiY = getYOi(lastOi);
+      const lastOiCr = (lastOi / 10000000).toFixed(2);
+      ctx.fillStyle = oiColor;
+      ctx.beginPath();
+      ctx.roundRect(padLeft + plotW + 2, lastOiY - 11, 62, 22, 4);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${lastOiCr}Cr`, padLeft + plotW + 33, lastOiY);
+    }
+
+    // 4. Draw VWAP Dotted Line
+    if (pvoState.toggles.vwap && n > 0) {
+      ctx.beginPath();
+      ctx.strokeStyle = vwapColor;
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([4, 4]);
+      let started = false;
+      for (let i = 0; i < n; i++) {
+        if (series[i].vwap && series[i].vwap > 0) {
+          const x = getX(i);
+          const y = getYPrice(series[i].vwap);
+          if (!started) { ctx.moveTo(x, y); started = true; }
+          else ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+      ctx.setLineDash([]); // reset
+    }
+
+    // 5. Draw Price Line
+    if (pvoState.toggles.price && n > 0) {
+      ctx.beginPath();
+      ctx.strokeStyle = priceColor;
+      ctx.lineWidth = 2.0;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      for (let i = 0; i < n; i++) {
+        const x = getX(i);
+        const y = getYPrice(series[i].price);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Left Axis Callout Badge for Last Price
+      const lastP = series[n - 1].price;
+      const lastPY = getYPrice(lastP);
+      ctx.fillStyle = isDark ? '#334155' : '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(padLeft - 66, lastPY - 11, 62, 22, 4);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(fmtNumber(lastP, lastP < 100 ? 2 : 1), padLeft - 35, lastPY);
+    }
+
+    // 6. Draw X-Axis Time Ticks
+    ctx.fillStyle = axisTextColor;
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    const tickCount = Math.min(8, n);
+    const step = Math.floor(n / tickCount) || 1;
+    for (let i = 0; i < n; i += step) {
+      const x = getX(i);
+      const lbl = pvoState.mode === 'live' ? series[i].time : (series[i].displayDate || series[i].date);
+      ctx.fillText(lbl, x, padTop + plotH + 10);
+
+      // Small tick mark
+      ctx.beginPath();
+      ctx.strokeStyle = gridColor;
+      ctx.moveTo(x, padTop + plotH);
+      ctx.lineTo(x, padTop + plotH + 4);
+      ctx.stroke();
+    }
+
+    // 7. Draw Hover Crosshair and Dot
+    if (pvoState.hoverIndex >= 0 && pvoState.hoverIndex < n) {
+      const idx = pvoState.hoverIndex;
+      const hX = getX(idx);
+      const pt = series[idx];
+
+      // Vertical crosshair
+      ctx.beginPath();
+      ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.6)' : 'rgba(37, 99, 235, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.moveTo(hX, padTop);
+      ctx.lineTo(hX, padTop + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Point circle markers
+      if (pvoState.toggles.price) {
+        const hYPrice = getYPrice(pt.price);
+        ctx.beginPath();
+        ctx.arc(hX, hYPrice, 5, 0, Math.PI * 2);
+        ctx.fillStyle = priceColor;
+        ctx.fill();
+        ctx.strokeStyle = isDark ? '#0f172a' : '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      if (pvoState.toggles.oi) {
+        const hYOi = getYOi(pt.oi);
+        ctx.beginPath();
+        ctx.arc(hX, hYOi, 5, 0, Math.PI * 2);
+        ctx.fillStyle = oiColor;
+        ctx.fill();
+        ctx.strokeStyle = isDark ? '#0f172a' : '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // =========================================================================
+  // INTERACTIVE REPLAY CONTROLS
+  // =========================================================================
+  function togglePvoReplay() {
+    if (pvoState.replayPlaying) {
+      stopPvoReplay();
+    } else {
+      startPvoReplay();
+    }
+  }
+
+  function startPvoReplay() {
+    const series = pvoState.data ? pvoState.data.series : [];
+    if (!series || series.length < 2) return;
+
+    if (pvoState.replayIndex >= series.length - 1 || pvoState.replayIndex < 0) {
+      pvoState.replayIndex = 0;
+    }
+
+    pvoState.replayPlaying = true;
+    const btn = document.getElementById('pvoReplayBtn');
+    if (btn) btn.textContent = '⏸ Pause';
+
+    const baseDelay = 200;
+    const delay = Math.max(40, baseDelay / pvoState.replaySpeed);
+
+    clearInterval(pvoState.replayTimer);
+    pvoState.replayTimer = setInterval(() => {
+      pvoState.replayIndex++;
+      if (pvoState.replayIndex >= series.length) {
+        stopPvoReplay();
+        return;
+      }
+      updatePvoReplayFrame();
+    }, delay);
+  }
+
+  function stopPvoReplay() {
+    pvoState.replayPlaying = false;
+    clearInterval(pvoState.replayTimer);
+    pvoState.replayTimer = null;
+    const btn = document.getElementById('pvoReplayBtn');
+    if (btn) btn.textContent = '▶ Replay';
+  }
+
+  function resetPvoReplay() {
+    stopPvoReplay();
+    pvoState.replayIndex = -1;
+    const series = pvoState.data ? pvoState.data.series : [];
+    if (series && series.length > 0) {
+      const slider = document.getElementById('pvoReplaySlider');
+      if (slider) slider.value = series.length - 1;
+      const lastPt = series[series.length - 1];
+      const lbl = pvoState.mode === 'live' ? lastPt.time : (lastPt.displayDate || lastPt.date);
+      const timeEl = document.getElementById('pvoReplayTime');
+      if (timeEl) timeEl.textContent = `${lbl} / ${lbl}`;
+    }
+    drawPvoCanvas();
+  }
+
+  function updatePvoReplayFrame() {
+    const series = pvoState.data ? pvoState.data.series : [];
+    if (!series || pvoState.replayIndex < 0 || pvoState.replayIndex >= series.length) return;
+
+    const slider = document.getElementById('pvoReplaySlider');
+    if (slider) slider.value = pvoState.replayIndex;
+
+    const currentPt = series[pvoState.replayIndex];
+    const lastPt = series[series.length - 1];
+    const currLbl = pvoState.mode === 'live' ? currentPt.time : (currentPt.displayDate || currentPt.date);
+    const lastLbl = pvoState.mode === 'live' ? lastPt.time : (lastPt.displayDate || lastPt.date);
+
+    const timeEl = document.getElementById('pvoReplayTime');
+    if (timeEl) timeEl.textContent = `${currLbl} / ${lastLbl}`;
+
+    drawPvoCanvas();
+  }
+
+  // =========================================================================
+  // UNDERLYING DATA TABLE
+  // =========================================================================
+  function renderPvoTable() {
+    const tableBody = document.getElementById('pvoTableBody');
+    const countBadge = document.getElementById('pvoTableCount');
+    if (!tableBody || !pvoState.data || !pvoState.data.series) return;
+
+    const series = [...pvoState.data.series].reverse(); // descending
+    if (countBadge) countBadge.textContent = `${series.length} Points`;
+
+    if (series.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:20px;">No series records available</td></tr>';
+      return;
+    }
+
+    tableBody.innerHTML = series.map(d => {
+      const pColor = d.priceChange >= 0 ? '#10b981' : '#ef4444';
+      const pSign = d.priceChange >= 0 ? '+' : '';
+      const oColor = d.oiChange >= 0 ? '#10b981' : '#ef4444';
+      const oSign = d.oiChange >= 0 ? '+' : '';
+      const timeLbl = pvoState.mode === 'live' ? d.time : (d.displayDate || d.date);
+
+      return `<tr>
+        <td style="font-weight:700;">${escapePvoHtml(timeLbl)}</td>
+        <td style="text-align:right;font-weight:700;color:${pColor};">₹${fmtNumber(d.price, 2)}</td>
+        <td style="text-align:right;color:${pColor};font-weight:600;">${pSign}${fmtNumber(d.priceChange, 2)}</td>
+        <td style="text-align:right;color:${pColor};font-weight:600;">${pSign}${d.priceChangePct}%</td>
+        <td style="text-align:right;color:#fbbf24;">₹${fmtNumber(d.vwap || d.price, 2)}</td>
+        <td style="text-align:right;">₹${fmtNumber(d.spot || 0, 2)}</td>
+        <td style="text-align:right;color:${(d.basis || 0) >= 0 ? '#10b981' : '#f59e0b'};">${fmtNumber(d.basis || 0, 2)}</td>
+        <td style="text-align:right;font-weight:700;color:#38bdf8;">${fmtNumber(d.oi, 0)}</td>
+        <td style="text-align:right;color:#38bdf8;font-weight:600;">${fmtNumber(d.oiCr, 2)}Cr</td>
+        <td style="text-align:right;color:${oColor};font-weight:600;">${oSign}${fmtNumber(d.oiChange, 0)}</td>
+        <td style="text-align:right;color:${oColor};font-weight:600;">${oSign}${d.oiChangePct}%</td>
+        <td style="text-align:right;">${fmtNumber(d.volume, 0)}</td>
+        <td style="text-align:center;">
+          <span class="regime-badge badge-${d.regimeShort ? d.regimeShort.toLowerCase() : 'neutral'}" style="background:${d.regimeColor || '#94a3b8'}20;color:${d.regimeColor || '#94a3b8'};border:1px solid ${d.regimeColor || '#94a3b8'}40;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">
+            ${d.regime || 'Neutral'}
+          </span>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // =========================================================================
+  // DOM EVENTS & TOOLTIP INTERACTION
+  // =========================================================================
+  function initPvoDomEvents() {
+    // Refresh button
+    const btnRef = document.getElementById('pvoBtnRefresh');
+    if (btnRef) {
+      btnRef.addEventListener('click', () => fetchAndRenderPvo(true));
+    }
+
+    // Mode buttons
+    const btnLive = document.getElementById('pvoModeLive');
+    const btnHist = document.getElementById('pvoModeHistorical');
+    const grpLive = document.getElementById('pvoLiveIntervals');
+    const grpHist = document.getElementById('pvoHistDays');
+
+    if (btnLive && btnHist) {
+      btnLive.addEventListener('click', () => {
+        if (pvoState.mode === 'live') return;
+        pvoState.mode = 'live';
+        btnLive.classList.add('active');
+        btnHist.classList.remove('active');
+        if (grpLive) grpLive.style.display = 'flex';
+        if (grpHist) grpHist.style.display = 'none';
+        fetchAndRenderPvo();
+      });
+
+      btnHist.addEventListener('click', () => {
+        if (pvoState.mode === 'historical') return;
+        pvoState.mode = 'historical';
+        btnHist.classList.add('active');
+        btnLive.classList.remove('active');
+        if (grpLive) grpLive.style.display = 'none';
+        if (grpHist) grpHist.style.display = 'flex';
+        fetchAndRenderPvo();
+      });
+    }
+
+    // Live Interval buttons
+    document.querySelectorAll('.pvo-tf-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tf = parseInt(btn.dataset.interval, 10);
+        if (pvoState.interval === tf) return;
+        pvoState.interval = tf;
+        document.querySelectorAll('.pvo-tf-btn').forEach(b => b.classList.toggle('active', b === btn));
+        fetchAndRenderPvo();
+      });
+    });
+
+    // Historical Days buttons
+    document.querySelectorAll('.pvo-day-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = parseInt(btn.dataset.days, 10);
+        if (pvoState.days === d) return;
+        pvoState.days = d;
+        document.querySelectorAll('.pvo-day-btn').forEach(b => b.classList.toggle('active', b === btn));
+        fetchAndRenderPvo();
+      });
+    });
+
+    // Stock search input
+    const stockInput = document.getElementById('pvoStockSearch');
+    if (stockInput) {
+      stockInput.addEventListener('change', () => {
+        const val = (stockInput.value || '').trim().toUpperCase();
+        if (val) {
+          pvoState.symbol = val;
+          document.querySelectorAll('.pvo-idx-btn').forEach(b => b.classList.remove('active'));
+          fetchAndRenderPvo();
+        }
+      });
+      stockInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const val = (stockInput.value || '').trim().toUpperCase();
+          if (val) {
+            pvoState.symbol = val;
+            document.querySelectorAll('.pvo-idx-btn').forEach(b => b.classList.remove('active'));
+            fetchAndRenderPvo();
+          }
+        }
+      });
+    }
+
+    // Chart toggles
+    const tPrice = document.getElementById('pvoTogglePrice');
+    const tOi = document.getElementById('pvoToggleOi');
+    const tVwap = document.getElementById('pvoToggleVwap');
+    const tRegime = document.getElementById('pvoToggleRegime');
+
+    if (tPrice) tPrice.addEventListener('change', () => { pvoState.toggles.price = tPrice.checked; drawPvoCanvas(); });
+    if (tOi) tOi.addEventListener('change', () => { pvoState.toggles.oi = tOi.checked; drawPvoCanvas(); });
+    if (tVwap) tVwap.addEventListener('change', () => { pvoState.toggles.vwap = tVwap.checked; drawPvoCanvas(); });
+    if (tRegime) tRegime.addEventListener('change', () => { pvoState.toggles.regime = tRegime.checked; drawPvoCanvas(); });
+
+    // Replay controls
+    const btnPlay = document.getElementById('pvoReplayBtn');
+    const btnReset = document.getElementById('pvoReplayReset');
+    const slider = document.getElementById('pvoReplaySlider');
+    const speedSelect = document.getElementById('pvoReplaySpeed');
+
+    if (btnPlay) btnPlay.addEventListener('click', togglePvoReplay);
+    if (btnReset) btnReset.addEventListener('click', resetPvoReplay);
+    if (slider) {
+      slider.addEventListener('input', () => {
+        stopPvoReplay();
+        pvoState.replayIndex = parseInt(slider.value, 10);
+        updatePvoReplayFrame();
+      });
+    }
+    if (speedSelect) {
+      speedSelect.addEventListener('change', () => {
+        pvoState.replaySpeed = parseFloat(speedSelect.value) || 1;
+        if (pvoState.replayPlaying) {
+          startPvoReplay(); // restart timer with new speed
+        }
+      });
+    }
+
+    // Canvas mouse move for hover inspection
+    const canvas = document.getElementById('pvoChartCanvas');
+    const tooltip = document.getElementById('pvoTooltip');
+    if (canvas && tooltip) {
+      canvas.addEventListener('mousemove', (e) => {
+        const series = pvoState.data ? pvoState.data.series : [];
+        if (!series || series.length < 2) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const padLeft = 75;
+        const padRight = 75;
+        const plotW = rect.width - padLeft - padRight;
+
+        if (mouseX < padLeft || mouseX > padLeft + plotW) {
+          pvoState.hoverIndex = -1;
+          tooltip.style.display = 'none';
+          drawPvoCanvas();
+          return;
+        }
+
+        const ratio = (mouseX - padLeft) / plotW;
+        let idx = Math.round(ratio * (series.length - 1));
+        idx = Math.max(0, Math.min(series.length - 1, idx));
+
+        pvoState.hoverIndex = idx;
+        drawPvoCanvas();
+
+        const pt = series[idx];
+        const timeLbl = pvoState.mode === 'live' ? pt.time : (pt.displayDate || pt.date);
+        const pColor = pt.priceChange >= 0 ? '#10b981' : '#ef4444';
+        const pSign = pt.priceChange >= 0 ? '+' : '';
+        const oColor = pt.oiChange >= 0 ? '#10b981' : '#ef4444';
+        const oSign = pt.oiChange >= 0 ? '+' : '';
+
+        tooltip.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:6px;margin-bottom:6px;">
+            <strong style="color:#38bdf8;font-size:13px;">${escapePvoHtml(timeLbl)}</strong>
+            <span style="font-weight:800;color:${pt.regimeColor || '#10b981'};">${pt.regime || 'Neutral'}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:11.5px;">
+            <div><span style="opacity:0.7;">Price:</span> <strong style="color:${pColor};">₹${fmtNumber(pt.price, 2)}</strong></div>
+            <div><span style="opacity:0.7;">Chg:</span> <strong style="color:${pColor};">${pSign}${fmtNumber(pt.priceChange, 2)} (${pSign}${pt.priceChangePct}%)</strong></div>
+            <div><span style="opacity:0.7;">Open Interest:</span> <strong style="color:#38bdf8;">${fmtNumber(pt.oiCr, 2)}Cr</strong></div>
+            <div><span style="opacity:0.7;">OI Chg:</span> <strong style="color:${oColor};">${oSign}${fmtNumber(pt.oiChange, 0)} (${oSign}${pt.oiChangePct}%)</strong></div>
+            <div><span style="opacity:0.7;">VWAP:</span> <strong style="color:#fbbf24;">₹${fmtNumber(pt.vwap || pt.price, 2)}</strong></div>
+            <div><span style="opacity:0.7;">Spot:</span> <strong>₹${fmtNumber(pt.spot || 0, 2)}</strong></div>
+          </div>
+        `;
+
+        tooltip.style.display = 'block';
+        const ttW = 240;
+        let leftPos = mouseX + 16;
+        if (leftPos + ttW > rect.width) {
+          leftPos = mouseX - ttW - 16;
+        }
+        tooltip.style.left = `${leftPos}px`;
+        tooltip.style.top = `${Math.max(10, mouseY - 40)}px`;
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        pvoState.hoverIndex = -1;
+        tooltip.style.display = 'none';
+        drawPvoCanvas();
+      });
+    }
+
+    // Redraw on window resize
+    window.addEventListener('resize', () => {
+      if (state.activeSubTab === 'futureVsOi') {
+        drawPvoCanvas();
+      }
+    });
+  }
+
+  // Window exposure for inline onclick handlers
+  window._pvoSelectSymbol = function(sym) {
+    pvoState.symbol = sym;
+    pvoState.data = null;
+    document.querySelectorAll('.pvo-idx-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.symbol === sym);
+    });
+    const sInput = document.getElementById('pvoStockSearch');
+    if (sInput) sInput.value = '';
+    fetchAndRenderPvo();
+  };
+
+  window.togglePvoMatrixGuide = function() {
+    const cards = document.getElementById('pvoMatrixCards');
+    const icon = document.getElementById('pvoMatrixToggleIcon');
+    if (!cards) return;
+    const isHidden = cards.style.display === 'none';
+    cards.style.display = isHidden ? 'grid' : 'none';
+    if (icon) icon.textContent = isHidden ? '▼' : '▶';
+  };
+
+  window.togglePvoTableDrawer = function() {
+    const drawer = document.getElementById('pvoTableDrawer');
+    const icon = document.getElementById('pvoTableToggleIcon');
+    if (!drawer) return;
+    const isHidden = drawer.style.display === 'none';
+    drawer.style.display = isHidden ? 'block' : 'none';
+    if (icon) icon.textContent = isHidden ? '▼' : '▶';
+  };
+
   // Export to global scope
   window.futuresDesk = {
     init,
@@ -3081,6 +3980,7 @@
     selectOiSymbol,
     loadFutureOpenInterestView,
     loadFutureIntradayView,
+    loadFutureVsOiView,
     loadBenchmarkRibbon,
     loadMatrix,
     loadBuildupView,
@@ -3092,11 +3992,17 @@
   };
 
   // Auto-init on load if on futures route OR panel is active
-  document.addEventListener('DOMContentLoaded', () => {
+  function checkAndAutoInit() {
     const p = document.getElementById('panelFutures');
     const onFutRoute = (window.location.pathname || '').toLowerCase().startsWith('/futures');
     if (onFutRoute || (p && (p.classList.contains('active') || p.style.display !== 'none'))) {
       init();
     }
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkAndAutoInit);
+  } else {
+    setTimeout(checkAndAutoInit, 10);
+  }
 })();

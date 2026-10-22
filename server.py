@@ -165,6 +165,7 @@ def get_default_footer_links() -> dict:
                 "links": [
                     {"label": "Upstox Option Chain Pro", "url": "/option-chain-pro", "type": "inst", "target": "upstoxChain"},
                     {"label": "Future Intraday Analytics", "url": "/futures/future-intraday", "type": "inst", "target": "futures:futureIntraday"},
+                    {"label": "Future vs Open Interest", "url": "/futures/future-vs-oi", "type": "inst", "target": "futures:futureVsOi"},
                     {"label": "Future Marketwatch Matrix", "url": "/futures", "type": "inst", "target": "futures:matrix"},
                     {"label": "Straddle Analytics Engine", "url": "/straddle", "type": "link", "target": "_self"},
                     {"label": "Future Buildup Quadrants", "url": "/futures/buildup", "type": "inst", "target": "futures:buildup"},
@@ -10113,6 +10114,26 @@ class RequestHandler(BaseHTTPRequestHandler):
             import future_intraday_engine
             return self.send_json(200, {"ok": True, "indices": future_intraday_engine.get_supported_indices_summary()})
 
+        if path == "/api/futures/price-vs-oi":
+            import future_price_vs_oi_engine
+            query = urllib.parse.parse_qs(parsed.query)
+            sym = query.get("symbol", ["NIFTY"])[0].strip().upper()
+            mode = query.get("mode", ["live"])[0].strip().lower()
+            try:
+                interval = int(query.get("interval", [5])[0])
+            except Exception:
+                interval = 5
+            try:
+                days = int(query.get("days", [30])[0])
+            except Exception:
+                days = 30
+            force = query.get("refresh", ["false"])[0].lower() in ("1", "true", "yes") or query.get("force", ["false"])[0].lower() in ("1", "true", "yes")
+            return self.send_json(200, future_price_vs_oi_engine.get_price_vs_oi_analytics(symbol=sym, mode=mode, interval=interval, days=days, force_refresh=force))
+
+        if path == "/api/futures/price-vs-oi/symbols":
+            import future_price_vs_oi_engine
+            return self.send_json(200, {"ok": True, "symbols": future_price_vs_oi_engine.get_supported_symbols_list()})
+
         if path == "/api/futures/open-interest":
             import future_oi_engine
             query = urllib.parse.parse_qs(parsed.query)
@@ -10472,6 +10493,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/futures/oi",
             "/futures/future-oi",
             "/futures/future-intraday",
+            "/futures/future-vs-oi",
+            "/futures/price-vs-oi",
+            "/futures/future-price-vs-oi",
             "/futures/intraday",
             "/market-breadth",
             "/breadth",
@@ -11028,6 +11052,26 @@ class RequestHandler(BaseHTTPRequestHandler):
             if parsed.path == "/api/futures/intraday/indices":
                 import future_intraday_engine
                 return self.send_json(200, {"ok": True, "indices": future_intraday_engine.get_supported_indices_summary()})
+
+            if parsed.path == "/api/futures/price-vs-oi":
+                import future_price_vs_oi_engine
+                payload = self.read_body()
+                sym = str(payload.get("symbol", "NIFTY")).strip().upper()
+                mode = str(payload.get("mode", "live")).strip().lower()
+                try:
+                    interval = int(payload.get("interval", 5))
+                except Exception:
+                    interval = 5
+                try:
+                    days = int(payload.get("days", 30))
+                except Exception:
+                    days = 30
+                force = str(payload.get("refresh", "")).lower() in ("1", "true", "yes") or str(payload.get("force", "")).lower() in ("1", "true", "yes")
+                return self.send_json(200, future_price_vs_oi_engine.get_price_vs_oi_analytics(symbol=sym, mode=mode, interval=interval, days=days, force_refresh=force))
+
+            if parsed.path == "/api/futures/price-vs-oi/symbols":
+                import future_price_vs_oi_engine
+                return self.send_json(200, {"ok": True, "symbols": future_price_vs_oi_engine.get_supported_symbols_list()})
 
             if parsed.path == "/api/futures/open-interest":
                 import future_oi_engine

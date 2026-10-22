@@ -12237,6 +12237,18 @@ const ROUTE_CONFIG = {
     title: "Future Intraday Price vs OI Analytics | TradersDesk",
     desc: "Real-time index futures intraday Price vs Open Interest buildup terminal with VWAP, Basis, and volume metrics (NSE & BSE)."
   },
+  "/futures/future-vs-oi": {
+    desk: "futures",
+    subview: "futureVsOi",
+    title: "Future vs Open Interest (Price vs OI) Divergence | TradersDesk",
+    desc: "Institutional dual-axis Future Price vs Open Interest divergence chart, interactive replay engine, and buildup quadrant analysis."
+  },
+  "/futures/price-vs-oi": {
+    desk: "futures",
+    subview: "futureVsOi",
+    title: "Future vs Open Interest (Price vs OI) Divergence | TradersDesk",
+    desc: "Institutional dual-axis Future Price vs Open Interest divergence chart, interactive replay engine, and buildup quadrant analysis."
+  },
   "/futures/intraday": {
     desk: "futures",
     subview: "futureIntraday",
@@ -12438,6 +12450,7 @@ const DESK_TO_URL = {
 function getUrlForDesk(key, subview) {
   if (key === "futures" && subview) {
     if (subview === "futureIntraday" || subview === "intraday") return "/futures/future-intraday";
+    if (subview === "futureVsOi" || subview === "priceVsOi") return "/futures/future-vs-oi";
     if (subview === "openInterest" || subview === "oi") return "/futures/open-interest";
     if (subview === "buildup") return "/futures/buildup";
     if (subview === "heatmap") return "/futures/heatmap";
@@ -12581,8 +12594,16 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
     });
 
     // If subview provided (e.g. futures sub-desk, MTF sub-desk, Delivery sub-desk)
-    if (tabKey === "futures" && window.futuresDesk && typeof window.futuresDesk.switchSubTab === "function") {
-      window.futuresDesk.switchSubTab(subview || "matrix");
+    if (tabKey === "futures") {
+      if (window.futuresDesk && typeof window.futuresDesk.switchSubTab === "function") {
+        window.futuresDesk.switchSubTab(subview || "matrix");
+      } else {
+        setTimeout(() => {
+          if (window.futuresDesk && typeof window.futuresDesk.switchSubTab === "function") {
+            window.futuresDesk.switchSubTab(subview || "matrix");
+          }
+        }, 60);
+      }
     }
     if ((tabKey === "mtf" || key === "mtf") && subview) {
       setTimeout(() => {
