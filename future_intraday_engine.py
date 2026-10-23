@@ -260,6 +260,113 @@ def _get_near_contract_from_bhavcopy(symbol: str, target_date: Optional[str] = N
     return near_contract
 
 _YF_CANDLE_CACHE = {}
+_ANGEL_CANDLE_CACHE = {}
+
+def _fetch_angel_nfo_candles(symbol: str, interval: int = 5, date_str: Optional[str] = None) -> List[list]:
+    """Fetches authentic exchange NFO Futures candlesticks from Angel One SmartAPI."""
+    now = time.time()
+    cache_k = f"{symbol}_{interval}_{date_str or ''}"
+    if cache_k in _ANGEL_CANDLE_CACHE:
+        c_entry = _ANGEL_CANDLE_CACHE[cache_k]
+        if (now - c_entry["ts"]) < 30.0:
+            return list(c_entry["candles"])
+
+    try:
+        from server import AngelClient, Instrument
+        import futures_engine
+        ac = AngelClient()
+        if not ac.is_configured():
+            return []
+        ac.ensure_session()
+        angel_map = futures_engine.get_angel_fo_map()
+        info = angel_map.get(symbol)
+        if not info or not info.get("token"):
+            return []
+
+        interval_map = {
+            1: "ONE_MINUTE",
+            3: "THREE_MINUTE",
+            5: "FIVE_MINUTE",
+            10: "TEN_MINUTE",
+            15: "FIFTEEN_MINUTE",
+            30: "THIRTY_MINUTE",
+            60: "ONE_HOUR"
+        }
+        a_int = interval_map.get(interval, "FIVE_MINUTE")
+
+        if date_str and len(date_str) == 8:
+            d_obj = datetime.datetime.strptime(date_str, "%Y%m%d")
+            d_formatted = d_obj.strftime("%Y-%m-%d")
+        else:
+            d_formatted = datetime.datetime.now().strftime("%Y-%m-%d")
+
+        from_date = f"{d_formatted} 09:15"
+        to_date = f"{d_formatted} 15:40"
+
+        inst = Instrument(
+            symbol=symbol,
+            trading_symbol=info.get("symbol", f"{symbol}FUT"),
+            token=str(info["token"]),
+            exchange="NFO"
+        )
+
+        cache_p = CACHE_DIR / f"angel_nfo_{symbol}_{interval}_{d_formatted}.json"
+        raw_candles = ac.fetch_candle_data(
+            inst,
+            interval=a_int,
+            from_date=from_date,
+            to_date=to_date,
+            cache_path=cache_p
+        )
+
+        res = []
+        for c in raw_candles:
+            ts_str = c[0]
+            # Format: '2026-10-23T09:15:00+05:30'
+            dt = datetime.datetime.fromisoformat(ts_str)
+            t_epoch = int(dt.timestamp())
+            time_str = dt.strftime("%H:%M")
+            if "09:15" <= time_str <= "15:40":
+                res.append([t_epoch, time_str, float(c[1]), float(c[2]), float(c[3]), float(c[4]), int(c[5])])
+
+        if res:
+            _ANGEL_CANDLE_CACHE[cache_k] = {"ts": now, "candles": list(res)}
+        return res
+    except Exception as e:
+        return []
+
+def _get_recorded_intraday_oi(symbol: str, target_date: str, interval: int) -> dict:
+    """Loads recorded intraday OI snapshots mapped by time_str."""
+    oi_dir = CACHE_DIR / "intraday_oi"
+    f_path = oi_dir / f"{symbol}_{target_date}_{interval}.json"
+    if f_path.exists():
+        try:
+            with open(f_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def _record_live_intraday_oi(symbol: str, target_date: str, interval: int, time_str: str, oi: int) -> None:
+    """Persists real exchange live OI snapshot for the current time bar."""
+    if oi <= 0 or not time_str:
+        return
+    try:
+        oi_dir = CACHE_DIR / "intraday_oi"
+        oi_dir.mkdir(parents=True, exist_ok=True)
+        f_path = oi_dir / f"{symbol}_{target_date}_{interval}.json"
+        data = {}
+        if f_path.exists():
+            try:
+                with open(f_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                pass
+        data[time_str] = int(oi)
+        with open(f_path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
 
 def _fetch_yahoo_intraday_candles(yf_symbol: str, interval_str: str = "5m", range_str: str = "1d") -> List[list]:
     """Fetches authentic intraday candles from Yahoo Finance up to 15:40 IST with 30s TTL cache."""
@@ -379,7 +486,9 @@ def _generate_intraday_bars(
     interval_minutes: int = 5,
     elapsed_minutes: int = 385,
     is_live: bool = False,
-    real_yf_candles: Optional[List[list]] = None
+    real_yf_candles: Optional[List[list]] = None,
+    real_fut_candles: Optional[List[list]] = None,
+    real_spot_candles: Optional[List[list]] = None
 ) -> List[dict]:
     """
     Generates high-precision intraday bars strictly clamped to elapsed session time.
@@ -411,6 +520,21 @@ def _generate_intraday_bars(
         for c in real_yf_candles:
             yf_map[c[1]] = c  # c[1] is time_str e.g. '09:20'
 
+    # Index authentic exchange NFO Futures candles
+    fut_map = {}
+    if real_fut_candles:
+        for c in real_fut_candles:
+            fut_map[c[1]] = c
+
+    # Index authentic spot candles
+    spot_map = {}
+    if real_spot_candles:
+        for c in real_spot_candles:
+            spot_map[c[1]] = c
+
+    # Load recorded intraday real exchange OI snapshots
+    rec_oi_map = _get_recorded_intraday_oi(symbol, target_date, interval_minutes)
+
     # Typical U-shape volume distribution weights for elapsed bars
     weights = []
     for i in range(num_bars):
@@ -435,9 +559,19 @@ def _generate_intraday_bars(
         w = weights[i] / total_w
         is_final_bar = (i == num_bars - 1)
 
-        # 1. Price determination (Blend real Yahoo candles if available)
+        # 1. Price determination (Prefer authentic Angel NFO Futures candles, then Yahoo candles)
+        fut_candle = fut_map.get(time_str)
+        spot_candle = spot_map.get(time_str)
         yf_candle = yf_map.get(time_str)
-        if yf_candle:
+
+        if fut_candle:
+            # Authentic exchange NFO Futures candle: [t_epoch, time_str, o, h, l, c, v]
+            b_o = round(fut_candle[2], 2)
+            b_h = round(fut_candle[3], 2)
+            b_l = round(fut_candle[4], 2)
+            b_c = round(fut_candle[5], 2)
+            b_vol = max(10, int(fut_candle[6]))
+        elif yf_candle:
             # yf_candle is spot: [t_epoch, time_str, o, h, l, c, v]
             b_o = round(yf_candle[2] + basis_base, 2)
             b_h = round(yf_candle[3] + basis_base, 2)
@@ -480,16 +614,25 @@ def _generate_intraday_bars(
         cum_pv += typical * b_vol
         vwap = round(cum_pv / (cum_vol or 1), 2)
 
-        # 2. OI determination
-        if is_final_bar:
+        # 2. OI determination (Use recorded real exchange OI if available, otherwise distribute)
+        if time_str in rec_oi_map:
+            target_bar_oi = rec_oi_map[time_str]
+            delta_oi = target_bar_oi - curr_oi
+            curr_oi = target_bar_oi
+        elif is_final_bar:
             delta_oi = current_oi - curr_oi
             curr_oi = current_oi
         else:
             delta_oi = int(net_oi_diff * w)
             curr_oi += delta_oi
 
-        # 3. Spot & Basis
-        b_spot = round(b_c - basis_base, 2)
+        # 3. Spot & Basis (Dynamic real basis when spot is available)
+        if spot_candle:
+            b_spot = round(spot_candle[5], 2)
+        elif yf_candle:
+            b_spot = round(yf_candle[5], 2)
+        else:
+            b_spot = round(b_c - basis_base, 2)
         b_basis = round(b_c - b_spot, 2)
 
         # 4. Regime buildup
@@ -652,10 +795,28 @@ def compute_future_intraday_analytics(
     price_chg_pct = round((price_chg / prev_cls * 100.0), 2) if prev_cls else 0.0
     day_oi_chg_pct = round((day_oi_chg / (start_oi or 1)) * 100.0, 2) if start_oi else 0.0
 
-    # 3. Fetch real Yahoo Finance candles for today if index supports it
+    # 3. Fetch authentic Exchange NFO Futures & Spot candles for today
     real_yf = []
-    if is_today and idx_meta.get("yf"):
-        real_yf = _fetch_yahoo_intraday_candles(idx_meta["yf"], interval_str=f"{interval}m" if interval in (1, 5, 15, 30) else "5m", range_str="1d")
+    real_fut = []
+    real_spot = []
+    if is_today:
+        real_fut = _fetch_angel_nfo_candles(sym, interval=interval, date_str=target_date)
+        if idx_meta.get("yf"):
+            interval_str = f"{interval}m" if interval in (1, 5, 15, 30) else "5m"
+            real_spot = _fetch_yahoo_intraday_candles(idx_meta["yf"], interval_str=interval_str, range_str="1d")
+            real_yf = real_spot  # Fallback
+
+        # Record live OI snapshot during trading session
+        if fut_q and fut_q.get("oi"):
+            try:
+                now_ist = session["now_ist"]
+                c_min = now_ist.minute
+                step = max(1, interval)
+                bar_min = (c_min // step) * step
+                bar_time_str = now_ist.replace(minute=bar_min).strftime("%H:%M")
+                _record_live_intraday_oi(sym, target_date, interval, bar_time_str, int(fut_q["oi"]))
+            except Exception:
+                pass
 
     # 4. Generate Intraday Timeline strictly clamped to elapsed session time
     bars = _generate_intraday_bars(
@@ -674,7 +835,9 @@ def compute_future_intraday_analytics(
         interval_minutes=interval,
         elapsed_minutes=session["elapsed_minutes"],
         is_live=is_live,
-        real_yf_candles=real_yf
+        real_yf_candles=real_yf,
+        real_fut_candles=real_fut,
+        real_spot_candles=real_spot
     )
 
     # 5. Dominant Regime
