@@ -141,12 +141,28 @@
                   <span class="dd-sub">Multi-broker live chain, Greeks, PCR &amp; IV skew</span>
                 </div>
               </a>
-              <!-- Submenu 2: Straddle -->
+              <!-- Submenu 3: ATM Straddle -->
               <a href="/straddle" class="inst-dd-item" onclick="if(window.activateSuite){if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); activateSuite('straddle'); return false;}">
                 <span class="dd-icon">📉</span>
                 <div class="dd-text">
-                  <span class="dd-title">Straddle <span class="p2-badge p2-badge-rose" style="margin-left:4px;">LIVE</span></span>
-                  <span class="dd-sub">Live options straddle premium decay, spot &amp; synthetic curve</span>
+                  <span class="dd-title">ATM Straddle <span class="p2-badge p2-badge-rose" style="margin-left:4px;">LIVE</span></span>
+                  <span class="dd-sub">Combined CE+PE premium decay, spot &amp; synthetic curve</span>
+                </div>
+              </a>
+              <!-- Submenu 4: Premium Decay -->
+              <a href="/premium-decay" class="inst-dd-item" onclick="if(window.activateSuite){if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); activateSuite('premiumDecay'); return false;}">
+                <span class="dd-icon">🔻</span>
+                <div class="dd-text">
+                  <span class="dd-title">Premium Decay <span class="p2-badge p2-badge-orange" style="margin-left:4px;">NEW</span></span>
+                  <span class="dd-sub">Intraday theta erosion chart, IV crush timeline &amp; leg breakdown</span>
+                </div>
+              </a>
+              <!-- Submenu 5: Call vs Put Premium -->
+              <a href="/call-vs-put-premium" class="inst-dd-item" onclick="if(window.activateSuite){if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); activateSuite('callVsPut'); return false;}">
+                <span class="dd-icon">⚖️</span>
+                <div class="dd-text">
+                  <span class="dd-title">Call vs Put Premium <span class="p2-badge p2-badge-cyan" style="margin-left:4px;">NEW</span></span>
+                  <span class="dd-sub">Live CE vs PE leg comparison, decay skew &amp; imbalance chart</span>
                 </div>
               </a>
             </div>
@@ -257,6 +273,12 @@
         <div class="page2-suite-tabs" id="p2SuiteTabsWrap">
           <button id="p2SuiteStraddleBtn" class="page2-suite-btn active" type="button">
             <span>📉</span> <span>STRADDLE</span>
+          </button>
+          <button id="p2SuitePremiumDecayBtn" class="page2-suite-btn" type="button">
+            <span>🔻</span> <span>PREMIUM DECAY</span>
+          </button>
+          <button id="p2SuiteCallVsPutBtn" class="page2-suite-btn" type="button">
+            <span>⚖️</span> <span>CALL vs PUT</span>
           </button>
           <a href="/fii-dii" id="p2SuiteFiiDiiBtn" class="page2-suite-btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
             <span>🏛️</span> <span>FII / DII CASH FLOW</span>
@@ -407,21 +429,35 @@
           <div class="p2-card-subtitle">Intraday 1-minute trajectory comparing combined premium erosion against spot momentum</div>
         </div>
 
+        <!-- Quick View Switcher: Premium Decay vs Call vs Put -->
+        <div class="st-view-mode-bar" id="stViewModeBar">
+          <button type="button" class="st-view-btn active" id="stModeDecayTab" onclick="switchStraddleViewMode('decay')">📉 Premium Decay</button>
+          <button type="button" class="st-view-btn" id="stModeCallVsPutTab" onclick="switchStraddleViewMode('call_vs_put')">⚖️ Call vs Put Premium</button>
+        </div>
+
         <!-- Series Visibility Toggles & Watermark -->
         <div class="straddle-legend-toggles">
-          <label class="st-legend-btn active" data-series="straddle">
+          <label class="st-legend-btn active" data-series="straddle" id="legBtnStraddle" title="Combined ATM Straddle Price (CE + PE)">
             <span class="st-dot dot-cyan"></span>
             <span>Straddle Price (Left Y)</span>
           </label>
-          <label class="st-legend-btn active" data-series="spot">
+          <label class="st-legend-btn active" data-series="call" id="legBtnCall" title="Call (CE) Leg Premium">
+            <span class="st-dot dot-emerald"></span>
+            <span>Call Premium CE (Left Y)</span>
+          </label>
+          <label class="st-legend-btn active" data-series="put" id="legBtnPut" title="Put (PE) Leg Premium">
+            <span class="st-dot dot-rose"></span>
+            <span>Put Premium PE (Left Y)</span>
+          </label>
+          <label class="st-legend-btn active" data-series="spot" id="legBtnSpot" title="Underlying Cash Spot Price">
             <span class="st-dot dot-green"></span>
             <span>Index Spot (Right Y)</span>
           </label>
-          <label class="st-legend-btn active" data-series="synth">
+          <label class="st-legend-btn active" data-series="synth" id="legBtnSynth" title="Synthetic Future Price">
             <span class="st-dot dot-purple"></span>
             <span>Synthetic Future</span>
           </label>
-          <label class="st-legend-btn active" data-series="vwap">
+          <label class="st-legend-btn active" data-series="vwap" id="legBtnVwap" title="Volume-Weighted Average Price">
             <span class="st-dot dot-gold"></span>
             <span>VWAP</span>
           </label>
@@ -945,6 +981,22 @@
                 <div class="dot-sub-text">
                   <div class="dot-sub-title">ATM Straddle Engine <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">LIVE</span></div>
                   <div class="dot-sub-desc">Intraday decay curve &amp; premium dynamics</div>
+                </div>
+              </a>
+              <!-- Sub 2b: Premium Decay -->
+              <a href="/premium-decay" class="dot-sub-item" onclick="if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); if(window.activateSuite)activateSuite('premiumDecay'); return false;">
+                <span class="dot-sub-icon">🔻</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Premium Decay <span class="p2-badge p2-badge-orange" style="font-size:9.5px; margin-left:3px;">NEW</span></div>
+                  <div class="dot-sub-desc">Theta erosion &amp; IV crush intraday chart</div>
+                </div>
+              </a>
+              <!-- Sub 2c: Call vs Put Premium -->
+              <a href="/call-vs-put-premium" class="dot-sub-item" onclick="if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); if(window.activateSuite)activateSuite('callVsPut'); return false;">
+                <span class="dot-sub-icon">⚖️</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Call vs Put Premium <span class="p2-badge p2-badge-cyan" style="font-size:9.5px; margin-left:3px;">NEW</span></div>
+                  <div class="dot-sub-desc">Live CE vs PE leg comparison &amp; skew</div>
                 </div>
               </a>
               <!-- Sub 3 -->

@@ -143,6 +143,10 @@
       activateSuite("contribution", false);
     } else if (currentPath === "/fii-dii-cash" || tabParam === "fiidii" || hash === "fiidii") {
       activateSuite("fiidii", false);
+    } else if (currentPath === "/premium-decay" || tabParam === "premium-decay" || tabParam === "decay" || hash === "premium-decay") {
+      activateSuite("premiumDecay", false);
+    } else if (currentPath === "/call-vs-put-premium" || currentPath === "/call-vs-put" || tabParam === "call-vs-put" || tabParam === "callvsput" || hash === "call-vs-put") {
+      activateSuite("callVsPut", false);
     } else {
       // Default to ATM Straddle Desk
       activateSuite("straddle", false);
@@ -159,6 +163,21 @@
       suite: "straddle",
       title: "Straddle Desk - Live Options Premium Decay & Greeks | TradersDesk",
       desc: "Real-time Options Straddle chart tracking combined CE+PE premium decay, live intraday delta-neutral curves, IV crush, and exact contract expiries."
+    },
+    "/premium-decay": {
+      suite: "premiumDecay",
+      title: "Premium Decay - Live Options CE+PE Erosion Chart & IV Crush | TradersDesk",
+      desc: "Track live intraday options premium decay (theta erosion) for Nifty & BankNifty. Visual decay curve, IV crush timeline, and straddle leg breakdown."
+    },
+    "/call-vs-put-premium": {
+      suite: "callVsPut",
+      title: "Call vs Put Premium - Live CE vs PE Comparison & Decay Skew | TradersDesk",
+      desc: "Real-time comparison of Call (CE) vs Put (PE) option leg premiums. Intraday decay spread, volatility skew, and premium imbalance."
+    },
+    "/call-vs-put": {
+      suite: "callVsPut",
+      title: "Call vs Put Premium - Live CE vs PE Comparison & Decay Skew | TradersDesk",
+      desc: "Real-time comparison of Call (CE) vs Put (PE) option leg premiums. Intraday decay spread, volatility skew, and premium imbalance."
     },
     "/fii-dii-cash": {
       suite: "fiidii",
@@ -179,7 +198,11 @@
 
   function syncP2Url(suiteKey, pushHistory = true) {
     let targetUrl = "/straddle";
-    if (suiteKey === "fiidii") {
+    if (suiteKey === "premiumDecay") {
+      targetUrl = "/premium-decay";
+    } else if (suiteKey === "callVsPut") {
+      targetUrl = "/call-vs-put-premium";
+    } else if (suiteKey === "fiidii") {
       targetUrl = "/fii-dii-cash";
     } else if (suiteKey === "contribution") {
       targetUrl = "/breadth-contribution";
@@ -220,13 +243,19 @@
     if (suiteKey === "tools") suiteKey = "straddle";
     currentSuite = suiteKey;
     const straddleBtn = document.getElementById("p2SuiteStraddleBtn") || document.getElementById("p2SuiteToolsBtn");
+    const decayBtn = document.getElementById("p2SuitePremiumDecayBtn");
+    const cvpBtn = document.getElementById("p2SuiteCallVsPutBtn");
     const fiiBtn = document.getElementById("p2SuiteFiiDiiBtn");
     const contribBtn = document.getElementById("p2SuiteContributionBtn");
     const straddleSection = document.getElementById("p2SectionStraddle") || document.getElementById("p2SectionTools");
     const fiiSection = document.getElementById("p2SectionFiiDii");
     const contribSection = document.getElementById("p2SectionBreadthContribution");
 
+    const isStraddleSuite = (suiteKey === "straddle" || suiteKey === "premiumDecay" || suiteKey === "callVsPut");
+
     if (straddleBtn) straddleBtn.classList.toggle("active", suiteKey === "straddle");
+    if (decayBtn) decayBtn.classList.toggle("active", suiteKey === "premiumDecay");
+    if (cvpBtn) cvpBtn.classList.toggle("active", suiteKey === "callVsPut");
     if (fiiBtn) fiiBtn.classList.toggle("active", suiteKey === "fiidii");
     if (contribBtn) contribBtn.classList.toggle("active", suiteKey === "contribution");
 
@@ -239,15 +268,28 @@
       } else if (suiteKey === "fiidii") {
         activeLabel.textContent = "FII / DII CASH FLOW";
         activeIcon.textContent = "🏛️";
+      } else if (suiteKey === "premiumDecay") {
+        activeLabel.textContent = "PREMIUM DECAY DESK";
+        activeIcon.textContent = "🔻";
+      } else if (suiteKey === "callVsPut") {
+        activeLabel.textContent = "CALL vs PUT PREMIUM DESK";
+        activeIcon.textContent = "⚖️";
       } else {
         activeLabel.textContent = "ATM STRADDLE DESK";
         activeIcon.textContent = "📉";
       }
     }
 
-    if (straddleSection) straddleSection.style.display = suiteKey === "straddle" ? "block" : "none";
+    if (straddleSection) straddleSection.style.display = isStraddleSuite ? "block" : "none";
     if (fiiSection) fiiSection.style.display = suiteKey === "fiidii" ? "block" : "none";
     if (contribSection) contribSection.style.display = suiteKey === "contribution" ? "block" : "none";
+
+    // Switch view mode if needed
+    if (suiteKey === "callVsPut") {
+      switchStraddleViewMode("call_vs_put", false);
+    } else if (suiteKey === "premiumDecay") {
+      switchStraddleViewMode("decay", false);
+    }
 
     if (window.AuthService && window.AuthService.syncState) {
       window.AuthService.syncState({ page2Suite: suiteKey });
@@ -262,7 +304,7 @@
         } else {
           loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
         }
-      } else if (suiteKey === "straddle") {
+      } else if (isStraddleSuite) {
         if (straddleState.data) {
           renderStraddleChart(straddleState.data);
         } else {
@@ -277,12 +319,15 @@
 
   function setupSuiteSwitching() {
     const straddleBtn = document.getElementById("p2SuiteStraddleBtn") || document.getElementById("p2SuiteToolsBtn");
+    const decayBtn = document.getElementById("p2SuitePremiumDecayBtn");
+    const cvpBtn = document.getElementById("p2SuiteCallVsPutBtn");
     const fiiBtn = document.getElementById("p2SuiteFiiDiiBtn");
     const contribBtn = document.getElementById("p2SuiteContributionBtn");
 
     if (straddleBtn) straddleBtn.addEventListener("click", () => activateSuite("straddle", true));
+    if (decayBtn) decayBtn.addEventListener("click", () => activateSuite("premiumDecay", true));
+    if (cvpBtn) cvpBtn.addEventListener("click", () => activateSuite("callVsPut", true));
     if (fiiBtn) fiiBtn.addEventListener("click", (e) => {
-      // Direct navigation to the main terminal FII DII Cash page
       e.preventDefault();
       window.location.href = "/fii-dii/cash";
     });
@@ -311,7 +356,7 @@
   }
 
   function refreshActiveView() {
-    if (currentSuite === "straddle" || currentSuite === "tools") {
+    if (currentSuite === "straddle" || currentSuite === "tools" || currentSuite === "premiumDecay" || currentSuite === "callVsPut") {
       loadStraddleTool();
     } else if (currentSuite === "fiidii") {
       loadFiiDiiSuite();
@@ -321,7 +366,7 @@
   }
 
   function loadCurrentSuite() {
-    if (currentSuite === "straddle" || currentSuite === "tools") {
+    if (currentSuite === "straddle" || currentSuite === "tools" || currentSuite === "premiumDecay" || currentSuite === "callVsPut") {
       loadStraddleTool();
     } else if (currentSuite === "fiidii") {
       loadFiiDiiSuite();
@@ -354,6 +399,7 @@
   // ========================================================================
   const straddleState = {
     mode: "live", // "live" or "historical"
+    viewMode: "decay", // "decay" or "call_vs_put"
     date: "",     // "YYYY-MM-DD"
     category: "Equity",
     index: "NIFTY",
@@ -364,6 +410,8 @@
     timer: null,
     visible: {
       straddle: true,
+      call: true,
+      put: true,
       spot: true,
       synth: true,
       vwap: true
@@ -371,6 +419,45 @@
     categoriesData: null,
     historyMeta: null,
     hoveredIndex: -1
+  };
+
+  window.switchStraddleViewMode = function(mode, triggerRender = true) {
+    straddleState.viewMode = mode;
+    const decayTab = document.getElementById("stModeDecayTab");
+    const cvpTab = document.getElementById("stModeCallVsPutTab");
+    const headingEl = document.getElementById("straddleChartHeading");
+    const subHeadingEl = document.querySelector(".straddle-chart-card .p2-card-subtitle");
+
+    if (mode === "call_vs_put") {
+      if (decayTab) decayTab.classList.remove("active");
+      if (cvpTab) cvpTab.classList.add("active");
+      if (headingEl) headingEl.textContent = `${straddleState.index} ATM Call vs Put Premium Live Comparison`;
+      if (subHeadingEl) subHeadingEl.textContent = "Intraday 1-minute Call (CE) vs Put (PE) leg decay, spread divergence and premium balance";
+      straddleState.visible.call = true;
+      straddleState.visible.put = true;
+      straddleState.visible.straddle = true;
+    } else {
+      if (decayTab) decayTab.classList.add("active");
+      if (cvpTab) cvpTab.classList.remove("active");
+      if (headingEl) headingEl.textContent = `${straddleState.index} ATM Premium Decay Live Curve`;
+      if (subHeadingEl) subHeadingEl.textContent = "Intraday 1-minute trajectory comparing combined premium erosion against spot momentum";
+      straddleState.visible.straddle = true;
+      straddleState.visible.call = true;
+      straddleState.visible.put = true;
+    }
+
+    // Sync legend button classes
+    document.querySelectorAll(".st-legend-btn").forEach(btn => {
+      const s = btn.getAttribute("data-series");
+      if (s && straddleState.visible.hasOwnProperty(s)) {
+        btn.classList.toggle("active", Boolean(straddleState.visible[s]));
+        btn.classList.toggle("inactive", !straddleState.visible[s]);
+      }
+    });
+
+    if (triggerRender && straddleState.data) {
+      renderStraddleChart(straddleState.data);
+    }
   };
 
   function setupStraddleControls() {
@@ -938,11 +1025,13 @@
       return;
     }
 
-    // 1. Compute Left Y-Axis Range (Straddle Price & VWAP)
+    // 1. Compute Left Y-Axis Range (Straddle Price, Call CE, Put PE & VWAP)
     let leftVals = [];
     points.forEach(p => {
-      if (straddleState.visible.straddle) leftVals.push(p.price);
-      if (straddleState.visible.vwap) leftVals.push(p.vwap);
+      if (straddleState.visible.straddle && p.price != null && !isNaN(p.price)) leftVals.push(p.price);
+      if (straddleState.visible.call && p.ce_price != null && !isNaN(p.ce_price)) leftVals.push(p.ce_price);
+      if (straddleState.visible.put && p.pe_price != null && !isNaN(p.pe_price)) leftVals.push(p.pe_price);
+      if (straddleState.visible.vwap && p.vwap != null && !isNaN(p.vwap)) leftVals.push(p.vwap);
     });
     if (leftVals.length === 0) leftVals = [100, 200];
     let minLeft = Math.min(...leftVals);
@@ -1056,6 +1145,65 @@
       ctx.stroke();
     }
 
+    const colCall = "#10b981";
+    const colPut = "#f43f5e";
+
+    // Curve Call (CE) Premium (Emerald Green Line)
+    if (straddleState.visible.call) {
+      const gradCall = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
+      gradCall.addColorStop(0, "rgba(16, 185, 129, 0.10)");
+      gradCall.addColorStop(1, "rgba(16, 185, 129, 0.0)");
+
+      ctx.fillStyle = gradCall;
+      ctx.beginPath();
+      ctx.moveTo(getX(0), padding.top + chartH);
+      for (let i = 0; i < n; i++) {
+        ctx.lineTo(getX(i), getLeftY(points[i].ce_price));
+      }
+      ctx.lineTo(getX(n - 1), padding.top + chartH);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = colCall;
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = getX(i);
+        const y = getLeftY(points[i].ce_price);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Curve Put (PE) Premium (Rose/Red Line)
+    if (straddleState.visible.put) {
+      const gradPut = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
+      gradPut.addColorStop(0, "rgba(244, 63, 94, 0.10)");
+      gradPut.addColorStop(1, "rgba(244, 63, 94, 0.0)");
+
+      ctx.fillStyle = gradPut;
+      ctx.beginPath();
+      ctx.moveTo(getX(0), padding.top + chartH);
+      for (let i = 0; i < n; i++) {
+        ctx.lineTo(getX(i), getLeftY(points[i].pe_price));
+      }
+      ctx.lineTo(getX(n - 1), padding.top + chartH);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = colPut;
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = getX(i);
+        const y = getLeftY(points[i].pe_price);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
     // Curve D: Straddle Price (Cyan Line with subtle gradient glow)
     if (straddleState.visible.straddle) {
       // Area gradient
@@ -1130,6 +1278,12 @@
       // Highlight dots
       if (straddleState.visible.straddle) {
         drawDot(ctx, hx, getLeftY(hp.price), colStraddle);
+      }
+      if (straddleState.visible.call) {
+        drawDot(ctx, hx, getLeftY(hp.ce_price), colCall);
+      }
+      if (straddleState.visible.put) {
+        drawDot(ctx, hx, getLeftY(hp.pe_price), colPut);
       }
       if (straddleState.visible.spot) {
         drawDot(ctx, hx, getRightY(hp.spot), colSpot);
@@ -1213,8 +1367,16 @@
           <span style="color:var(--p2-text-muted);">Strike:</span>
           <strong style="text-align:right;">${p.straddle_strike}</strong>
 
-          <span style="color:var(--p2-text-muted);">CE / PE:</span>
-          <span style="text-align:right;">₹${p.ce_price.toFixed(2)} / ₹${p.pe_price.toFixed(2)}</span>
+          <span style="color:#10b981; font-weight:700;">Call (CE):</span>
+          <strong style="text-align:right; color:#10b981;">₹${p.ce_price.toFixed(2)}</strong>
+
+          <span style="color:#f43f5e; font-weight:700;">Put (PE):</span>
+          <strong style="text-align:right; color:#f43f5e;">₹${p.pe_price.toFixed(2)}</strong>
+
+          <span style="color:var(--p2-text-muted);">CE - PE Spread:</span>
+          <strong style="text-align:right; color:${(p.ce_price - p.pe_price) >= 0 ? '#10b981' : '#f43f5e'};">
+            ${(p.ce_price - p.pe_price) >= 0 ? '+' : ''}₹${(p.ce_price - p.pe_price).toFixed(2)}
+          </strong>
 
           <span style="color:var(--p2-text-muted);">Decay from Open:</span>
           <strong style="text-align:right; color:${decayPts >= 0 ? '#10b981' : '#f43f5e'}">
