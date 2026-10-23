@@ -3401,8 +3401,9 @@
     const wrapper = document.getElementById('pvoCanvasWrapper');
     const rect = wrapper ? wrapper.getBoundingClientRect() : canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    const w = rect.width || 1160;
-    const h = 500;
+    const isMobile = window.innerWidth <= 768;
+    const w = rect.width || (isMobile ? 360 : 1160);
+    const h = isMobile ? 300 : 500;
 
     canvas.width = Math.floor(w * dpr);
     canvas.height = Math.floor(h * dpr);
@@ -3420,10 +3421,10 @@
     const oiColor = isDark ? '#38bdf8' : '#2563eb';
     const vwapColor = isDark ? '#fbbf24' : '#d97706';
 
-    const padLeft = 75;
-    const padRight = 75;
-    const padTop = 32;
-    const padBottom = 38;
+    const padLeft = isMobile ? 48 : 75;
+    const padRight = isMobile ? 48 : 75;
+    const padTop = isMobile ? 22 : 32;
+    const padBottom = isMobile ? 28 : 38;
     const plotW = w - padLeft - padRight;
     const plotH = h - padTop - padBottom;
 
@@ -3971,6 +3972,83 @@
         pvoState.hoverIndex = -1;
         tooltip.style.display = 'none';
         drawPvoCanvas();
+      });
+
+      // Canvas touch inspection for mobile
+      function handleTouchInspect(e) {
+        if (!e.touches || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        const series = pvoState.data ? pvoState.data.series : [];
+        if (!series || series.length < 2) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const touchX = touch.clientX - rect.left;
+        const touchY = touch.clientY - rect.top;
+
+        const isMob = window.innerWidth <= 768;
+        const padL = isMob ? 48 : 75;
+        const padR = isMob ? 48 : 75;
+        const plotW = rect.width - padL - padR;
+
+        if (touchX < padL || touchX > padL + plotW) {
+          pvoState.hoverIndex = -1;
+          tooltip.style.display = 'none';
+          drawPvoCanvas();
+          return;
+        }
+
+        const ratio = (touchX - padL) / plotW;
+        let idx = Math.round(ratio * (series.length - 1));
+        idx = Math.max(0, Math.min(series.length - 1, idx));
+
+        pvoState.hoverIndex = idx;
+        drawPvoCanvas();
+
+        const pt = series[idx];
+        const timeLbl = pvoState.mode === 'live' ? pt.time : (pt.displayDate || pt.date);
+        const pColor = pt.priceChange >= 0 ? '#10b981' : '#ef4444';
+        const pSign = pt.priceChange >= 0 ? '+' : '';
+        const oColor = pt.oiChange >= 0 ? '#10b981' : '#ef4444';
+        const oSign = pt.oiChange >= 0 ? '+' : '';
+
+        tooltip.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:4px;margin-bottom:4px;">
+            <strong style="color:#38bdf8;font-size:12px;">${escapePvoHtml(timeLbl)}</strong>
+            <span style="font-weight:800;font-size:10.5px;color:${pt.regimeColor || '#10b981'};">${pt.regime || 'Neutral'}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;font-size:10.5px;">
+            <div><span style="opacity:0.7;">Price:</span> <strong style="color:${pColor};">₹${fmtNumber(pt.price, 2)}</strong></div>
+            <div><span style="opacity:0.7;">Chg:</span> <strong style="color:${pColor};">${pSign}${fmtNumber(pt.priceChange, 2)} (${pSign}${pt.priceChangePct}%)</strong></div>
+            <div><span style="opacity:0.7;">OI:</span> <strong style="color:#38bdf8;">${fmtNumber(pt.oiCr, 2)}Cr</strong></div>
+            <div><span style="opacity:0.7;">OI Chg:</span> <strong style="color:${oColor};">${oSign}${fmtNumber(pt.oiChange, 0)}</strong></div>
+            <div><span style="opacity:0.7;">VWAP:</span> <strong style="color:#fbbf24;">₹${fmtNumber(pt.vwap || pt.price, 2)}</strong></div>
+            <div><span style="opacity:0.7;">Spot:</span> <strong>₹${fmtNumber(pt.spot || 0, 2)}</strong></div>
+          </div>
+        `;
+        tooltip.style.display = 'block';
+        const ttW = isMob ? 200 : 240;
+        let leftPos = touchX - (ttW / 2);
+        if (leftPos < 10) leftPos = 10;
+        if (leftPos + ttW > rect.width - 10) leftPos = rect.width - ttW - 10;
+        tooltip.style.left = `${leftPos}px`;
+        tooltip.style.top = `${Math.max(10, touchY - 80)}px`;
+      }
+
+      canvas.addEventListener('touchstart', handleTouchInspect, { passive: true });
+      canvas.addEventListener('touchmove', handleTouchInspect, { passive: true });
+      canvas.addEventListener('touchend', () => {
+        setTimeout(() => {
+          pvoState.hoverIndex = -1;
+          tooltip.style.display = 'none';
+          drawPvoCanvas();
+        }, 1500);
+      });
+
+      // Window resize re-draw
+      window.addEventListener('resize', () => {
+        if (pvoState.data && pvoState.data.series && state.activeSubTab === 'futureVsOi') {
+          drawPvoCanvas();
+        }
       });
     }
 

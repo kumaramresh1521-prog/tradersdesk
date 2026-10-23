@@ -206,11 +206,11 @@ def get_market_session_state(target_date_str: Optional[str] = None) -> dict:
         "time_str": now_ist.strftime("%H:%M:%S")
     }
 
-def _get_live_quotes_map() -> dict:
+def _get_live_quotes_map(symbols: Optional[List[str]] = None) -> dict:
     """Safe wrapper to get live Kotak/Angel quotes map from futures_engine."""
     try:
         import futures_engine
-        return futures_engine.get_live_kotak_quotes_map() or {}
+        return futures_engine.get_live_kotak_quotes_map(target_symbols=symbols) or {}
     except Exception as e:
         return {}
 
@@ -259,8 +259,17 @@ def _get_near_contract_from_bhavcopy(symbol: str, target_date: Optional[str] = N
         pass
     return near_contract
 
+_YF_CANDLE_CACHE = {}
+
 def _fetch_yahoo_intraday_candles(yf_symbol: str, interval_str: str = "5m", range_str: str = "1d") -> List[list]:
-    """Fetches authentic intraday candles from Yahoo Finance up to 15:40 IST."""
+    """Fetches authentic intraday candles from Yahoo Finance up to 15:40 IST with 30s TTL cache."""
+    cache_k = f"{yf_symbol}_{interval_str}_{range_str}"
+    now = time.time()
+    if cache_k in _YF_CANDLE_CACHE:
+        c_entry = _YF_CANDLE_CACHE[cache_k]
+        if (now - c_entry["ts"]) < 30.0:
+            return list(c_entry["candles"])
+
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{yf_symbol}?interval={interval_str}&range={range_str}"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
@@ -289,6 +298,7 @@ def _fetch_yahoo_intraday_candles(yf_symbol: str, interval_str: str = "5m", rang
                         c = float(closes[i])
                         v = int(volumes[i] or 0)
                         candles.append([t_epoch, time_str, o, h, l, c, v])
+            _YF_CANDLE_CACHE[cache_k] = {"ts": now, "candles": list(candles)}
             return candles
     except Exception:
         return []
@@ -299,7 +309,7 @@ def get_supported_indices_summary() -> List[dict]:
     if _INDICES_SUMMARY_CACHE["data"] and (now - _INDICES_SUMMARY_CACHE["ts"]) < 3.0:
         return _INDICES_SUMMARY_CACHE["data"]
 
-    quotes = _get_live_quotes_map()
+    quotes = _get_live_quotes_map([idx["symbol"] for idx in SUPPORTED_INDICES])
     srv = _get_live_index_quotes()
     idx_srv_map = {
         "NIFTY": "nifty50",
@@ -558,8 +568,8 @@ def compute_future_intraday_analytics(
         if (now_ts - cached.get("ts", 0)) < cache_ttl:
             return cached["data"]
 
-    # 1. Fetch live quotes map & Bhavcopy near-contract baseline
-    quotes = _get_live_quotes_map()
+    # 1. Fetch live quotes map & Bhavcopy near-contract baseline (optimized for target symbol)
+    quotes = _get_live_quotes_map([sym])
     srv = _get_live_index_quotes()
     bhav = _get_near_contract_from_bhavcopy(sym, target_date)
 

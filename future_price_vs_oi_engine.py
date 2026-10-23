@@ -338,7 +338,7 @@ def _compute_stock_intraday_pvo(symbol: str, interval: int = 5) -> Dict[str, Any
     today_str = session["today_str"]
 
     # 1. Fetch live quotes from Kotak / Angel
-    quotes = future_intraday_engine._get_live_quotes_map()
+    quotes = future_intraday_engine._get_live_quotes_map([sym])
     fut_q = quotes.get(f"FUT:{symbol}") or quotes.get(symbol) or {}
     spot_q = quotes.get(f"SPOT:{symbol}") or {}
 

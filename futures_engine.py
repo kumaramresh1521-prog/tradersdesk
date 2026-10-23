@@ -906,19 +906,27 @@ def get_angel_fo_map() -> dict[str, dict]:
         return _ANGEL_FO_MAP
 
 
-def get_live_kotak_quotes_map() -> dict[str, dict]:
+def get_live_kotak_quotes_map(target_symbols: Optional[list] = None) -> dict[str, dict]:
     """
     Unified high-fidelity live quote engine:
     1. Fetches real benchmark indices (NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX) & special symbols via Angel One SmartAPI.
     2. Fetches 216+ F&O stocks & near futures contracts via Kotak Securities Neo API in parallel batches.
-    3. Seamlessly caches for 3s to support high-frequency frontend ticker polling.
+    3. Seamlessly caches for 15s (or targeted symbols in milliseconds) to support high-frequency frontend ticker polling.
     """
     global _LIVE_QUOTES_CACHE, _KOTAK_FO_MAP, _KOTAK_CASH_MAP
     now = time.time()
-    if _LIVE_QUOTES_CACHE["data"] and (now - _LIVE_QUOTES_CACHE["ts"]) < 15.0:
-        return _LIVE_QUOTES_CACHE["data"]
+    cached_data = _LIVE_QUOTES_CACHE.get("data") or {}
+    cache_age = now - _LIVE_QUOTES_CACHE.get("ts", 0)
 
-    quotes_res = dict(_LIVE_QUOTES_CACHE.get("data", {}))
+    if not target_symbols and cached_data and cache_age < 15.0:
+        return cached_data
+
+    target_set = {str(s).strip().upper() for s in target_symbols} if target_symbols else None
+    if target_set and cached_data and cache_age < 15.0:
+        if all((f"FUT:{s}" in cached_data or s in cached_data) for s in target_set):
+            return cached_data
+
+    quotes_res = dict(cached_data)
 
     # 0. Load Scrip Masters
     if not _KOTAK_FO_MAP:
@@ -996,8 +1004,10 @@ def get_live_kotak_quotes_map() -> dict[str, dict]:
         fo_tok_to_sym = {}
         cm_tok_to_sym = {}
 
-        # Collect nse_fo and nse_cm tokens
+        # Collect nse_fo and nse_cm tokens (filtered if target_symbols requested)
         for sym, c_info in _KOTAK_FO_MAP.items():
+            if target_set and sym not in target_set:
+                continue
             fo_tok = c_info.get("token")
             if fo_tok:
                 tokens_to_fetch.append(f"nse_fo|{fo_tok}")
@@ -1084,10 +1094,13 @@ def get_live_kotak_quotes_map() -> dict[str, dict]:
                 ac.ensure_session()
                 angel_map = get_angel_fo_map()
                 if angel_map:
-                    all_syms = [item["symbol"] for item in FO_UNIVERSE]
-                    for extra_sym in _KOTAK_FO_MAP.keys():
-                        if extra_sym not in all_syms:
-                            all_syms.append(extra_sym)
+                    if target_set:
+                        all_syms = [s for s in target_set]
+                    else:
+                        all_syms = [item["symbol"] for item in FO_UNIVERSE]
+                        for extra_sym in _KOTAK_FO_MAP.keys():
+                            if extra_sym not in all_syms:
+                                all_syms.append(extra_sym)
 
                     inst_list = []
                     tok_to_sym = {}

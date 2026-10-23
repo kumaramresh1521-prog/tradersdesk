@@ -24034,3 +24034,460 @@ html[data-theme="light"] .pvo-data-table td {
 html[data-theme="light"] .pvo-data-table tbody tr:hover {
   background: #f8fafc;
 }
+
+
+/* ==============================================================================
+   NATIVE MOBILE APP REDESIGN — FUTURES DESK, INTRADAY & PRICE vs OI
+   Active strictly on mobile screens (max-width: 768px). Desktop is 100% untouched.
+   ============================================================================== */
+@media (max-width: 768px) {
+  /* 1. Header Command Bar: Clean, Compact Native Mobile Feel */
+  .fut-top-bar {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+    margin-bottom: 8px !important;
+  }
+  .fut-subheading {
+    display: none !important; /* Hide long 3-line static description paragraph on mobile */
+  }
+  .fut-brand-icon {
+    display: none !important; /* Save space on mobile */
+  }
+  .fut-heading {
+    font-size: 14px !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin: 0 !important;
+  }
+  .fut-count-pill {
+    font-size: 9.5px !important;
+    padding: 2px 6px !important;
+  }
+  .fut-controls-group {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+  .fut-refresh-select {
+    display: none !important; /* Hide verbose select dropdown on mobile */
+  }
+  .fut-pulse-pill {
+    padding: 4px 8px !important;
+    font-size: 10.5px !important;
+  }
+  .fut-refresh-btn {
+    padding: 5px 12px !important;
+    font-size: 11px !important;
+    border-radius: 6px !important;
+  }
+  .fut-search-box {
+    width: 100% !important;
+    margin-bottom: 4px !important;
+  }
+  .fut-search-box input {
+    font-size: 11.5px !important;
+    padding: 6px 10px 6px 28px !important;
+  }
+
+  /* 2. Sub-Tabs Navigation Ribbon: Sleek Horizontal Native Pill Slider */
+  .fut-subtabs-nav {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 6px !important;
+    padding: 4px 2px !important;
+    margin: 0 0 10px 0 !important;
+  }
+  .fut-subtabs-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+  .fut-tab-btn {
+    flex-shrink: 0 !important;
+    padding: 6px 13px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    border-radius: 20px !important;
+    white-space: nowrap !important;
+  }
+
+  /* 3. FUTURE INTRADAY VIEW: Mobile Overhaul */
+  .fut-intraday-wrap {
+    gap: 10px !important;
+  }
+  .fut-intraday-index-ribbon {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 6px 8px !important;
+    gap: 6px !important;
+    border-radius: 8px !important;
+  }
+  .fut-intraday-index-ribbon::-webkit-scrollbar {
+    display: none !important;
+  }
+  .fut-intraday-idx-btn {
+    flex-shrink: 0 !important;
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+    gap: 6px !important;
+    border-radius: 6px !important;
+  }
+  .fut-intraday-idx-btn .pill-sym {
+    font-size: 11px !important;
+  }
+  .fut-intraday-idx-btn .pill-ltp {
+    font-size: 11px !important;
+  }
+  .fut-intraday-idx-btn .pill-chg {
+    font-size: 10px !important;
+    padding: 1px 4px !important;
+  }
+
+  .fut-intraday-controls {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+  }
+  .fut-intraday-header-left {
+    width: 100% !important;
+    min-width: auto !important;
+    gap: 2px !important;
+  }
+  #futIntradayTitle {
+    font-size: 15px !important;
+  }
+  #futIntradayLtp {
+    font-size: 22px !important;
+  }
+  #futIntradayChg {
+    font-size: 12px !important;
+  }
+  #futIntradayControlBar {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+  }
+  #futIntradayIntervalBar {
+    gap: 3px !important;
+  }
+  .fut-oi-b {
+    padding: 4px 7px !important;
+    font-size: 11px !important;
+  }
+  #futIntradayDateSel {
+    min-width: 100px !important;
+    max-width: 130px !important;
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+  }
+  #futIntradayRefreshBtn {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+  }
+  #futIntradayHelpMsg {
+    display: none !important; /* Hide verbose counter text */
+  }
+
+  /* Compact 3-Column Micro Stats Grid on Mobile */
+  .fut-intraday-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 4px !important;
+  }
+  .fut-intraday-stat-item {
+    padding: 6px 4px !important;
+    border-radius: 6px !important;
+    text-align: center !important;
+  }
+  .fut-intraday-stat-label {
+    font-size: 9px !important;
+    margin-bottom: 2px !important;
+    letter-spacing: 0.3px !important;
+  }
+  .fut-intraday-stat-val {
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+  }
+  .fut-intraday-stat-sub {
+    font-size: 8.5px !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Table: Sticky Time Column + Touch Optimized */
+  .fut-intraday-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 8px !important;
+    max-height: 480px !important;
+  }
+  .fut-intraday-table {
+    font-size: 11px !important;
+  }
+  .fut-intraday-table th,
+  .fut-intraday-table td {
+    padding: 6px 8px !important;
+    white-space: nowrap !important;
+  }
+  .fut-intraday-table th:first-child,
+  .fut-intraday-table td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 4 !important;
+    background: #0b1325 !important;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.4) !important;
+  }
+  [data-theme="light"] .fut-intraday-table th:first-child,
+  [data-theme="light"] .fut-intraday-table td:first-child {
+    background: #ffffff !important;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08) !important;
+  }
+  .fut-intraday-table .regime-badge {
+    font-size: 9.5px !important;
+    padding: 2px 6px !important;
+  }
+
+  /* 4. FUTURE VS OPEN INTEREST (PRICE vs OI): Mobile Overhaul */
+  .pvo-terminal-wrap {
+    gap: 10px !important;
+  }
+  .pvo-header-row {
+    padding: 12px 14px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+  }
+  .pvo-subtitle, .pvo-badge-tag {
+    display: none !important; /* Hide giant paragraphs and decorative tags */
+  }
+  .pvo-title {
+    font-size: 16px !important;
+    margin: 0 !important;
+  }
+  .pvo-header-meta {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+  }
+  .pvo-live-badge {
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+  }
+  .pvo-timestamp {
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+  }
+  .pvo-btn-refresh {
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+  }
+
+  /* Selector Bar */
+  .pvo-selector-bar {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+    border-radius: 8px !important;
+  }
+  .pvo-indices-ribbon {
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 6px !important;
+  }
+  .pvo-indices-ribbon::-webkit-scrollbar {
+    display: none !important;
+  }
+  .pvo-idx-btn {
+    flex-shrink: 0 !important;
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+    border-radius: 6px !important;
+  }
+  .pvo-stock-select-wrap {
+    width: 100% !important;
+    min-width: auto !important;
+  }
+  .pvo-stock-input {
+    font-size: 11.5px !important;
+    padding: 7px 10px 7px 28px !important;
+  }
+
+  /* Toolbar: Mode & Intervals */
+  .pvo-toolbar-row {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+    border-radius: 8px !important;
+  }
+  .pvo-mode-group {
+    width: 100% !important;
+    display: flex !important;
+    gap: 4px !important;
+    background: rgba(15, 23, 42, 0.4) !important;
+  }
+  .pvo-mode-btn {
+    flex: 1 !important;
+    text-align: center !important;
+    padding: 7px 8px !important;
+    font-size: 11.5px !important;
+    border-radius: 6px !important;
+  }
+  .pvo-granularity-group {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
+    padding: 2px 0 !important;
+  }
+  .pvo-granularity-group::-webkit-scrollbar {
+    display: none !important;
+  }
+  .pvo-tf-btn, .pvo-day-btn {
+    flex-shrink: 0 !important;
+    padding: 4px 9px !important;
+    font-size: 10.5px !important;
+  }
+  .pvo-expiry-pill {
+    padding: 4px 8px !important;
+    font-size: 10.5px !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  /* Stat Cards on Mobile: 2x2 Grid + 1 Full Width */
+  .pvo-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .pvo-stat-card {
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+  }
+  .pvo-stat-card:last-child {
+    grid-column: span 2 !important;
+  }
+  .pvo-stat-label {
+    font-size: 9.5px !important;
+    margin-bottom: 2px !important;
+  }
+  .pvo-stat-val {
+    font-size: 16px !important;
+    margin-bottom: 2px !important;
+  }
+  .pvo-stat-sub {
+    font-size: 10px !important;
+  }
+
+  /* Dual-Axis Chart on Mobile */
+  .pvo-chart-card {
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+  }
+  .pvo-chart-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+    margin-bottom: 6px !important;
+  }
+  .pvo-chart-legend {
+    gap: 10px !important;
+    font-size: 10.5px !important;
+    flex-wrap: wrap !important;
+  }
+  .pvo-chart-hint {
+    display: none !important;
+  }
+  .pvo-canvas-wrapper {
+    height: 300px !important;
+  }
+
+  /* Chart Controls & Replay on Mobile */
+  .pvo-chart-controls {
+    padding: 8px 10px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    border-radius: 8px !important;
+  }
+  .pvo-chart-toggles {
+    gap: 8px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 2px 0 !important;
+  }
+  .pvo-chart-toggles::-webkit-scrollbar {
+    display: none !important;
+  }
+  .pvo-toggle-label {
+    flex-shrink: 0 !important;
+    font-size: 11px !important;
+  }
+  .pvo-replay-box {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+  }
+  .pvo-replay-slider {
+    flex: 1 !important;
+    width: auto !important;
+  }
+  .pvo-replay-time {
+    font-size: 10.5px !important;
+  }
+
+  /* Matrix Guide: 1 Column on Mobile */
+  .pvo-matrix-cards {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+  .pvo-matrix-card {
+    padding: 10px 12px !important;
+  }
+  .pm-desc {
+    font-size: 10.5px !important;
+  }
+
+  /* Table on Mobile: Sticky First Column */
+  .pvo-table-wrap {
+    padding: 6px !important;
+    max-height: 420px !important;
+  }
+  .pvo-data-table {
+    font-size: 11px !important;
+  }
+  .pvo-data-table th,
+  .pvo-data-table td {
+    padding: 6px 7px !important;
+    white-space: nowrap !important;
+  }
+  .pvo-data-table th:first-child,
+  .pvo-data-table td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 4 !important;
+    background: var(--card-bg, #1e293b) !important;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.4) !important;
+  }
+  html[data-theme="light"] .pvo-data-table th:first-child,
+  html[data-theme="light"] .pvo-data-table td:first-child {
+    background: #ffffff !important;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08) !important;
+  }
+}
