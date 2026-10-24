@@ -1301,6 +1301,184 @@ body.theme-light .contrib-date-input {
   color: #0f172a;
 }
 
+/* ==========================================================================
+   Universe & Interval Dropdowns + Auto-Refresh Controls for Breadth Contribution
+   ========================================================================== */
+.contrib-ctrl-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--p2-border);
+  padding: 4px 10px;
+  border-radius: 6px;
+  height: 34px;
+  box-sizing: border-box;
+}
+
+body.theme-light .contrib-ctrl-item {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.contrib-ctrl-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--p2-text-muted);
+  cursor: pointer;
+}
+
+.contrib-select {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--p2-border);
+  color: var(--p2-text-bright);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.contrib-select:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
+body.theme-light .contrib-select {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+body.theme-light .contrib-select:focus {
+  border-color: #0284c7;
+}
+
+/* Auto Refresh Widget matching Control-Band Theme */
+.contrib-auto-refresh-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+body.theme-light .contrib-auto-refresh-wrap {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.contrib-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+body.theme-light .contrib-check-label {
+  color: #047857;
+}
+
+.contrib-check-label input[type="checkbox"] {
+  accent-color: #10b981;
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.contrib-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: contribPulse 2s infinite;
+}
+
+.contrib-auto-refresh-wrap.paused .contrib-pulse-dot {
+  background: #64748b;
+  box-shadow: none;
+  animation: none;
+}
+
+.contrib-auto-refresh-wrap.paused {
+  background: rgba(100, 116, 139, 0.1);
+  border-color: rgba(100, 116, 139, 0.3);
+}
+
+.contrib-auto-refresh-wrap.paused .contrib-check-label,
+.contrib-auto-refresh-wrap.paused .contrib-refresh-state {
+  color: #64748b;
+}
+
+@keyframes contribPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.contrib-mini-select {
+  height: 24px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+body.theme-light .contrib-mini-select {
+  background: #ffffff;
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #047857;
+}
+
+.contrib-refresh-state {
+  color: #10b981;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+body.theme-light .contrib-refresh-state {
+  color: #047857;
+}
+
+@keyframes contribSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.contrib-spinning {
+  display: inline-block;
+  animation: contribSpin 0.9s linear infinite;
+}
+
 /* Page 1 Style Legend Lines */
 .legend-line {
   display: inline-block;
@@ -3454,5 +3632,56 @@ body.light-theme .inst-dot-menu-btn:hover {
 @media (max-width: 768px) {
   .terminal-footer {
     padding: 24px 16px 16px !important;
+  }
+}
+
+
+/* Responsive mobile styling for Breadth Contribution top controls */
+@media (max-width: 768px) {
+  .contrib-top-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    margin-top: 6px;
+  }
+  .contrib-date-wrap,
+  .contrib-ctrl-item,
+  .contrib-auto-refresh-wrap,
+  .contrib-spot-pill {
+    height: 32px;
+    padding: 2px 8px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .contrib-auto-refresh-wrap {
+    gap: 6px;
+    padding: 2px 8px;
+  }
+  .contrib-select,
+  .contrib-date-input {
+    font-size: 11px;
+    padding: 2px 4px;
+  }
+  .contrib-mini-select {
+    height: 22px;
+    padding: 0 4px;
+    font-size: 10.5px;
+  }
+  .contrib-refresh-state {
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .contrib-index-switcher {
+    display: flex;
+    overflow-x: auto;
+    max-width: 100%;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .contrib-index-btn {
+    padding: 4px 8px;
+    font-size: 10.5px;
+    white-space: nowrap;
   }
 }

@@ -539,10 +539,11 @@
         <p>Intraday Advance/Decline Breadth Dynamics vs Index Spot with Stock-by-Stock Institutional Point Contributions</p>
       </div>
 
-      <!-- Controls: Date Selector + Index Selector Buttons + Live Spot Pill + Refresh -->
+      <!-- Controls: Date + Universe Select + Quick Pills + Interval Select + Auto-Refresh + Spot Pill + Refresh Button -->
       <div class="contrib-top-controls">
+        <!-- 1. Date Selector -->
         <div class="contrib-date-wrap">
-          <label class="contrib-date-label">
+          <label class="contrib-date-label" for="contribDateInput">
             <span class="contrib-lbl-icon">📅</span>
             <span class="contrib-lbl-text">Date:</span>
             <input id="contribDateInput" type="date" class="contrib-date-input">
@@ -550,19 +551,82 @@
           <span id="contribDateDisplayBadge" class="p2-badge p2-badge-teal">Today</span>
         </div>
 
-        <div class="contrib-index-switcher" id="contribIndexGroup">
-          <button class="contrib-index-btn active" data-index="nifty50" type="button">NIFTY 50</button>
-          <button class="contrib-index-btn" data-index="banknifty" type="button">BANK NIFTY</button>
+        <!-- 2. Universe / Index Dropdown -->
+        <div class="contrib-ctrl-item">
+          <label class="contrib-ctrl-label" for="contribUniverseSelect">
+            <span class="contrib-lbl-icon">🌐</span>
+            <span class="contrib-lbl-text">Universe:</span>
+            <select id="contribUniverseSelect" class="contrib-select" title="Select Index / Stock Universe">
+              <option value="nifty50" selected>Nifty 50</option>
+              <option value="sensex">BSE Sensex</option>
+              <option value="banknifty">Bank Nifty</option>
+              <option value="finnifty">FinNifty</option>
+              <option value="midcpnifty">Midcap Select</option>
+              <option value="niftyit">Nifty IT</option>
+              <option value="niftyauto">Nifty Auto</option>
+              <option value="niftypharma">Nifty Pharma</option>
+              <option value="niftymetal">Nifty Metal</option>
+              <option value="niftyfmcg">Nifty FMCG</option>
+              <option value="niftyenergy">Nifty Energy</option>
+              <option value="niftymidcap100">Nifty Midcap 100</option>
+              <option value="niftynext50">Nifty Next 50</option>
+              <option value="nifty500">Nifty 500</option>
+            </select>
+          </label>
         </div>
 
+        <!-- Quick Switcher Pills (Synced with Universe dropdown) -->
+        <div class="contrib-index-switcher" id="contribIndexGroup" title="Quick Switch Universe">
+          <button class="contrib-index-btn active" data-index="nifty50" type="button">NIFTY 50</button>
+          <button class="contrib-index-btn" data-index="banknifty" type="button">BANK NIFTY</button>
+          <button class="contrib-index-btn" data-index="sensex" type="button">SENSEX</button>
+          <button class="contrib-index-btn" data-index="finnifty" type="button">FINNIFTY</button>
+        </div>
+
+        <!-- 3. Interval Dropdown -->
+        <div class="contrib-ctrl-item">
+          <label class="contrib-ctrl-label" for="contribIntervalSelect">
+            <span class="contrib-lbl-icon">⏱️</span>
+            <span class="contrib-lbl-text">Interval:</span>
+            <select id="contribIntervalSelect" class="contrib-select" title="Intraday Candle Interval">
+              <option value="ONE_MINUTE" selected>1m</option>
+              <option value="THREE_MINUTE">3m</option>
+              <option value="FIVE_MINUTE">5m</option>
+              <option value="TEN_MINUTE">10m</option>
+              <option value="FIFTEEN_MINUTE">15m</option>
+              <option value="THIRTY_MINUTE">30m</option>
+              <option value="ONE_DAY">Day</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- 4. Auto Refresh Controls (Pre-Ticked & Configurable) -->
+        <div class="contrib-auto-refresh-wrap">
+          <label class="contrib-check-label" title="Toggle Real-Time Auto Refresh">
+            <input id="contribAutoRefreshToggle" type="checkbox" checked>
+            <span class="contrib-pulse-dot"></span>
+            <span>Auto Refresh</span>
+          </label>
+          <select id="contribAutoRefreshInterval" class="contrib-mini-select" title="Refresh Frequency">
+            <option value="10">10s</option>
+            <option value="30">30s</option>
+            <option value="60" selected>60s</option>
+            <option value="120">2m</option>
+            <option value="300">5m</option>
+          </select>
+          <span class="contrib-refresh-state" id="contribRefreshState">Live 60s</span>
+        </div>
+
+        <!-- 5. Live Spot Pill -->
         <div class="contrib-spot-pill" id="contribSpotPill">
           <span class="spot-title" id="contribSpotTitle">NIFTY 50</span>
           <span class="spot-val" id="contribSpotVal">23,346.40</span>
           <span class="spot-chg text-green" id="contribSpotChg">+75.80 (0.32%)</span>
         </div>
 
-        <button id="contribRefreshBtn" class="page2-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;" title="Refresh Breadth &amp; Contribution">
-          <span>🔄</span> <span>Refresh</span>
+        <!-- 6. Refresh Button -->
+        <button id="contribRefreshBtn" class="page2-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;" title="Refresh Breadth &amp; Contribution Now">
+          <span id="contribRefreshIcon">🔄</span> <span id="contribRefreshLabel">Refresh</span>
         </button>
       </div>
     </div>
@@ -758,7 +822,7 @@
     </div>
   </main>
 
-  <script src="/page2.js?v=20260922_v13"></script>
+  <script src="/page2.js?v=20261024_breadth_v1"></script>
     <!-- ================================================================
          6-DOT APP LAUNCHER: ALL DESKS, MENUS & SUBMENUS MODAL
          ================================================================ -->

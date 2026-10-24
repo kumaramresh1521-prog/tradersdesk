@@ -8651,7 +8651,7 @@ def build_indices_overview(payload: dict) -> dict:
     _INDICES_OVERVIEW_CACHE["timestamp"] = time.time()
     return data
 _BREADTH_CONTRIB_CACHE = {}
-_BREADTH_CONTRIB_CACHE_VERSION = 2
+_BREADTH_CONTRIB_CACHE_VERSION = 3
 _BREADTH_RECOMPUTE_LOCK = threading.Lock()
 _BREADTH_RECOMPUTING = set()
 _CONSTITUENTS_CACHE = {"timestamp": 0.0, "data": {}}
@@ -8761,12 +8761,15 @@ def get_live_constituent_quotes(symbols: list[str]) -> dict[str, dict]:
     return quotes
 
 
-def _compute_breadth_contribution_task(idx: str, effective_date: str):
-    is_bank = "bank" in (idx or "").lower()
-    norm_idx = "banknifty" if is_bank else "nifty50"
+def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: str = "ONE_MINUTE"):
+    norm_idx = normalize_index_key(idx)
+    norm_interval = (interval or "ONE_MINUTE").strip().upper()
+    if norm_interval not in ("ONE_MINUTE", "THREE_MINUTE", "FIVE_MINUTE", "TEN_MINUTE", "FIFTEEN_MINUTE", "THIRTY_MINUTE", "ONE_DAY"):
+        norm_interval = "ONE_MINUTE"
+    is_bank = norm_idx in ("banknifty", "niftybank")
     resolved_date = resolve_market_session_date(effective_date)
-    cache_key = f"{norm_idx}_{effective_date}"
-    resolved_cache_key = f"{norm_idx}_{resolved_date}"
+    cache_key = f"{norm_idx}_{effective_date}_{norm_interval}"
+    resolved_cache_key = f"{norm_idx}_{resolved_date}_{norm_interval}"
     try:
         try:
             req_d = datetime.fromisoformat(effective_date[:10]).date()
@@ -8794,7 +8797,41 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
         b_broker_src = "broker" if is_active_broker_configured() else "sample"
         n_broker_src = "broker" if is_active_broker_configured() else "sample"
 
-        # Parallel Execution: Build breadth timeline & Nifty spot candles concurrently using resolved_date (with fast timeout fallback)
+        # Determine constituent stocks and weights for universe
+        custom_constituents = None
+        custom_index_name = None
+        if norm_idx in ("banknifty", "niftybank"):
+            constituents_list = list(breadth_contribution_engine.BANKNIFTY_CONSTITUENTS)
+            custom_index_name = "BANK NIFTY"
+        elif norm_idx == "nifty50":
+            constituents_list = list(breadth_contribution_engine.NIFTY50_CONSTITUENTS)
+            custom_index_name = "NIFTY 50"
+        else:
+            try:
+                sym_records, _, _, idx_title = fetch_index_symbols(norm_idx)
+                custom_index_name = idx_title or norm_idx.upper()
+                if sym_records:
+                    eq_w = round(100.0 / float(len(sym_records)), 3)
+                    constituents_list = [
+                        {
+                            "symbol": s.get("symbol"),
+                            "name": s.get("company", s.get("symbol")),
+                            "sector": s.get("industry", "Equity"),
+                            "weight": eq_w,
+                            "ltp": 0.0,
+                            "changePct": 0.0,
+                        }
+                        for s in sym_records
+                    ]
+                else:
+                    constituents_list = list(breadth_contribution_engine.NIFTY50_CONSTITUENTS)
+            except Exception:
+                constituents_list = list(breadth_contribution_engine.NIFTY50_CONSTITUENTS)
+                custom_index_name = norm_idx.upper()
+
+        max_symbols_cnt = max(10, len(constituents_list))
+
+        # Parallel Execution: Build breadth timeline & Nifty spot candles concurrently using resolved_date
         b_res = {}
         n_res = {}
         try:
@@ -8804,13 +8841,13 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
                     "endDate": resolved_date,
                     "dataSource": b_broker_src,
                     "universe": norm_idx,
-                    "interval": "ONE_MINUTE",
+                    "interval": norm_interval,
                     "chartMode": "carry",
                     "warmupSessions": 1,
                     "pnfBasis": "hl",
                     "boxPercent": 0.15,
                     "reversalBoxes": 3,
-                    "maxSymbols": 12 if is_bank else 50,
+                    "maxSymbols": max_symbols_cnt,
                     "maWindow": 20,
                     "fastRefresh": True,
                     "symbols": "",
@@ -8821,7 +8858,7 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
                     "date": resolved_date,
                     "dataSource": n_broker_src,
                     "index": norm_idx,
-                    "interval": "ONE_MINUTE",
+                    "interval": norm_interval,
                     "includeOptionChain": False,
                     "fastRefresh": True,
                     "startTime": "09:15",
@@ -8863,8 +8900,8 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
                 "latestO": last_today.get("o", 0),
                 "x": last_today.get("x", 0),
                 "o": last_today.get("o", 0),
-                "totalSymbols": b_res.get("universeCount", 50),
-                "loadedSymbols": b_res.get("symbolsLoaded", 50),
+                "totalSymbols": b_res.get("universeCount", len(constituents_list)),
+                "loadedSymbols": b_res.get("symbolsLoaded", len(constituents_list)),
             }
         else:
             real_b_summary = b_res.get("summary") or {}
@@ -8882,15 +8919,12 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
         if not real_n:
             real_n = [pt for pt in raw_n if "09:15" <= str(pt.get("time", ""))[11:16] <= cur_cutoff_hhmm]
 
-        # Guarantee complete genuine index candles: if real_n is missing or partial, use fetch_real_intraday_index_candles
         min_candles_needed = max(5, min(int((now_ist_dt - datetime.combine(now_ist_dt.date(), dt_time(9, 15)).replace(tzinfo=INDIA_TZ)).total_seconds() / 60), 60)) if is_live_trading else 30
         if not real_n or len(real_n) < min_candles_needed:
             real_candles = fetch_real_intraday_index_candles(norm_idx, resolved_date, interval_minutes=1)
             raw_pts = candle_points(real_candles) if real_candles else []
             real_n = [pt for pt in raw_pts if "09:15" <= str(pt.get("time", ""))[11:16] <= cur_cutoff_hhmm]
 
-        # Contribution charts must be sourced from the same verified session.
-        # Never manufacture either breadth or index history when a feed is incomplete.
         if len(real_b) < 5 or len(real_n) < 5:
             return breadth_contribution_engine.compute_breadth_contribution(
                 index_key=norm_idx,
@@ -8904,6 +8938,9 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
                 is_holiday=is_holiday,
                 holiday_name=holiday_name,
                 is_market_closed=(not is_live_trading),
+                custom_constituents=constituents_list,
+                custom_index_name=custom_index_name,
+                interval_label=norm_interval,
             )
 
         # Stitch latest real spot quote so the chart is accurate to the exact second
@@ -8925,11 +8962,6 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
                     "volume": 0,
                 })
 
-        constituents_list = (
-            breadth_contribution_engine.BANKNIFTY_CONSTITUENTS
-            if is_bank
-            else breadth_contribution_engine.NIFTY50_CONSTITUENTS
-        )
         symbols = [s["symbol"] for s in constituents_list]
         live_stock_quotes = get_live_constituent_quotes(symbols)
 
@@ -8945,6 +8977,9 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
             is_holiday=is_holiday,
             holiday_name=holiday_name,
             is_market_closed=not is_market_open(),
+            custom_constituents=constituents_list,
+            custom_index_name=custom_index_name,
+            interval_label=norm_interval,
         )
 
         # Save to in-memory cache and on-disk cache ONLY if valid and timeline has items!
@@ -8974,19 +9009,22 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str):
             _BREADTH_RECOMPUTING.discard(resolved_cache_key)
 
 
-def get_cached_breadth_contribution(idx: str, date_param: str, force_refresh: bool = False):
+def get_cached_breadth_contribution(idx: str, date_param: str, interval: str = "ONE_MINUTE", force_refresh: bool = False):
     """
     Ultra-Fast Sub-millisecond Stale-While-Revalidate Breadth Contribution endpoint:
     - If cache is present (in-memory or on-disk), ALWAYS returns immediately (<2ms).
     - If force_refresh is requested or cache is stale (>30s during market hours), returns current cache and triggers background thread to update.
     - If market is closed, caches for 24 hours to prevent redundant computations.
     """
-    norm_idx = "banknifty" if "bank" in (idx or "").lower() else "nifty50"
+    norm_idx = normalize_index_key(idx)
+    norm_interval = (interval or "ONE_MINUTE").strip().upper()
+    if norm_interval not in ("ONE_MINUTE", "THREE_MINUTE", "FIVE_MINUTE", "TEN_MINUTE", "FIFTEEN_MINUTE", "THIRTY_MINUTE", "ONE_DAY"):
+        norm_interval = "ONE_MINUTE"
     raw_date = (date_param or "").strip()
     effective_date = raw_date or now_ist().strftime("%Y-%m-%d")
     resolved_date = resolve_market_session_date(effective_date)
-    cache_key = f"{norm_idx}_{effective_date}"
-    resolved_cache_key = f"{norm_idx}_{resolved_date}"
+    cache_key = f"{norm_idx}_{effective_date}_{norm_interval}"
+    resolved_cache_key = f"{norm_idx}_{resolved_date}_{norm_interval}"
     market_open = is_market_open()
     cache_ttl = 30.0 if market_open else 86400.0
 
@@ -9002,7 +9040,7 @@ def get_cached_breadth_contribution(idx: str, date_param: str, force_refresh: bo
                         _BREADTH_RECOMPUTING.add(resolved_cache_key)
                         threading.Thread(
                             target=_compute_breadth_contribution_task,
-                            args=(idx, effective_date),
+                            args=(norm_idx, effective_date, norm_interval),
                             daemon=True,
                         ).start()
             return cached["data"]
@@ -9023,8 +9061,7 @@ def get_cached_breadth_contribution(idx: str, date_param: str, force_refresh: bo
                     pass
 
     # 3. Cold start or forced refresh: compute synchronously
-    return _compute_breadth_contribution_task(idx, effective_date)
-
+    return _compute_breadth_contribution_task(norm_idx, effective_date, norm_interval)
 
 
 def sanitize_for_json(obj):
@@ -9827,10 +9864,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             return self.send_json(200, fii_dii_engine.get_fii_derivatives_flow())
         if path == "/api/index-breadth-contribution":
             query = urllib.parse.parse_qs(parsed.query)
-            idx = query.get("index", query.get("symbol", ["nifty50"]))[0]
+            idx = query.get("index", query.get("symbol", query.get("universe", ["nifty50"])))[0]
             date_param = query.get("date", [""])[0] or now_ist().strftime("%Y-%m-%d")
+            interval = query.get("interval", ["ONE_MINUTE"])[0]
             force = query.get("refresh", ["false"])[0].lower() in ("1", "true")
-            return self.send_json(200, get_cached_breadth_contribution(idx, date_param, force))
+            return self.send_json(200, get_cached_breadth_contribution(idx, date_param, interval=interval, force_refresh=force))
         if path in ("/api/open-interest", "/api/open-interest/nifty"):
             query = urllib.parse.parse_qs(parsed.query)
             sym = query.get("symbol", ["NIFTY"])[0]
@@ -10673,10 +10711,11 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, build_fii_dii_cash(payload))
             if parsed.path == "/api/index-breadth-contribution":
                 payload = self.read_body()
-                idx = payload.get("index", payload.get("symbol", "nifty50"))
+                idx = payload.get("index", payload.get("symbol", payload.get("universe", "nifty50")))
                 date_param = payload.get("date") or now_ist().strftime("%Y-%m-%d")
+                interval = payload.get("interval") or "ONE_MINUTE"
                 force = bool(payload.get("refresh") or payload.get("fastRefresh"))
-                return self.send_json(200, get_cached_breadth_contribution(idx, date_param, force))
+                return self.send_json(200, get_cached_breadth_contribution(idx, date_param, interval=interval, force_refresh=force))
             if parsed.path in ("/api/open-interest", "/api/open-interest/nifty"):
                 payload = self.read_body()
                 sym = payload.get("symbol", "NIFTY")
@@ -11499,6 +11538,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             if data is None:
                 raw_html = file_path.read_text(encoding="utf-8")
                 injected_html = seo_engine.inject_seo_metadata(raw_html, req_path)
+                if req_path.rstrip("/") in ("/breadth-contribution", "/contribution"):
+                    injected_html = injected_html.replace('id="p2SuiteStraddleBtn" class="page2-suite-btn active"', 'id="p2SuiteStraddleBtn" class="page2-suite-btn"')
+                    injected_html = injected_html.replace('id="p2SuiteContributionBtn" class="page2-suite-btn"', 'id="p2SuiteContributionBtn" class="page2-suite-btn active"')
+                    injected_html = injected_html.replace('id="p2SectionStraddle" class="page2-main-content"', 'id="p2SectionStraddle" class="page2-main-content" style="display:none;"')
+                    injected_html = injected_html.replace('id="p2SectionBreadthContribution" class="page2-main-content" style="display:none;"', 'id="p2SectionBreadthContribution" class="page2-main-content"')
                 data = injected_html.encode("utf-8")
                 with _SEO_HTML_CACHE_LOCK:
                     _SEO_HTML_CACHE[cache_key] = {"ts": now, "data": data}

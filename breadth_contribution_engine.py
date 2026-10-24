@@ -302,16 +302,31 @@ def compute_breadth_contribution(
     is_holiday: bool = False,
     holiday_name: Optional[str] = None,
     is_market_closed: bool = False,
+    custom_constituents: Optional[List[Dict[str, Any]]] = None,
+    custom_index_name: Optional[str] = None,
+    interval_label: Optional[str] = "ONE_MINUTE",
 ) -> Dict[str, Any]:
     """
     Returns full payload for Index Breadth Dynamics and Stock Weight Contribution.
     Contributions are recalculated dynamically using real spot + weight + real-time stock quotes.
+    Supports any universe, interval, and constituent list.
     """
     norm_key = (index_key or "nifty50").lower().replace(" ", "").replace("-", "")
     effective_date = date_str or "2026-09-21"
     display_date = format_indian_date(effective_date)
+    is_bank = norm_key in ("banknifty", "niftybank")
 
-    if norm_key in ("banknifty", "niftybank"):
+    if custom_constituents and len(custom_constituents) > 0:
+        index_name = custom_index_name or norm_key.upper()
+        spot = 24000.00
+        change = 0.0
+        change_pct = 0.0
+        open_val = 24000.00
+        high_val = 24000.00
+        low_val = 24000.00
+        prev_close = 24000.00
+        raw_stocks_ref = list(custom_constituents)
+    elif is_bank:
         index_name = "BANK NIFTY"
         spot = 56608.35
         change = 249.65
@@ -322,8 +337,7 @@ def compute_breadth_contribution(
         prev_close = 56358.70
         raw_stocks_ref = list(BANKNIFTY_CONSTITUENTS)
     else:
-        norm_key = "nifty50"
-        index_name = "NIFTY 50"
+        index_name = custom_index_name or "NIFTY 50"
         spot = 23452.20
         change = 105.80
         change_pct = 0.45
@@ -576,6 +590,8 @@ def compute_breadth_contribution(
     return {
         "ok": True,
         "indexKey": norm_key,
+        "universe": norm_key,
+        "interval": interval_label or "ONE_MINUTE",
         "date": effective_date,
         "requestedDate": req_date,
         "displayDate": display_date,

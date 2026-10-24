@@ -302,7 +302,7 @@
           renderIntradayBreadthChart(contribTimeline);
           renderIntradayIndexChart(contribTimeline, contribDataCache ? contribDataCache.indexInfo : null);
         } else {
-          loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
+          loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
         }
       } else if (isStraddleSuite) {
         if (straddleState.data) {
@@ -361,7 +361,7 @@
     } else if (currentSuite === "fiidii") {
       loadFiiDiiSuite();
     } else if (currentSuite === "contribution") {
-      loadBreadthContributionSuite(currentContribIndex, currentContribDate, true);
+      loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, true);
     }
   }
 
@@ -371,7 +371,7 @@
     } else if (currentSuite === "fiidii") {
       loadFiiDiiSuite();
     } else if (currentSuite === "contribution") {
-      loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
+      loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
     }
   }
 
@@ -2095,6 +2095,9 @@
   let currentContribIndex = "nifty50";
   let currentContribDate = _todayStr;
   let isExplicitContribDate = false;
+  let currentContribInterval = "ONE_MINUTE";
+  let currentContribAutoRefresh = true;
+  let currentContribRefreshInterval = 60; // default 60s
   let currentContribSector = "ALL";
   let currentContribSearch = "";
   let contribDataCache = null;
@@ -2177,7 +2180,8 @@
 
   function initBreadthContribution() {
     initContribSortHeaders();
-    // Date picker input
+
+    // 1. Date picker input
     const dateInput = document.getElementById("contribDateInput");
     if (dateInput) {
       dateInput.value = currentContribDate;
@@ -2186,31 +2190,119 @@
         if (val) {
           isExplicitContribDate = true;
           currentContribDate = val;
-          loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
+          loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
         }
       });
     }
 
-    // Index selector buttons
+    // 2. Universe / Index Select Dropdown (all 14 universes)
+    const univSelect = document.getElementById("contribUniverseSelect");
+    if (univSelect) {
+      univSelect.value = currentContribIndex;
+      univSelect.addEventListener("change", (e) => {
+        currentContribIndex = e.target.value;
+        // Sync quick switcher pills
+        const idxBtns = document.querySelectorAll("#contribIndexGroup .contrib-index-btn");
+        idxBtns.forEach(b => {
+          b.classList.toggle("active", b.getAttribute("data-index") === currentContribIndex);
+        });
+        loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
+      });
+    }
+
+    // 3. Quick Index selector buttons (NIFTY 50, BANK NIFTY, SENSEX, FINNIFTY)
     const idxBtns = document.querySelectorAll("#contribIndexGroup .contrib-index-btn");
     idxBtns.forEach(btn => {
       btn.addEventListener("click", () => {
         idxBtns.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         currentContribIndex = btn.getAttribute("data-index");
-        loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
+        if (univSelect) univSelect.value = currentContribIndex;
+        loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
       });
     });
 
-    // Refresh button (explicit manual refresh)
-    const refBtn = document.getElementById("contribRefreshBtn");
-    if (refBtn) {
-      refBtn.addEventListener("click", () => {
-        loadBreadthContributionSuite(currentContribIndex, currentContribDate, true);
+    // 4. Interval Select Dropdown (1m, 3m, 5m, 10m, 15m, 30m, Day)
+    const intervalSelect = document.getElementById("contribIntervalSelect");
+    if (intervalSelect) {
+      intervalSelect.value = currentContribInterval;
+      intervalSelect.addEventListener("change", (e) => {
+        currentContribInterval = e.target.value;
+        loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
       });
     }
 
-    // Sector tags
+    // 5. Configurable Auto Refresh Controls
+    const autoRefToggle = document.getElementById("contribAutoRefreshToggle");
+    const autoRefInterval = document.getElementById("contribAutoRefreshInterval");
+    const refreshStateBadge = document.getElementById("contribRefreshState");
+    const autoRefWrap = document.querySelector(".contrib-auto-refresh-wrap");
+
+    function updateContribAutoRefreshUI() {
+      if (refreshStateBadge) {
+        if (currentContribAutoRefresh) {
+          const sec = currentContribRefreshInterval;
+          const label = sec >= 60 ? `${sec / 60}m` : `${sec}s`;
+          refreshStateBadge.textContent = `Live ${label}`;
+          if (autoRefWrap) autoRefWrap.classList.remove("paused");
+        } else {
+          refreshStateBadge.textContent = "Paused";
+          if (autoRefWrap) autoRefWrap.classList.add("paused");
+        }
+      }
+    }
+
+    function resetContribAutoRefreshTimer() {
+      if (window._contribAutoRefreshTimer) {
+        clearInterval(window._contribAutoRefreshTimer);
+        window._contribAutoRefreshTimer = null;
+      }
+      if (!currentContribAutoRefresh) return;
+
+      const intervalMs = (currentContribRefreshInterval || 60) * 1000;
+      window._contribAutoRefreshTimer = setInterval(() => {
+        const isContribActive = (typeof currentSuite !== "undefined" && currentSuite === "contribution") ||
+                                (document.getElementById("p2SectionBreadthContribution")?.style.display !== "none");
+        if (isContribActive && currentContribAutoRefresh) {
+          const isToday = !isExplicitContribDate && (!currentContribDate || currentContribDate === _todayStr);
+          const isMarketOpenNow = contribDataCache ? (!contribDataCache.isMarketClosed && !contribDataCache.isHoliday) : true;
+          if (isToday && isMarketOpenNow) {
+            loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
+          }
+        }
+      }, intervalMs);
+    }
+
+    if (autoRefToggle) {
+      autoRefToggle.checked = currentContribAutoRefresh;
+      autoRefToggle.addEventListener("change", (e) => {
+        currentContribAutoRefresh = e.target.checked;
+        updateContribAutoRefreshUI();
+        resetContribAutoRefreshTimer();
+      });
+    }
+
+    if (autoRefInterval) {
+      autoRefInterval.value = String(currentContribRefreshInterval);
+      autoRefInterval.addEventListener("change", (e) => {
+        currentContribRefreshInterval = parseInt(e.target.value, 10) || 60;
+        updateContribAutoRefreshUI();
+        resetContribAutoRefreshTimer();
+      });
+    }
+
+    updateContribAutoRefreshUI();
+    resetContribAutoRefreshTimer();
+
+    // 6. Refresh button (explicit manual refresh)
+    const refBtn = document.getElementById("contribRefreshBtn");
+    if (refBtn) {
+      refBtn.addEventListener("click", () => {
+        loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, true);
+      });
+    }
+
+    // 7. Sector tags filter
     const sectorTags = document.querySelectorAll("#contribSectorFilters .contrib-sector-tag");
     sectorTags.forEach(tag => {
       tag.addEventListener("click", () => {
@@ -2221,7 +2313,7 @@
       });
     });
 
-    // Symbol Search input with 40ms debounce for ultra-responsive typing
+    // 8. Symbol Search input with 40ms debounce for ultra-responsive typing
     const searchInput = document.getElementById("contribSymbolSearchInput");
     if (searchInput) {
       let searchDebounceTimer = null;
@@ -2234,38 +2326,33 @@
       });
     }
 
-    // Setup Canvas interaction
+    // 9. Setup Canvas interaction
     setupContribCanvasEvents();
-
-    // Auto-refresh live data every 10 seconds if viewing today's session and market is open
-    if (!window._contribAutoRefreshTimer) {
-      window._contribAutoRefreshTimer = setInterval(() => {
-        const isContribActive = (typeof currentSuite !== "undefined" && currentSuite === "contribution") ||
-                                (document.getElementById("p2ViewContribution")?.style.display !== "none");
-        if (isContribActive) {
-          const isToday = !isExplicitContribDate && (!currentContribDate || currentContribDate === _todayStr);
-          const isMarketOpenNow = contribDataCache ? (!contribDataCache.isMarketClosed && !contribDataCache.isHoliday) : true;
-          if (isToday && isMarketOpenNow) {
-            loadBreadthContributionSuite(currentContribIndex, currentContribDate, false);
-          }
-        }
-      }, 10000);
-    }
   }
 
-  async function loadBreadthContributionSuite(indexKey = "nifty50", dateStr = null, isRefresh = false) {
+  async function loadBreadthContributionSuite(indexKey = null, dateStr = null, intervalVal = null, isRefresh = false) {
+    const targetIdx = indexKey || currentContribIndex || "nifty50";
+    const effDate = dateStr || currentContribDate || _todayStr;
+    const effInterval = intervalVal || currentContribInterval || "ONE_MINUTE";
+    currentContribIndex = targetIdx;
+    currentContribDate = effDate;
+    currentContribInterval = effInterval;
+
     const dateBadge = document.getElementById("contribDateDisplayBadge");
     const contribRefBtn = document.getElementById("contribRefreshBtn");
-    if (isRefresh && contribRefBtn) {
-      contribRefBtn.innerHTML = "<span>⏳</span> <span>Refreshing...</span>";
-      contribRefBtn.disabled = true;
+    const refIcon = document.getElementById("contribRefreshIcon");
+    const refLabel = document.getElementById("contribRefreshLabel");
+
+    if (isRefresh) {
+      if (refIcon) refIcon.classList.add("contrib-spinning");
+      if (refLabel) refLabel.textContent = "Refreshing...";
+      if (contribRefBtn) contribRefBtn.disabled = true;
     }
     if (isRefresh && dateBadge && !dateBadge.textContent.includes("⏳")) {
       dateBadge.textContent = "⏳ Computing Breadth...";
     }
     try {
-      const effDate = dateStr || currentContribDate || _todayStr;
-      const url = `/api/index-breadth-contribution?index=${encodeURIComponent(indexKey)}&date=${encodeURIComponent(effDate)}${isRefresh ? '&refresh=true' : ''}`;
+      const url = `/api/index-breadth-contribution?index=${encodeURIComponent(targetIdx)}&date=${encodeURIComponent(effDate)}&interval=${encodeURIComponent(effInterval)}${isRefresh ? '&refresh=true' : ''}`;
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
@@ -2276,6 +2363,20 @@
 
       contribDataCache = data;
       contribTimeline = data.timeline || [];
+
+      // Sync Controls with returned data
+      const univSelect = document.getElementById("contribUniverseSelect");
+      if (univSelect && univSelect.value !== targetIdx) {
+        univSelect.value = targetIdx;
+      }
+      const intervalSelect = document.getElementById("contribIntervalSelect");
+      if (intervalSelect && intervalSelect.value !== effInterval) {
+        intervalSelect.value = effInterval;
+      }
+      const idxBtns = document.querySelectorAll("#contribIndexGroup .contrib-index-btn");
+      idxBtns.forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-index") === targetIdx);
+      });
 
       // Update Date elements without overwriting user's explicit selection
       const displayDate = data.displayDate || "22-Sep-2026";
@@ -2327,7 +2428,7 @@
       const breadthMeta = document.getElementById("contribBreadthMeta");
       const niftyMeta = document.getElementById("contribNiftyMeta");
 
-      if (spotTitle) spotTitle.textContent = idxInfo.name || "NIFTY 50";
+      if (spotTitle) spotTitle.textContent = idxInfo.name || targetIdx.toUpperCase();
       if (breadthTitle) breadthTitle.textContent = `Intraday Breadth (${displayDate})`;
       if (niftyTitle) niftyTitle.textContent = `Index Spot Chart (${displayDate})`;
       if (spotVal) spotVal.textContent = Number(idxInfo.spot || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -2339,16 +2440,27 @@
       }
 
       const summary = data.summary || {};
+      const intervalMap = {
+        "ONE_MINUTE": "1m",
+        "THREE_MINUTE": "3m",
+        "FIVE_MINUTE": "5m",
+        "TEN_MINUTE": "10m",
+        "FIFTEEN_MINUTE": "15m",
+        "THIRTY_MINUTE": "30m",
+        "ONE_DAY": "Day"
+      };
+      const intDisplay = intervalMap[effInterval] || effInterval;
+      const bSum = data.breadthSummary || {};
+      const totalScrips = (summary && summary.totalStocks) ? summary.totalStocks : (bSum.totalSymbols || 50);
+
       if (breadthMeta) {
-        const scrips = (idxInfo.name || "").includes("BANK") ? "12/12 scrips" : "50/50 scrips";
-        breadthMeta.textContent = `${idxInfo.name || "Nifty 50"} | one minute | ${scrips}`;
+        breadthMeta.textContent = `${idxInfo.name || targetIdx.toUpperCase()} | ${intDisplay} | ${totalScrips}/${totalScrips} scrips`;
       }
       if (niftyMeta) {
-        niftyMeta.textContent = `${idxInfo.name || "Nifty 50"} | one minute | Spot & VWAP`;
+        niftyMeta.textContent = `${idxInfo.name || targetIdx.toUpperCase()} | ${intDisplay} | Spot & VWAP`;
       }
 
       // Update Breadth Header Metrics Bar (Matching Page 1 exactly)
-      const bSum = data.breadthSummary || {};
       const latestBreadthEl = document.getElementById("contribLatestBreadth");
       const openBreadthEl = document.getElementById("contribOpenBreadth");
       const breadthChgEl = document.getElementById("contribBreadthChange");
@@ -2399,6 +2511,7 @@
 
       const dragPct = summary.dragRatioPct || 34.9;
       const supportPct = summary.supportRatioPct || 65.1;
+
       if (splitDrag) {
         splitDrag.style.width = `${dragPct}%`;
         splitDrag.title = `Decliners dragging ${dragPct}% (${summary.draggingPoints} pts)`;
@@ -2457,10 +2570,11 @@
       console.error("Failed to load Breadth Contribution suite:", err);
     } finally {
       const contribRefBtn = document.getElementById("contribRefreshBtn");
-      if (contribRefBtn) {
-        contribRefBtn.innerHTML = "<span>🔄</span> <span>Refresh</span>";
-        contribRefBtn.disabled = false;
-      }
+      const refIcon = document.getElementById("contribRefreshIcon");
+      const refLabel = document.getElementById("contribRefreshLabel");
+      if (refIcon) refIcon.classList.remove("contrib-spinning");
+      if (refLabel) refLabel.textContent = "Refresh";
+      if (contribRefBtn) contribRefBtn.disabled = false;
     }
   }
 
