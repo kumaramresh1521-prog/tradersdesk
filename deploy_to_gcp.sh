@@ -30,7 +30,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --memory 1Gi \
   --cpu 1 \
   --cpu-throttling \
-  --min-instances 1 \
+  --min-instances 0 \
   --max-instances 10 \
   --concurrency 80 \
   --update-env-vars "${ENV_VARS_LIST}" \
