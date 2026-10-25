@@ -526,9 +526,20 @@ def compute_straddle_analytics(
         # Re-align raw candle base to live spot so there is NO artificial cliff or jump
         offset = (spot_val - last_candle_close) if (not is_historical and last_candle_close > 0 and spot_val > 0 and abs(spot_val - last_candle_close) > 5.0) else 0.0
 
+        # Smooth spot curve using gentle 3-candle kernel for clean institutional curves
+        closes = [float(c.get("close") or (spot_val - offset)) + offset for c in raw_candles]
+        smooth_spots = []
+        for i, val in enumerate(closes):
+            if i == 0:
+                smooth_spots.append(val)
+            elif i == 1:
+                smooth_spots.append(0.6 * val + 0.4 * closes[0])
+            else:
+                smooth_spots.append(0.5 * val + 0.3 * closes[i-1] + 0.2 * closes[i-2])
+
         for i, candle in enumerate(raw_candles):
             raw_c = float(candle.get("close") or (spot_val - offset))
-            c_spot = round(raw_c + offset, 2)
+            c_spot = round(smooth_spots[i], 2)
             t_raw = str(candle.get("time") or "")
             if len(t_raw) <= 5 and ":" in t_raw:
                 iso_time = f"{session_date}T{t_raw}:00"
@@ -599,10 +610,10 @@ def compute_straddle_analytics(
         seed = int(hashlib.sha256(f"straddle-{sym}-{session_date}-{chosen_strike}".encode("utf-8")).hexdigest()[:12], 16)
         rng = random.Random(seed)
 
-        # Start from morning open spot and drift to current spot
-        drift_sigma = spot_val * 0.00015
-        open_spot = round(spot_val + rng.gauss(0, spot_val * 0.004), 2)
-        walk_spot = open_spot
+        # Smooth, realistic institutional spot curve (no high-frequency white noise)
+        drift_delta = (spot_val * 0.0032)
+        open_spot = round(spot_val - drift_delta, 2)
+        total_drift = spot_val - open_spot
 
         for m in range(max_minutes):
             hh = 9 + (15 + m) // 60
@@ -611,8 +622,9 @@ def compute_straddle_analytics(
 
             # Progress ratio from open to current spot
             prog = m / max(1, max_minutes - 1)
-            target_spot_m = open_spot + (spot_val - open_spot) * prog
-            walk_spot = round(target_spot_m + rng.gauss(0, drift_sigma), 2)
+            # Smooth intraday wave cycle (morning pullback and afternoon trend continuation)
+            wave = (abs(total_drift) * 0.35 + 20.0) * math.sin(prog * math.pi * 2.5) + (abs(total_drift) * 0.12) * math.sin(prog * math.pi * 5.0)
+            walk_spot = round(open_spot + total_drift * prog + wave, 2)
             if m == max_minutes - 1:
                 walk_spot = round(spot_val, 2)
 

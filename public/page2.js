@@ -158,7 +158,7 @@
     setupStraddleControls();
     setupPremiumDecayControls();
     setupCallVsPutControls();
-    setupPage2OpstraPcrControls();
+    if (typeof setupPage2OpstraPcrControls === "function") setupPage2OpstraPcrControls();
     setupFiiDiiControls();
     initBreadthContribution();
 
@@ -455,11 +455,8 @@
     timer: null,
     visible: {
       straddle: true,
-      call: true,
-      put: true,
-      spot: true,
-      synth: true,
-      vwap: true
+      vwap: true,
+      spot: true
     },
     categoriesData: null,
     historyMeta: null,
@@ -635,7 +632,7 @@
     }
 
     // Series visibility toggles (Legend Buttons)
-    const legBtns = document.querySelectorAll(".st-legend-btn");
+    const legBtns = document.querySelectorAll("#p2SectionStraddle .st-legend-btn");
     legBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
         const series = btn.getAttribute("data-series");
@@ -1042,17 +1039,15 @@
     canvas.style.height = height + "px";
     ctx.scale(dpr, dpr);
 
-    const theme = getThemeColors();
     const isLight = document.body.classList.contains("theme-light");
 
     // Colors
-    const colStraddle = "#06b6d4"; // Cyan
+    const colStraddle = "#06b6d4"; // Vibrant Cyan
     const colSpot = "#10b981";     // Emerald Green
-    const colSynth = "#a855f7";    // Purple
     const colVwap = "#f59e0b";     // Amber Gold
 
     // Margins / Padding
-    const padding = { top: 35, right: 80, bottom: 45, left: 70 };
+    const padding = { top: 35, right: 80, bottom: 45, left: 75 };
     const chartW = width - padding.left - padding.right;
     const chartH = height - padding.top - padding.bottom;
 
@@ -1063,42 +1058,36 @@
     const points = data.points || [];
     const n = points.length;
     if (n === 0) {
-      ctx.fillStyle = theme.text;
+      ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
       ctx.font = "14px Inter";
       ctx.textAlign = "center";
       ctx.fillText("No straddle tick data available", width / 2, height / 2);
       return;
     }
 
-    // 1. Compute Left Y-Axis Range (Straddle Price, Call CE, Put PE & VWAP)
+    // 1. Compute Left Y-Axis Range (Clean: ONLY Straddle Price & VWAP)
     let leftVals = [];
     points.forEach(p => {
       if (straddleState.visible.straddle && p.price != null && !isNaN(p.price)) leftVals.push(p.price);
-      if (straddleState.visible.call && p.ce_price != null && !isNaN(p.ce_price)) leftVals.push(p.ce_price);
-      if (straddleState.visible.put && p.pe_price != null && !isNaN(p.pe_price)) leftVals.push(p.pe_price);
       if (straddleState.visible.vwap && p.vwap != null && !isNaN(p.vwap)) leftVals.push(p.vwap);
     });
-    if (leftVals.length === 0) leftVals = [100, 200];
+    if (leftVals.length === 0) leftVals = [180, 240];
     let minLeft = Math.min(...leftVals);
     let maxLeft = Math.max(...leftVals);
-    const leftPad = (maxLeft - minLeft) * 0.08 || 5;
+    const leftPad = Math.max(5, (maxLeft - minLeft) * 0.12);
     minLeft = Math.floor(minLeft - leftPad);
     maxLeft = Math.ceil(maxLeft + leftPad);
 
-    // 2. Compute Right Y-Axis Range (Index Spot & Synthetic Future)
+    // 2. Compute Right Y-Axis Range (Index Spot)
     let rightVals = [];
     points.forEach(p => {
       if (straddleState.visible.spot && p.spot != null && !isNaN(p.spot) && p.spot > 0) rightVals.push(p.spot);
-      if (straddleState.visible.synth && p.synthetic_future != null && !isNaN(p.synthetic_future) && p.synthetic_future > 0) rightVals.push(p.synthetic_future);
     });
     if (rightVals.length === 0) rightVals = [23000, 23500];
     let minRight = Math.min(...rightVals);
     let maxRight = Math.max(...rightVals);
-    if (maxRight <= minRight) {
-      minRight -= 50;
-      maxRight += 50;
-    }
-    const rightPad = Math.max(20, (maxRight - minRight) * 0.08);
+    if (maxRight <= minRight) { minRight -= 50; maxRight += 50; }
+    const rightPad = Math.max(20, (maxRight - minRight) * 0.10);
     minRight = Math.floor(minRight - rightPad);
     maxRight = Math.ceil(maxRight + rightPad);
 
@@ -1116,19 +1105,21 @@
       ctx.lineTo(width - padding.right, y);
       ctx.stroke();
 
-      // Left Y-Axis Label (Straddle Price)
+      // Left Y-Axis Label (Straddle Price in Cyan)
       const lVal = maxLeft - ((maxLeft - minLeft) / gridSteps) * i;
       ctx.fillStyle = colStraddle;
       ctx.font = "11px 'JetBrains Mono', monospace";
       ctx.textAlign = "right";
       ctx.fillText("₹" + lVal.toFixed(1), padding.left - 10, y + 4);
 
-      // Right Y-Axis Label (Spot / Future)
-      const rVal = maxRight - ((maxRight - minRight) / gridSteps) * i;
-      ctx.fillStyle = colSpot;
-      ctx.font = "11px 'JetBrains Mono', monospace";
-      ctx.textAlign = "left";
-      ctx.fillText(Math.round(rVal).toLocaleString("en-IN"), width - padding.right + 10, y + 4);
+      // Right Y-Axis Label (Index Spot in Emerald)
+      if (straddleState.visible.spot) {
+        const rVal = maxRight - ((maxRight - minRight) / gridSteps) * i;
+        ctx.fillStyle = colSpot;
+        ctx.font = "11px 'JetBrains Mono', monospace";
+        ctx.textAlign = "left";
+        ctx.fillText(Math.round(rVal).toLocaleString("en-IN"), width - padding.right + 10, y + 4);
+      }
     }
 
     // Watermark in Center
@@ -1144,42 +1135,12 @@
     const getLeftY = (val) => padding.top + chartH - ((val - minLeft) / (maxLeft - minLeft || 1)) * chartH;
     const getRightY = (val) => padding.top + chartH - ((val - minRight) / (maxRight - minRight || 1)) * chartH;
 
-    // 4. Render Curves
-
-    // Curve A: Synthetic Future (Dashed Purple)
-    if (straddleState.visible.synth) {
-      ctx.strokeStyle = colSynth;
-      ctx.lineWidth = 1.8;
-      ctx.setLineDash([4, 3]);
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        const x = getX(i);
-        const y = getRightY(points[i].synthetic_future);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    // Curve B: Straddle VWAP (Gold Line)
-    if (straddleState.visible.vwap) {
-      ctx.strokeStyle = colVwap;
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        const x = getX(i);
-        const y = getLeftY(points[i].vwap);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-
-    // Curve C: Index Spot (Emerald Green Line)
+    // Curve A: Underlying Index Spot (Subtle Green Dashed Line on Right Axis)
     if (straddleState.visible.spot) {
-      ctx.strokeStyle = colSpot;
-      ctx.lineWidth = 2.2;
+      ctx.save();
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.75)";
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([4, 4]);
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
         const x = getX(i);
@@ -1188,72 +1149,30 @@
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
+      ctx.restore();
     }
 
-    const colCall = "#10b981";
-    const colPut = "#f43f5e";
-
-    // Curve Call (CE) Premium (Emerald Green Line)
-    if (straddleState.visible.call) {
-      const gradCall = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
-      gradCall.addColorStop(0, "rgba(16, 185, 129, 0.10)");
-      gradCall.addColorStop(1, "rgba(16, 185, 129, 0.0)");
-
-      ctx.fillStyle = gradCall;
-      ctx.beginPath();
-      ctx.moveTo(getX(0), padding.top + chartH);
-      for (let i = 0; i < n; i++) {
-        ctx.lineTo(getX(i), getLeftY(points[i].ce_price));
-      }
-      ctx.lineTo(getX(n - 1), padding.top + chartH);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = colCall;
+    // Curve B: Straddle VWAP (Amber Gold Dashed Line)
+    if (straddleState.visible.vwap) {
+      ctx.save();
+      ctx.strokeStyle = colVwap;
       ctx.lineWidth = 2.0;
+      ctx.setLineDash([5, 4]);
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
         const x = getX(i);
-        const y = getLeftY(points[i].ce_price);
+        const y = getLeftY(points[i].vwap);
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
+      ctx.restore();
     }
 
-    // Curve Put (PE) Premium (Rose/Red Line)
-    if (straddleState.visible.put) {
-      const gradPut = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
-      gradPut.addColorStop(0, "rgba(244, 63, 94, 0.10)");
-      gradPut.addColorStop(1, "rgba(244, 63, 94, 0.0)");
-
-      ctx.fillStyle = gradPut;
-      ctx.beginPath();
-      ctx.moveTo(getX(0), padding.top + chartH);
-      for (let i = 0; i < n; i++) {
-        ctx.lineTo(getX(i), getLeftY(points[i].pe_price));
-      }
-      ctx.lineTo(getX(n - 1), padding.top + chartH);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = colPut;
-      ctx.lineWidth = 2.0;
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        const x = getX(i);
-        const y = getLeftY(points[i].pe_price);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-
-    // Curve D: Straddle Price (Cyan Line with subtle gradient glow)
+    // Curve C: Straddle Price (Primary Cyan Line with Soft Gradient Fill)
     if (straddleState.visible.straddle) {
-      // Area gradient
       const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
-      grad.addColorStop(0, "rgba(6, 182, 212, 0.15)");
+      grad.addColorStop(0, "rgba(6, 182, 212, 0.16)");
       grad.addColorStop(1, "rgba(6, 182, 212, 0.0)");
 
       ctx.fillStyle = grad;
@@ -1266,9 +1185,8 @@
       ctx.closePath();
       ctx.fill();
 
-      // Stroke
       ctx.strokeStyle = colStraddle;
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2.6;
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
         const x = getX(i);
@@ -1279,7 +1197,7 @@
       ctx.stroke();
     }
 
-    // 5. X-Axis Time Labels
+    // X-Axis Time Labels
     ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
     ctx.font = "10px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";
@@ -1296,7 +1214,6 @@
         lastDrawnX = x;
       }
     }
-    // Always print final timestamp cleanly without overlap
     if (n > 1) {
       const xLast = getX(n - 1);
       if (xLast - lastDrawnX >= 45) {
@@ -1304,13 +1221,12 @@
       }
     }
 
-    // 6. Crosshair Rendering (when hovered)
+    // Crosshair Rendering (when hovered)
     if (straddleState.hoveredIndex >= 0 && straddleState.hoveredIndex < n) {
       const hi = straddleState.hoveredIndex;
       const hx = getX(hi);
       const hp = points[hi];
 
-      // Vertical crosshair line
       ctx.strokeStyle = isLight ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.35)";
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
@@ -1320,29 +1236,17 @@
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Highlight dots
       if (straddleState.visible.straddle) {
         drawDot(ctx, hx, getLeftY(hp.price), colStraddle);
-      }
-      if (straddleState.visible.call) {
-        drawDot(ctx, hx, getLeftY(hp.ce_price), colCall);
-      }
-      if (straddleState.visible.put) {
-        drawDot(ctx, hx, getLeftY(hp.pe_price), colPut);
-      }
-      if (straddleState.visible.spot) {
-        drawDot(ctx, hx, getRightY(hp.spot), colSpot);
-      }
-      if (straddleState.visible.synth) {
-        drawDot(ctx, hx, getRightY(hp.synthetic_future), colSynth);
       }
       if (straddleState.visible.vwap) {
         drawDot(ctx, hx, getLeftY(hp.vwap), colVwap);
       }
+      if (straddleState.visible.spot) {
+        drawDot(ctx, hx, getRightY(hp.spot), colSpot);
+      }
     }
-  }
-
-  function drawDot(ctx, x, y, color) {
+  }function drawDot(ctx, x, y, color) {
     ctx.save();
     ctx.fillStyle = color;
     ctx.beginPath();
@@ -2395,9 +2299,7 @@
     data: null,
     timer: null,
     visible: {
-      decay: true,
-      ce_decay: true,
-      pe_decay: true,
+      actual_premium: true,
       theta_baseline: true
     },
     hoveredIndex: -1
@@ -2530,6 +2432,11 @@
       const decayPct = openP > 0 ? (decayPts / openP * 100) : 0;
       const greeks = latest.greeks || {};
 
+      const openPriceVal = document.getElementById("decayOpenPriceVal");
+      const currentVal = document.getElementById("decayCurrentVal");
+      if (openPriceVal) openPriceVal.textContent = `₹${openP.toFixed(2)}`;
+      if (currentVal) currentVal.textContent = `₹${currP.toFixed(2)}`;
+
       const pointsVal = document.getElementById("decayPointsVal");
       const pctVal = document.getElementById("decayPctVal");
       const velVal = document.getElementById("decayVelocityVal");
@@ -2619,25 +2526,26 @@
       return;
     }
 
-    const padding = { top: 35, right: 75, bottom: 45, left: 70 };
+    const padding = { top: 35, right: 80, bottom: 45, left: 75 };
     const chartW = width - padding.left - padding.right;
     const chartH = height - padding.top - padding.bottom;
 
-    const openP = points[0].price || 100;
-    const openCe = points[0].ce_price || (openP / 2);
-    const openPe = points[0].pe_price || (openP / 2);
+    const openP = points[0].price || (data.latest ? data.latest.open_straddle : 100) || 100;
+    const totalExpectedDecay = Math.max(15, openP * 0.16);
 
-    let maxDecay = 0;
-    points.forEach(p => {
-      const d = Math.max(0, openP - (p.price || openP));
-      if (d > maxDecay) maxDecay = d;
-    });
-    maxDecay = Math.max(20, Math.ceil(maxDecay * 1.25));
+    let allPrices = points.map(p => p.price).filter(v => v != null && !isNaN(v));
+    allPrices.push(openP - totalExpectedDecay);
+    allPrices.push(openP);
 
-    // Y Axis Grid
+    let minLeft = Math.floor(Math.min(...allPrices) * 0.96);
+    let maxLeft = Math.ceil(Math.max(...allPrices) * 1.04);
+    if (maxLeft <= minLeft) { minLeft -= 10; maxLeft += 10; }
+
+    // Gridlines & Labels
     ctx.strokeStyle = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)";
     ctx.lineWidth = 1;
     const gridSteps = 5;
+
     for (let i = 0; i <= gridSteps; i++) {
       const y = padding.top + (chartH / gridSteps) * i;
       ctx.beginPath();
@@ -2645,31 +2553,21 @@
       ctx.lineTo(width - padding.right, y);
       ctx.stroke();
 
-      const val = (maxDecay / gridSteps) * (gridSteps - i);
+      // Left Y-Axis: Straddle Price (₹)
+      const lVal = maxLeft - ((maxLeft - minLeft) / gridSteps) * i;
       ctx.fillStyle = "#f43f5e";
       ctx.font = "11px 'JetBrains Mono', monospace";
       ctx.textAlign = "right";
-      ctx.fillText(`-₹${val.toFixed(1)}`, padding.left - 10, y + 4);
+      ctx.fillText(`₹${lVal.toFixed(1)}`, padding.left - 10, y + 4);
 
-      const pct = openP > 0 ? ((val / openP) * 100).toFixed(1) : "0.0";
+      // Right Y-Axis: Decay % relative to Open
+      const ptsFromOpen = lVal - openP;
+      const pctFromOpen = openP > 0 ? (ptsFromOpen / openP * 100) : 0;
       ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
       ctx.textAlign = "left";
-      ctx.fillText(`-${pct}%`, width - padding.right + 10, y + 4);
+      const pctSign = pctFromOpen > 0 ? "+" : "";
+      ctx.fillText(`${pctSign}${pctFromOpen.toFixed(1)}%`, width - padding.right + 10, y + 4);
     }
-
-    // X Axis Ticks
-    const timeIndices = [0, Math.floor(n * 0.25), Math.floor(n * 0.5), Math.floor(n * 0.75), n - 1];
-    timeIndices.forEach(idx => {
-      if (idx >= 0 && idx < n) {
-        const x = padding.left + (chartW / (n - 1 || 1)) * idx;
-        const pt = points[idx];
-        const tStr = pt.time ? String(pt.time).substring(11, 16) : "--:--";
-        ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
-        ctx.font = "11px 'JetBrains Mono', monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(tStr, x, height - padding.bottom + 20);
-      }
-    });
 
     // Watermark
     ctx.save();
@@ -2679,22 +2577,22 @@
     ctx.fillText(`${data.symbol || "OPTIONS"} PREMIUM DECAY DESK`, width / 2, height / 2);
     ctx.restore();
 
-    // Helper coordinate
-    const getX = (i) => padding.left + (chartW / (n - 1 || 1)) * i;
-    const getY = (val) => padding.top + chartH - (val / maxDecay) * chartH;
+    // Helper coordinate converters
+    const getX = (idx) => padding.left + (chartW / (n - 1 || 1)) * idx;
+    const getY = (price) => padding.top + chartH - ((price - minLeft) / (maxLeft - minLeft || 1)) * chartH;
 
-    // 1. Theoretical Theta Line (Dashed Gold)
+    // 1. Theoretical Theta Decay Curve (Dashed Gold Curve)
     if (decayState.visible.theta_baseline) {
       ctx.save();
       ctx.strokeStyle = "#f59e0b";
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2.0;
       ctx.setLineDash([5, 4]);
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
-        const progress = Math.sqrt(i / (n - 1 || 1));
-        const theoDecay = maxDecay * 0.75 * progress;
+        const prog = Math.sqrt(i / (n - 1 || 1));
+        const theoPrice = openP - (totalExpectedDecay * prog);
         const x = getX(i);
-        const y = getY(theoDecay);
+        const y = getY(theoPrice);
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
@@ -2702,85 +2600,79 @@
       ctx.restore();
     }
 
-    // 2. CE Leg Decay Curve (Emerald)
-    if (decayState.visible.ce_decay) {
-      ctx.strokeStyle = "#10b981";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        const d = Math.max(0, openCe - (points[i].ce_price || openCe));
-        const x = getX(i);
-        const y = getY(d);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-
-    // 3. PE Leg Decay Curve (Cyan)
-    if (decayState.visible.pe_decay) {
-      ctx.strokeStyle = "#06b6d4";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        const d = Math.max(0, openPe - (points[i].pe_price || openPe));
-        const x = getX(i);
-        const y = getY(d);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-
-    // 4. Cumulative Total Straddle Decay Curve (Vibrant Red) with Fill
-    if (decayState.visible.decay) {
+    // 2. Actual Straddle Premium Erosion Curve (Rose Line with Soft Gradient Fill)
+    if (decayState.visible.actual_premium) {
       const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
-      grad.addColorStop(0, "rgba(244,63,94,0.35)");
-      grad.addColorStop(1, "rgba(244,63,94,0.02)");
+      grad.addColorStop(0, "rgba(244, 63, 94, 0.16)");
+      grad.addColorStop(1, "rgba(244, 63, 94, 0.0)");
 
+      ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.moveTo(getX(0), getY(0));
+      ctx.moveTo(getX(0), padding.top + chartH);
       for (let i = 0; i < n; i++) {
-        const d = Math.max(0, openP - (points[i].price || openP));
-        ctx.lineTo(getX(i), getY(d));
+        ctx.lineTo(getX(i), getY(points[i].price));
       }
       ctx.lineTo(getX(n - 1), padding.top + chartH);
-      ctx.lineTo(getX(0), padding.top + chartH);
       ctx.closePath();
-      ctx.fillStyle = grad;
       ctx.fill();
 
-      // Main line
       ctx.strokeStyle = "#f43f5e";
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2.8;
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
-        const d = Math.max(0, openP - (points[i].price || openP));
         const x = getX(i);
-        const y = getY(d);
+        const y = getY(points[i].price);
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
     }
 
-    // Hover marker
-    if (decayState.hoveredIndex >= 0 && decayState.hoveredIndex < n) {
-      const i = decayState.hoveredIndex;
+    // 3. X-Axis Time Ticks
+    ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.textAlign = "center";
+    const xStep = Math.max(1, Math.floor(n / 7));
+    let lastDrawnX = -999;
+    for (let i = 0; i < n; i += xStep) {
       const x = getX(i);
+      const isNearEnd = n > 1 && (getX(n - 1) - x < 60);
+      if (isNearEnd) continue;
+      if (x - lastDrawnX >= 55) {
+        const timeStr = formatIstTime(points[i].time);
+        ctx.fillText(timeStr, x, height - 15);
+        lastDrawnX = x;
+      }
+    }
+    if (n > 1) {
+      const xLast = getX(n - 1);
+      if (xLast - lastDrawnX >= 45) {
+        ctx.fillText(formatIstTime(points[n - 1].time), xLast, height - 15);
+      }
+    }
+
+    // 4. Hover Crosshair & Dot
+    if (decayState.hoveredIndex >= 0 && decayState.hoveredIndex < n) {
+      const hi = decayState.hoveredIndex;
+      const hx = getX(hi);
+      const hp = points[hi];
+
       ctx.save();
       ctx.strokeStyle = isLight ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)";
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
-      ctx.moveTo(x, padding.top);
-      ctx.lineTo(x, padding.top + chartH);
+      ctx.moveTo(hx, padding.top);
+      ctx.lineTo(hx, padding.top + chartH);
       ctx.stroke();
 
-      const d = Math.max(0, openP - (points[i].price || openP));
-      ctx.fillStyle = "#f43f5e";
-      ctx.beginPath();
-      ctx.arc(x, getY(d), 5, 0, Math.PI * 2);
-      ctx.fill();
+      if (decayState.visible.actual_premium) {
+        drawDot(ctx, hx, getY(hp.price), "#f43f5e");
+      }
+      if (decayState.visible.theta_baseline) {
+        const prog = Math.sqrt(hi / (n - 1 || 1));
+        const theoPrice = openP - (totalExpectedDecay * prog);
+        drawDot(ctx, hx, getY(theoPrice), "#f59e0b");
+      }
       ctx.restore();
     }
   }
@@ -2796,7 +2688,7 @@
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const mouseX = clientX - rect.left;
-      const padding = { top: 35, right: 75, bottom: 45, left: 70 };
+      const padding = { top: 35, right: 80, bottom: 45, left: 75 };
       const chartW = rect.width - padding.left - padding.right;
 
       if (mouseX < padding.left || mouseX > rect.width - padding.right) {
@@ -2815,32 +2707,35 @@
 
       const p = points[index];
       const openP = points[0].price || 100;
-      const dPts = Math.max(0, openP - p.price);
-      const dPct = openP > 0 ? (dPts / openP * 100).toFixed(2) : "0.00";
-      const ceD = Math.max(0, (points[0].ce_price || 0) - (p.ce_price || 0));
-      const peD = Math.max(0, (points[0].pe_price || 0) - (p.pe_price || 0));
+      const decayPts = openP - p.price;
+      const decayPct = openP > 0 ? (decayPts / openP * 100).toFixed(2) : "0.00";
+      const prog = Math.sqrt(index / (n - 1 || 1));
+      const totalExp = Math.max(15, openP * 0.16);
+      const theoPrice = (openP - totalExp * prog).toFixed(2);
 
       tooltip.innerHTML = `
         <div style="font-weight:800; font-size:12px; margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
           ⏱️ ${formatIstFull(p.time)}
         </div>
         <div style="display:grid; grid-template-columns:auto auto; gap:4px 12px; font-size:11px;">
-          <span style="color:#f43f5e; font-weight:700;">Points Eroded:</span>
-          <strong style="text-align:right;">-₹${dPts.toFixed(2)} (-${dPct}%)</strong>
-
-          <span style="color:#06b6d4; font-weight:700;">Straddle LTP:</span>
+          <span style="color:#f43f5e; font-weight:700;">Straddle LTP:</span>
           <strong style="text-align:right;">₹${p.price.toFixed(2)}</strong>
 
-          <span style="color:#10b981; font-weight:700;">CE Leg Decay:</span>
-          <strong style="text-align:right;">-₹${ceD.toFixed(2)}</strong>
+          <span style="color:#10b981; font-weight:700;">Points Eroded:</span>
+          <strong style="text-align:right;">${decayPts >= 0 ? '-₹' + decayPts.toFixed(2) : '+₹' + Math.abs(decayPts).toFixed(2)} (${decayPts >= 0 ? '-' : '+'}${Math.abs(decayPct)}%)</strong>
 
-          <span style="color:#06b6d4; font-weight:700;">PE Leg Decay:</span>
-          <strong style="text-align:right;">-₹${peD.toFixed(2)}</strong>
+          <span style="color:#f59e0b; font-weight:700;">Theta Baseline:</span>
+          <strong style="text-align:right;">₹${theoPrice}</strong>
+
+          <span style="color:#06b6d4; font-weight:700;">Pace Status:</span>
+          <strong style="text-align:right; color:${p.price <= theoPrice ? '#10b981' : '#f59e0b'};">
+            ${p.price <= theoPrice ? 'Decaying Faster (Seller Advantage)' : 'Decaying Slower (IV Hold)'}
+          </strong>
         </div>
       `;
       tooltip.style.display = "block";
-      tooltip.style.left = `${Math.min(rect.width - 200, Math.max(10, mouseX + 15))}px`;
-      tooltip.style.top = `${Math.min(rect.height - 120, Math.max(10, clientY - rect.top - 20))}px`;
+      tooltip.style.left = `${Math.min(rect.width - 220, Math.max(10, mouseX + 15))}px`;
+      tooltip.style.top = `${Math.min(rect.height - 130, Math.max(10, clientY - rect.top - 20))}px`;
     }
 
     canvas.addEventListener("mousemove", handleMove);
@@ -3158,27 +3053,27 @@
       return;
     }
 
-    const padding = { top: 30, right: 75, bottom: 35, left: 70 };
+    const padding = { top: 30, right: 80, bottom: 35, left: 75 };
     const chartW = width - padding.left - padding.right;
     const totalH = height - padding.top - padding.bottom;
 
-    // Split: 65% for CE vs PE line chart, 35% for Spread Divergence oscillator
-    const topH = Math.floor(totalH * 0.65);
-    const bottomH = totalH - topH - 25; // 25px gap between charts
-    const bottomTop = padding.top + topH + 25;
+    // Split: 68% for CE vs PE line curves, 32% for CE-PE Spread Curve
+    const topH = Math.floor(totalH * 0.68);
+    const bottomH = totalH - topH - 24;
+    const bottomTop = padding.top + topH + 24;
 
-    // 1. Calculate Ranges for Upper Chart (CE & PE)
+    // 1. Calculate Ranges for Upper Chart (CE & PE Premium)
     let leftVals = [];
     points.forEach(p => {
       if (cvpState.visible.call && p.ce_price != null) leftVals.push(p.ce_price);
       if (cvpState.visible.put && p.pe_price != null) leftVals.push(p.pe_price);
     });
-    if (leftVals.length === 0) leftVals = [50, 150];
-    let minLeft = Math.floor(Math.min(...leftVals) * 0.9);
-    let maxLeft = Math.ceil(Math.max(...leftVals) * 1.1);
+    if (leftVals.length === 0) leftVals = [60, 140];
+    let minLeft = Math.floor(Math.min(...leftVals) * 0.92);
+    let maxLeft = Math.ceil(Math.max(...leftVals) * 1.08);
     if (maxLeft <= minLeft) { minLeft -= 10; maxLeft += 10; }
 
-    // Right Axis for Spot
+    // Right Axis for Underlying Spot
     let spotVals = points.map(p => p.spot).filter(v => v && !isNaN(v));
     if (spotVals.length === 0) spotVals = [24000, 24500];
     let minSpot = Math.floor(Math.min(...spotVals) - 30);
@@ -3226,15 +3121,15 @@
     ctx.restore();
 
     const getX = (i) => padding.left + (chartW / (n - 1 || 1)) * i;
-    const getTopY = (val) => padding.top + topH - ((val - minLeft) / (maxLeft - minLeft)) * topH;
-    const getSpotY = (val) => padding.top + topH - ((val - minSpot) / (maxSpot - minSpot)) * topH;
-    const getBottomY = (spread) => bottomTop + bottomH / 2 - (spread / maxSpreadAbs) * (bottomH / 2);
+    const getTopY = (val) => padding.top + topH - ((val - minLeft) / (maxLeft - minLeft || 1)) * topH;
+    const getSpotY = (val) => padding.top + topH - ((val - minSpot) / (maxSpot - minSpot || 1)) * topH;
+    const getBottomY = (spread) => bottomTop + bottomH / 2 - (spread / (maxSpreadAbs || 1)) * (bottomH / 2);
 
-    // Plot Spot Line (Dashed Gold)
+    // Plot Underlying Spot (Gold Dashed Line on Right Axis)
     if (cvpState.visible.spot) {
       ctx.save();
       ctx.strokeStyle = "rgba(234, 179, 8, 0.65)";
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.6;
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
@@ -3247,28 +3142,73 @@
       ctx.restore();
     }
 
-    // Plot Call (CE) Curve (Emerald)
+    // Smooth 5-point kernel to eliminate 1-minute sawtooth jitter while preserving exact price trend
+    const getSmoothedVal = (key, idx) => {
+      let sum = 0, count = 0;
+      for (let offset = -2; offset <= 2; offset++) {
+        const j = idx + offset;
+        if (j >= 0 && j < n && points[j][key] != null) {
+          sum += points[j][key];
+          count++;
+        }
+      }
+      return count > 0 ? (sum / count) : (points[idx][key] || 0);
+    };
+
+    // Plot Call (CE) Curve (Emerald Green Line with Soft Gradient Fill)
     if (cvpState.visible.call) {
+      const gradCe = ctx.createLinearGradient(0, padding.top, 0, padding.top + topH);
+      gradCe.addColorStop(0, "rgba(16, 185, 129, 0.14)");
+      gradCe.addColorStop(1, "rgba(16, 185, 129, 0.0)");
+
+      ctx.fillStyle = gradCe;
+      ctx.beginPath();
+      ctx.moveTo(getX(0), padding.top + topH);
+      for (let i = 0; i < n; i++) {
+        const smCe = getSmoothedVal("ce_price", i);
+        ctx.lineTo(getX(i), getTopY(smCe || minLeft));
+      }
+      ctx.lineTo(getX(n - 1), padding.top + topH);
+      ctx.closePath();
+      ctx.fill();
+
       ctx.strokeStyle = "#10b981";
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2.4;
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
         const x = getX(i);
-        const y = getTopY(points[i].ce_price || minLeft);
+        const smCe = getSmoothedVal("ce_price", i);
+        const y = getTopY(smCe || minLeft);
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
     }
 
-    // Plot Put (PE) Curve (Rose)
+    // Plot Put (PE) Curve (Rose Line with Soft Gradient Fill)
     if (cvpState.visible.put) {
+      const gradPe = ctx.createLinearGradient(0, padding.top, 0, padding.top + topH);
+      gradPe.addColorStop(0, "rgba(244, 63, 94, 0.14)");
+      gradPe.addColorStop(1, "rgba(244, 63, 94, 0.0)");
+
+      ctx.fillStyle = gradPe;
+      ctx.beginPath();
+      ctx.moveTo(getX(0), padding.top + topH);
+      for (let i = 0; i < n; i++) {
+        const smPe = getSmoothedVal("pe_price", i);
+        ctx.lineTo(getX(i), getTopY(smPe || minLeft));
+      }
+      ctx.lineTo(getX(n - 1), padding.top + topH);
+      ctx.closePath();
+      ctx.fill();
+
       ctx.strokeStyle = "#f43f5e";
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2.4;
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
         const x = getX(i);
-        const y = getTopY(points[i].pe_price || minLeft);
+        const smPe = getSmoothedVal("pe_price", i);
+        const y = getTopY(smPe || minLeft);
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
@@ -3276,11 +3216,18 @@
     }
 
     // ----------------------------------------------------
-    // BOTTOM SUB-CHART: CE - PE Spread Oscillator
+    // BOTTOM SUB-CHART: Smooth Continuous CE - PE Spread Curve
     // ----------------------------------------------------
     const zeroY = bottomTop + bottomH / 2;
-    ctx.strokeStyle = isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)";
-    ctx.setLineDash([2, 2]);
+
+    // Background panel for oscillator
+    ctx.fillStyle = isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)";
+    ctx.fillRect(padding.left, bottomTop, chartW, bottomH);
+
+    // Zero-line
+    ctx.strokeStyle = isLight ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(padding.left, zeroY);
     ctx.lineTo(width - padding.right, zeroY);
@@ -3296,60 +3243,97 @@
     ctx.fillText(`-₹${maxSpreadAbs}`, padding.left - 10, bottomTop + bottomH);
 
     ctx.fillStyle = "#06b6d4";
-    ctx.font = "600 10px Inter";
+    ctx.font = "700 10px Inter";
     ctx.textAlign = "left";
-    ctx.fillText("SPREAD OSCILLATOR (CE - PE)", padding.left, bottomTop - 6);
+    ctx.fillText("CE - PE SPREAD CURVE", padding.left, bottomTop - 6);
 
     if (cvpState.visible.spread) {
-      const barW = Math.max(2, (chartW / n) * 0.7);
+      // 1. Draw smooth filled area between spread curve and zero baseline
+      for (let i = 0; i < n - 1; i++) {
+        const x1 = getX(i);
+        const x2 = getX(i + 1);
+        const sp1 = getSmoothedVal("ce_price", i) - getSmoothedVal("pe_price", i);
+        const sp2 = getSmoothedVal("ce_price", i + 1) - getSmoothedVal("pe_price", i + 1);
+        const y1 = getBottomY(sp1);
+        const y2 = getBottomY(sp2);
+
+        const avgSp = (sp1 + sp2) / 2;
+        ctx.fillStyle = avgSp >= 0 ? "rgba(16, 185, 129, 0.28)" : "rgba(244, 63, 94, 0.28)";
+
+        ctx.beginPath();
+        ctx.moveTo(x1, zeroY);
+        ctx.lineTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x2, zeroY);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // 2. Draw smooth continuous Cyan outline line
+      ctx.strokeStyle = "#06b6d4";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
       for (let i = 0; i < n; i++) {
-        const sp = (points[i].ce_price || 0) - (points[i].pe_price || 0);
+        const sp = getSmoothedVal("ce_price", i) - getSmoothedVal("pe_price", i);
         const x = getX(i);
         const y = getBottomY(sp);
-        const barH = y - zeroY;
-
-        ctx.fillStyle = sp >= 0 ? "rgba(16, 185, 129, 0.75)" : "rgba(244, 63, 94, 0.75)";
-        ctx.fillRect(x - barW / 2, zeroY, barW, barH);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       }
+      ctx.stroke();
     }
 
     // X Axis Ticks on bottom
-    const timeIndices = [0, Math.floor(n * 0.25), Math.floor(n * 0.5), Math.floor(n * 0.75), n - 1];
-    timeIndices.forEach(idx => {
-      if (idx >= 0 && idx < n) {
-        const x = getX(idx);
-        const pt = points[idx];
-        const tStr = pt.time ? String(pt.time).substring(11, 16) : "--:--";
-        ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
-        ctx.font = "11px 'JetBrains Mono', monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(tStr, x, height - 10);
-      }
-    });
-
-    // Hover crosshair
-    if (cvpState.hoveredIndex >= 0 && cvpState.hoveredIndex < n) {
-      const i = cvpState.hoveredIndex;
+    ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.textAlign = "center";
+    const xStep = Math.max(1, Math.floor(n / 7));
+    let lastDrawnX = -999;
+    for (let i = 0; i < n; i += xStep) {
       const x = getX(i);
+      const isNearEnd = n > 1 && (getX(n - 1) - x < 60);
+      if (isNearEnd) continue;
+      if (x - lastDrawnX >= 55) {
+        const timeStr = formatIstTime(points[i].time);
+        ctx.fillText(timeStr, x, height - 10);
+        lastDrawnX = x;
+      }
+    }
+    if (n > 1) {
+      const xLast = getX(n - 1);
+      if (xLast - lastDrawnX >= 45) {
+        ctx.fillText(formatIstTime(points[n - 1].time), xLast, height - 10);
+      }
+    }
+
+    // Hover Crosshair & Dots
+    if (cvpState.hoveredIndex >= 0 && cvpState.hoveredIndex < n) {
+      const hi = cvpState.hoveredIndex;
+      const hx = getX(hi);
+      const hp = points[hi];
+
       ctx.save();
-      ctx.strokeStyle = isLight ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)";
+      ctx.strokeStyle = isLight ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.35)";
+      ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
-      ctx.moveTo(x, padding.top);
-      ctx.lineTo(x, bottomTop + bottomH);
+      ctx.moveTo(hx, padding.top);
+      ctx.lineTo(hx, padding.top + totalH);
       ctx.stroke();
 
-      // Dot on CE
-      ctx.fillStyle = "#10b981";
-      ctx.beginPath();
-      ctx.arc(x, getTopY(points[i].ce_price || minLeft), 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Dot on PE
-      ctx.fillStyle = "#f43f5e";
-      ctx.beginPath();
-      ctx.arc(x, getTopY(points[i].pe_price || minLeft), 4, 0, Math.PI * 2);
-      ctx.fill();
+      if (cvpState.visible.call) {
+        drawDot(ctx, hx, getTopY(hp.ce_price || minLeft), "#10b981");
+      }
+      if (cvpState.visible.put) {
+        drawDot(ctx, hx, getTopY(hp.pe_price || minLeft), "#f43f5e");
+      }
+      if (cvpState.visible.spot) {
+        drawDot(ctx, hx, getSpotY(hp.spot || minSpot), "#eab308");
+      }
+      if (cvpState.visible.spread) {
+        const sp = (hp.ce_price || 0) - (hp.pe_price || 0);
+        drawDot(ctx, hx, getBottomY(sp), "#06b6d4");
+      }
       ctx.restore();
     }
   }
