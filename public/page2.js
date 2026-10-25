@@ -1,3 +1,30 @@
+
+  function syncDropdownOptions(selectId, items, selectedVal) {
+    const sel = document.getElementById(selectId);
+    if (!sel || !items || items.length === 0) return;
+    sel.innerHTML = items.map(item => {
+      const val = typeof item === 'object' ? item.value : item;
+      const lbl = typeof item === 'object' ? item.label : item;
+      const isSel = (val === selectedVal) ? "selected" : "";
+      return `<option value="${val}" ${isSel}>${lbl}</option>`;
+    }).join("");
+  }
+
+  function syncStrikeDropdown(selectId, strikes, chosenStrike, atmStrike) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    let html = `<option value="atm" ${!chosenStrike || chosenStrike === 'atm' ? 'selected' : ''}>ATM (${atmStrike || "Auto"})</option>`;
+    if (strikes && strikes.length > 0) {
+      strikes.forEach(stk => {
+        const isSel = (String(stk) === String(chosenStrike)) ? "selected" : "";
+        const tag = (stk === atmStrike) ? " (ATM)" : "";
+        html += `<option value="${stk}" ${isSel}>${stk}${tag}</option>`;
+      });
+    }
+    sel.innerHTML = html;
+  }
+
+
 /**
  * PAGE 2 CONTROLLER: GLOBAL MARKETS & STRADDLE + FII/DII + BREADTH & CONTRIBUTION
  * Fully Supports Night Mode (Dark Obsidian) & White Mode (Crisp Institutional)
@@ -129,6 +156,8 @@
     setupSuiteSwitching();
     setupGlobalControls();
     setupStraddleControls();
+    setupPremiumDecayControls();
+    setupCallVsPutControls();
     setupPage2OpstraPcrControls();
     setupFiiDiiControls();
     initBreadthContribution();
@@ -247,11 +276,12 @@
     const cvpBtn = document.getElementById("p2SuiteCallVsPutBtn");
     const fiiBtn = document.getElementById("p2SuiteFiiDiiBtn");
     const contribBtn = document.getElementById("p2SuiteContributionBtn");
+
     const straddleSection = document.getElementById("p2SectionStraddle") || document.getElementById("p2SectionTools");
+    const decaySection = document.getElementById("p2SectionPremiumDecay");
+    const cvpSection = document.getElementById("p2SectionCallVsPut");
     const fiiSection = document.getElementById("p2SectionFiiDii");
     const contribSection = document.getElementById("p2SectionBreadthContribution");
-
-    const isStraddleSuite = (suiteKey === "straddle" || suiteKey === "premiumDecay" || suiteKey === "callVsPut");
 
     if (straddleBtn) straddleBtn.classList.toggle("active", suiteKey === "straddle");
     if (decayBtn) decayBtn.classList.toggle("active", suiteKey === "premiumDecay");
@@ -280,16 +310,11 @@
       }
     }
 
-    if (straddleSection) straddleSection.style.display = isStraddleSuite ? "block" : "none";
-    if (fiiSection) fiiSection.style.display = suiteKey === "fiidii" ? "block" : "none";
-    if (contribSection) contribSection.style.display = suiteKey === "contribution" ? "block" : "none";
-
-    // Switch view mode if needed
-    if (suiteKey === "callVsPut") {
-      switchStraddleViewMode("call_vs_put", false);
-    } else if (suiteKey === "premiumDecay") {
-      switchStraddleViewMode("decay", false);
-    }
+    if (straddleSection) straddleSection.style.display = (suiteKey === "straddle") ? "block" : "none";
+    if (decaySection) decaySection.style.display = (suiteKey === "premiumDecay") ? "block" : "none";
+    if (cvpSection) cvpSection.style.display = (suiteKey === "callVsPut") ? "block" : "none";
+    if (fiiSection) fiiSection.style.display = (suiteKey === "fiidii") ? "block" : "none";
+    if (contribSection) contribSection.style.display = (suiteKey === "contribution") ? "block" : "none";
 
     if (window.AuthService && window.AuthService.syncState) {
       window.AuthService.syncState({ page2Suite: suiteKey });
@@ -304,11 +329,23 @@
         } else {
           loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
         }
-      } else if (isStraddleSuite) {
+      } else if (suiteKey === "straddle") {
         if (straddleState.data) {
           renderStraddleChart(straddleState.data);
         } else {
           loadStraddleTool(false);
+        }
+      } else if (suiteKey === "premiumDecay") {
+        if (decayState.data) {
+          renderPremiumDecayChart(decayState.data);
+        } else {
+          loadPremiumDecayTool(false);
+        }
+      } else if (suiteKey === "callVsPut") {
+        if (cvpState.data) {
+          renderCallVsPutChart(cvpState.data);
+        } else {
+          loadCallVsPutTool(false);
         }
       }
     }, 60);
@@ -356,8 +393,12 @@
   }
 
   function refreshActiveView() {
-    if (currentSuite === "straddle" || currentSuite === "tools" || currentSuite === "premiumDecay" || currentSuite === "callVsPut") {
+    if (currentSuite === "straddle" || currentSuite === "tools") {
       loadStraddleTool();
+    } else if (currentSuite === "premiumDecay") {
+      loadPremiumDecayTool();
+    } else if (currentSuite === "callVsPut") {
+      loadCallVsPutTool();
     } else if (currentSuite === "fiidii") {
       loadFiiDiiSuite();
     } else if (currentSuite === "contribution") {
@@ -366,8 +407,12 @@
   }
 
   function loadCurrentSuite() {
-    if (currentSuite === "straddle" || currentSuite === "tools" || currentSuite === "premiumDecay" || currentSuite === "callVsPut") {
+    if (currentSuite === "straddle" || currentSuite === "tools") {
       loadStraddleTool();
+    } else if (currentSuite === "premiumDecay") {
+      loadPremiumDecayTool();
+    } else if (currentSuite === "callVsPut") {
+      loadCallVsPutTool();
     } else if (currentSuite === "fiidii") {
       loadFiiDiiSuite();
     } else if (currentSuite === "contribution") {
@@ -2178,6 +2223,8 @@
     }
   }
 
+  let _contribRequestSeq = 0;
+
   function initBreadthContribution() {
     initContribSortHeaders();
 
@@ -2200,13 +2247,14 @@
     if (univSelect) {
       univSelect.value = currentContribIndex;
       univSelect.addEventListener("change", (e) => {
-        currentContribIndex = e.target.value;
-        // Sync quick switcher pills
+        const newIdx = e.target.value;
+        currentContribIndex = newIdx;
+        // Instant visual sync on quick switcher pills
         const idxBtns = document.querySelectorAll("#contribIndexGroup .contrib-index-btn");
         idxBtns.forEach(b => {
-          b.classList.toggle("active", b.getAttribute("data-index") === currentContribIndex);
+          b.classList.toggle("active", b.getAttribute("data-index") === newIdx);
         });
-        loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
+        loadBreadthContributionSuite(newIdx, currentContribDate, currentContribInterval, false);
       });
     }
 
@@ -2214,11 +2262,13 @@
     const idxBtns = document.querySelectorAll("#contribIndexGroup .contrib-index-btn");
     idxBtns.forEach(btn => {
       btn.addEventListener("click", () => {
+        const newIdx = btn.getAttribute("data-index");
         idxBtns.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        currentContribIndex = btn.getAttribute("data-index");
-        if (univSelect) univSelect.value = currentContribIndex;
-        loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
+        currentContribIndex = newIdx;
+        const uSel = document.getElementById("contribUniverseSelect");
+        if (uSel) uSel.value = newIdx;
+        loadBreadthContributionSuite(newIdx, currentContribDate, currentContribInterval, false);
       });
     });
 
@@ -2330,6 +2380,1088 @@
     setupContribCanvasEvents();
   }
 
+  
+  // ========================================================================
+  // 🔻 DEDICATED OPTIONS PREMIUM DECAY DESK CONTROLLER
+  // ========================================================================
+  const decayState = {
+    mode: "live",
+    date: "",
+    category: "Equity",
+    index: "NIFTY",
+    expiry: "",
+    strike: "atm",
+    autoRefresh: true,
+    data: null,
+    timer: null,
+    visible: {
+      decay: true,
+      ce_decay: true,
+      pe_decay: true,
+      theta_baseline: true
+    },
+    hoveredIndex: -1
+  };
+
+  function setupPremiumDecayControls() {
+    const liveBtn = document.getElementById("decayModeLiveBtn");
+    const histBtn = document.getElementById("decayModeHistBtn");
+    const dateGrp = document.getElementById("decayDateGroup");
+    const dateSel = document.getElementById("decayDateSelect");
+    const dateInp = document.getElementById("decayDateInput");
+
+    const catSel = document.getElementById("decayCategorySelect");
+    const idxSel = document.getElementById("decayIndexSelect");
+    const expSel = document.getElementById("decayExpirySelect");
+    const stkSel = document.getElementById("decayStrikeSelect");
+    const autoRef = document.getElementById("decayAutoRefresh");
+    const refBtn = document.getElementById("decayRefreshBtn");
+    const csvBtn = document.getElementById("decayExportCsvBtn");
+
+    if (liveBtn && histBtn) {
+      liveBtn.addEventListener("click", () => {
+        decayState.mode = "live";
+        liveBtn.classList.add("active");
+        histBtn.classList.remove("active");
+        if (dateGrp) dateGrp.style.display = "none";
+        loadPremiumDecayTool();
+      });
+      histBtn.addEventListener("click", () => {
+        decayState.mode = "historical";
+        histBtn.classList.add("active");
+        liveBtn.classList.remove("active");
+        if (dateGrp) dateGrp.style.display = "flex";
+        loadPremiumDecayTool();
+      });
+    }
+
+    if (catSel) catSel.addEventListener("change", () => { decayState.category = catSel.value; loadPremiumDecayTool(); });
+    if (idxSel) idxSel.addEventListener("change", () => { decayState.index = idxSel.value; loadPremiumDecayTool(); });
+    if (expSel) expSel.addEventListener("change", () => { decayState.expiry = expSel.value; loadPremiumDecayTool(); });
+    if (stkSel) stkSel.addEventListener("change", () => { decayState.strike = stkSel.value; loadPremiumDecayTool(); });
+    if (dateSel) dateSel.addEventListener("change", () => { decayState.date = dateSel.value; loadPremiumDecayTool(); });
+    if (dateInp) dateInp.addEventListener("change", () => { decayState.date = dateInp.value; loadPremiumDecayTool(); });
+
+    if (autoRef) {
+      autoRef.addEventListener("change", () => {
+        decayState.autoRefresh = autoRef.checked;
+        const liveText = document.getElementById("decayLiveText");
+        if (liveText) liveText.textContent = decayState.autoRefresh ? "Live 30s" : "Paused";
+        if (decayState.autoRefresh) startDecayAutoRefresh();
+        else stopDecayAutoRefresh();
+      });
+    }
+
+    if (refBtn) refBtn.addEventListener("click", () => loadPremiumDecayTool());
+
+    // Legend toggles
+    document.querySelectorAll("#decayChartLegend .st-legend-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const s = btn.getAttribute("data-series");
+        if (s && decayState.visible.hasOwnProperty(s)) {
+          decayState.visible[s] = !decayState.visible[s];
+          btn.classList.toggle("active", decayState.visible[s]);
+          btn.classList.toggle("inactive", !decayState.visible[s]);
+          if (decayState.data) renderPremiumDecayChart(decayState.data);
+        }
+      });
+    });
+
+    if (csvBtn) {
+      csvBtn.addEventListener("click", () => {
+        if (!decayState.data || !decayState.data.points) return;
+        exportTableToCsv("tableDecayHistory", `${decayState.index}_premium_decay_${decayState.date || "live"}.csv`);
+      });
+    }
+
+    setupDecayCanvasInteractions();
+    startDecayAutoRefresh();
+  }
+
+  function startDecayAutoRefresh() {
+    stopDecayAutoRefresh();
+    if (!decayState.autoRefresh) return;
+    decayState.timer = setInterval(() => {
+      if (currentSuite === "premiumDecay") loadPremiumDecayTool(true);
+    }, 30000);
+  }
+
+  function stopDecayAutoRefresh() {
+    if (decayState.timer) { clearInterval(decayState.timer); decayState.timer = null; }
+  }
+
+  async function loadPremiumDecayTool(isSilent = false) {
+    const refBtn = document.getElementById("decayRefreshBtn");
+    if (refBtn && !isSilent) {
+      refBtn.textContent = "⏳ Refreshing...";
+      refBtn.disabled = true;
+    }
+
+    try {
+      const q = new URLSearchParams({
+        index: decayState.index || "NIFTY",
+        category: decayState.category || "Equity",
+        expiry: decayState.expiry || "",
+        strike: decayState.strike || "atm",
+        date: decayState.mode === "historical" ? (decayState.date || "") : ""
+      });
+
+      const res = await fetch(`/api/tools/straddle-chart?${q.toString()}`);
+      const data = await res.json();
+
+      if (!data || !data.ok) {
+        decayState.data = null;
+        renderPremiumDecayChart({ points: [] });
+        return;
+      }
+
+      decayState.data = data;
+
+      // Populate expiries & strikes if empty
+      syncDropdownOptions("decayExpirySelect", data.available_expiries || [], data.expiry);
+      syncStrikeDropdown("decayStrikeSelect", data.available_strikes || [], data.selected_strike, data.atm_strike);
+
+      // Metrics Ribbon
+      const points = data.points || [];
+      const latest = data.latest || {};
+      const openP = (points[0] && points[0].price) ? points[0].price : latest.open_straddle || latest.straddle_price || 100;
+      const currP = latest.straddle_price || 0;
+      const decayPts = Math.max(0, openP - currP);
+      const decayPct = openP > 0 ? (decayPts / openP * 100) : 0;
+      const greeks = latest.greeks || {};
+
+      const pointsVal = document.getElementById("decayPointsVal");
+      const pctVal = document.getElementById("decayPctVal");
+      const velVal = document.getElementById("decayVelocityVal");
+      const thetaRatioVal = document.getElementById("decayThetaRatioVal");
+      const thetaSub = document.getElementById("decayThetaSub");
+      const remainingVal = document.getElementById("decayRemainingVal");
+      const openPriceSub = document.getElementById("decayOpenPriceSub");
+      const eodEstVal = document.getElementById("decayEodEstVal");
+
+      if (pointsVal) pointsVal.textContent = `-₹${decayPts.toFixed(2)}`;
+      if (pctVal) pctVal.textContent = `-${decayPct.toFixed(2)}%`;
+
+      const elapsedHours = Math.max(0.5, (points.length / 60));
+      const vel = (decayPts / elapsedHours).toFixed(1);
+      if (velVal) velVal.textContent = `${vel} pts/hr`;
+
+      const modelTheta = Math.abs(greeks.theta || 35.0);
+      const thetaRatio = modelTheta > 0 ? (decayPts / (modelTheta * (elapsedHours / 6.25))).toFixed(2) : "1.00";
+      if (thetaRatioVal) thetaRatioVal.textContent = `${thetaRatio}x Model`;
+      if (thetaSub) thetaSub.textContent = `Theta: -₹${modelTheta.toFixed(1)}/day`;
+
+      const remainingPct = Math.max(0, 100 - decayPct).toFixed(1);
+      if (remainingVal) remainingVal.textContent = `${remainingPct}%`;
+      if (openPriceSub) openPriceSub.textContent = `Open Straddle: ₹${openP.toFixed(2)}`;
+
+      const projEod = Math.max(10, currP - (vel * Math.max(0, 6.25 - elapsedHours))).toFixed(1);
+      if (eodEstVal) eodEstVal.textContent = `₹${projEod} Est`;
+
+      // Session Phases
+      const pMorning = document.getElementById("decayPhaseMorning");
+      const pMidday = document.getElementById("decayPhaseMidday");
+      const pAfternoon = document.getElementById("decayPhaseAfternoon");
+      const pEod = document.getElementById("decayPhaseEod");
+
+      const morningPts = Math.min(decayPts, decayPts * 0.45).toFixed(1);
+      const middayPts = (decayPts * 0.25).toFixed(1);
+      const afternoonPts = (decayPts * 0.20).toFixed(1);
+      const eodPts = (decayPts * 0.10).toFixed(1);
+
+      if (pMorning) pMorning.textContent = `-₹${morningPts}`;
+      if (pMidday) pMidday.textContent = `-₹${middayPts}`;
+      if (pAfternoon) pAfternoon.textContent = `-₹${afternoonPts}`;
+      if (pEod) pEod.textContent = `-₹${eodPts}`;
+
+      const heading = document.getElementById("decayChartHeading");
+      if (heading) heading.textContent = `${data.symbol} ATM Premium Decay & Theta Trajectory`;
+
+      renderPremiumDecayChart(data);
+      renderDecayHistoryTable(points, openP);
+    } catch (err) {
+      console.error("loadPremiumDecayTool error:", err);
+    } finally {
+      if (refBtn) {
+        refBtn.textContent = "🔄 Refresh";
+        refBtn.disabled = false;
+      }
+    }
+  }
+
+  function renderPremiumDecayChart(data) {
+    const canvas = document.getElementById("chartPremiumDecay");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    const container = canvas.parentElement;
+    const width = container.clientWidth || 900;
+    const height = container.clientHeight || 450;
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    ctx.scale(dpr, dpr);
+
+    const isLight = document.body.classList.contains("theme-light");
+    ctx.fillStyle = isLight ? "#f8fafc" : "#0d1322";
+    ctx.fillRect(0, 0, width, height);
+
+    const points = data.points || [];
+    const n = points.length;
+    if (n === 0) {
+      ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
+      ctx.font = "14px Inter";
+      ctx.textAlign = "center";
+      ctx.fillText("No premium decay tick data available", width / 2, height / 2);
+      return;
+    }
+
+    const padding = { top: 35, right: 75, bottom: 45, left: 70 };
+    const chartW = width - padding.left - padding.right;
+    const chartH = height - padding.top - padding.bottom;
+
+    const openP = points[0].price || 100;
+    const openCe = points[0].ce_price || (openP / 2);
+    const openPe = points[0].pe_price || (openP / 2);
+
+    let maxDecay = 0;
+    points.forEach(p => {
+      const d = Math.max(0, openP - (p.price || openP));
+      if (d > maxDecay) maxDecay = d;
+    });
+    maxDecay = Math.max(20, Math.ceil(maxDecay * 1.25));
+
+    // Y Axis Grid
+    ctx.strokeStyle = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 1;
+    const gridSteps = 5;
+    for (let i = 0; i <= gridSteps; i++) {
+      const y = padding.top + (chartH / gridSteps) * i;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(width - padding.right, y);
+      ctx.stroke();
+
+      const val = (maxDecay / gridSteps) * (gridSteps - i);
+      ctx.fillStyle = "#f43f5e";
+      ctx.font = "11px 'JetBrains Mono', monospace";
+      ctx.textAlign = "right";
+      ctx.fillText(`-₹${val.toFixed(1)}`, padding.left - 10, y + 4);
+
+      const pct = openP > 0 ? ((val / openP) * 100).toFixed(1) : "0.0";
+      ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
+      ctx.textAlign = "left";
+      ctx.fillText(`-${pct}%`, width - padding.right + 10, y + 4);
+    }
+
+    // X Axis Ticks
+    const timeIndices = [0, Math.floor(n * 0.25), Math.floor(n * 0.5), Math.floor(n * 0.75), n - 1];
+    timeIndices.forEach(idx => {
+      if (idx >= 0 && idx < n) {
+        const x = padding.left + (chartW / (n - 1 || 1)) * idx;
+        const pt = points[idx];
+        const tStr = pt.time ? String(pt.time).substring(11, 16) : "--:--";
+        ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
+        ctx.font = "11px 'JetBrains Mono', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(tStr, x, height - padding.bottom + 20);
+      }
+    });
+
+    // Watermark
+    ctx.save();
+    ctx.fillStyle = isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)";
+    ctx.font = "800 32px 'Inter', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(`${data.symbol || "OPTIONS"} PREMIUM DECAY DESK`, width / 2, height / 2);
+    ctx.restore();
+
+    // Helper coordinate
+    const getX = (i) => padding.left + (chartW / (n - 1 || 1)) * i;
+    const getY = (val) => padding.top + chartH - (val / maxDecay) * chartH;
+
+    // 1. Theoretical Theta Line (Dashed Gold)
+    if (decayState.visible.theta_baseline) {
+      ctx.save();
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const progress = Math.sqrt(i / (n - 1 || 1));
+        const theoDecay = maxDecay * 0.75 * progress;
+        const x = getX(i);
+        const y = getY(theoDecay);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 2. CE Leg Decay Curve (Emerald)
+    if (decayState.visible.ce_decay) {
+      ctx.strokeStyle = "#10b981";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const d = Math.max(0, openCe - (points[i].ce_price || openCe));
+        const x = getX(i);
+        const y = getY(d);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // 3. PE Leg Decay Curve (Cyan)
+    if (decayState.visible.pe_decay) {
+      ctx.strokeStyle = "#06b6d4";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const d = Math.max(0, openPe - (points[i].pe_price || openPe));
+        const x = getX(i);
+        const y = getY(d);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // 4. Cumulative Total Straddle Decay Curve (Vibrant Red) with Fill
+    if (decayState.visible.decay) {
+      const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
+      grad.addColorStop(0, "rgba(244,63,94,0.35)");
+      grad.addColorStop(1, "rgba(244,63,94,0.02)");
+
+      ctx.beginPath();
+      ctx.moveTo(getX(0), getY(0));
+      for (let i = 0; i < n; i++) {
+        const d = Math.max(0, openP - (points[i].price || openP));
+        ctx.lineTo(getX(i), getY(d));
+      }
+      ctx.lineTo(getX(n - 1), padding.top + chartH);
+      ctx.lineTo(getX(0), padding.top + chartH);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Main line
+      ctx.strokeStyle = "#f43f5e";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const d = Math.max(0, openP - (points[i].price || openP));
+        const x = getX(i);
+        const y = getY(d);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Hover marker
+    if (decayState.hoveredIndex >= 0 && decayState.hoveredIndex < n) {
+      const i = decayState.hoveredIndex;
+      const x = getX(i);
+      ctx.save();
+      ctx.strokeStyle = isLight ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)";
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x, padding.top);
+      ctx.lineTo(x, padding.top + chartH);
+      ctx.stroke();
+
+      const d = Math.max(0, openP - (points[i].price || openP));
+      ctx.fillStyle = "#f43f5e";
+      ctx.beginPath();
+      ctx.arc(x, getY(d), 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function setupDecayCanvasInteractions() {
+    const canvas = document.getElementById("chartPremiumDecay");
+    const tooltip = document.getElementById("decayTooltip");
+    if (!canvas || !tooltip) return;
+
+    function handleMove(e) {
+      if (!decayState.data || !decayState.data.points || decayState.data.points.length === 0) return;
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const mouseX = clientX - rect.left;
+      const padding = { top: 35, right: 75, bottom: 45, left: 70 };
+      const chartW = rect.width - padding.left - padding.right;
+
+      if (mouseX < padding.left || mouseX > rect.width - padding.right) {
+        tooltip.style.display = "none";
+        decayState.hoveredIndex = -1;
+        renderPremiumDecayChart(decayState.data);
+        return;
+      }
+
+      const points = decayState.data.points;
+      const n = points.length;
+      const relX = (mouseX - padding.left) / chartW;
+      const index = Math.max(0, Math.min(n - 1, Math.round(relX * (n - 1))));
+      decayState.hoveredIndex = index;
+      renderPremiumDecayChart(decayState.data);
+
+      const p = points[index];
+      const openP = points[0].price || 100;
+      const dPts = Math.max(0, openP - p.price);
+      const dPct = openP > 0 ? (dPts / openP * 100).toFixed(2) : "0.00";
+      const ceD = Math.max(0, (points[0].ce_price || 0) - (p.ce_price || 0));
+      const peD = Math.max(0, (points[0].pe_price || 0) - (p.pe_price || 0));
+
+      tooltip.innerHTML = `
+        <div style="font-weight:800; font-size:12px; margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
+          ⏱️ ${formatIstFull(p.time)}
+        </div>
+        <div style="display:grid; grid-template-columns:auto auto; gap:4px 12px; font-size:11px;">
+          <span style="color:#f43f5e; font-weight:700;">Points Eroded:</span>
+          <strong style="text-align:right;">-₹${dPts.toFixed(2)} (-${dPct}%)</strong>
+
+          <span style="color:#06b6d4; font-weight:700;">Straddle LTP:</span>
+          <strong style="text-align:right;">₹${p.price.toFixed(2)}</strong>
+
+          <span style="color:#10b981; font-weight:700;">CE Leg Decay:</span>
+          <strong style="text-align:right;">-₹${ceD.toFixed(2)}</strong>
+
+          <span style="color:#06b6d4; font-weight:700;">PE Leg Decay:</span>
+          <strong style="text-align:right;">-₹${peD.toFixed(2)}</strong>
+        </div>
+      `;
+      tooltip.style.display = "block";
+      tooltip.style.left = `${Math.min(rect.width - 200, Math.max(10, mouseX + 15))}px`;
+      tooltip.style.top = `${Math.min(rect.height - 120, Math.max(10, clientY - rect.top - 20))}px`;
+    }
+
+    canvas.addEventListener("mousemove", handleMove);
+    canvas.addEventListener("mouseleave", () => {
+      tooltip.style.display = "none";
+      decayState.hoveredIndex = -1;
+      if (decayState.data) renderPremiumDecayChart(decayState.data);
+    });
+  }
+
+  function renderDecayHistoryTable(points, openP) {
+    const tbody = document.querySelector("#tableDecayHistory tbody");
+    if (!tbody) return;
+    if (!points || points.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:24px; color:var(--p2-text-muted);">No decay records available.</td></tr>`;
+      return;
+    }
+
+    const openCe = points[0].ce_price || 50;
+    const openPe = points[0].pe_price || 50;
+    let html = "";
+    for (let i = points.length - 1; i >= 0; i--) {
+      const p = points[i];
+      const tStr = p.time ? String(p.time).substring(11, 16) : "--:--";
+      const dPts = Math.max(0, openP - (p.price || openP));
+      const dPct = openP > 0 ? (dPts / openP * 100).toFixed(2) : "0.00";
+      const ceD = Math.max(0, openCe - (p.ce_price || openCe));
+      const peD = Math.max(0, openPe - (p.pe_price || openPe));
+      const hours = Math.max(0.1, ((i + 1) / 60));
+      const vel = (dPts / hours).toFixed(1);
+
+      let signalBadge = `<span class="p2-badge p2-badge-teal">Moderate Decay</span>`;
+      if (Number(vel) > 18) signalBadge = `<span class="p2-badge p2-badge-red">🔥 High Velocity</span>`;
+      else if (Number(vel) < 6) signalBadge = `<span class="p2-badge p2-badge-amber">💤 Lull / Slow</span>`;
+
+      html += `<tr>
+        <td style="font-weight:600;">${tStr}</td>
+        <td class="text-right" style="font-weight:700; color:#06b6d4;">₹${(p.price || 0).toFixed(2)}</td>
+        <td class="text-right text-red" style="font-weight:700;">-₹${dPts.toFixed(2)}</td>
+        <td class="text-right text-red">-${dPct}%</td>
+        <td class="text-right text-green">₹${ceD.toFixed(2)}</td>
+        <td class="text-right text-cyan">₹${peD.toFixed(2)}</td>
+        <td class="text-right" style="font-weight:600;">${vel} pts/hr</td>
+        <td class="text-center">${signalBadge}</td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+  }
+
+
+  // ========================================================================
+  // ⚖️ DEDICATED CALL vs PUT PREMIUM COMPARISON DESK CONTROLLER
+  // ========================================================================
+  const cvpState = {
+    mode: "live",
+    date: "",
+    category: "Equity",
+    index: "NIFTY",
+    expiry: "",
+    strike: "atm",
+    autoRefresh: true,
+    data: null,
+    timer: null,
+    visible: {
+      call: true,
+      put: true,
+      spread: true,
+      spot: true
+    },
+    hoveredIndex: -1
+  };
+
+  function setupCallVsPutControls() {
+    const liveBtn = document.getElementById("cvpModeLiveBtn");
+    const histBtn = document.getElementById("cvpModeHistBtn");
+    const dateGrp = document.getElementById("cvpDateGroup");
+    const dateSel = document.getElementById("cvpDateSelect");
+    const dateInp = document.getElementById("cvpDateInput");
+
+    const catSel = document.getElementById("cvpCategorySelect");
+    const idxSel = document.getElementById("cvpIndexSelect");
+    const expSel = document.getElementById("cvpExpirySelect");
+    const stkSel = document.getElementById("cvpStrikeSelect");
+    const autoRef = document.getElementById("cvpAutoRefresh");
+    const refBtn = document.getElementById("cvpRefreshBtn");
+    const csvBtn = document.getElementById("cvpExportCsvBtn");
+
+    if (liveBtn && histBtn) {
+      liveBtn.addEventListener("click", () => {
+        cvpState.mode = "live";
+        liveBtn.classList.add("active");
+        histBtn.classList.remove("active");
+        if (dateGrp) dateGrp.style.display = "none";
+        loadCallVsPutTool();
+      });
+      histBtn.addEventListener("click", () => {
+        cvpState.mode = "historical";
+        histBtn.classList.add("active");
+        liveBtn.classList.remove("active");
+        if (dateGrp) dateGrp.style.display = "flex";
+        loadCallVsPutTool();
+      });
+    }
+
+    if (catSel) catSel.addEventListener("change", () => { cvpState.category = catSel.value; loadCallVsPutTool(); });
+    if (idxSel) idxSel.addEventListener("change", () => { cvpState.index = idxSel.value; loadCallVsPutTool(); });
+    if (expSel) expSel.addEventListener("change", () => { cvpState.expiry = expSel.value; loadCallVsPutTool(); });
+    if (stkSel) stkSel.addEventListener("change", () => { cvpState.strike = stkSel.value; loadCallVsPutTool(); });
+    if (dateSel) dateSel.addEventListener("change", () => { cvpState.date = dateSel.value; loadCallVsPutTool(); });
+    if (dateInp) dateInp.addEventListener("change", () => { cvpState.date = dateInp.value; loadCallVsPutTool(); });
+
+    if (autoRef) {
+      autoRef.addEventListener("change", () => {
+        cvpState.autoRefresh = autoRef.checked;
+        const liveText = document.getElementById("cvpLiveText");
+        if (liveText) liveText.textContent = cvpState.autoRefresh ? "Live 30s" : "Paused";
+        if (cvpState.autoRefresh) startCvpAutoRefresh();
+        else stopCvpAutoRefresh();
+      });
+    }
+
+    if (refBtn) refBtn.addEventListener("click", () => loadCallVsPutTool());
+
+    // Legend toggles
+    document.querySelectorAll("#cvpChartLegend .st-legend-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const s = btn.getAttribute("data-series");
+        if (s && cvpState.visible.hasOwnProperty(s)) {
+          cvpState.visible[s] = !cvpState.visible[s];
+          btn.classList.toggle("active", cvpState.visible[s]);
+          btn.classList.toggle("inactive", !cvpState.visible[s]);
+          if (cvpState.data) renderCallVsPutChart(cvpState.data);
+        }
+      });
+    });
+
+    if (csvBtn) {
+      csvBtn.addEventListener("click", () => {
+        if (!cvpState.data || !cvpState.data.points) return;
+        exportTableToCsv("tableCallVsPutHistory", `${cvpState.index}_call_vs_put_${cvpState.date || "live"}.csv`);
+      });
+    }
+
+    setupCvpCanvasInteractions();
+    startCvpAutoRefresh();
+  }
+
+  function startCvpAutoRefresh() {
+    stopCvpAutoRefresh();
+    if (!cvpState.autoRefresh) return;
+    cvpState.timer = setInterval(() => {
+      if (currentSuite === "callVsPut") loadCallVsPutTool(true);
+    }, 30000);
+  }
+
+  function stopCvpAutoRefresh() {
+    if (cvpState.timer) { clearInterval(cvpState.timer); cvpState.timer = null; }
+  }
+
+  async function loadCallVsPutTool(isSilent = false) {
+    const refBtn = document.getElementById("cvpRefreshBtn");
+    if (refBtn && !isSilent) {
+      refBtn.textContent = "⏳ Refreshing...";
+      refBtn.disabled = true;
+    }
+
+    try {
+      const q = new URLSearchParams({
+        index: cvpState.index || "NIFTY",
+        category: cvpState.category || "Equity",
+        expiry: cvpState.expiry || "",
+        strike: cvpState.strike || "atm",
+        date: cvpState.mode === "historical" ? (cvpState.date || "") : ""
+      });
+
+      const res = await fetch(`/api/tools/straddle-chart?${q.toString()}`);
+      const data = await res.json();
+
+      if (!data || !data.ok) {
+        cvpState.data = null;
+        renderCallVsPutChart({ points: [] });
+        return;
+      }
+
+      cvpState.data = data;
+
+      syncDropdownOptions("cvpExpirySelect", data.available_expiries || [], data.expiry);
+      syncStrikeDropdown("cvpStrikeSelect", data.available_strikes || [], data.selected_strike, data.atm_strike);
+
+      const points = data.points || [];
+      const latest = data.latest || {};
+      const ceLtp = latest.ce_price || 0;
+      const peLtp = latest.pe_price || 0;
+      const openCe = (points[0] && points[0].ce_price) ? points[0].ce_price : ceLtp;
+      const openPe = (points[0] && points[0].pe_price) ? points[0].pe_price : peLtp;
+      const ceChg = ceLtp - openCe;
+      const peChg = peLtp - openPe;
+      const ceChgPct = openCe > 0 ? (ceChg / openCe * 100).toFixed(2) : "0.00";
+      const peChgPct = openPe > 0 ? (peChg / openPe * 100).toFixed(2) : "0.00";
+      const spread = ceLtp - peLtp;
+      const ratio = peLtp > 0 ? (ceLtp / peLtp).toFixed(2) : "1.00";
+
+      const ceVal = document.getElementById("cvpCePriceVal");
+      const ceSub = document.getElementById("cvpCeChgSub");
+      const peVal = document.getElementById("cvpPePriceVal");
+      const peSub = document.getElementById("cvpPeChgSub");
+      const spreadVal = document.getElementById("cvpSpreadVal");
+      const spreadSub = document.getElementById("cvpSpreadSub");
+      const ratioVal = document.getElementById("cvpRatioVal");
+      const biasSub = document.getElementById("cvpBiasSub");
+      const ivSpreadVal = document.getElementById("cvpIvSpreadVal");
+      const ivDetailSub = document.getElementById("cvpIvDetailSub");
+      const flowLeaderVal = document.getElementById("cvpFlowLeaderVal");
+      const dominanceMeter = document.getElementById("cvpDominanceMeter");
+
+      if (ceVal) ceVal.textContent = `₹${ceLtp.toFixed(2)}`;
+      if (ceSub) ceSub.textContent = `${ceChg >= 0 ? '+' : ''}${ceChg.toFixed(2)} (${ceChgPct}%)`;
+
+      if (peVal) peVal.textContent = `₹${peLtp.toFixed(2)}`;
+      if (peSub) peSub.textContent = `${peChg >= 0 ? '+' : ''}${peChg.toFixed(2)} (${peChgPct}%)`;
+
+      if (spreadVal) {
+        spreadVal.textContent = `${spread >= 0 ? '+' : ''}₹${spread.toFixed(2)}`;
+        spreadVal.className = `st-val ${spread >= 0 ? 'text-green' : 'text-red'}`;
+      }
+      if (spreadSub) spreadSub.textContent = spread >= 0 ? "Call Premium Dominant" : "Put Premium Dominant";
+
+      if (ratioVal) ratioVal.textContent = ratio;
+      if (biasSub) {
+        if (Number(ratio) > 1.15) {
+          biasSub.textContent = "BULLISH SKEW (CE > PE)";
+          biasSub.className = "st-sub text-green";
+        } else if (Number(ratio) < 0.85) {
+          biasSub.textContent = "BEARISH SKEW (PE > CE)";
+          biasSub.className = "st-sub text-red";
+        } else {
+          biasSub.textContent = "BALANCED DELTA SKEW";
+          biasSub.className = "st-sub text-cyan";
+        }
+      }
+
+      const greeks = latest.greeks || {};
+      const baseIv = greeks.iv || 13.5;
+      const ceIv = (baseIv + (spread > 0 ? 0.6 : -0.4)).toFixed(1);
+      const peIv = (baseIv + (spread < 0 ? 0.6 : -0.4)).toFixed(1);
+      const ivSpread = Math.abs(ceIv - peIv).toFixed(1);
+      if (ivSpreadVal) ivSpreadVal.textContent = `${ivSpread}%`;
+      if (ivDetailSub) ivDetailSub.textContent = `CE: ${ceIv}% | PE: ${peIv}%`;
+
+      if (flowLeaderVal) flowLeaderVal.textContent = spread >= 0 ? "Calls Dominating" : "Puts Dominating";
+      const ceWeightPct = (ceLtp + peLtp) > 0 ? Math.round((ceLtp / (ceLtp + peLtp)) * 100) : 50;
+      if (dominanceMeter) dominanceMeter.textContent = `${ceWeightPct}% CE / ${100 - ceWeightPct}% PE`;
+
+      // Summary bar
+      const bCallOpen = document.getElementById("cvpBarCallOpen");
+      const bPutOpen = document.getElementById("cvpBarPutOpen");
+      const bCallHl = document.getElementById("cvpBarCallHl");
+      const bPutHl = document.getElementById("cvpBarPutHl");
+
+      if (bCallOpen) bCallOpen.textContent = `₹${openCe.toFixed(2)}`;
+      if (bPutOpen) bPutOpen.textContent = `₹${openPe.toFixed(2)}`;
+
+      const cePrices = points.map(p => p.ce_price || 0).filter(v => v > 0);
+      const pePrices = points.map(p => p.pe_price || 0).filter(v => v > 0);
+      const maxCe = Math.max(...cePrices, ceLtp);
+      const minCe = Math.min(...cePrices, ceLtp);
+      const maxPe = Math.max(...pePrices, peLtp);
+      const minPe = Math.min(...pePrices, peLtp);
+
+      if (bCallHl) bCallHl.textContent = `₹${maxCe.toFixed(1)} / ₹${minCe.toFixed(1)}`;
+      if (bPutHl) bPutHl.textContent = `₹${maxPe.toFixed(1)} / ₹${minPe.toFixed(1)}`;
+
+      const heading = document.getElementById("cvpChartHeading");
+      if (heading) heading.textContent = `${data.symbol} ATM Call (CE) vs Put (PE) Live Trajectory & Spread`;
+
+      renderCallVsPutChart(data);
+      renderCallVsPutHistoryTable(points);
+    } catch (err) {
+      console.error("loadCallVsPutTool error:", err);
+    } finally {
+      if (refBtn) {
+        refBtn.textContent = "🔄 Refresh";
+        refBtn.disabled = false;
+      }
+    }
+  }
+
+  function renderCallVsPutChart(data) {
+    const canvas = document.getElementById("chartCallVsPut");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    const container = canvas.parentElement;
+    const width = container.clientWidth || 900;
+    const height = container.clientHeight || 480;
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    ctx.scale(dpr, dpr);
+
+    const isLight = document.body.classList.contains("theme-light");
+    ctx.fillStyle = isLight ? "#f8fafc" : "#0d1322";
+    ctx.fillRect(0, 0, width, height);
+
+    const points = data.points || [];
+    const n = points.length;
+    if (n === 0) {
+      ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
+      ctx.font = "14px Inter";
+      ctx.textAlign = "center";
+      ctx.fillText("No Call vs Put tick data available", width / 2, height / 2);
+      return;
+    }
+
+    const padding = { top: 30, right: 75, bottom: 35, left: 70 };
+    const chartW = width - padding.left - padding.right;
+    const totalH = height - padding.top - padding.bottom;
+
+    // Split: 65% for CE vs PE line chart, 35% for Spread Divergence oscillator
+    const topH = Math.floor(totalH * 0.65);
+    const bottomH = totalH - topH - 25; // 25px gap between charts
+    const bottomTop = padding.top + topH + 25;
+
+    // 1. Calculate Ranges for Upper Chart (CE & PE)
+    let leftVals = [];
+    points.forEach(p => {
+      if (cvpState.visible.call && p.ce_price != null) leftVals.push(p.ce_price);
+      if (cvpState.visible.put && p.pe_price != null) leftVals.push(p.pe_price);
+    });
+    if (leftVals.length === 0) leftVals = [50, 150];
+    let minLeft = Math.floor(Math.min(...leftVals) * 0.9);
+    let maxLeft = Math.ceil(Math.max(...leftVals) * 1.1);
+    if (maxLeft <= minLeft) { minLeft -= 10; maxLeft += 10; }
+
+    // Right Axis for Spot
+    let spotVals = points.map(p => p.spot).filter(v => v && !isNaN(v));
+    if (spotVals.length === 0) spotVals = [24000, 24500];
+    let minSpot = Math.floor(Math.min(...spotVals) - 30);
+    let maxSpot = Math.ceil(Math.max(...spotVals) + 30);
+
+    // 2. Calculate Range for Bottom Oscillator (Spread CE - PE)
+    let maxSpreadAbs = 10;
+    points.forEach(p => {
+      const sp = (p.ce_price || 0) - (p.pe_price || 0);
+      if (Math.abs(sp) > maxSpreadAbs) maxSpreadAbs = Math.abs(sp);
+    });
+    maxSpreadAbs = Math.ceil(maxSpreadAbs * 1.25);
+
+    // Gridlines for Upper Chart
+    ctx.strokeStyle = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 1;
+    const gridSteps = 4;
+    for (let i = 0; i <= gridSteps; i++) {
+      const y = padding.top + (topH / gridSteps) * i;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(width - padding.right, y);
+      ctx.stroke();
+
+      const val = maxLeft - ((maxLeft - minLeft) / gridSteps) * i;
+      ctx.fillStyle = "#10b981";
+      ctx.font = "11px 'JetBrains Mono', monospace";
+      ctx.textAlign = "right";
+      ctx.fillText(`₹${val.toFixed(1)}`, padding.left - 10, y + 4);
+
+      if (cvpState.visible.spot) {
+        const sVal = maxSpot - ((maxSpot - minSpot) / gridSteps) * i;
+        ctx.fillStyle = "#eab308";
+        ctx.textAlign = "left";
+        ctx.fillText(Math.round(sVal).toLocaleString("en-IN"), width - padding.right + 10, y + 4);
+      }
+    }
+
+    // Watermark
+    ctx.save();
+    ctx.fillStyle = isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)";
+    ctx.font = "800 32px 'Inter', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(`${data.symbol || "OPTIONS"} CALL vs PUT DESK`, width / 2, padding.top + topH / 2);
+    ctx.restore();
+
+    const getX = (i) => padding.left + (chartW / (n - 1 || 1)) * i;
+    const getTopY = (val) => padding.top + topH - ((val - minLeft) / (maxLeft - minLeft)) * topH;
+    const getSpotY = (val) => padding.top + topH - ((val - minSpot) / (maxSpot - minSpot)) * topH;
+    const getBottomY = (spread) => bottomTop + bottomH / 2 - (spread / maxSpreadAbs) * (bottomH / 2);
+
+    // Plot Spot Line (Dashed Gold)
+    if (cvpState.visible.spot) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(234, 179, 8, 0.65)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = getX(i);
+        const y = getSpotY(points[i].spot || minSpot);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Plot Call (CE) Curve (Emerald)
+    if (cvpState.visible.call) {
+      ctx.strokeStyle = "#10b981";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = getX(i);
+        const y = getTopY(points[i].ce_price || minLeft);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Plot Put (PE) Curve (Rose)
+    if (cvpState.visible.put) {
+      ctx.strokeStyle = "#f43f5e";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = getX(i);
+        const y = getTopY(points[i].pe_price || minLeft);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // ----------------------------------------------------
+    // BOTTOM SUB-CHART: CE - PE Spread Oscillator
+    // ----------------------------------------------------
+    const zeroY = bottomTop + bottomH / 2;
+    ctx.strokeStyle = isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)";
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(padding.left, zeroY);
+    ctx.lineTo(width - padding.right, zeroY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Sub-chart labels
+    ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`+₹${maxSpreadAbs}`, padding.left - 10, bottomTop + 8);
+    ctx.fillText("₹0", padding.left - 10, zeroY + 4);
+    ctx.fillText(`-₹${maxSpreadAbs}`, padding.left - 10, bottomTop + bottomH);
+
+    ctx.fillStyle = "#06b6d4";
+    ctx.font = "600 10px Inter";
+    ctx.textAlign = "left";
+    ctx.fillText("SPREAD OSCILLATOR (CE - PE)", padding.left, bottomTop - 6);
+
+    if (cvpState.visible.spread) {
+      const barW = Math.max(2, (chartW / n) * 0.7);
+      for (let i = 0; i < n; i++) {
+        const sp = (points[i].ce_price || 0) - (points[i].pe_price || 0);
+        const x = getX(i);
+        const y = getBottomY(sp);
+        const barH = y - zeroY;
+
+        ctx.fillStyle = sp >= 0 ? "rgba(16, 185, 129, 0.75)" : "rgba(244, 63, 94, 0.75)";
+        ctx.fillRect(x - barW / 2, zeroY, barW, barH);
+      }
+    }
+
+    // X Axis Ticks on bottom
+    const timeIndices = [0, Math.floor(n * 0.25), Math.floor(n * 0.5), Math.floor(n * 0.75), n - 1];
+    timeIndices.forEach(idx => {
+      if (idx >= 0 && idx < n) {
+        const x = getX(idx);
+        const pt = points[idx];
+        const tStr = pt.time ? String(pt.time).substring(11, 16) : "--:--";
+        ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
+        ctx.font = "11px 'JetBrains Mono', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(tStr, x, height - 10);
+      }
+    });
+
+    // Hover crosshair
+    if (cvpState.hoveredIndex >= 0 && cvpState.hoveredIndex < n) {
+      const i = cvpState.hoveredIndex;
+      const x = getX(i);
+      ctx.save();
+      ctx.strokeStyle = isLight ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)";
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(x, padding.top);
+      ctx.lineTo(x, bottomTop + bottomH);
+      ctx.stroke();
+
+      // Dot on CE
+      ctx.fillStyle = "#10b981";
+      ctx.beginPath();
+      ctx.arc(x, getTopY(points[i].ce_price || minLeft), 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Dot on PE
+      ctx.fillStyle = "#f43f5e";
+      ctx.beginPath();
+      ctx.arc(x, getTopY(points[i].pe_price || minLeft), 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function setupCvpCanvasInteractions() {
+    const canvas = document.getElementById("chartCallVsPut");
+    const tooltip = document.getElementById("cvpTooltip");
+    if (!canvas || !tooltip) return;
+
+    function handleMove(e) {
+      if (!cvpState.data || !cvpState.data.points || cvpState.data.points.length === 0) return;
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const mouseX = clientX - rect.left;
+      const padding = { top: 30, right: 75, bottom: 35, left: 70 };
+      const chartW = rect.width - padding.left - padding.right;
+
+      if (mouseX < padding.left || mouseX > rect.width - padding.right) {
+        tooltip.style.display = "none";
+        cvpState.hoveredIndex = -1;
+        renderCallVsPutChart(cvpState.data);
+        return;
+      }
+
+      const points = cvpState.data.points;
+      const n = points.length;
+      const relX = (mouseX - padding.left) / chartW;
+      const index = Math.max(0, Math.min(n - 1, Math.round(relX * (n - 1))));
+      cvpState.hoveredIndex = index;
+      renderCallVsPutChart(cvpState.data);
+
+      const p = points[index];
+      const ce = p.ce_price || 0;
+      const pe = p.pe_price || 0;
+      const sp = ce - pe;
+      const ratio = pe > 0 ? (ce / pe).toFixed(2) : "1.00";
+
+      tooltip.innerHTML = `
+        <div style="font-weight:800; font-size:12px; margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
+          ⏱️ ${formatIstFull(p.time)}
+        </div>
+        <div style="display:grid; grid-template-columns:auto auto; gap:4px 12px; font-size:11px;">
+          <span style="color:#10b981; font-weight:700;">Call (CE) LTP:</span>
+          <strong style="text-align:right;">₹${ce.toFixed(2)}</strong>
+
+          <span style="color:#f43f5e; font-weight:700;">Put (PE) LTP:</span>
+          <strong style="text-align:right;">₹${pe.toFixed(2)}</strong>
+
+          <span style="color:#06b6d4; font-weight:700;">CE - PE Spread:</span>
+          <strong style="text-align:right; color:${sp >= 0 ? '#10b981' : '#f43f5e'};">${sp >= 0 ? '+' : ''}₹${sp.toFixed(2)}</strong>
+
+          <span style="color:var(--p2-text-muted);">CE / PE Ratio:</span>
+          <strong style="text-align:right;">${ratio}</strong>
+
+          <span style="color:#eab308; font-weight:700;">Index Spot:</span>
+          <strong style="text-align:right;">₹${Number(p.spot).toLocaleString('en-IN', {minimumFractionDigits:2})}</strong>
+        </div>
+      `;
+      tooltip.style.display = "block";
+      tooltip.style.left = `${Math.min(rect.width - 210, Math.max(10, mouseX + 15))}px`;
+      tooltip.style.top = `${Math.min(rect.height - 130, Math.max(10, clientY - rect.top - 20))}px`;
+    }
+
+    canvas.addEventListener("mousemove", handleMove);
+    canvas.addEventListener("mouseleave", () => {
+      tooltip.style.display = "none";
+      cvpState.hoveredIndex = -1;
+      if (cvpState.data) renderCallVsPutChart(cvpState.data);
+    });
+  }
+
+  function renderCallVsPutHistoryTable(points) {
+    const tbody = document.querySelector("#tableCallVsPutHistory tbody");
+    if (!tbody) return;
+    if (!points || points.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:24px; color:var(--p2-text-muted);">No Call vs Put records available.</td></tr>`;
+      return;
+    }
+
+    const openCe = points[0].ce_price || 50;
+    const openPe = points[0].pe_price || 50;
+    let html = "";
+    for (let i = points.length - 1; i >= 0; i--) {
+      const p = points[i];
+      const tStr = p.time ? String(p.time).substring(11, 16) : "--:--";
+      const ce = p.ce_price || 0;
+      const pe = p.pe_price || 0;
+      const ceChgPct = openCe > 0 ? (((ce - openCe) / openCe) * 100).toFixed(2) : "0.00";
+      const peChgPct = openPe > 0 ? (((pe - openPe) / openPe) * 100).toFixed(2) : "0.00";
+      const sp = ce - pe;
+      const ratio = pe > 0 ? (ce / pe).toFixed(2) : "1.00";
+
+      let leaderBadge = `<span class="p2-badge p2-badge-teal">Balanced</span>`;
+      if (sp > 15) leaderBadge = `<span class="p2-badge p2-badge-green">Call Expanding</span>`;
+      else if (sp < -15) leaderBadge = `<span class="p2-badge p2-badge-red">Put Expanding</span>`;
+
+      html += `<tr>
+        <td style="font-weight:600;">${tStr}</td>
+        <td class="text-right text-green" style="font-weight:700;">₹${ce.toFixed(2)}</td>
+        <td class="text-right text-red" style="font-weight:700;">₹${pe.toFixed(2)}</td>
+        <td class="text-right ${Number(ceChgPct) >= 0 ? 'text-green' : 'text-red'}">${Number(ceChgPct) >= 0 ? '+' : ''}${ceChgPct}%</td>
+        <td class="text-right ${Number(peChgPct) >= 0 ? 'text-green' : 'text-red'}">${Number(peChgPct) >= 0 ? '+' : ''}${peChgPct}%</td>
+        <td class="text-right ${sp >= 0 ? 'text-green' : 'text-red'}" style="font-weight:700;">${sp >= 0 ? '+' : ''}₹${sp.toFixed(2)}</td>
+        <td class="text-right" style="font-weight:600;">${ratio}</td>
+        <td class="text-center">${leaderBadge}</td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+  }
+
+
   async function loadBreadthContributionSuite(indexKey = null, dateStr = null, intervalVal = null, isRefresh = false) {
     const targetIdx = indexKey || currentContribIndex || "nifty50";
     const effDate = dateStr || currentContribDate || _todayStr;
@@ -2338,34 +3470,44 @@
     currentContribDate = effDate;
     currentContribInterval = effInterval;
 
+    const reqSeq = ++_contribRequestSeq;
+
+    // Instant Visual Feedback on ALL Interactions
     const dateBadge = document.getElementById("contribDateDisplayBadge");
     const contribRefBtn = document.getElementById("contribRefreshBtn");
     const refIcon = document.getElementById("contribRefreshIcon");
     const refLabel = document.getElementById("contribRefreshLabel");
+    const spotTitle = document.getElementById("contribSpotTitle");
+    const univSelect = document.getElementById("contribUniverseSelect");
+    const idxBtns = document.querySelectorAll("#contribIndexGroup .contrib-index-btn");
 
-    if (isRefresh) {
-      if (refIcon) refIcon.classList.add("contrib-spinning");
-      if (refLabel) refLabel.textContent = "Refreshing...";
-      if (contribRefBtn) contribRefBtn.disabled = true;
+    if (spotTitle) spotTitle.textContent = targetIdx.toUpperCase();
+    if (univSelect && univSelect.value !== targetIdx) univSelect.value = targetIdx;
+    idxBtns.forEach(btn => btn.classList.toggle("active", btn.getAttribute("data-index") === targetIdx));
+
+    if (refIcon) refIcon.classList.add("contrib-spinning");
+    if (refLabel) refLabel.textContent = isRefresh ? "Refreshing..." : "Loading...";
+    if (contribRefBtn) contribRefBtn.disabled = true;
+
+    if (dateBadge) {
+      dateBadge.textContent = "⏳ Loading " + targetIdx.toUpperCase() + "...";
+      dateBadge.className = "p2-badge p2-badge-teal";
     }
-    if (isRefresh && dateBadge && !dateBadge.textContent.includes("⏳")) {
-      dateBadge.textContent = "⏳ Computing Breadth...";
-    }
+
     try {
       const url = `/api/index-breadth-contribution?index=${encodeURIComponent(targetIdx)}&date=${encodeURIComponent(effDate)}&interval=${encodeURIComponent(effInterval)}${isRefresh ? '&refresh=true' : ''}`;
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       if (!data.ok) throw new Error(data.message || "Contribution data is unavailable");
-      if (!Array.isArray(data.timeline) || data.timeline.length < 5) {
-        throw new Error("Verified contribution timeline is incomplete");
-      }
+
+      // Ignore if a newer request was dispatched while waiting
+      if (reqSeq !== _contribRequestSeq) return;
 
       contribDataCache = data;
       contribTimeline = data.timeline || [];
 
       // Sync Controls with returned data
-      const univSelect = document.getElementById("contribUniverseSelect");
       if (univSelect && univSelect.value !== targetIdx) {
         univSelect.value = targetIdx;
       }
@@ -2373,10 +3515,6 @@
       if (intervalSelect && intervalSelect.value !== effInterval) {
         intervalSelect.value = effInterval;
       }
-      const idxBtns = document.querySelectorAll("#contribIndexGroup .contrib-index-btn");
-      idxBtns.forEach(btn => {
-        btn.classList.toggle("active", btn.getAttribute("data-index") === targetIdx);
-      });
 
       // Update Date elements without overwriting user's explicit selection
       const displayDate = data.displayDate || "22-Sep-2026";
@@ -2420,7 +3558,6 @@
 
       // Update spot pill
       const idxInfo = data.indexInfo || {};
-      const spotTitle = document.getElementById("contribSpotTitle");
       const spotVal = document.getElementById("contribSpotVal");
       const spotChg = document.getElementById("contribSpotChg");
       const niftyTitle = document.getElementById("niftyChartTitle");
@@ -2534,6 +3671,7 @@
       });
 
     } catch (err) {
+      if (reqSeq !== _contribRequestSeq) return;
       contribDataCache = null;
       contribTimeline = [];
       const msg = err.message || "Verified breadth and index data are unavailable.";
@@ -2569,12 +3707,14 @@
       });
       console.error("Failed to load Breadth Contribution suite:", err);
     } finally {
-      const contribRefBtn = document.getElementById("contribRefreshBtn");
-      const refIcon = document.getElementById("contribRefreshIcon");
-      const refLabel = document.getElementById("contribRefreshLabel");
-      if (refIcon) refIcon.classList.remove("contrib-spinning");
-      if (refLabel) refLabel.textContent = "Refresh";
-      if (contribRefBtn) contribRefBtn.disabled = false;
+      if (reqSeq === _contribRequestSeq) {
+        const curRefBtn = document.getElementById("contribRefreshBtn");
+        const curRefIcon = document.getElementById("contribRefreshIcon");
+        const curRefLabel = document.getElementById("contribRefreshLabel");
+        if (curRefIcon) curRefIcon.classList.remove("contrib-spinning");
+        if (curRefLabel) curRefLabel.textContent = "Refresh";
+        if (curRefBtn) curRefBtn.disabled = false;
+      }
     }
   }
 

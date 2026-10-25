@@ -430,10 +430,7 @@
         </div>
 
         <!-- Quick View Switcher: Premium Decay vs Call vs Put -->
-        <div class="st-view-mode-bar" id="stViewModeBar">
-          <button type="button" class="st-view-btn active" id="stModeDecayTab" onclick="switchStraddleViewMode('decay')">📉 Premium Decay</button>
-          <button type="button" class="st-view-btn" id="stModeCallVsPutTab" onclick="switchStraddleViewMode('call_vs_put')">⚖️ Call vs Put Premium</button>
-        </div>
+        
 
         <!-- Series Visibility Toggles & Watermark -->
         <div class="straddle-legend-toggles">
@@ -526,6 +523,398 @@
     </div> <!-- /p2ViewStraddle -->
 
   </main>
+
+  <!-- ====================================================================
+       SECTION 2: OPTIONS PREMIUM DECAY DESK (DEDICATED)
+       ==================================================================== -->
+  <main id="p2SectionPremiumDecay" class="page2-main-content" style="display:none;">
+    <div id="p2ViewPremiumDecay" class="gm-view-container" style="display:block;">
+
+      <!-- Premium Decay Toolbar -->
+      <div class="straddle-toolbar">
+        <div class="straddle-title-wrap">
+          <h2>🔻 LIVE OPTIONS PREMIUM DECAY</h2>
+          <p>Real-Time Intraday Theta Erosion Velocity, Time-Value Burn &amp; Theoretical vs Realized Decay</p>
+        </div>
+
+        <div class="straddle-controls-wrap">
+          <div class="nt-exchange-selector" style="margin-right:4px;">
+            <button id="decayModeLiveBtn" class="nt-exch-btn active" type="button">🔴 Live Today</button>
+            <button id="decayModeHistBtn" class="nt-exch-btn" type="button">📅 Back Date</button>
+          </div>
+
+          <div class="straddle-ctrl-group">
+            <label for="decayCategorySelect">Category</label>
+            <select id="decayCategorySelect" class="page2-ctrl-select">
+              <option value="Equity" selected>Equity</option>
+              <option value="MCX">MCX</option>
+              <option value="Crypto">Crypto</option>
+            </select>
+          </div>
+
+          <div class="straddle-ctrl-group">
+            <label for="decayIndexSelect">Index / Asset</label>
+            <select id="decayIndexSelect" class="page2-ctrl-select">
+              <option value="NIFTY" selected>NIFTY</option>
+              <option value="BANKNIFTY">BANKNIFTY</option>
+              <option value="FINNIFTY">FINNIFTY</option>
+              <option value="MIDCPNIFTY">MIDCAPNIFTY</option>
+              <option value="SENSEX">SENSEX</option>
+              <option value="BANKEX">BANKEX</option>
+            </select>
+          </div>
+
+          <div id="decayDateGroup" class="straddle-ctrl-group" style="display:none;">
+            <label for="decayDateSelect">Date</label>
+            <select id="decayDateSelect" class="page2-ctrl-select" style="min-width:140px;">
+              <option value="">Loading dates...</option>
+            </select>
+            <input type="date" id="decayDateInput" class="page2-ctrl-select" style="padding:4px 8px;" title="Pick specific calendar date">
+          </div>
+
+          <div class="straddle-ctrl-group">
+            <label for="decayExpirySelect">Expiry</label>
+            <select id="decayExpirySelect" class="page2-ctrl-select">
+              <option value="">Current Expiry</option>
+            </select>
+          </div>
+
+          <div class="straddle-ctrl-group">
+            <label for="decayStrikeSelect">Strike</label>
+            <select id="decayStrikeSelect" class="page2-ctrl-select">
+              <option value="atm" selected>ATM (Auto)</option>
+            </select>
+          </div>
+
+          <div class="straddle-live-badge-group">
+            <label id="decayLiveToggleWrap" class="straddle-live-toggle" title="Auto-refresh chart every 30 seconds">
+              <input type="checkbox" id="decayAutoRefresh" checked>
+              <span class="straddle-live-dot">●</span>
+              <span id="decayLiveText">Live 30s</span>
+            </label>
+            <button id="decayRefreshBtn" class="page2-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;" title="Refresh Premium Decay">🔄 Refresh</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dedicated Premium Decay Metric Ribbon -->
+      <section class="straddle-metric-strip" id="decayMetricStrip">
+        <div class="st-metric-card highlight">
+          <span class="st-lbl">Total Points Decayed</span>
+          <span class="st-val text-red" id="decayPointsVal">-₹0.00</span>
+          <span class="st-sub" id="decayPointsSub">Erosion since 09:15 Open</span>
+        </div>
+        <div class="st-metric-card">
+          <span class="st-lbl">Decay % from Open</span>
+          <span class="st-val text-amber" id="decayPctVal">0.00%</span>
+          <span class="st-sub">Relative Time Value Loss</span>
+        </div>
+        <div class="st-metric-card">
+          <span class="st-lbl">Decay Velocity / Pace</span>
+          <span class="st-val text-cyan" id="decayVelocityVal">0.0 pts/hr</span>
+          <span class="st-sub">Current Hourly Theta Burn</span>
+        </div>
+        <div class="st-metric-card">
+          <span class="st-lbl">Theta Model vs Realized</span>
+          <span class="st-val text-purple" id="decayThetaRatioVal">1.0x</span>
+          <span class="st-sub" id="decayThetaSub">Model Theta: -₹0.0/day</span>
+        </div>
+        <div class="st-metric-card">
+          <span class="st-lbl">Premium Remaining</span>
+          <span class="st-val text-green" id="decayRemainingVal">100.0%</span>
+          <span class="st-sub" id="decayOpenPriceSub">Open Straddle: ₹--</span>
+        </div>
+        <div class="st-metric-card">
+          <span class="st-lbl">Projected EOD Premium</span>
+          <span class="st-val text-blue" id="decayEodEstVal">₹--</span>
+          <span class="st-sub">Estimated Expiry/EOD Close</span>
+        </div>
+      </section>
+
+      <!-- Main Dedicated Premium Decay Chart -->
+      <div class="p2-card straddle-chart-card">
+        <div class="p2-card-header">
+          <div class="straddle-chart-title-left">
+            <span class="p2-card-title" id="decayChartHeading">NIFTY ATM Premium Decay &amp; Theta Trajectory</span>
+            <div class="p2-card-subtitle">Tick-by-tick cumulative decay points (₹) against theoretical Black-Scholes theta baseline</div>
+          </div>
+
+          <div class="straddle-chart-legend" id="decayChartLegend">
+            <label class="st-legend-btn active" data-series="decay" id="decayLegBtnDecay" title="Cumulative Points Decayed (₹)">
+              <span class="st-dot dot-rose"></span>
+              <span>Cumulative Decay (₹)</span>
+            </label>
+            <label class="st-legend-btn active" data-series="ce_decay" id="decayLegBtnCe" title="Call (CE) Leg Erosion">
+              <span class="st-dot dot-emerald"></span>
+              <span>CE Leg Decay (₹)</span>
+            </label>
+            <label class="st-legend-btn active" data-series="pe_decay" id="decayLegBtnPe" title="Put (PE) Leg Erosion">
+              <span class="st-dot dot-cyan"></span>
+              <span>PE Leg Decay (₹)</span>
+            </label>
+            <label class="st-legend-btn active" data-series="theta_baseline" id="decayLegBtnTheta" title="Theoretical Theta Model">
+              <span class="st-dot dot-gold"></span>
+              <span>Theoretical Theta</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="straddle-canvas-container" style="position:relative; width:100%; height:450px;">
+          <canvas style="width:100%;max-width:100%;display:block;" id="chartPremiumDecay"></canvas>
+          <div id="decayTooltip" class="straddle-interactive-tooltip" style="display:none;"></div>
+        </div>
+
+        <!-- Session Decay Phase Breakdown Bar -->
+        <div class="straddle-range-bar">
+          <div class="range-item">
+            <span class="range-lbl">Morning Crush (09:15-10:30):</span>
+            <strong class="range-val text-amber" id="decayPhaseMorning">--</strong>
+          </div>
+          <div class="range-sep"></div>
+          <div class="range-item">
+            <span class="range-lbl">Midday Consolidation (10:30-13:30):</span>
+            <strong class="range-val" id="decayPhaseMidday">--</strong>
+          </div>
+          <div class="range-sep"></div>
+          <div class="range-item">
+            <span class="range-lbl">Afternoon Acceleration (13:30-15:00):</span>
+            <strong class="range-val text-cyan" id="decayPhaseAfternoon">--</strong>
+          </div>
+          <div class="range-sep"></div>
+          <div class="range-item">
+            <span class="range-lbl">Expiry Ramp (15:00-15:30):</span>
+            <strong class="range-val text-red" id="decayPhaseEod">--</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dedicated Premium Decay Data Table -->
+      <div class="p2-card">
+        <div class="p2-card-header">
+          <div>
+            <span class="p2-card-title">Intraday Premium Decay Timeline</span>
+            <div class="p2-card-subtitle">Tick-by-tick points eroded, relative percentages, and leg-wise decay contribution</div>
+          </div>
+          <button id="decayExportCsvBtn" class="nt-btn-secondary" type="button">📥 Export CSV / Excel</button>
+        </div>
+
+        <div class="p2-table-container">
+          <table class="p2-table" id="tableDecayHistory">
+            <thead>
+              <tr>
+                <th>Time (IST)</th>
+                <th class="text-right">Straddle Price (₹)</th>
+                <th class="text-right">Points Eroded (₹)</th>
+                <th class="text-right">Decay % from Open</th>
+                <th class="text-right">CE Decay (₹)</th>
+                <th class="text-right">PE Decay (₹)</th>
+                <th class="text-right">Decay Velocity (pts/hr)</th>
+                <th class="text-center">Decay Signal</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div> <!-- /p2ViewPremiumDecay -->
+  </main>
+
+
+  <!-- ====================================================================
+       SECTION 3: CALL VS PUT PREMIUM DESK (DEDICATED)
+       ==================================================================== -->
+  <main id="p2SectionCallVsPut" class="page2-main-content" style="display:none;">
+    <div id="p2ViewCallVsPut" class="gm-view-container" style="display:block;">
+
+      <!-- Call vs Put Toolbar -->
+      <div class="straddle-toolbar">
+        <div class="straddle-title-wrap">
+          <h2>⚖️ CALL vs PUT PREMIUM COMPARISON</h2>
+          <p>Live Intraday Call (CE) vs Put (PE) Divergence, Leg Spread &amp; Institutional Skew Dynamics</p>
+        </div>
+
+        <div class="straddle-controls-wrap">
+          <div class="nt-exchange-selector" style="margin-right:4px;">
+            <button id="cvpModeLiveBtn" class="nt-exch-btn active" type="button">🔴 Live Today</button>
+            <button id="cvpModeHistBtn" class="nt-exch-btn" type="button">📅 Back Date</button>
+          </div>
+
+          <div class="straddle-ctrl-group">
+            <label for="cvpCategorySelect">Category</label>
+            <select id="cvpCategorySelect" class="page2-ctrl-select">
+              <option value="Equity" selected>Equity</option>
+              <option value="MCX">MCX</option>
+              <option value="Crypto">Crypto</option>
+            </select>
+          </div>
+
+          <div class="straddle-ctrl-group">
+            <label for="cvpIndexSelect">Index / Asset</label>
+            <select id="cvpIndexSelect" class="page2-ctrl-select">
+              <option value="NIFTY" selected>NIFTY</option>
+              <option value="BANKNIFTY">BANKNIFTY</option>
+              <option value="FINNIFTY">FINNIFTY</option>
+              <option value="MIDCPNIFTY">MIDCAPNIFTY</option>
+              <option value="SENSEX">SENSEX</option>
+              <option value="BANKEX">BANKEX</option>
+            </select>
+          </div>
+
+          <div id="cvpDateGroup" class="straddle-ctrl-group" style="display:none;">
+            <label for="cvpDateSelect">Date</label>
+            <select id="cvpDateSelect" class="page2-ctrl-select" style="min-width:140px;">
+              <option value="">Loading dates...</option>
+            </select>
+            <input type="date" id="cvpDateInput" class="page2-ctrl-select" style="padding:4px 8px;" title="Pick specific calendar date">
+          </div>
+
+          <div class="straddle-ctrl-group">
+            <label for="cvpExpirySelect">Expiry</label>
+            <select id="cvpExpirySelect" class="page2-ctrl-select">
+              <option value="">Current Expiry</option>
+            </select>
+          </div>
+
+          <div class="straddle-ctrl-group">
+            <label for="cvpStrikeSelect">Strike</label>
+            <select id="cvpStrikeSelect" class="page2-ctrl-select">
+              <option value="atm" selected>ATM (Auto)</option>
+            </select>
+          </div>
+
+          <div class="straddle-live-badge-group">
+            <label id="cvpLiveToggleWrap" class="straddle-live-toggle" title="Auto-refresh chart every 30 seconds">
+              <input type="checkbox" id="cvpAutoRefresh" checked>
+              <span class="straddle-live-dot">●</span>
+              <span id="cvpLiveText">Live 30s</span>
+            </label>
+            <button id="cvpRefreshBtn" class="page2-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;" title="Refresh Call vs Put">🔄 Refresh</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dedicated Call vs Put Metric Ribbon -->
+      <section class="straddle-metric-strip" id="cvpMetricStrip">
+        <div class="st-metric-card" style="border-left: 3px solid #10b981;">
+          <span class="st-lbl">Call (CE) Premium LTP</span>
+          <span class="st-val text-green" id="cvpCePriceVal">₹--</span>
+          <span class="st-sub" id="cvpCeChgSub">Change: --</span>
+        </div>
+        <div class="st-metric-card" style="border-left: 3px solid #f43f5e;">
+          <span class="st-lbl">Put (PE) Premium LTP</span>
+          <span class="st-val text-red" id="cvpPePriceVal">₹--</span>
+          <span class="st-sub" id="cvpPeChgSub">Change: --</span>
+        </div>
+        <div class="st-metric-card highlight">
+          <span class="st-lbl">CE - PE Spread Divergence</span>
+          <span class="st-val text-cyan" id="cvpSpreadVal">₹0.00</span>
+          <span class="st-sub" id="cvpSpreadSub">Premium Difference</span>
+        </div>
+        <div class="st-metric-card">
+          <span class="st-lbl">CE / PE Ratio &amp; Bias</span>
+          <span class="st-val text-purple" id="cvpRatioVal">1.00</span>
+          <span class="st-sub" id="cvpBiasSub">NEUTRAL SKEW</span>
+        </div>
+        <div class="st-metric-card">
+          <span class="st-lbl">Call IV vs Put IV</span>
+          <span class="st-val text-gold" id="cvpIvSpreadVal">0.0%</span>
+          <span class="st-sub" id="cvpIvDetailSub">CE: --% | PE: --%</span>
+        </div>
+        <div class="st-metric-card">
+          <span class="st-lbl">Dominant Option Flow</span>
+          <span class="st-val text-blue" id="cvpFlowLeaderVal">Balanced</span>
+          <span class="st-sub" id="cvpDominanceMeter">50% CE / 50% PE</span>
+        </div>
+      </section>
+
+      <!-- Main Dedicated Call vs Put Dual-Curve & Spread Chart -->
+      <div class="p2-card straddle-chart-card">
+        <div class="p2-card-header">
+          <div class="straddle-chart-title-left">
+            <span class="p2-card-title" id="cvpChartHeading">NIFTY ATM Call (CE) vs Put (PE) Live Trajectory &amp; Spread</span>
+            <div class="p2-card-subtitle">Intraday 1-minute comparison of Call leg vs Put leg with zero-centered CE-PE Spread Oscillator</div>
+          </div>
+
+          <div class="straddle-chart-legend" id="cvpChartLegend">
+            <label class="st-legend-btn active" data-series="call" id="cvpLegBtnCall" title="Call (CE) Leg Premium">
+              <span class="st-dot dot-emerald"></span>
+              <span>Call Premium CE (Left Y)</span>
+            </label>
+            <label class="st-legend-btn active" data-series="put" id="cvpLegBtnPut" title="Put (PE) Leg Premium">
+              <span class="st-dot dot-rose"></span>
+              <span>Put Premium PE (Left Y)</span>
+            </label>
+            <label class="st-legend-btn active" data-series="spread" id="cvpLegBtnSpread" title="CE - PE Spread Divergence">
+              <span class="st-dot dot-cyan"></span>
+              <span>CE - PE Spread (₹)</span>
+            </label>
+            <label class="st-legend-btn active" data-series="spot" id="cvpLegBtnSpot" title="Underlying Cash Spot Price">
+              <span class="st-dot dot-gold"></span>
+              <span>Index Spot (Right Y)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="straddle-canvas-container" style="position:relative; width:100%; height:480px;">
+          <canvas style="width:100%;max-width:100%;display:block;" id="chartCallVsPut"></canvas>
+          <div id="cvpTooltip" class="straddle-interactive-tooltip" style="display:none;"></div>
+        </div>
+
+        <!-- Leg-by-Leg Summary Strip -->
+        <div class="straddle-range-bar">
+          <div class="range-item">
+            <span class="range-lbl">Call Leg Open:</span>
+            <strong class="range-val text-green" id="cvpBarCallOpen">₹--</strong>
+          </div>
+          <div class="range-sep"></div>
+          <div class="range-item">
+            <span class="range-lbl">Put Leg Open:</span>
+            <strong class="range-val text-red" id="cvpBarPutOpen">₹--</strong>
+          </div>
+          <div class="range-sep"></div>
+          <div class="range-item">
+            <span class="range-lbl">Call High / Low:</span>
+            <strong class="range-val" id="cvpBarCallHl">₹-- / ₹--</strong>
+          </div>
+          <div class="range-sep"></div>
+          <div class="range-item">
+            <span class="range-lbl">Put High / Low:</span>
+            <strong class="range-val" id="cvpBarPutHl">₹-- / ₹--</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dedicated Call vs Put Data Table -->
+      <div class="p2-card">
+        <div class="p2-card-header">
+          <div>
+            <span class="p2-card-title">Intraday Call (CE) vs Put (PE) Timeline Comparison</span>
+            <div class="p2-card-subtitle">Tick-by-tick Call LTP, Put LTP, spread divergence, ratio and market skew</div>
+          </div>
+          <button id="cvpExportCsvBtn" class="nt-btn-secondary" type="button">📥 Export CSV / Excel</button>
+        </div>
+
+        <div class="p2-table-container">
+          <table class="p2-table" id="tableCallVsPutHistory">
+            <thead>
+              <tr>
+                <th>Time (IST)</th>
+                <th class="text-right">Call CE LTP (₹)</th>
+                <th class="text-right">Put PE LTP (₹)</th>
+                <th class="text-right">CE Chg %</th>
+                <th class="text-right">PE Chg %</th>
+                <th class="text-right">CE - PE Spread (₹)</th>
+                <th class="text-right">CE / PE Ratio</th>
+                <th class="text-center">Skew Leader</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div> <!-- /p2ViewCallVsPut -->
+  </main>
+
 
 
   <!-- ====================================================================
@@ -822,7 +1211,7 @@
     </div>
   </main>
 
-  <script src="/page2.js?v=20261024_breadth_v1"></script>
+  <script src="/page2.js?v=20261025_separate_desks_v3"></script>
     <!-- ================================================================
          6-DOT APP LAUNCHER: ALL DESKS, MENUS & SUBMENUS MODAL
          ================================================================ -->
