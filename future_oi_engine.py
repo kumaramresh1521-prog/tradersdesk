@@ -41,7 +41,15 @@ _PCR_IV_DATA_CACHE = None
 
 SYMBOL_ALIASES = {
     "TATAMOTORS": "TMPV",
-    "LTIM": "LTM"
+    "TMPV": "TATAMOTORS",
+    "LTIM": "LTM",
+    "LTM": "LTIM",
+    "ICICILIFE": "ICICIPRULI",
+    "ICICIPRULI": "ICICILIFE",
+    "MM": "M&M",
+    "M&M": "MM",
+    "MCDOWELL-N": "UNITDSPR",
+    "UNITDSPR": "MCDOWELL-N",
 }
 
 def _load_pcr_iv_data() -> Dict[str, Any]:
@@ -109,8 +117,12 @@ def _get_delivery_for_symbol_date(symbol: str, date_str: str) -> Optional[dict]:
 
     # Index handling
     if sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX", "NIFTYNXT50"):
-        comp_dv = _DELIVERY_INDEX_COMPOSITE.get(date_str, 52.4)
-        return {"dv": comp_dv, "deliv_qty": 0, "volume": 0, "turnover_cr": 0.0}
+        clean_d = date_str.replace("-", "")
+        comp_dv = _DELIVERY_INDEX_COMPOSITE.get(clean_d) or _DELIVERY_INDEX_COMPOSITE.get(date_str)
+        if comp_dv is None and _DELIVERY_INDEX_COMPOSITE:
+            sorted_cd = sorted(_DELIVERY_INDEX_COMPOSITE.keys())
+            comp_dv = _DELIVERY_INDEX_COMPOSITE[sorted_cd[-1]]
+        return {"dv": comp_dv or 52.4, "deliv_qty": 0, "volume": 0, "turnover_cr": 0.0}
 
     s_data = deliv_master.get(sym)
     if not s_data and sym in SYMBOL_ALIASES:
@@ -132,7 +144,9 @@ def _get_delivery_for_symbol_date(symbol: str, date_str: str) -> Optional[dict]:
 
     sorted_dates = sorted(s_data.keys())
     if sorted_dates:
-        closest = min(sorted_dates, key=lambda d: abs(int(d) - int(clean_d if clean_d.isdigit() else 20261019)))
+        if clean_d.isdigit() and int(clean_d) >= int(sorted_dates[-1]):
+            return s_data[sorted_dates[-1]]
+        closest = min(sorted_dates, key=lambda d: abs(int(d) - int(clean_d if clean_d.isdigit() else sorted_dates[-1])))
         return s_data[closest]
 
     return None
@@ -237,7 +251,8 @@ def _load_bhavcopy_eod_data(force: bool = False):
     csv_files = sorted(FO_BHAV_DIR.glob("BhavCopy_NSE_FO_*.csv")) if FO_BHAV_DIR.exists() else []
     new_csvs = [p for p in csv_files if p.stem.replace("BhavCopy_NSE_FO_", "") not in dates_found]
 
-    if not new_csvs and symbols_data and dates_found:
+    # If force, ensure the latest Bhavcopy is re-parsed so options records (OI chg, LTP) are fresh
+    if not force and not new_csvs and symbols_data and dates_found:
         _BHAV_SESSIONS_CACHE = {
             "ts": now,
             "symbols_data": symbols_data,
@@ -246,14 +261,19 @@ def _load_bhavcopy_eod_data(force: bool = False):
         }
         return _BHAV_SESSIONS_CACHE
 
-    # 3. If no cache existed, parse all CSVs; if cache existed, parse ONLY new_csvs
-    files_to_parse = csv_files if not dates_found else new_csvs
+    # 3. If no cache existed or forced, parse CSVs (for force, at least the latest CSV)
+    if force and csv_files:
+        files_to_parse = [csv_files[-1]]
+    else:
+        files_to_parse = csv_files if not dates_found else new_csvs
 
     for idx, path in enumerate(files_to_parse):
         dt_str = path.stem.replace("BhavCopy_NSE_FO_", "")
         if dt_str not in dates_found:
             dates_found.append(dt_str)
         is_latest = (idx == len(files_to_parse) - 1)
+        if is_latest:
+            latest_options = {}
 
         day_fut: Dict[str, list] = {}
         try:
@@ -294,16 +314,30 @@ def _load_bhavcopy_eod_data(force: bool = False):
                             k = float(r.get("StrkPric") or 0)
                             opt_type = (r.get("OptnTp") or "").strip().upper()
                             oi = int(float(r.get("OpnIntrst") or 0))
+                            oi_chg = int(float(r.get("ChngInOpnIntrst") or 0))
+                            cls_p = float(r.get("ClsPric") or 0.0)
+                            prev_p = float(r.get("PrvsClsgPric") or cls_p)
 
                             if sym not in latest_options:
                                 latest_options[sym] = {}
                             if k not in latest_options[sym]:
-                                latest_options[sym][k] = {"c": 0, "p": 0}
+                                latest_options[sym][k] = {
+                                    "c": 0, "p": 0,
+                                    "c_chg": 0, "p_chg": 0,
+                                    "c_ltp": 0.0, "p_ltp": 0.0,
+                                    "c_prev": 0.0, "p_prev": 0.0
+                                }
 
                             if opt_type == "CE":
                                 latest_options[sym][k]["c"] += oi
+                                latest_options[sym][k]["c_chg"] += oi_chg
+                                latest_options[sym][k]["c_ltp"] = cls_p
+                                latest_options[sym][k]["c_prev"] = prev_p
                             elif opt_type == "PE":
                                 latest_options[sym][k]["p"] += oi
+                                latest_options[sym][k]["p_chg"] += oi_chg
+                                latest_options[sym][k]["p_ltp"] = cls_p
+                                latest_options[sym][k]["p_prev"] = prev_p
                         except Exception:
                             pass
 

@@ -538,12 +538,45 @@ def _generate_intraday_bars(
     # Typical U-shape volume distribution weights for elapsed bars
     weights = []
     for i in range(num_bars):
-        progress = i / max(1, total_possible_bars - 1)
+        progress = i / max(1, num_bars - 1)
         u_curve = 1.0 + 1.8 * ((progress - 0.5) ** 2) * 4
         wobble = 0.85 + ((seed_val + i * 17) % 31) / 100.0
         weights.append(u_curve * wobble)
 
     total_w = sum(weights) or 1.0
+
+    # Build list of (index, target_oi) anchors for smooth piecewise interpolation
+    anchors = [(0, start_oi)]
+    for i in range(num_bars):
+        b_end_str = (start_dt + datetime.timedelta(minutes=(i + 1) * step)).strftime("%H:%M")
+        b_start_str = (start_dt + datetime.timedelta(minutes=i * step)).strftime("%H:%M")
+        if (b_end_str in rec_oi_map or b_start_str in rec_oi_map) and 0 < i < (num_bars - 1):
+            val = rec_oi_map.get(b_end_str) or rec_oi_map.get(b_start_str)
+            if val and val > 0:
+                anchors.append((i, val))
+    anchors.append((num_bars - 1, current_oi))
+    seen_indices = {}
+    for idx_a, oi_a in anchors:
+        seen_indices[idx_a] = oi_a
+    sorted_anchors = sorted(seen_indices.items(), key=lambda x: x[0])
+
+    # Precompute smooth target OI for each bar index
+    bar_target_ois = {}
+    for a_idx in range(len(sorted_anchors) - 1):
+        i0, oi0 = sorted_anchors[a_idx]
+        i1, oi1 = sorted_anchors[a_idx + 1]
+        span = max(1, i1 - i0)
+        for bi in range(i0, i1 + 1):
+            ratio = (bi - i0) / span
+            linear_oi = oi0 + ratio * (oi1 - oi0)
+            if 0 < bi < (num_bars - 1):
+                wobble = math.sin(bi * 0.73 + seed_val % 13) * (abs(oi1 - oi0) / span * 0.12 + 40.0)
+            else:
+                wobble = 0.0
+            bar_target_ois[bi] = int(round(linear_oi + wobble))
+    first_step_span = max(1, sorted_anchors[min(1, len(sorted_anchors)-1)][0] or 1)
+    bar_target_ois[0] = start_oi + int((sorted_anchors[min(1, len(sorted_anchors)-1)][1] - start_oi) / first_step_span * 0.5)
+    bar_target_ois[num_bars - 1] = current_oi
 
     bars = []
     curr_oi = start_oi
@@ -552,17 +585,19 @@ def _generate_intraday_bars(
     prev_bar_close = open_px
 
     for i in range(num_bars):
+        bar_start_time = start_dt + datetime.timedelta(minutes=i * step)
         bar_end_time = start_dt + datetime.timedelta(minutes=(i + 1) * step)
         time_str = bar_end_time.strftime("%H:%M")
+        start_time_str = bar_start_time.strftime("%H:%M")
         t_epoch = int(bar_end_time.timestamp())
 
         w = weights[i] / total_w
         is_final_bar = (i == num_bars - 1)
 
         # 1. Price determination (Prefer authentic Angel NFO Futures candles, then Yahoo candles)
-        fut_candle = fut_map.get(time_str)
-        spot_candle = spot_map.get(time_str)
-        yf_candle = yf_map.get(time_str)
+        fut_candle = fut_map.get(start_time_str) or fut_map.get(time_str)
+        spot_candle = spot_map.get(start_time_str) or spot_map.get(time_str)
+        yf_candle = yf_map.get(start_time_str) or yf_map.get(time_str)
 
         if fut_candle:
             # Authentic exchange NFO Futures candle: [t_epoch, time_str, o, h, l, c, v]
@@ -577,7 +612,7 @@ def _generate_intraday_bars(
             b_h = round(yf_candle[3] + basis_base, 2)
             b_l = round(yf_candle[4] + basis_base, 2)
             b_c = round(yf_candle[5] + basis_base, 2)
-            b_vol = max(10, int(yf_candle[6])) if yf_candle[6] > 0 else max(10, int(tot_vol * w))
+            b_vol = max(10, int(tot_vol * w))
         else:
             # Trajectory interpolation
             progress = (i + 1) / max(1, num_bars)
@@ -614,17 +649,10 @@ def _generate_intraday_bars(
         cum_pv += typical * b_vol
         vwap = round(cum_pv / (cum_vol or 1), 2)
 
-        # 2. OI determination (Use recorded real exchange OI if available, otherwise distribute)
-        if time_str in rec_oi_map:
-            target_bar_oi = rec_oi_map[time_str]
-            delta_oi = target_bar_oi - curr_oi
-            curr_oi = target_bar_oi
-        elif is_final_bar:
-            delta_oi = current_oi - curr_oi
-            curr_oi = current_oi
-        else:
-            delta_oi = int(net_oi_diff * w)
-            curr_oi += delta_oi
+        # 2. OI determination with smooth piecewise trajectory
+        target_bar_oi = bar_target_ois.get(i, current_oi if is_final_bar else curr_oi)
+        delta_oi = target_bar_oi - curr_oi
+        curr_oi = target_bar_oi
 
         # 3. Spot & Basis (Dynamic real basis when spot is available)
         if spot_candle:

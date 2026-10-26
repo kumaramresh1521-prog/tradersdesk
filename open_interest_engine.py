@@ -221,18 +221,48 @@ def _compute_open_interest_data(
 
     # 3. Resolve Spot Price & Change
     spot = INDEX_DEFAULT_SPOTS.get(sym, 1000.0)
-    change_pts = -125.40 if "NIFTY" in sym else -250.0
-    change_pct = -0.55 if "NIFTY" in sym else -0.50
+    change_pts = 0.0
+    change_pct = 0.0
+
+    INDEX_DIRECT_MAP = {
+        "NIFTY50": "nifty50",
+        "NIFTY": "nifty50",
+        "NIFTYBANK": "banknifty",
+        "BANKNIFTY": "banknifty",
+        "NIFTYFINSERVICE": "finnifty",
+        "FINNIFTY": "finnifty",
+        "NIFTYMIDSELECT": "midcpnifty",
+        "MIDCPNIFTY": "midcpnifty",
+        "NIFTYNEXT50": "niftynext50",
+        "SENSEX": "sensex",
+        "BANKEX": "bankex"
+    }
+
+    try:
+        import sys
+        srv = sys.modules.get("server")
+        if not srv:
+            import server as srv
+        if hasattr(srv, "get_live_market_index_quotes"):
+            quotes = srv.get_live_market_index_quotes() or {}
+            target_key = INDEX_DIRECT_MAP.get(sym.replace(" ", "").replace("_", "").upper())
+            if target_key and target_key in quotes:
+                q = quotes[target_key]
+                spot = float(q.get("spot") or spot)
+                change_pts = float(q.get("change") or change_pts)
+                change_pct = float(q.get("percentChange") or change_pct)
+    except Exception:
+        pass
 
     if live_chart_summary and live_chart_summary.get("close"):
         spot = float(live_chart_summary["close"])
-        change_pts = float(live_chart_summary.get("change") or 0.0)
-        change_pct = float(live_chart_summary.get("percentChange") or 0.0)
-    else:
+        change_pts = float(live_chart_summary.get("change") or change_pts)
+        change_pct = float(live_chart_summary.get("percentChange") or change_pct)
+    elif sym not in INDEX_DEFAULT_SPOTS:
         # Check stock CSV if equity
         try:
             sec_path = DATA_DIR / "sec_bhavdata_full_16102026.csv"
-            if sym not in INDEX_DEFAULT_SPOTS and sec_path.exists():
+            if sec_path.exists():
                 with open(sec_path, "r", encoding="utf-8") as f:
                     for line in f:
                         parts = [p.strip() for p in line.split(",")]
@@ -322,12 +352,25 @@ def _compute_open_interest_data(
                     c_oi = int(val.get("c", 0) or 0)
                     p_oi = int(val.get("p", 0) or 0)
 
-                    c_chg = int(val.get("c_chg", round(c_oi * (0.06 if change_pts < 0 else -0.04))))
-                    p_chg = int(val.get("p_chg", round(p_oi * (0.08 if change_pts > 0 else -0.05))))
+                    c_chg = int(val.get("c_chg", 0))
+                    p_chg = int(val.get("p_chg", 0))
+                    c_ltp = float(val.get("c_ltp") or 0.0)
+                    p_ltp = float(val.get("p_ltp") or 0.0)
+                    c_prev = float(val.get("c_prev") or c_ltp)
+                    p_prev = float(val.get("p_prev") or p_ltp)
 
                     dist = k - spot
-                    c_ltp = max(0.50, round(max(0.0, -dist) + max(12.0, 280.0 - abs(dist) * 0.22), 2))
-                    p_ltp = max(0.50, round(max(0.0, dist) + max(12.0, 260.0 - abs(dist) * 0.22), 2))
+                    if c_ltp <= 0:
+                        c_ltp = max(0.50, round(max(0.0, -dist) + max(12.0, 280.0 - abs(dist) * 0.22), 2))
+                    if p_ltp <= 0:
+                        p_ltp = max(0.50, round(max(0.0, dist) + max(12.0, 260.0 - abs(dist) * 0.22), 2))
+
+                    c_price_chg = round(c_ltp - c_prev, 2)
+                    p_price_chg = round(p_ltp - p_prev, 2)
+                    if c_price_chg == 0:
+                        c_price_chg = round(-change_pts * 0.4, 2) if dist > 0 else round(change_pts * 0.6, 2)
+                    if p_price_chg == 0:
+                        p_price_chg = round(change_pts * 0.4, 2) if dist < 0 else round(-change_pts * 0.6, 2)
 
                     strike_pcr = round(p_oi / c_oi, 2) if c_oi > 0 else (99.0 if p_oi > 0 else 0.0)
 
@@ -347,8 +390,8 @@ def _compute_open_interest_data(
                         "put_delta": round(max(-0.95, min(-0.05, -0.5 - dist / (step * 20.0))), 2),
                         "pcr": strike_pcr,
                         "net_oi": p_oi - c_oi,
-                        "call_buildup": classify_buildup(-change_pts, c_chg),
-                        "put_buildup": classify_buildup(change_pts, p_chg)
+                        "call_buildup": classify_buildup(c_price_chg, c_chg),
+                        "put_buildup": classify_buildup(p_price_chg, p_chg)
                     })
                     tot_call_oi += c_oi
                     tot_put_oi += p_oi

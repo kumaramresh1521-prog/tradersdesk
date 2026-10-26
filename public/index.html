@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TradersDesk.in | Institutional Derivatives, Options Greeks &amp; Market Breadth Terminal</title>
+    <title>TradersDesk.in | Institutional Derivatives, Options Greeks & Market Breadth Terminal</title>
     <meta name="description" content="TradersDesk.in — Institutional-grade Indian derivatives analytics, real-time Options Chain Pro, Black-Scholes Greeks (Delta, Gamma, Theta, Vega), Max Pain, Multi-Strike OI, Market Breadth &amp; FII/DII Smart Money positioning.">
     <meta name="keywords" content="TradersDesk, tradersdesk.in, option chain, nifty option chain, bank nifty option chain, options greeks, max pain, pcr ratio, market breadth, fii dii activity, open interest analysis, niftytrader, gocharting, definedge">
     <meta name="author" content="TradersDesk.in Quantitative Analytics">
@@ -2148,9 +2148,17 @@
             
             <!-- 1. Top Action Toolbar -->
             <div class="modern-opt-topbar">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-weight:700; font-size:12.5px; color:#1e293b; letter-spacing:0.2px;">⚡ REAL-TIME OPTION CHAIN</span>
-                <span style="background:rgba(37,99,235,0.1); color:#2563eb; font-size:10.5px; padding:2px 8px; border-radius:12px; font-weight:700;">13 METRICS</span>
+              <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-weight:700; font-size:12.5px; color:#1e293b; letter-spacing:0.2px;">⚡ REAL-TIME OPTION CHAIN</span>
+                  <span style="background:rgba(37,99,235,0.1); color:#2563eb; font-size:10.5px; padding:2px 8px; border-radius:12px; font-weight:700;" id="modernOptMetricsCount">13 METRICS</span>
+                </div>
+
+                <!-- View Switcher Toggle: 1st Default View, 2nd Greeks View -->
+                <div class="chain-view-toggle-grp" id="chainViewToggleGrp" style="display:inline-flex; align-items:center; background:rgba(148,163,184,0.14); border:1px solid rgba(148,163,184,0.28); border-radius:8px; padding:2px; gap:2px;">
+                  <button type="button" class="chain-view-btn active" id="btnChainViewDefault" style="background:#2563eb; color:#ffffff; border:none; padding:4px 12px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; transition:all 0.15s ease;">Default View</button>
+                  <button type="button" class="chain-view-btn" id="btnChainViewGreeks" style="background:transparent; color:#64748b; border:none; padding:4px 12px; border-radius:6px; font-size:11.5px; font-weight:600; cursor:pointer; transition:all 0.15s ease;">Greeks View</button>
+                </div>
               </div>
 
               <!-- Right Actions -->

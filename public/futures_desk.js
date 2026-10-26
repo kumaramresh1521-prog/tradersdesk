@@ -3477,12 +3477,19 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(`₹${fmtNumber(pVal, pVal < 100 ? 2 : 1)}`, padLeft - 10, y);
 
-      // Right Axis OI Label (in Cr / Lakhs)
+      // Right Axis OI Label (Smart Adaptive Formatting)
       const oVal = oMax - (r / gridRows) * (oMax - oMin);
-      const oValCr = (oVal / 10000000).toFixed(2);
+      const oValFmt = (function(val) {
+        const abs = Math.abs(val);
+        const sign = val < 0 ? '-' : '';
+        if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)}Cr`;
+        if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(1)}L`;
+        if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(0)}k`;
+        return `${sign}${Math.round(abs)}`;
+      })(oVal);
       ctx.fillStyle = oiColor;
       ctx.textAlign = 'left';
-      ctx.fillText(`${oValCr}Cr`, padLeft + plotW + 10, y);
+      ctx.fillText(oValFmt, padLeft + plotW + 10, y);
     }
 
     // 2. Regime Background Zones
@@ -3543,16 +3550,24 @@
       // Right Axis Callout Badge for Last OI
       const lastOi = series[n - 1].oi;
       const lastOiY = getYOi(lastOi);
-      const lastOiCr = (lastOi / 10000000).toFixed(2);
+      const lastOiFmt = (function(val) {
+        const abs = Math.abs(val);
+        const sign = val < 0 ? '-' : '';
+        if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)}Cr`;
+        if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(1)}L`;
+        if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(0)}k`;
+        return `${sign}${Math.round(abs)}`;
+      })(lastOi);
       ctx.fillStyle = oiColor;
       ctx.beginPath();
-      ctx.roundRect(padLeft + plotW + 2, lastOiY - 11, 62, 22, 4);
+      const badgeW = Math.max(56, ctx.measureText(lastOiFmt).width + 16);
+      ctx.roundRect(padLeft + plotW + 2, lastOiY - 11, badgeW, 22, 4);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 11px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${lastOiCr}Cr`, padLeft + plotW + 33, lastOiY);
+      ctx.fillText(lastOiFmt, padLeft + plotW + 2 + badgeW / 2, lastOiY);
     }
 
     // 4. Draw VWAP Dotted Line
@@ -3662,6 +3677,61 @@
         ctx.lineWidth = 2;
         ctx.stroke();
       }
+    }
+
+    // 8. Sleek Dynamic Chart HUD Header
+    const activePoint = (pvoState.hoverIndex >= 0 && pvoState.hoverIndex < n) ? series[pvoState.hoverIndex] : series[n - 1];
+    if (activePoint) {
+      const hudTime = pvoState.mode === 'live' ? (activePoint.time || '--') : (activePoint.displayDate || activePoint.date || '--');
+      const hudP = activePoint.price;
+      const hudPChg = activePoint.priceChange || 0;
+      const hudPSign = hudPChg >= 0 ? '+' : '';
+      const hudPColor = hudPChg >= 0 ? '#10b981' : '#ef4444';
+      const hudSmartOi = function(val) {
+        const abs = Math.abs(val);
+        const sign = val < 0 ? '-' : '';
+        if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)}Cr`;
+        if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(1)}L`;
+        if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(0)}k`;
+        return `${sign}${Math.round(abs)}`;
+      };
+      const hudOiFmt = hudSmartOi(activePoint.oi);
+      const hudOiChg = activePoint.oiChange || 0;
+      const hudOiSign = hudOiChg >= 0 ? '+' : '';
+      const hudOiColor = hudOiChg >= 0 ? '#10b981' : '#ef4444';
+      const hudReg = activePoint.regime || 'Neutral';
+      const hudRegColor = activePoint.regimeColor || '#10b981';
+
+      ctx.save();
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.font = '600 11.5px Inter, system-ui, sans-serif';
+
+      let curX = padLeft + 6;
+      const hudY = Math.max(8, padTop - 22);
+
+      // Time tag
+      ctx.fillStyle = axisTextColor;
+      ctx.fillText(`${hudTime}:`, curX, hudY);
+      curX += ctx.measureText(`${hudTime}: `).width;
+
+      // Price
+      ctx.fillStyle = hudPColor;
+      const pText = `₹${fmtNumber(hudP, hudP < 100 ? 2 : 1)} (${hudPSign}${fmtNumber(hudPChg, 1)})`;
+      ctx.fillText(pText, curX, hudY);
+      curX += ctx.measureText(pText + '   ').width;
+
+      // OI
+      ctx.fillStyle = oiColor;
+      const oiText = `OI: ${hudOiFmt} (${hudOiSign}${hudSmartOi(hudOiChg)})`;
+      ctx.fillText(oiText, curX, hudY);
+      curX += ctx.measureText(oiText + '   ').width;
+
+      // Regime badge
+      ctx.fillStyle = hudRegColor;
+      ctx.fillText(`[${hudReg}]`, curX, hudY);
+
+      ctx.restore();
     }
   }
 
@@ -3943,6 +4013,16 @@
         const oColor = pt.oiChange >= 0 ? '#10b981' : '#ef4444';
         const oSign = pt.oiChange >= 0 ? '+' : '';
 
+        const ttSmartOi = function(val) {
+          const abs = Math.abs(val);
+          const sign = val < 0 ? '-' : '';
+          if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)}Cr`;
+          if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(1)}L`;
+          if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(0)}k`;
+          return `${sign}${Math.round(abs)}`;
+        };
+        const oiDisplay = ttSmartOi(pt.oi);
+
         tooltip.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:6px;margin-bottom:6px;">
             <strong style="color:#38bdf8;font-size:13px;">${escapePvoHtml(timeLbl)}</strong>
@@ -3951,8 +4031,8 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:11.5px;">
             <div><span style="opacity:0.7;">Price:</span> <strong style="color:${pColor};">₹${fmtNumber(pt.price, 2)}</strong></div>
             <div><span style="opacity:0.7;">Chg:</span> <strong style="color:${pColor};">${pSign}${fmtNumber(pt.priceChange, 2)} (${pSign}${pt.priceChangePct}%)</strong></div>
-            <div><span style="opacity:0.7;">Open Interest:</span> <strong style="color:#38bdf8;">${fmtNumber(pt.oiCr, 2)}Cr</strong></div>
-            <div><span style="opacity:0.7;">OI Chg:</span> <strong style="color:${oColor};">${oSign}${fmtNumber(pt.oiChange, 0)} (${oSign}${pt.oiChangePct}%)</strong></div>
+            <div><span style="opacity:0.7;">Open Interest:</span> <strong style="color:#38bdf8;">${oiDisplay}</strong></div>
+            <div><span style="opacity:0.7;">OI Chg:</span> <strong style="color:${oColor};">${oSign}${ttSmartOi(pt.oiChange || 0)} (${oSign}${pt.oiChangePct}%)</strong></div>
             <div><span style="opacity:0.7;">VWAP:</span> <strong style="color:#fbbf24;">₹${fmtNumber(pt.vwap || pt.price, 2)}</strong></div>
             <div><span style="opacity:0.7;">Spot:</span> <strong>₹${fmtNumber(pt.spot || 0, 2)}</strong></div>
           </div>

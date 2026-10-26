@@ -693,25 +693,45 @@
       filteredRows = filteredRows.filter(r => String(r.strike_price).includes(query));
     }
 
-    // 1. RENDER TABLE HEADERS (Image 1 Exact 13 Columns)
+    // 1. RENDER TABLE HEADERS (Default vs Greeks View)
     if (thead) {
-      thead.innerHTML = `
-        <tr class="modern-head-row">
-          <th style="text-align:right;">OI Change(%)</th>
-          <th style="text-align:right;">OI Change</th>
-          <th style="text-align:right;">OI</th>
-          <th style="text-align:right;">IV</th>
-          <th style="text-align:right;">Volume</th>
-          <th style="text-align:right;">LTP</th>
-          <th class="modern-th-strike" style="text-align:center;">Strike</th>
-          <th style="text-align:left;">LTP</th>
-          <th style="text-align:left;">Volume</th>
-          <th style="text-align:left;">IV</th>
-          <th style="text-align:left;">OI</th>
-          <th style="text-align:left;">OI Change</th>
-          <th style="text-align:left;">OI Change(%)</th>
-        </tr>
-      `;
+      if (state.viewMode === 'greeks') {
+        thead.innerHTML = `
+          <tr class="modern-head-row">
+            <th style="text-align:right;">Delta</th>
+            <th style="text-align:right;">Gamma</th>
+            <th style="text-align:right;">Theta</th>
+            <th style="text-align:right;">Vega</th>
+            <th style="text-align:right;">IV</th>
+            <th style="text-align:right;">LTP</th>
+            <th class="modern-th-strike" style="text-align:center;">Strike</th>
+            <th style="text-align:left;">LTP</th>
+            <th style="text-align:left;">IV</th>
+            <th style="text-align:left;">Delta</th>
+            <th style="text-align:left;">Gamma</th>
+            <th style="text-align:left;">Theta</th>
+            <th style="text-align:left;">Vega</th>
+          </tr>
+        `;
+      } else {
+        thead.innerHTML = `
+          <tr class="modern-head-row">
+            <th style="text-align:right;">OI Change(%)</th>
+            <th style="text-align:right;">OI Change</th>
+            <th style="text-align:right;">OI</th>
+            <th style="text-align:right;">IV</th>
+            <th style="text-align:right;">Volume</th>
+            <th style="text-align:right;">LTP</th>
+            <th class="modern-th-strike" style="text-align:center;">Strike</th>
+            <th style="text-align:left;">LTP</th>
+            <th style="text-align:left;">Volume</th>
+            <th style="text-align:left;">IV</th>
+            <th style="text-align:left;">OI</th>
+            <th style="text-align:left;">OI Change</th>
+            <th style="text-align:left;">OI Change(%)</th>
+          </tr>
+        `;
+      }
     }
 
     tbody.innerHTML = '';
@@ -837,60 +857,118 @@
         openStrikeModal(r, spot, isAtm);
       });
 
-      // RENDER ROW (Image 1 Exact 13 Columns)
+      // RENDER ROW (Default View 13 Columns vs Greeks View)
       const ceLtpClass = ceChg >= 0 ? 'up' : 'down';
       const peLtpClass = peChg >= 0 ? 'up' : 'down';
 
-      tr.innerHTML = `
-        <!-- Calls (Left) -->
-        <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px;">
-          ${ceOiChgPct !== 0 ? `<span class="${ceOiChgPct >= 0 ? 'modern-num-green' : 'modern-num-red'}">${ceOiChgPct >= 0 ? '+' : ''}${ceOiChgPct.toFixed(2)}%</span>` : '--'}
-        </td>
-        <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px;">
-          ${ceOiChg !== 0 ? `<span class="${ceOiChg >= 0 ? 'modern-num-green' : 'modern-num-red'}">${fmtMillionQty(ceOiChg)}</span>` : '--'}
-        </td>
-        <td class="modern-cell-oi" style="text-align:right;">
-          <div class="modern-oi-fill ce" style="width:${ceOiBarWidth}%;"></div>
-          <span class="modern-oi-text">${fmtMillionQty(ceOi)}</span>
-        </td>
-        <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#64748b;">
-          ${ceIv > 0 ? ceIv.toFixed(2) : '--'}
-        </td>
-        <td class="modern-cell-vol" style="text-align:right;">
-          <div class="modern-vol-fill ce" style="width:${ceVolBarWidth}%;"></div>
-          <span class="modern-vol-text">${fmtMillionQty(ceVol)}</span>
-        </td>
-        <td style="text-align:right; padding:4px 6px;">
-          <span class="modern-ltp-pill ${ceLtpClass}">${fmtNum(ceLtp, 2)}</span>
-        </td>
+      if (state.viewMode === 'greeks') {
+        const ceDelta = Number(ceGr.delta != null ? ceGr.delta : (qm.call_delta || 0));
+        const peDelta = Number(peGr.delta != null ? peGr.delta : (qm.put_delta || 0));
+        const ceGamma = Number(ceGr.gamma != null ? ceGr.gamma : (qm.call_gamma || 0));
+        const peGamma = Number(peGr.gamma != null ? peGr.gamma : (qm.put_gamma || 0));
+        const ceTheta = Number(ceGr.theta != null ? ceGr.theta : (qm.call_theta || 0));
+        const peTheta = Number(peGr.theta != null ? peGr.theta : (qm.put_theta || 0));
+        const ceVega = Number(ceGr.vega != null ? ceGr.vega : (qm.call_vega || 0));
+        const peVega = Number(peGr.vega != null ? peGr.vega : (qm.put_vega || 0));
 
-        <!-- Center Strike Column -->
-        <td class="modern-cell-strike">
-          <span class="modern-strike-num">${strike.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </td>
+        tr.innerHTML = `
+          <!-- Calls Greeks (Left) -->
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; color:#10b981;">
+            ${fmtNum(ceDelta, 2)}
+          </td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8;">
+            ${fmtNum(ceGamma, 4)}
+          </td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#f59e0b;">
+            ₹${fmtNum(ceTheta, 1)}
+          </td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; color:#a78bfa;">
+            ₹${fmtNum(ceVega, 1)}
+          </td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#38bdf8;">
+            ${ceIv > 0 ? ceIv.toFixed(1) + '%' : '--'}
+          </td>
+          <td style="text-align:right; padding:4px 6px;">
+            <span class="modern-ltp-pill ${ceLtpClass}">${fmtNum(ceLtp, 2)}</span>
+          </td>
 
-        <!-- Puts (Right) -->
-        <td style="text-align:left; padding:4px 6px;">
-          <span class="modern-ltp-pill ${peLtpClass}">${fmtNum(peLtp, 2)}</span>
-        </td>
-        <td class="modern-cell-vol" style="text-align:left;">
-          <div class="modern-vol-fill pe" style="width:${peVolBarWidth}%;"></div>
-          <span class="modern-vol-text">${fmtMillionQty(peVol)}</span>
-        </td>
-        <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#64748b;">
-          ${peIv > 0 ? peIv.toFixed(2) : '--'}
-        </td>
-        <td class="modern-cell-oi" style="text-align:left;">
-          <div class="modern-oi-fill pe" style="width:${peOiBarWidth}%;"></div>
-          <span class="modern-oi-text">${fmtMillionQty(peOi)}</span>
-        </td>
-        <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px;">
-          ${peOiChg !== 0 ? `<span class="${peOiChg >= 0 ? 'modern-num-green' : 'modern-num-red'}">${fmtMillionQty(peOiChg)}</span>` : '--'}
-        </td>
-        <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11px;">
-          ${peOiChgPct !== 0 ? `<span class="${peOiChg >= 0 ? 'modern-num-green' : 'modern-num-red'}">${peOiChgPct >= 0 ? '+' : ''}${peOiChgPct.toFixed(2)}%</span>` : '--'}
-        </td>
-      `;
+          <!-- Center Strike Column -->
+          <td class="modern-cell-strike">
+            <span class="modern-strike-num">${strike.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </td>
+
+          <!-- Puts Greeks (Right) -->
+          <td style="text-align:left; padding:4px 6px;">
+            <span class="modern-ltp-pill ${peLtpClass}">${fmtNum(peLtp, 2)}</span>
+          </td>
+          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#38bdf8;">
+            ${peIv > 0 ? peIv.toFixed(1) + '%' : '--'}
+          </td>
+          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; color:#ef4444;">
+            ${fmtNum(peDelta, 2)}
+          </td>
+          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8;">
+            ${fmtNum(peGamma, 4)}
+          </td>
+          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#f59e0b;">
+            ₹${fmtNum(peTheta, 1)}
+          </td>
+          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11px; color:#a78bfa;">
+            ₹${fmtNum(peVega, 1)}
+          </td>
+        `;
+      } else {
+        tr.innerHTML = `
+          <!-- Calls (Left) -->
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px;">
+            ${ceOiChgPct !== 0 ? `<span class="${ceOiChgPct >= 0 ? 'modern-num-green' : 'modern-num-red'}">${ceOiChgPct >= 0 ? '+' : ''}${ceOiChgPct.toFixed(2)}%</span>` : '--'}
+          </td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px;">
+            ${ceOiChg !== 0 ? `<span class="${ceOiChg >= 0 ? 'modern-num-green' : 'modern-num-red'}">${fmtMillionQty(ceOiChg)}</span>` : '--'}
+          </td>
+          <td class="modern-cell-oi" style="text-align:right;">
+            <div class="modern-oi-fill ce" style="width:${ceOiBarWidth}%;"></div>
+            <span class="modern-oi-text">${fmtMillionQty(ceOi)}</span>
+          </td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#64748b;">
+            ${ceIv > 0 ? ceIv.toFixed(2) : '--'}
+          </td>
+          <td class="modern-cell-vol" style="text-align:right;">
+            <div class="modern-vol-fill ce" style="width:${ceVolBarWidth}%;"></div>
+            <span class="modern-vol-text">${fmtMillionQty(ceVol)}</span>
+          </td>
+          <td style="text-align:right; padding:4px 6px;">
+            <span class="modern-ltp-pill ${ceLtpClass}">${fmtNum(ceLtp, 2)}</span>
+          </td>
+
+          <!-- Center Strike Column -->
+          <td class="modern-cell-strike">
+            <span class="modern-strike-num">${strike.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </td>
+
+          <!-- Puts (Right) -->
+          <td style="text-align:left; padding:4px 6px;">
+            <span class="modern-ltp-pill ${peLtpClass}">${fmtNum(peLtp, 2)}</span>
+          </td>
+          <td class="modern-cell-vol" style="text-align:left;">
+            <div class="modern-vol-fill pe" style="width:${peVolBarWidth}%;"></div>
+            <span class="modern-vol-text">${fmtMillionQty(peVol)}</span>
+          </td>
+          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#64748b;">
+            ${peIv > 0 ? peIv.toFixed(2) : '--'}
+          </td>
+          <td class="modern-cell-oi" style="text-align:left;">
+            <div class="modern-oi-fill pe" style="width:${peOiBarWidth}%;"></div>
+            <span class="modern-oi-text">${fmtMillionQty(peOi)}</span>
+          </td>
+          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px;">
+            ${peOiChg !== 0 ? `<span class="${peOiChg >= 0 ? 'modern-num-green' : 'modern-num-red'}">${fmtMillionQty(peOiChg)}</span>` : '--'}
+          </td>
+          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11px;">
+            ${peOiChgPct !== 0 ? `<span class="${peOiChg >= 0 ? 'modern-num-green' : 'modern-num-red'}">${peOiChgPct >= 0 ? '+' : ''}${peOiChgPct.toFixed(2)}%</span>` : '--'}
+          </td>
+        `;
+      }
 
       tbody.appendChild(tr);
     });
@@ -899,23 +977,33 @@
     const tfoot = document.getElementById('upstoxChainTableFoot');
     if (tfoot) {
       tfoot.style.display = '';
-      tfoot.innerHTML = `
-        <tr class="modern-foot-row">
-          <td></td>
-          <td id="modernFootCeOiChg" style="text-align:right; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumCeOiChg)}</td>
-          <td id="modernFootCeOi" style="text-align:right; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumCeOi)}</td>
-          <td></td>
-          <td id="modernFootCeVol" style="text-align:right; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumCeVol)}</td>
-          <td></td>
-          <td class="modern-foot-strike" style="text-align:center; font-weight:800; font-size:12px; color:#2563eb;">Total</td>
-          <td></td>
-          <td id="modernFootPeVol" style="text-align:left; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumPeVol)}</td>
-          <td></td>
-          <td id="modernFootPeOi" style="text-align:left; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumPeOi)}</td>
-          <td id="modernFootPeOiChg" style="text-align:left; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumPeOiChg)}</td>
-          <td></td>
-        </tr>
-      `;
+      if (state.viewMode === 'greeks') {
+        tfoot.innerHTML = `
+          <tr class="modern-foot-row">
+            <td colspan="6" style="text-align:center; font-weight:700; font-size:11px; color:#10b981;">⚡ Call Greeks Matrix</td>
+            <td class="modern-foot-strike" style="text-align:center; font-weight:800; font-size:12px; color:#2563eb;">Strike</td>
+            <td colspan="6" style="text-align:center; font-weight:700; font-size:11px; color:#ef4444;">⚡ Put Greeks Matrix</td>
+          </tr>
+        `;
+      } else {
+        tfoot.innerHTML = `
+          <tr class="modern-foot-row">
+            <td></td>
+            <td id="modernFootCeOiChg" style="text-align:right; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumCeOiChg)}</td>
+            <td id="modernFootCeOi" style="text-align:right; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumCeOi)}</td>
+            <td></td>
+            <td id="modernFootCeVol" style="text-align:right; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumCeVol)}</td>
+            <td></td>
+            <td class="modern-foot-strike" style="text-align:center; font-weight:800; font-size:12px; color:#2563eb;">Total</td>
+            <td></td>
+            <td id="modernFootPeVol" style="text-align:left; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumPeVol)}</td>
+            <td></td>
+            <td id="modernFootPeOi" style="text-align:left; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumPeOi)}</td>
+            <td id="modernFootPeOiChg" style="text-align:left; font-weight:800; font-family:'JetBrains Mono',monospace;">Σ ${fmtMillionQty(sumPeOiChg)}</td>
+            <td></td>
+          </tr>
+        `;
+      }
     }
   }
 
@@ -4036,6 +4124,36 @@
     const btnModernRef = document.getElementById('modernOptBtnRefresh');
     if (btnModernRef) {
       btnModernRef.addEventListener('click', () => fetchChain(true));
+    }
+
+    // 4f. View Switcher Toggle (1st: Default View, 2nd: Greeks View)
+    const btnDefault = document.getElementById('btnChainViewDefault');
+    const btnGreeks = document.getElementById('btnChainViewGreeks');
+    if (btnDefault && btnGreeks) {
+      btnDefault.addEventListener('click', () => {
+        state.viewMode = 'default';
+        btnDefault.classList.add('active');
+        btnDefault.style.background = '#2563eb';
+        btnDefault.style.color = '#ffffff';
+        btnGreeks.classList.remove('active');
+        btnGreeks.style.background = 'transparent';
+        btnGreeks.style.color = '#64748b';
+        const mc = document.getElementById('modernOptMetricsCount');
+        if (mc) mc.textContent = '13 METRICS';
+        if (state.chainData) renderTable(state.chainData);
+      });
+      btnGreeks.addEventListener('click', () => {
+        state.viewMode = 'greeks';
+        btnGreeks.classList.add('active');
+        btnGreeks.style.background = '#2563eb';
+        btnGreeks.style.color = '#ffffff';
+        btnDefault.classList.remove('active');
+        btnDefault.style.background = 'transparent';
+        btnDefault.style.color = '#64748b';
+        const mc = document.getElementById('modernOptMetricsCount');
+        if (mc) mc.textContent = 'GREEKS MATRIX';
+        if (state.chainData) renderTable(state.chainData);
+      });
     }
 
     // 4d. Strike Range Filter Pills

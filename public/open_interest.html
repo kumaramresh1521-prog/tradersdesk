@@ -1440,13 +1440,16 @@
         minVal = -absVal;
       } else if (currentChartMode === "change") {
         strikes.forEach(s => {
-          const c = Math.abs(s.call_oi_change);
-          const p = Math.abs(s.put_oi_change);
+          const c = s.call_oi_change || 0;
+          const p = s.put_oi_change || 0;
           if (c > maxVal) maxVal = c;
+          if (c < minVal) minVal = c;
           if (p > maxVal) maxVal = p;
+          if (p < minVal) minVal = p;
         });
-        maxVal = maxVal * 1.18 || 100000;
-        minVal = 0;
+        const absVal = Math.max(Math.abs(maxVal), Math.abs(minVal)) * 1.18 || 100000;
+        maxVal = absVal;
+        minVal = -absVal;
       } else {
         strikes.forEach(s => {
           if (s.call_oi > maxVal) maxVal = s.call_oi;
@@ -1502,19 +1505,24 @@
             <rect x="${centerX - groupW/2}" y="${bY}" width="${groupW}" height="${bH}" rx="3" fill="${barColor}" class="oi-svg-bar" data-idx="${idx}" />
           `;
         } else if (currentChartMode === "change") {
-          const cChg = s.call_oi_change;
-          const pChg = s.put_oi_change;
-          const cH = Math.max(2, (Math.abs(cChg) / maxVal) * plotH);
-          const pH = Math.max(2, (Math.abs(pChg) / maxVal) * plotH);
+          const cChg = s.call_oi_change || 0;
+          const pChg = s.put_oi_change || 0;
+          const zeroY = padTop + plotH * 0.5;
+
+          const cH = Math.max(2, (Math.abs(cChg) / maxVal) * (plotH * 0.5));
+          const pH = Math.max(2, (Math.abs(pChg) / maxVal) * (plotH * 0.5));
+
+          const cY = cChg >= 0 ? (zeroY - cH) : zeroY;
+          const pY = pChg >= 0 ? (zeroY - pH) : zeroY;
 
           if (seriesVisibility.call) {
             svgHtml += `
-              <rect x="${centerX - singleW - 1}" y="${padTop + plotH - cH}" width="${singleW}" height="${cH}" rx="3" fill="${callColor}" class="oi-svg-bar" data-idx="${idx}" />
+              <rect x="${centerX - singleW - 1}" y="${cY}" width="${singleW}" height="${cH}" rx="2" fill="${callColor}" opacity="${cChg < 0 ? '0.65' : '1.0'}" class="oi-svg-bar" data-idx="${idx}" />
             `;
           }
           if (seriesVisibility.put) {
             svgHtml += `
-              <rect x="${centerX + 1}" y="${padTop + plotH - pH}" width="${singleW}" height="${pH}" rx="3" fill="${putColor}" class="oi-svg-bar" data-idx="${idx}" />
+              <rect x="${centerX + 1}" y="${pY}" width="${singleW}" height="${pH}" rx="2" fill="${putColor}" opacity="${pChg < 0 ? '0.65' : '1.0'}" class="oi-svg-bar" data-idx="${idx}" />
             `;
           }
         } else {

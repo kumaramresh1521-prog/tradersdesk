@@ -701,6 +701,20 @@ def get_real_spot_price(ikey: str) -> tuple[float, float, float]:
     sym = ikey.split("|")[-1].strip().upper()
     sym_clean = sym.replace(" ", "").replace("_", "")
 
+    INDEX_DIRECT_MAP = {
+        "NIFTY50": "nifty50",
+        "NIFTY": "nifty50",
+        "NIFTYBANK": "banknifty",
+        "BANKNIFTY": "banknifty",
+        "NIFTYFINSERVICE": "finnifty",
+        "FINNIFTY": "finnifty",
+        "NIFTYMIDSELECT": "midcpnifty",
+        "MIDCPNIFTY": "midcpnifty",
+        "NIFTYNEXT50": "niftynext50",
+        "SENSEX": "sensex",
+        "BANKEX": "bankex"
+    }
+
     # 1. Check live index quotes from running server
     try:
         import sys
@@ -708,10 +722,19 @@ def get_real_spot_price(ikey: str) -> tuple[float, float, float]:
         if not srv:
             import server as srv
         if hasattr(srv, "get_live_market_index_quotes"):
-            idx_quotes = srv.get_live_market_index_quotes()
+            idx_quotes = srv.get_live_market_index_quotes() or {}
+            target_key = INDEX_DIRECT_MAP.get(sym_clean)
+            if target_key and target_key in idx_quotes:
+                v = idx_quotes[target_key]
+                spot = float(v.get("spot") or 0.0)
+                if spot > 0:
+                    prev = float(v.get("prevClose") or spot)
+                    chg = float(v.get("change") or (spot - prev))
+                    return spot, prev, chg
+
             for k, v in idx_quotes.items():
                 k_clean = k.upper().replace(" ", "").replace("_", "")
-                if k_clean in sym_clean or sym_clean in k_clean:
+                if k_clean == sym_clean:
                     spot = float(v.get("spot") or 0.0)
                     if spot > 0:
                         prev = float(v.get("prevClose") or spot)
