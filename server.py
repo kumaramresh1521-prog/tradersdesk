@@ -168,6 +168,8 @@ def get_default_footer_links() -> dict:
                     {"label": "Future vs Open Interest", "url": "/futures/future-vs-oi", "type": "inst", "target": "futures:futureVsOi"},
                     {"label": "Future Marketwatch Matrix", "url": "/futures", "type": "inst", "target": "futures:matrix"},
                     {"label": "Straddle Analytics Engine", "url": "/straddle", "type": "link", "target": "_self"},
+                    {"label": "Options Premium Decay", "url": "/premium-decay", "type": "link", "target": "_self"},
+                    {"label": "Call vs Put Premium", "url": "/call-vs-put-premium", "type": "link", "target": "_self"},
                     {"label": "Future Buildup Quadrants", "url": "/futures/buildup", "type": "inst", "target": "futures:buildup"},
                     {"label": "MWPL & Ban Radar", "url": "/futures/mwpl", "type": "inst", "target": "futures:mwpl"},
                     {"label": "Historical Rollover Matrix", "url": "/futures/rollover", "type": "link", "target": "_self"}
@@ -10376,15 +10378,41 @@ class RequestHandler(BaseHTTPRequestHandler):
             })
 
         if path in ("/api/footer-links", "/api/admin/footer-links"):
-            footer_file = CACHE_DIR / "footer_links.json"
+            # 1. Check data/footer_links.json (permanent repository storage)
+            data_file = DATA_DIR / "footer_links.json"
+            if data_file.exists():
+                try:
+                    data = json.loads(data_file.read_text(encoding="utf-8"))
+                    if isinstance(data, dict) and data.get("columns"):
+                        return self.send_json(200, data)
+                except Exception:
+                    pass
+
+            # 2. Check Supabase cloud database
+            try:
+                cloud_data = supabase_engine.load_app_config_from_supabase("footer_links")
+                if isinstance(cloud_data, dict) and cloud_data.get("columns"):
+                    try:
+                        DATA_DIR.mkdir(parents=True, exist_ok=True)
+                        data_file.write_text(json.dumps(cloud_data, indent=2), encoding="utf-8")
+                    except Exception:
+                        pass
+                    return self.send_json(200, cloud_data)
+            except Exception:
+                pass
+
+            # 3. Check legacy paths
+            footer_file = ROOT / "footer_links.json"
             if not footer_file.exists():
-                footer_file = ROOT / "footer_links.json"
+                footer_file = CACHE_DIR / "footer_links.json"
             if footer_file.exists():
                 try:
                     data = json.loads(footer_file.read_text(encoding="utf-8"))
-                    return self.send_json(200, data)
+                    if isinstance(data, dict) and data.get("columns"):
+                        return self.send_json(200, data)
                 except Exception:
                     pass
+
             return self.send_json(200, get_default_footer_links())
 
         # Admin Protected GET Endpoints
@@ -11372,16 +11400,27 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if not check_admin_request(self):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 payload = self.read_body()
-                footer_file = CACHE_DIR / "footer_links.json"
+                data_footer = DATA_DIR / "footer_links.json"
                 root_footer = ROOT / "footer_links.json"
+                cache_footer = CACHE_DIR / "footer_links.json"
                 try:
-                    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-                    footer_file.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                    DATA_DIR.mkdir(parents=True, exist_ok=True)
+                    data_footer.write_text(json.dumps(payload, indent=2), encoding="utf-8")
                     try:
                         root_footer.write_text(json.dumps(payload, indent=2), encoding="utf-8")
                     except Exception:
                         pass
-                    return self.send_json(200, {"ok": True, "message": "Footer configuration saved successfully", "data": payload})
+                    try:
+                        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                        cache_footer.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                    except Exception:
+                        pass
+                    # Sync to Supabase cloud permanently
+                    try:
+                        supabase_engine.save_app_config_to_supabase("footer_links", payload)
+                    except Exception as e:
+                        print(f"[Admin] Supabase footer sync note: {e}")
+                    return self.send_json(200, {"ok": True, "message": "Footer configuration saved and backed up to Supabase cloud successfully", "data": payload})
                 except Exception as exc:
                     return self.send_json(500, {"ok": False, "message": str(exc)})
 

@@ -257,6 +257,77 @@ def load_user_workspace(user_id: str, token: str | None = None) -> dict:
 # GLOBAL BROKER SETTINGS CLOUD SYNC (Supabase app_config)
 # =====================================================================
 
+def save_app_config_to_supabase(key: str, value: any) -> dict:
+    """Save any generic app configuration (e.g. footer_links, seo_routes, seo_config) to Supabase app_config table."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return {"ok": False, "message": "Supabase not configured"}
+
+    url = f"{cfg['url']}/rest/v1/app_config"
+    key_token = cfg["serviceRoleKey"] or cfg["anonKey"]
+    payload = {
+        "key": key.strip(),
+        "value": value,
+        "updated_at": "now()"
+    }
+    req_headers = {
+        "apikey": key_token,
+        "Authorization": f"Bearer {key_token}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+    try:
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=req_headers, method="POST")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return {"ok": True, "message": f"{key} saved permanently to Supabase cloud."}
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+
+
+def load_app_config_from_supabase(key: str) -> any | None:
+    """Load generic app configuration from Supabase app_config table."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return None
+    url = f"{cfg['url']}/rest/v1/app_config?key=eq.{key.strip()}&select=value"
+    key_token = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key_token,
+        "Authorization": f"Bearer {key_token}",
+        "Accept": "application/json"
+    }
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="GET")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            raw = resp.read().decode("utf-8")
+            items = json.loads(raw or "[]")
+            if items and isinstance(items, list) and len(items) > 0:
+                return items[0].get("value")
+    except Exception:
+        pass
+    return None
+
+
+def delete_app_config_from_supabase(key: str) -> bool:
+    """Delete a configuration record from Supabase app_config table."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return False
+    url = f"{cfg['url']}/rest/v1/app_config?key=eq.{key.strip()}"
+    key_token = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key_token,
+        "Authorization": f"Bearer {key_token}",
+    }
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="DELETE")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return resp.status in (200, 204)
+    except Exception:
+        pass
+    return False
+
+
 def save_broker_settings_to_supabase(config_data: dict) -> dict:
     """Save global broker settings to Supabase app_config table, safely merging existing settings."""
     cfg = get_supabase_config()

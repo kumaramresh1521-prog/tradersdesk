@@ -2,9 +2,15 @@
 User-agent: *
 Allow: /
 
-Disallow: /api/
+# Private Administrative & Internal Surfaces (Strictly Blocked)
 Disallow: /admin
 Disallow: /admin.html
+Disallow: /settings
+Disallow: /page2
+Disallow: /page2.html
+Disallow: /api/
 Disallow: /scratch/
+Disallow: /cache/
 
+# Canonical XML Sitemap
 Sitemap: https://tradersdesk.in/sitemap.xml

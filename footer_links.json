@@ -1,0 +1,203 @@
+{
+  "ok": true,
+  "columns": [
+    {
+      "id": "col1",
+      "title": "\ud83c\udfdb\ufe0f Institutional Desks",
+      "links": [
+        {
+          "label": "Market Breadth Pro",
+          "url": "/breadth",
+          "type": "inst",
+          "target": "breadth"
+        },
+        {
+          "label": "FII & DII Smart Money",
+          "url": "/fii-dii",
+          "type": "inst",
+          "target": "smartMoney"
+        },
+        {
+          "label": "Cash Delivery Absorption",
+          "url": "/delivery",
+          "type": "inst",
+          "target": "delivery"
+        },
+        {
+          "label": "MTF Margin Trading Book",
+          "url": "/mtf",
+          "type": "inst",
+          "target": "mtf"
+        },
+        {
+          "label": "Open Interest Desk",
+          "url": "/open-interest/nifty",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "Institutional Dashboard",
+          "url": "/dashboard",
+          "type": "inst",
+          "target": "dashboard"
+        }
+      ]
+    },
+    {
+      "id": "col2",
+      "title": "\u26a1 Derivatives & Options",
+      "links": [
+        {
+          "label": "Upstox Option Chain Pro",
+          "url": "/option-chain-pro",
+          "type": "inst",
+          "target": "upstoxChain"
+        },
+        {
+          "label": "Future Intraday Analytics",
+          "url": "/futures/future-intraday",
+          "type": "inst",
+          "target": "futures:futureIntraday"
+        },
+        {
+          "label": "Future vs Open Interest",
+          "url": "/futures/future-vs-oi",
+          "type": "inst",
+          "target": "futures:futureVsOi"
+        },
+        {
+          "label": "Future Marketwatch Matrix",
+          "url": "/futures",
+          "type": "inst",
+          "target": "futures:matrix"
+        },
+        {
+          "label": "Straddle Analytics Engine",
+          "url": "/straddle",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "Options Premium Decay",
+          "url": "/premium-decay",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "Call vs Put Premium",
+          "url": "/call-vs-put-premium",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "Future Buildup Quadrants",
+          "url": "/futures/buildup",
+          "type": "inst",
+          "target": "futures:buildup"
+        },
+        {
+          "label": "MWPL & Ban Radar",
+          "url": "/futures/mwpl",
+          "type": "inst",
+          "target": "futures:mwpl"
+        },
+        {
+          "label": "Historical Rollover Matrix",
+          "url": "/futures/rollover",
+          "type": "link",
+          "target": "_self"
+        }
+      ]
+    },
+    {
+      "id": "col3",
+      "title": "\ud83d\udcca Market Analytics & Tools",
+      "links": [
+        {
+          "label": "Breadth & Net Contribution",
+          "url": "/breadth-contribution",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "NSE Trading Holiday Calendar",
+          "url": "/calendar_studio.html",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "Participant OI Matrix",
+          "url": "/fii-dii#oi",
+          "type": "inst",
+          "target": "smartMoney:oi"
+        },
+        {
+          "label": "F&O Sector Visual Heatmap",
+          "url": "/futures/heatmap",
+          "type": "inst",
+          "target": "futures:heatmap"
+        },
+        {
+          "label": "Real-Time Options Greeks",
+          "url": "/option-chain-pro",
+          "type": "inst",
+          "target": "upstoxChain"
+        },
+        {
+          "label": "Stock Delivery Drilldown",
+          "url": "/delivery",
+          "type": "inst",
+          "target": "delivery"
+        }
+      ]
+    },
+    {
+      "id": "col4",
+      "title": "\ud83d\udee1\ufe0f Regulatory & Compliance",
+      "links": [
+        {
+          "label": "SEBI Regulatory Disclaimer",
+          "url": "/disclaimer",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "Privacy & Data Governance",
+          "url": "/privacy",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "Terms of Institutional Service",
+          "url": "/terms",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "Quantitative Model Methodologies",
+          "url": "/about",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "Contact & Trader Support",
+          "url": "/contact",
+          "type": "link",
+          "target": "_self"
+        },
+        {
+          "label": "NSE Official Regulatory Archive \u2197",
+          "url": "https://www.nseindia.com",
+          "type": "link",
+          "target": "_blank"
+        },
+        {
+          "label": "Platform Administration \ud83d\udd12",
+          "url": "/admin",
+          "type": "link",
+          "target": "_self"
+        }
+      ]
+    }
+  ]
+}

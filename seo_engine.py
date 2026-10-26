@@ -13,15 +13,59 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-SEO_CONFIG_FILE = ROOT / "seo_config.json"
+DATA_DIR = ROOT / "data"
+SEO_CONFIG_FILE = DATA_DIR / "seo_config.json"
+SEO_ROUTES_FILE = DATA_DIR / "seo_routes.json"
+DELETED_ROUTES_FILE = DATA_DIR / "deleted_seo_routes.json"
+ROOT_SEO_CONFIG = ROOT / "seo_config.json"
+ROOT_SEO_ROUTES = ROOT / "seo_routes.json"
+
 NON_INDEXABLE_PATHS = frozenset({
     "/admin", "/admin.html", "/settings", "/page2", "/page2.html",
-    "/calendar_studio", "/calendar_studio.html",
+    "/scratch", "/calendar_studio", "/calendar_studio.html",
 })
 SITEMAP_EXCLUDED_PATHS = frozenset({
-    # Legacy aliases that 301 to their canonical destination.
-    "/fii-dii-cash", "/fii-dii-derivatives", "/fii-dii/cash", "/fii-dii/derivatives",
+    # Non-canonical duplicate aliases that 301/redirect to their canonical slug
+    "/options", "/compare", "/smart-money", "/atm-straddle", "/contribution",
+    "/market-breadth", "/delivery-analytics", "/mtf-analytics", "/open-interest",
+    "/fii-dii-derivatives", "/fii-dii/cash", "/fii-dii/derivatives",
+    "/calendar_studio.html", "/about.html", "/privacy.html", "/terms.html",
+    "/disclaimer.html", "/contact.html",
 })
+
+try:
+    import supabase_engine
+except Exception:
+    supabase_engine = None
+def load_deleted_routes() -> set[str]:
+    """Loads deleted routes from Supabase or disk to prevent resurrection."""
+    if supabase_engine:
+        try:
+            cloud_del = supabase_engine.load_app_config_from_supabase("deleted_seo_routes")
+            if isinstance(cloud_del, list):
+                return set(cloud_del)
+        except Exception:
+            pass
+    if DELETED_ROUTES_FILE.exists():
+        try:
+            return set(json.loads(DELETED_ROUTES_FILE.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    return set()
+
+def save_deleted_routes(deleted: set[str]) -> None:
+    del_list = list(deleted)
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        DELETED_ROUTES_FILE.write_text(json.dumps(del_list, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+    if supabase_engine:
+        try:
+            supabase_engine.save_app_config_to_supabase("deleted_seo_routes", del_list)
+        except Exception:
+            pass
+
 
 DEFAULT_SEO_CONFIG = {
     "site_title": "TradersDesk.in | Institutional Derivatives, Options Greeks & Market Breadth Terminal",
@@ -404,39 +448,59 @@ def _detect_category(path: str) -> str:
     return "tools"
 
 def load_seo_config() -> dict:
-    if SEO_CONFIG_FILE.exists():
+    """Loads global SEO configuration from Supabase cloud database or persistent disk."""
+    # 1. Supabase Cloud Database (Primary source of truth across deploys)
+    if supabase_engine:
         try:
-            data = json.loads(SEO_CONFIG_FILE.read_text(encoding="utf-8"))
-            merged = DEFAULT_SEO_CONFIG.copy()
-            merged.update(data)
-            if not merged.get("google_analytics_id"):
-                merged["google_analytics_id"] = "G-Y0MDT0BZD8"
-            return merged
+            cloud_cfg = supabase_engine.load_app_config_from_supabase("seo_config")
+            if isinstance(cloud_cfg, dict) and cloud_cfg.get("site_title"):
+                merged = DEFAULT_SEO_CONFIG.copy()
+                merged.update(cloud_cfg)
+                if not merged.get("google_analytics_id"):
+                    merged["google_analytics_id"] = "G-Y0MDT0BZD8"
+                # Mirror to disk
+                try:
+                    DATA_DIR.mkdir(parents=True, exist_ok=True)
+                    SEO_CONFIG_FILE.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+                    ROOT_SEO_CONFIG.write_text(json.dumps(merged, indent=2), encoding="utf-8")
+                except Exception:
+                    pass
+                return merged
         except Exception:
             pass
-    # Backup cache fallback
-    try:
-        cache_backup = ROOT / "cache" / "seo_config_backup.json"
-        if cache_backup.exists():
-            data = json.loads(cache_backup.read_text(encoding="utf-8"))
-            merged = DEFAULT_SEO_CONFIG.copy()
-            merged.update(data)
-            return merged
-    except Exception:
-        pass
+
+    # 2. Local Persistent File
+    for cfg_path in (SEO_CONFIG_FILE, ROOT_SEO_CONFIG):
+        if cfg_path.exists():
+            try:
+                data = json.loads(cfg_path.read_text(encoding="utf-8"))
+                merged = DEFAULT_SEO_CONFIG.copy()
+                merged.update(data)
+                if not merged.get("google_analytics_id"):
+                    merged["google_analytics_id"] = "G-Y0MDT0BZD8"
+                return merged
+            except Exception:
+                pass
+
     return DEFAULT_SEO_CONFIG.copy()
 
 def save_seo_config(updates: dict) -> bool:
+    """Saves global SEO config to permanent disk and Supabase cloud database."""
     try:
         current = load_seo_config()
         current.update(updates)
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
         SEO_CONFIG_FILE.write_text(json.dumps(current, indent=2), encoding="utf-8")
         try:
-            cache_backup = ROOT / "cache" / "seo_config_backup.json"
-            cache_backup.parent.mkdir(parents=True, exist_ok=True)
-            cache_backup.write_text(json.dumps(current, indent=2), encoding="utf-8")
+            ROOT_SEO_CONFIG.write_text(json.dumps(current, indent=2), encoding="utf-8")
         except Exception:
             pass
+        # Backup to Supabase cloud
+        if supabase_engine:
+            try:
+                supabase_engine.save_app_config_to_supabase("seo_config", current)
+            except Exception as e:
+                print(f"[SEO Engine] Supabase config sync note: {e}")
         apply_seo_to_index_html(current)
         return True
     except Exception as e:
@@ -460,52 +524,64 @@ def apply_seo_to_index_html(config: dict) -> bool:
         return False
 
 def load_all_seo_routes() -> dict[str, dict]:
-    """Loads all SEO route configurations from disk or initializes them from default catalog."""
+    """Loads all SEO route configurations from Supabase cloud or persistent disk, respecting deleted routes."""
+    deleted = load_deleted_routes()
     routes: dict[str, dict] = {}
-    
-    # 1. Base from built-in SEO_ROUTES
-    for path, meta in SEO_ROUTES.items():
-        clean_p = ("/" + path.strip("/")).lower() if path != "/" else "/"
-        routes[clean_p] = {
-            "path": clean_p,
-            "title": meta.get("title", ""),
-            "desc": meta.get("desc", ""),
-            "keywords": meta.get("keywords", ""),
-            "canonical": meta.get("canonical", f"https://tradersdesk.in{clean_p if clean_p != '/' else ''}"),
-            "og_title": meta.get("title", ""),
-            "og_desc": meta.get("desc", ""),
-            "robots": "index, follow",
-            "category": _detect_category(clean_p),
-            "priority": "1.0" if clean_p == "/" else ("0.9" if clean_p in ("/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/mtf", "/breadth") else "0.8"),
-            "changefreq": "always" if clean_p in ("/", "/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty") else "daily",
-            "custom": False,
-            "last_updated": "2026-10-10 07:00:00 IST"
-        }
-    
-    # 2. Overlay disk persistence if exists
-    if SEO_ROUTES_FILE.exists():
-        try:
-            disk_data = json.loads(SEO_ROUTES_FILE.read_text(encoding="utf-8"))
-            if isinstance(disk_data, dict):
-                for k, v in disk_data.items():
-                    clean_k = ("/" + k.strip("/")).lower() if k != "/" else "/"
-                    if clean_k in routes:
-                        routes[clean_k].update(v)
-                    else:
-                        v["path"] = clean_k
-                        if "category" not in v:
-                            v["category"] = _detect_category(clean_k)
-                        routes[clean_k] = v
-        except Exception as e:
-            print(f"[SEO Engine] Error loading seo_routes.json: {e}")
-    else:
-        # Write initial file
-        try:
-            SEO_ROUTES_FILE.write_text(json.dumps(routes, indent=2), encoding="utf-8")
-        except Exception:
-            pass
 
-    # A saved catalog must never be allowed to re-index an internal route.
+    # 1. Attempt Supabase Cloud Database first (survives all redeployments)
+    cloud_loaded = False
+    if supabase_engine:
+        try:
+            cloud_routes = supabase_engine.load_app_config_from_supabase("seo_routes")
+            if isinstance(cloud_routes, dict) and len(cloud_routes) > 0:
+                for k, v in cloud_routes.items():
+                    clean_k = ("/" + k.strip("/")).lower() if k != "/" else "/"
+                    if clean_k not in deleted:
+                        routes[clean_k] = v
+                cloud_loaded = True
+        except Exception as e:
+            print(f"[SEO Engine] Supabase cloud route fetch note: {e}")
+
+    # 2. If not loaded from cloud, load from disk
+    if not cloud_loaded:
+        for rf in (SEO_ROUTES_FILE, ROOT_SEO_ROUTES):
+            if rf.exists():
+                try:
+                    disk_data = json.loads(rf.read_text(encoding="utf-8"))
+                    if isinstance(disk_data, dict) and len(disk_data) > 0:
+                        for k, v in disk_data.items():
+                            clean_k = ("/" + k.strip("/")).lower() if k != "/" else "/"
+                            if clean_k not in deleted:
+                                routes[clean_k] = v
+                        break
+                except Exception:
+                    pass
+
+    # 3. Base initialization if still empty
+    if not routes:
+        for path, meta in SEO_ROUTES.items():
+            clean_p = ("/" + path.strip("/")).lower() if path != "/" else "/"
+            if clean_p in deleted:
+                continue
+            routes[clean_p] = {
+                "path": clean_p,
+                "title": meta.get("title", ""),
+                "desc": meta.get("desc", ""),
+                "keywords": meta.get("keywords", ""),
+                "canonical": meta.get("canonical", f"https://tradersdesk.in{clean_p if clean_p != '/' else ''}"),
+                "og_title": meta.get("title", ""),
+                "og_desc": meta.get("desc", ""),
+                "robots": "index, follow",
+                "category": _detect_category(clean_p),
+                "priority": "1.0" if clean_p == "/" else ("0.9" if clean_p in ("/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/mtf", "/breadth", "/straddle", "/premium-decay", "/call-vs-put-premium") else "0.8"),
+                "changefreq": "always" if clean_p in ("/", "/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/straddle", "/premium-decay", "/call-vs-put-premium") else "daily",
+                "custom": False,
+                "last_updated": time.strftime("%Y-%m-%d %H:%M:%S IST")
+            }
+        # Save initial catalog to disk & cloud
+        save_all_seo_routes(routes)
+
+    # 4. Strict Protected Path Enforcement (Never allow admin/settings to be indexed)
     for protected_path in NON_INDEXABLE_PATHS:
         if protected_path in routes:
             routes[protected_path]["robots"] = "noindex, nofollow, noarchive"
@@ -513,8 +589,19 @@ def load_all_seo_routes() -> dict[str, dict]:
     return routes
 
 def save_all_seo_routes(routes: dict[str, dict]) -> bool:
+    """Saves all SEO routes to persistent disk and Supabase cloud database."""
     try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
         SEO_ROUTES_FILE.write_text(json.dumps(routes, indent=2), encoding="utf-8")
+        try:
+            ROOT_SEO_ROUTES.write_text(json.dumps(routes, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+        if supabase_engine:
+            try:
+                supabase_engine.save_app_config_to_supabase("seo_routes", routes)
+            except Exception as e:
+                print(f"[SEO Engine] Supabase routes sync note: {e}")
         return True
     except Exception as e:
         print(f"[SEO Engine] Error saving seo_routes.json: {e}")
@@ -554,14 +641,20 @@ def save_single_seo_route(route_data: dict) -> tuple[bool, str]:
         return False, str(e)
 
 def delete_single_seo_route(path: str) -> tuple[bool, str]:
+    """Deletes a route permanently and records it so it never resurrects on reload or deploy."""
     try:
         clean_p = ("/" + path.strip("/")).lower() if path != "/" else "/"
         all_r = load_all_seo_routes()
         if clean_p not in all_r:
-            return False, f"Route {clean_p} not found"
+            return False, f"Route {clean_p} not found in active catalog"
         del all_r[clean_p]
+        # Record deletion permanently
+        deleted = load_deleted_routes()
+        deleted.add(clean_p)
+        save_deleted_routes(deleted)
         save_all_seo_routes(all_r)
-        return True, f"Route {clean_p} removed from SEO catalog"
+        rebuild_sitemap_xml()
+        return True, f"Route {clean_p} removed permanently from SEO catalog and sitemap"
     except Exception as e:
         return False, str(e)
 
@@ -632,10 +725,15 @@ def rebuild_sitemap_xml() -> tuple[bool, str]:
     """Generates a clean, valid XML sitemap based on all active indexed SEO routes with strict canonical deduplication."""
     try:
         all_r = load_all_seo_routes()
+        # Guarantee every route dict has path populated
+        for p_key, r_dict in all_r.items():
+            if not r_dict.get("path"):
+                r_dict["path"] = p_key
+
         lines = ['<?xml version="1.0" encoding="UTF-8"?>']
         lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
         # Sort routes: root first, then by priority desc
-        sorted_routes = sorted(all_r.values(), key=lambda x: (0 if x["path"] == "/" else 1, -float(x.get("priority", 0.5))))
+        sorted_routes = sorted(all_r.values(), key=lambda x: (0 if x.get("path", "") == "/" else 1, -float(x.get("priority", 0.5))))
         
         seen_canonicals = set()
         count = 0
@@ -645,7 +743,7 @@ def rebuild_sitemap_xml() -> tuple[bool, str]:
             # public sitemap, even if an old saved SEO catalog says otherwise.
             if route_path in NON_INDEXABLE_PATHS or route_path in SITEMAP_EXCLUDED_PATHS or "noindex" in r.get("robots", "").lower():
                 continue
-            canonical = (r.get("canonical") or f"https://tradersdesk.in{r['path'] if r['path'] != '/' else ''}").rstrip("/")
+            canonical = (r.get("canonical") or f"https://tradersdesk.in{r.get('path', '') if r.get('path', '') != '/' else ''}").rstrip("/")
             if canonical == "https://tradersdesk.in":
                 canonical = "https://tradersdesk.in/"
             if canonical in seen_canonicals:
@@ -659,6 +757,8 @@ def rebuild_sitemap_xml() -> tuple[bool, str]:
             lastmod_match = re.match(r"^\d{4}-\d{2}-\d{2}", last_updated)
             if lastmod_match:
                 lines.append(f"    <lastmod>{lastmod_match.group(0)}</lastmod>")
+            else:
+                lines.append("    <lastmod>2026-10-26</lastmod>")
             lines.append(f"    <changefreq>{freq}</changefreq>")
             lines.append(f"    <priority>{prio}</priority>")
             lines.append("  </url>")
@@ -667,6 +767,10 @@ def rebuild_sitemap_xml() -> tuple[bool, str]:
         lines.append("</urlset>")
         sitemap_path = ROOT / "public" / "sitemap.xml"
         sitemap_path.write_text("\n".join(lines), encoding="utf-8")
+        try:
+            (DATA_DIR / "sitemap.xml").write_text("\n".join(lines), encoding="utf-8")
+        except Exception:
+            pass
         return True, f"Successfully rebuilt sitemap.xml with {count} unique indexed URLs!"
     except Exception as e:
         return False, f"Failed to rebuild sitemap: {e}"
