@@ -1053,54 +1053,77 @@
   <!-- ========================================================================
        FOOTER (4-COLUMN INSTITUTIONAL MATRIX)
        ======================================================================== -->
-  <footer class="inst-footer" style="background:#0f172a; color:#94a3b8; padding:40px 20px 24px; margin-top:40px; border-top:1px solid #1e293b; font-size:12.5px;">
-    <div style="max-width:1440px; margin:0 auto;">
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:24px; margin-bottom:30px;">
-        <div>
-          <h4 style="color:#38bdf8; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">🏛️ Institutional Desks</h4>
-          <div style="display:flex; flex-direction:column; gap:8px;">
-            <a href="/breadth" style="color:inherit; text-decoration:none;">Market Breadth Pro</a>
-            <a href="/fii-dii" style="color:inherit; text-decoration:none;">FII &amp; DII Smart Money</a>
-            <a href="/delivery" style="color:inherit; text-decoration:none;">Cash Delivery Absorption</a>
-            <a href="/mtf" style="color:inherit; text-decoration:none;">MTF Margin Trading Book</a>
-            <a href="/open-interest/nifty" style="color:#38bdf8; font-weight:700; text-decoration:none;">Open Interest Desk</a>
-            <a href="/dashboard" style="color:inherit; text-decoration:none;">Institutional Dashboard</a>
+        <!-- Institutional Footer with Legal & Compliance Links (Strict 4-Column Layout) -->
+      <footer class="terminal-footer">
+        <!-- EXACTLY 4 COLUMNS GRID -->
+        <div class="footer-four-columns" id="footerFourColumnsGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:24px; margin-bottom:30px;">
+          <!-- Column 1: Institutional Desks -->
+          <div class="footer-link-group" data-col="col1">
+            <h4 style="display:flex; align-items:center; gap:6px; color:#38bdf8; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+              🏛️ Institutional Desks
+            </h4>
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+              <a href="/breadth" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('breadth', '', '/breadth', event); }">Market Breadth Pro</a>
+              <a href="/fii-dii" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('smartMoney', '', '/fii-dii', event); }">FII &amp; DII Smart Money</a>
+              <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('delivery', '', '/delivery', event); }">Cash Delivery Absorption</a>
+              <a href="/mtf" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('mtf', '', '/mtf', event); }">MTF Margin Trading Book</a>
+              <a href="/open-interest/nifty">Open Interest Desk</a>
+              <a href="/dashboard" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('dashboard', '', '/dashboard', event); }">Institutional Dashboard</a>
+            </div>
+          </div>
+
+          <!-- Column 2: Derivatives & Options Suite -->
+          <div class="footer-link-group" data-col="col2">
+            <h4 style="display:flex; align-items:center; gap:6px; color:#a78bfa; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+              ⚡ Derivatives &amp; Options
+            </h4>
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+              <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('upstoxChain', '', '/option-chain-pro', event); }">Option Chain Pro</a>
+              <a href="/futures" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'matrix', '/futures', event); }">Future Marketwatch Matrix</a>
+              <a href="/straddle" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/straddle', event); }">Straddle Analytics Engine</a>
+              <a href="/futures/buildup" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'buildup', '/futures/buildup', event); }">Future Buildup Quadrants</a>
+              <a href="/futures/mwpl" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'mwpl', '/futures/mwpl', event); }">MWPL &amp; Ban Radar</a>
+              <a href="/futures/rollover" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'rollover', '/futures/rollover', event); }">Historical Rollover Matrix</a>
+            </div>
+          </div>
+
+          <!-- Column 3: Advanced Analytics & Tools -->
+          <div class="footer-link-group" data-col="col3">
+            <h4 style="display:flex; align-items:center; gap:6px; color:#34d399; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+              📊 Market Analytics &amp; Tools
+            </h4>
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+              <a href="/breadth-contribution" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/breadth-contribution', event); }">Breadth &amp; Net Contribution</a>
+              <a href="/calendar_studio.html" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/calendar_studio.html', event); }">NSE Trading Holiday Calendar</a>
+              <a href="/fii-dii#oi" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('smartMoney', 'oi', '/fii-dii#oi', event); }">Participant OI Matrix</a>
+              <a href="/futures/heatmap" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'heatmap', '/futures/heatmap', event); }">F&amp;O Sector Visual Heatmap</a>
+              <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('upstoxChain', '', '/option-chain-pro', event); }">Real-Time Options Greeks</a>
+              <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('delivery', '', '/delivery', event); }">Stock Delivery Drilldown</a>
+            </div>
+          </div>
+
+          <!-- Column 4: Regulatory, Compliance & Governance -->
+          <div class="footer-link-group" data-col="col4">
+            <h4 style="display:flex; align-items:center; gap:6px; color:#f59e0b; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+              🛡️ Regulatory &amp; Compliance
+            </h4>
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+              <a href="/disclaimer">SEBI Regulatory Disclaimer</a>
+              <a href="/privacy">Privacy &amp; Data Governance</a>
+              <a href="/terms">Terms of Institutional Service</a>
+              <a href="/about">Quantitative Model Methodologies</a>
+              <a href="/contact">Contact &amp; Trader Support</a>
+              <a href="https://www.nseindia.com" target="_blank" rel="noopener">NSE Official Regulatory Archive ↗</a>
+              <a href="/admin">Platform Administration 🔒</a>
+            </div>
           </div>
         </div>
-        <div>
-          <h4 style="color:#a78bfa; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">⚡ Derivatives &amp; Options</h4>
-          <div style="display:flex; flex-direction:column; gap:8px;">
-            <a href="/option-chain-pro" style="color:inherit; text-decoration:none;">Option Chain Pro</a>
-            <a href="/futures" style="color:inherit; text-decoration:none;">Future Marketwatch Matrix</a>
-            <a href="/straddle" style="color:inherit; text-decoration:none;">Straddle Analytics Engine</a>
-            <a href="/futures/buildup" style="color:inherit; text-decoration:none;">Future Buildup Quadrants</a>
-            <a href="/futures/rollover" style="color:inherit; text-decoration:none;">Historical Rollover Matrix</a>
-          </div>
+
+        <div class="footer-bottom" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:20px; border-top:1px solid var(--border-default, rgba(255,255,255,0.08)); font-size:11.5px; color:var(--text-muted, #94a3b8);">
+          <span>&copy; 2026 TradersDesk.in &bull; All calculations Black-Scholes algorithmically certified &bull; Real-Time Indian Equities &amp; Derivatives Terminal</span>
+          <span>SEBI Compliance Notice: Educational &amp; Quantitative Analytics Research Only</span>
         </div>
-        <div>
-          <h4 style="color:#34d399; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">📊 Market Analytics</h4>
-          <div style="display:flex; flex-direction:column; gap:8px;">
-            <a href="/breadth-contribution" style="color:inherit; text-decoration:none;">Breadth &amp; Net Contribution</a>
-            <a href="/calendar_studio.html" style="color:inherit; text-decoration:none;">NSE Trading Holiday Calendar</a>
-            <a href="/fii-dii#oi" style="color:inherit; text-decoration:none;">Participant OI Matrix</a>
-            <a href="/futures/heatmap" style="color:inherit; text-decoration:none;">F&amp;O Sector Heatmap</a>
-          </div>
-        </div>
-        <div>
-          <h4 style="color:#f59e0b; font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:10px;">🛡️ Governance &amp; Legal</h4>
-          <div style="display:flex; flex-direction:column; gap:8px;">
-            <a href="/about" style="color:inherit; text-decoration:none;">About TradersDesk</a>
-            <a href="/disclaimer" style="color:inherit; text-decoration:none;">SEBI &amp; Market Disclaimer</a>
-            <a href="/privacy" style="color:inherit; text-decoration:none;">Privacy Policy</a>
-            <a href="/terms" style="color:inherit; text-decoration:none;">Terms of Service</a>
-          </div>
-        </div>
-      </div>
-      <div style="text-align:center; padding-top:20px; border-top:1px solid #1e293b; color:#64748b; font-size:11.5px;">
-        © 2026 TradersDesk.in. All rights reserved. Data sourced directly from National Stock Exchange of India (NSE). For institutional analytical and educational purposes only.
-      </div>
-    </div>
-  </footer>
+      </footer>
 
   <!-- Mobile Menu Drawer Modal -->
   <div id="mobileDotMenuModal" class="dot-menu-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; backdrop-filter:blur(4px); align-items:flex-end;">

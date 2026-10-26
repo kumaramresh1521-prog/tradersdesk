@@ -189,13 +189,13 @@ def get_default_footer_links() -> dict:
                 "id": "col4",
                 "title": "🛡️ Regulatory & Compliance",
                 "links": [
-                    {"label": "SEBI Regulatory Disclaimer", "url": "/disclaimer.html", "type": "link", "target": "_self"},
-                    {"label": "Privacy & Data Governance", "url": "/privacy.html", "type": "link", "target": "_self"},
-                    {"label": "Terms of Institutional Service", "url": "/terms.html", "type": "link", "target": "_self"},
-                    {"label": "Quantitative Model Methodologies", "url": "/about.html", "type": "link", "target": "_self"},
+                    {"label": "SEBI Regulatory Disclaimer", "url": "/disclaimer", "type": "link", "target": "_self"},
+                    {"label": "Privacy & Data Governance", "url": "/privacy", "type": "link", "target": "_self"},
+                    {"label": "Terms of Institutional Service", "url": "/terms", "type": "link", "target": "_self"},
+                    {"label": "Quantitative Model Methodologies", "url": "/about", "type": "link", "target": "_self"},
                     {"label": "Contact & Trader Support", "url": "/contact", "type": "link", "target": "_self"},
                     {"label": "NSE Official Regulatory Archive ↗", "url": "https://www.nseindia.com", "type": "link", "target": "_blank"},
-                    {"label": "Platform Administration 🔒", "url": "/admin.html", "type": "link", "target": "_self"}
+                    {"label": "Platform Administration 🔒", "url": "/admin", "type": "link", "target": "_self"}
                 ]
             }
         ]

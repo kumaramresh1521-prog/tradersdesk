@@ -159,8 +159,9 @@
       </div>
     </div>
   
-      <!-- Institutional Footer with Legal & Compliance Links (Strict 4-Column Layout) -->
+            <!-- Institutional Footer with Legal & Compliance Links (Strict 4-Column Layout) -->
       <footer class="terminal-footer">
+        <!-- EXACTLY 4 COLUMNS GRID -->
         <div class="footer-four-columns" id="footerFourColumnsGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:24px; margin-bottom:30px;">
           <!-- Column 1: Institutional Desks -->
           <div class="footer-link-group" data-col="col1">
@@ -168,12 +169,12 @@
               🏛️ Institutional Desks
             </h4>
             <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
-              <a href="/breadth">Market Breadth Pro</a>
-              <a href="/fii-dii">FII &amp; DII Smart Money</a>
-              <a href="/delivery">Cash Delivery Absorption</a>
-              <a href="/mtf">MTF Margin Trading Book</a>
+              <a href="/breadth" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('breadth', '', '/breadth', event); }">Market Breadth Pro</a>
+              <a href="/fii-dii" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('smartMoney', '', '/fii-dii', event); }">FII &amp; DII Smart Money</a>
+              <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('delivery', '', '/delivery', event); }">Cash Delivery Absorption</a>
+              <a href="/mtf" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('mtf', '', '/mtf', event); }">MTF Margin Trading Book</a>
               <a href="/open-interest/nifty">Open Interest Desk</a>
-              <a href="/dashboard">Institutional Dashboard</a>
+              <a href="/dashboard" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('dashboard', '', '/dashboard', event); }">Institutional Dashboard</a>
             </div>
           </div>
 
@@ -183,12 +184,12 @@
               ⚡ Derivatives &amp; Options
             </h4>
             <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
-              <a href="/option-chain-pro">Option Chain Pro</a>
-              <a href="/futures">Future Marketwatch Matrix</a>
-              <a href="/straddle">Straddle Analytics Engine</a>
-              <a href="/futures/buildup">Future Buildup Quadrants</a>
-              <a href="/futures/mwpl">MWPL &amp; Ban Radar</a>
-              <a href="/futures/rollover">Historical Rollover Matrix</a>
+              <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('upstoxChain', '', '/option-chain-pro', event); }">Option Chain Pro</a>
+              <a href="/futures" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'matrix', '/futures', event); }">Future Marketwatch Matrix</a>
+              <a href="/straddle" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/straddle', event); }">Straddle Analytics Engine</a>
+              <a href="/futures/buildup" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'buildup', '/futures/buildup', event); }">Future Buildup Quadrants</a>
+              <a href="/futures/mwpl" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'mwpl', '/futures/mwpl', event); }">MWPL &amp; Ban Radar</a>
+              <a href="/futures/rollover" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'rollover', '/futures/rollover', event); }">Historical Rollover Matrix</a>
             </div>
           </div>
 
@@ -198,12 +199,12 @@
               📊 Market Analytics &amp; Tools
             </h4>
             <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
-              <a href="/breadth-contribution">Breadth &amp; Net Contribution</a>
-              <a href="/calendar_studio.html">NSE Trading Holiday Calendar</a>
-              <a href="/fii-dii#oi">Participant OI Matrix</a>
-              <a href="/futures/heatmap">F&amp;O Sector Visual Heatmap</a>
-              <a href="/option-chain-pro">Real-Time Options Greeks</a>
-              <a href="/delivery">Stock Delivery Drilldown</a>
+              <a href="/breadth-contribution" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/breadth-contribution', event); }">Breadth &amp; Net Contribution</a>
+              <a href="/calendar_studio.html" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/calendar_studio.html', event); }">NSE Trading Holiday Calendar</a>
+              <a href="/fii-dii#oi" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('smartMoney', 'oi', '/fii-dii#oi', event); }">Participant OI Matrix</a>
+              <a href="/futures/heatmap" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'heatmap', '/futures/heatmap', event); }">F&amp;O Sector Visual Heatmap</a>
+              <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('upstoxChain', '', '/option-chain-pro', event); }">Real-Time Options Greeks</a>
+              <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('delivery', '', '/delivery', event); }">Stock Delivery Drilldown</a>
             </div>
           </div>
 
@@ -217,14 +218,15 @@
               <a href="/privacy">Privacy &amp; Data Governance</a>
               <a href="/terms">Terms of Institutional Service</a>
               <a href="/about">Quantitative Model Methodologies</a>
+              <a href="/contact">Contact &amp; Trader Support</a>
               <a href="https://www.nseindia.com" target="_blank" rel="noopener">NSE Official Regulatory Archive ↗</a>
-              <a href="/admin.html">Platform Administration 🔒</a>
+              <a href="/admin">Platform Administration 🔒</a>
             </div>
           </div>
         </div>
 
-        <div class="footer-bottom" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:20px; border-top:1px solid rgba(255,255,255,0.08); font-size:11.5px; color:#64748b;">
-          <span>&copy; 2026 TradersDesk.in &bull; Real-Time Indian Equities Terminal</span>
+        <div class="footer-bottom" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:20px; border-top:1px solid var(--border-default, rgba(255,255,255,0.08)); font-size:11.5px; color:var(--text-muted, #94a3b8);">
+          <span>&copy; 2026 TradersDesk.in &bull; All calculations Black-Scholes algorithmically certified &bull; Real-Time Indian Equities &amp; Derivatives Terminal</span>
           <span>SEBI Compliance Notice: Educational &amp; Quantitative Analytics Research Only</span>
         </div>
       </footer>
