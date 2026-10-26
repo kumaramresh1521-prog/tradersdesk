@@ -401,23 +401,45 @@ INDEX_UNIVERSES = {
             {"symbol": "ULTRACEMCO", "company": "UltraTech Cement Ltd.", "industry": "Construction Materials"},
         ],
     },
+    "bankex": {
+        "label": "BSE Bankex",
+        "url": "",
+        "cache": "bankex_constituents.json",
+        "fallback": [
+            "HDFCBANK", "ICICIBANK", "SBIN", "AXISBANK", "KOTAKBANK",
+            "INDUSINDBK", "BANKBARODA", "PNB", "FEDERALBNK", "IDFCFIRSTB"
+        ],
+        "rows": [
+            {"symbol": "HDFCBANK", "company": "HDFC Bank Ltd.", "industry": "Financial Services"},
+            {"symbol": "ICICIBANK", "company": "ICICI Bank Ltd.", "industry": "Financial Services"},
+            {"symbol": "SBIN", "company": "State Bank of India", "industry": "Financial Services"},
+            {"symbol": "AXISBANK", "company": "Axis Bank Ltd.", "industry": "Financial Services"},
+            {"symbol": "KOTAKBANK", "company": "Kotak Mahindra Bank Ltd.", "industry": "Financial Services"},
+            {"symbol": "INDUSINDBK", "company": "IndusInd Bank Ltd.", "industry": "Financial Services"},
+            {"symbol": "BANKBARODA", "company": "Bank of Baroda", "industry": "Financial Services"},
+            {"symbol": "PNB", "company": "Punjab National Bank", "industry": "Financial Services"},
+            {"symbol": "FEDERALBNK", "company": "Federal Bank Ltd.", "industry": "Financial Services"},
+            {"symbol": "IDFCFIRSTB", "company": "IDFC First Bank Ltd.", "industry": "Financial Services"},
+        ],
+    },
 }
 
 INDEX_CHARTS = {
     "nifty50": {"label": "Nifty 50", "symbol": "Nifty 50", "name": "NIFTY", "seed": 22600},
-    "banknifty": {"label": "Bank Nifty", "symbol": "Nifty Bank", "name": "BANKNIFTY", "seed": 55050},
-    "finnifty": {"label": "FinNifty", "symbol": "Nifty Fin Service", "name": "FINNIFTY", "seed": 24900},
-    "midcpnifty": {"label": "Midcap Select", "symbol": "NIFTY MID SELECT", "name": "MIDCPNIFTY", "seed": 13750},
-    "niftyit": {"label": "Nifty IT", "symbol": "Nifty IT", "name": "NIFTY IT", "seed": 36000},
-    "niftyauto": {"label": "Nifty Auto", "symbol": "Nifty Auto", "name": "NIFTY AUTO", "seed": 25000},
-    "niftypharma": {"label": "Nifty Pharma", "symbol": "Nifty Pharma", "name": "NIFTY PHARMA", "seed": 22000},
-    "niftymetal": {"label": "Nifty Metal", "symbol": "Nifty Metal", "name": "NIFTY METAL", "seed": 9200},
-    "niftyfmcg": {"label": "Nifty FMCG", "symbol": "Nifty FMCG", "name": "NIFTY FMCG", "seed": 58000},
-    "niftyenergy": {"label": "Nifty Energy", "symbol": "Nifty Energy", "name": "NIFTY ENERGY", "seed": 35500},
-    "niftymidcap100": {"label": "Nifty Midcap 100", "symbol": "NIFTY MIDCAP 100", "name": "NIFTY MIDCAP 100", "seed": 62000},
-    "niftynext50": {"label": "Nifty Next 50", "symbol": "Nifty Next 50", "name": "NIFTYNXT50", "seed": 72000},
-    "nifty500": {"label": "Nifty 500", "symbol": "Nifty 500", "name": "NIFTY 500", "seed": 22000},
-    "sensex": {"label": "BSE Sensex", "symbol": "SENSEX", "name": "SENSEX", "exchange": "BSE", "seed": 72600},
+    "banknifty": {"label": "Bank Nifty", "symbol": "Nifty Bank", "name": "BANKNIFTY", "seed": 54285},
+    "finnifty": {"label": "FinNifty", "symbol": "Nifty Fin Service", "name": "FINNIFTY", "seed": 24400},
+    "midcpnifty": {"label": "Midcap Select", "symbol": "NIFTY MID SELECT", "name": "MIDCPNIFTY", "seed": 13035},
+    "niftyit": {"label": "Nifty IT", "symbol": "Nifty IT", "name": "NIFTY IT", "seed": 31995},
+    "niftyauto": {"label": "Nifty Auto", "symbol": "Nifty Auto", "name": "NIFTY AUTO", "seed": 24860},
+    "niftypharma": {"label": "Nifty Pharma", "symbol": "Nifty Pharma", "name": "NIFTY PHARMA", "seed": 25330},
+    "niftymetal": {"label": "Nifty Metal", "symbol": "Nifty Metal", "name": "NIFTY METAL", "seed": 11480},
+    "niftyfmcg": {"label": "Nifty FMCG", "symbol": "Nifty FMCG", "name": "NIFTY FMCG", "seed": 42680},
+    "niftyenergy": {"label": "Nifty Energy", "symbol": "Nifty Energy", "name": "NIFTY ENERGY", "seed": 34520},
+    "niftymidcap100": {"label": "Nifty Midcap 100", "symbol": "NIFTY MIDCAP 100", "name": "NIFTY MIDCAP 100", "seed": 55800},
+    "niftynext50": {"label": "Nifty Next 50", "symbol": "Nifty Next 50", "name": "NIFTYNXT50", "seed": 65830},
+    "nifty500": {"label": "Nifty 500", "symbol": "Nifty 500", "name": "NIFTY 500", "seed": 21430},
+    "sensex": {"label": "BSE Sensex", "symbol": "SENSEX", "name": "SENSEX", "exchange": "BSE", "seed": 73125},
+    "bankex": {"label": "BSE Bankex", "symbol": "BANKEX", "name": "BANKEX", "exchange": "BSE", "seed": 61085},
 }
 
 INDEX_YF_MAP = {
@@ -425,8 +447,15 @@ INDEX_YF_MAP = {
     "banknifty": "%5ENSEBANK",
     "finnifty": "%5ECNXFIN",
     "sensex": "%5EBSESN",
+    "bankex": "%5EBSEBANK",
     "midcpnifty": "%5ENSEMDCP50",
     "indiavix": "%5EINDIAVIX",
+    "niftyit": "%5ECNXIT",
+    "niftyauto": "%5ECNXAUTO",
+    "niftypharma": "%5ECNXPHARMA",
+    "niftymetal": "%5ECNXMETAL",
+    "niftyfmcg": "%5ECNXFMCG",
+    "niftyenergy": "%5ECNXENERGY",
 }
 
 SAMPLE_SECTORS = [
@@ -1530,6 +1559,8 @@ def normalize_index_key(value: str | None) -> str:
         "bsesensex": "sensex",
         "bse": "sensex",
         "sensex30": "sensex",
+        "bankex": "bankex",
+        "bsebankex": "bankex",
     }
     return aliases.get(key, "nifty50")
 
@@ -8076,24 +8107,36 @@ def _sync_live_market_index_quotes() -> dict[str, dict]:
         if ac.is_configured():
             ac.ensure_session()
             idx_instruments = [
-                Instrument(symbol='nifty50', trading_symbol='NIFTY 50', token='99926000', exchange='NSE'),
+                Instrument(symbol='nifty50', trading_symbol='NIFTY', token='99926000', exchange='NSE'),
                 Instrument(symbol='banknifty', trading_symbol='NIFTY BANK', token='99926009', exchange='NSE'),
                 Instrument(symbol='finnifty', trading_symbol='FINNIFTY', token='99926037', exchange='NSE'),
                 Instrument(symbol='midcpnifty', trading_symbol='MIDCPNIFTY', token='99926074', exchange='NSE'),
                 Instrument(symbol='sensex', trading_symbol='SENSEX', token='99919000', exchange='BSE'),
+                Instrument(symbol='bankex', trading_symbol='BANKEX', token='99919012', exchange='BSE'),
+                Instrument(symbol='niftyit', trading_symbol='NIFTY IT', token='99926008', exchange='NSE'),
+                Instrument(symbol='niftyauto', trading_symbol='NIFTY AUTO', token='99926029', exchange='NSE'),
+                Instrument(symbol='niftypharma', trading_symbol='NIFTY PHARMA', token='99926023', exchange='NSE'),
+                Instrument(symbol='niftymetal', trading_symbol='NIFTY METAL', token='99926030', exchange='NSE'),
+                Instrument(symbol='niftyfmcg', trading_symbol='NIFTY FMCG', token='99926021', exchange='NSE'),
+                Instrument(symbol='niftyenergy', trading_symbol='NIFTY ENERGY', token='99926020', exchange='NSE'),
+                Instrument(symbol='niftymidcap100', trading_symbol='NIFTY MIDCAP 100', token='99926011', exchange='NSE'),
+                Instrument(symbol='niftynext50', trading_symbol='NIFTYNXT50', token='99926013', exchange='NSE'),
+                Instrument(symbol='nifty500', trading_symbol='NIFTY 500', token='99926004', exchange='NSE'),
                 Instrument(symbol='indiavix', trading_symbol='INDIA VIX', token='99926017', exchange='NSE'),
             ]
             res = ac.quote(idx_instruments, mode='FULL')
             angel_quotes = {}
+            tok_map = {
+                '99926000': 'nifty50', '99926009': 'banknifty', '99926037': 'finnifty',
+                '99926074': 'midcpnifty', '99919000': 'sensex', '99919012': 'bankex',
+                '99926008': 'niftyit', '99926029': 'niftyauto', '99926023': 'niftypharma',
+                '99926030': 'niftymetal', '99926021': 'niftyfmcg', '99926020': 'niftyenergy',
+                '99926011': 'niftymidcap100', '99926013': 'niftynext50', '99926004': 'nifty500',
+                '99926017': 'indiavix',
+            }
             for f in res.get('fetched', []):
                 tok = str(f.get('symbolToken') or '')
-                key = None
-                if tok == '99926000': key = 'nifty50'
-                elif tok == '99926009': key = 'banknifty'
-                elif tok == '99926037': key = 'finnifty'
-                elif tok == '99926074': key = 'midcpnifty'
-                elif tok == '99919000': key = 'sensex'
-                elif tok == '99926017': key = 'indiavix'
+                key = tok_map.get(tok)
                 if key:
                     ltp = float(f.get('ltp') or 0.0)
                     chg = float(f.get('netChange') or 0.0)
@@ -8184,12 +8227,13 @@ def get_market_pulse() -> dict:
     base_quotes = get_live_market_index_quotes()
 
     index_specs = [
-        {"key": "nifty50", "symbol": "NIFTY 50", "short": "NIFTY", "default_spot": 22603.0, "step": 50, "scale": 1.0},
-        {"key": "banknifty", "symbol": "BANK NIFTY", "short": "BANKNIFTY", "default_spot": 55055.0, "step": 100, "scale": 2.5},
-        {"key": "sensex", "symbol": "BSE SENSEX", "short": "SENSEX", "default_spot": 72638.0, "step": 100, "scale": 3.5},
-        {"key": "finnifty", "symbol": "FIN NIFTY", "short": "FINNIFTY", "default_spot": 24916.0, "step": 50, "scale": 1.0},
-        {"key": "midcpnifty", "symbol": "MIDCAP NIFTY", "short": "MIDCPNIFTY", "default_spot": 13757.0, "step": 25, "scale": 0.6},
-        {"key": "indiavix", "symbol": "INDIA VIX", "short": "VIX", "default_spot": 13.9, "step": 0.05, "scale": 0.04},
+        {"key": "nifty50", "symbol": "NIFTY 50", "short": "NIFTY", "default_spot": 22600.0, "step": 50, "scale": 1.0},
+        {"key": "banknifty", "symbol": "BANK NIFTY", "short": "BANKNIFTY", "default_spot": 54287.0, "step": 100, "scale": 2.5},
+        {"key": "sensex", "symbol": "BSE SENSEX", "short": "SENSEX", "default_spot": 73124.0, "step": 100, "scale": 3.5},
+        {"key": "finnifty", "symbol": "FIN NIFTY", "short": "FINNIFTY", "default_spot": 24403.0, "step": 50, "scale": 1.0},
+        {"key": "midcpnifty", "symbol": "MIDCAP NIFTY", "short": "MIDCPNIFTY", "default_spot": 13033.0, "step": 25, "scale": 0.6},
+        {"key": "bankex", "symbol": "BSE BANKEX", "short": "BANKEX", "default_spot": 61087.0, "step": 100, "scale": 2.5},
+        {"key": "indiavix", "symbol": "INDIA VIX", "short": "VIX", "default_spot": 16.86, "step": 0.05, "scale": 0.04},
     ]
 
     out_indices = {}
@@ -8651,7 +8695,7 @@ def build_indices_overview(payload: dict) -> dict:
     _INDICES_OVERVIEW_CACHE["timestamp"] = time.time()
     return data
 _BREADTH_CONTRIB_CACHE = {}
-_BREADTH_CONTRIB_CACHE_VERSION = 3
+_BREADTH_CONTRIB_CACHE_VERSION = 4
 _BREADTH_RECOMPUTE_LOCK = threading.Lock()
 _BREADTH_RECOMPUTING = set()
 _CONSTITUENTS_CACHE = {"timestamp": 0.0, "data": {}}
@@ -8803,6 +8847,9 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
         if norm_idx in ("banknifty", "niftybank"):
             constituents_list = list(breadth_contribution_engine.BANKNIFTY_CONSTITUENTS)
             custom_index_name = "BANK NIFTY"
+        elif norm_idx in ("bankex", "bsebankex"):
+            constituents_list = list(breadth_contribution_engine.BANKEX_CONSTITUENTS)
+            custom_index_name = "BSE BANKEX"
         elif norm_idx == "nifty50":
             constituents_list = list(breadth_contribution_engine.NIFTY50_CONSTITUENTS)
             custom_index_name = "NIFTY 50"
@@ -8836,11 +8883,11 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
         # 3. Ensure valid index quote even if broker feed has missing index symbol
         if not (live_q and live_q.get("spot")):
             default_index_spots = {
-                "nifty50": 24800.0, "sensex": 81000.0, "banknifty": 51500.0,
-                "finnifty": 23500.0, "midcpnifty": 12500.0, "niftyit": 42000.0,
-                "niftyauto": 25000.0, "niftypharma": 22000.0, "niftymetal": 9500.0,
-                "niftyfmcg": 58000.0, "niftyenergy": 39000.0, "niftymidcap100": 58000.0,
-                "niftynext50": 72000.0, "nifty500": 23000.0
+                "nifty50": 22600.0, "sensex": 73125.0, "banknifty": 54285.0,
+                "finnifty": 24400.0, "midcpnifty": 13035.0, "bankex": 61085.0,
+                "niftyit": 31995.0, "niftyauto": 24860.0, "niftypharma": 25330.0,
+                "niftymetal": 11480.0, "niftyfmcg": 42680.0, "niftyenergy": 34520.0,
+                "niftymidcap100": 55800.0, "niftynext50": 65830.0, "nifty500": 21430.0
             }
             base_ref_spot = default_index_spots.get(norm_idx, 20000.0)
             valid_qs = [live_stock_quotes.get(s["symbol"]) for s in constituents_list if live_stock_quotes.get(s["symbol"])]

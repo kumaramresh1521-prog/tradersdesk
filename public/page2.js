@@ -939,10 +939,14 @@
         }
       }
 
-      // Sync navbar real-time straddle badge
+      // Sync navbar real-time straddle badge & top spot badge
       const navBadge = document.getElementById("navStraddleValueBadge");
       if (navBadge && lat.straddle_price) {
         navBadge.textContent = "₹" + Number(lat.straddle_price).toFixed(2);
+      }
+      const p2Badge = document.getElementById("p2SpotBadge");
+      if (p2Badge && lat.spot) {
+        p2Badge.textContent = `${data.symbol || 'NIFTY'} SPOT: ₹` + Number(lat.spot).toLocaleString("en-IN", { minimumFractionDigits: 2 });
       }
 
       const elSub = document.querySelector(".straddle-chart-title-left .p2-card-subtitle");
@@ -3533,8 +3537,12 @@
 
       if (spotTitle) spotTitle.textContent = idxInfo.name || targetIdx.toUpperCase();
       if (breadthTitle) breadthTitle.textContent = `Intraday Breadth (${displayDate})`;
-      if (niftyTitle) niftyTitle.textContent = `Index Spot Chart (${displayDate})`;
+      if (niftyTitle) niftyTitle.textContent = `${idxInfo.name || targetIdx.toUpperCase()} Spot Chart (${displayDate})`;
       if (spotVal) spotVal.textContent = Number(idxInfo.spot || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const p2BadgeBreadth = document.getElementById("p2SpotBadge");
+      if (p2BadgeBreadth && idxInfo.spot) {
+        p2BadgeBreadth.textContent = `${idxInfo.name || targetIdx.toUpperCase()} SPOT: ₹` + Number(idxInfo.spot).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
       if (spotChg) {
         const isUp = (idxInfo.change || 0) >= 0;
         const sign = isUp ? "+" : "";
@@ -3804,7 +3812,7 @@
   // DUAL SYNCHRONIZED CANVASES & ULTRA-SMOOTH CROSSHAIR ENGINE
   // ========================================================================
   const BREADTH_CHART_PAD = { top: 16, right: 18, bottom: 26, left: 45 };
-  const NIFTY_CHART_PAD   = { top: 16, right: 18, bottom: 26, left: 62 };
+  const NIFTY_CHART_PAD   = { top: 16, right: 18, bottom: 26, left: 68 };
 
   let breadthChartGeom = null;
   let niftyChartGeom = null;
@@ -4160,7 +4168,7 @@
     }
 
     if (!Number.isFinite(minSpot) || !Number.isFinite(maxSpot) || minSpot === maxSpot) {
-      const baseS = (idxInfo && idxInfo.spot) ? Number(idxInfo.spot) : (minSpot > 0 ? minSpot : 23000);
+      const baseS = (idxInfo && idxInfo.spot) ? Number(idxInfo.spot) : (minSpot > 0 ? minSpot : 22600);
       minSpot = baseS - 50;
       maxSpot = baseS + 50;
     }
@@ -4342,7 +4350,7 @@
       }
 
       // Left Y-Axis Price Badge
-      const pBadgeW = 56;
+      const pBadgeW = 60;
       const pBadgeH = 17;
       ctx.fillStyle = "#0284c7";
       drawRoundRect(ctx, pad.left - pBadgeW - 3, cySpot - pBadgeH / 2, pBadgeW, pBadgeH, 3);

@@ -96,6 +96,20 @@ BANKNIFTY_CONSTITUENTS = [
 ]
 
 
+BANKEX_CONSTITUENTS = [
+    {"symbol": "HDFCBANK",   "name": "HDFC Bank Ltd.",        "sector": "Private Bank", "ltp": 702.75,  "changePct": -1.22, "weight": 32.50},
+    {"symbol": "ICICIBANK",  "name": "ICICI Bank Ltd.",       "sector": "Private Bank", "ltp": 1357.50, "changePct":  1.09, "weight": 25.10},
+    {"symbol": "SBIN",       "name": "State Bank of India",   "sector": "PSU Bank",     "ltp":  954.00, "changePct": -0.50, "weight": 12.80},
+    {"symbol": "AXISBANK",   "name": "Axis Bank Ltd.",        "sector": "Private Bank", "ltp": 1185.40, "changePct":  0.72, "weight": 11.20},
+    {"symbol": "KOTAKBANK",  "name": "Kotak Mahindra Bank",   "sector": "Private Bank", "ltp":  440.00, "changePct":  1.88, "weight":  9.80},
+    {"symbol": "INDUSINDBK", "name": "IndusInd Bank Ltd.",    "sector": "Private Bank", "ltp": 1058.40, "changePct": -1.15, "weight":  3.10},
+    {"symbol": "BANKBARODA", "name": "Bank of Baroda",        "sector": "PSU Bank",     "ltp":  252.00, "changePct":  1.25, "weight":  2.20},
+    {"symbol": "PNB",        "name": "Punjab National Bank",  "sector": "PSU Bank",     "ltp":  112.50, "changePct":  1.08, "weight":  1.40},
+    {"symbol": "FEDERALBNK", "name": "Federal Bank Ltd.",     "sector": "Private Bank", "ltp":  194.00, "changePct":  0.78, "weight":  1.10},
+    {"symbol": "IDFCFIRSTB", "name": "IDFC First Bank Ltd.",  "sector": "Private Bank", "ltp":   72.80, "changePct":  0.69, "weight":  0.80},
+]
+
+
 def format_indian_date(date_str: str) -> str:
     """Convert 2026-09-21 -> 21-Sep-2026"""
     try:
@@ -210,18 +224,12 @@ def generate_intraday_timeline(
     else:
         total_minutes = 375
 
-    if index_key == "banknifty":
-        base_spot = 56350.00
-        target_spot = 56608.00
-        total_stocks = 12
-        base_adv = 7
-        base_dec = 5
-    else:  # nifty50
-        base_spot = 23340.00
-        target_spot = 23452.00
-        total_stocks = 50
-        base_adv = 28
-        base_dec = 22
+    bm = BENCHMARKS.get(index_key, BENCHMARKS.get("nifty50"))
+    base_spot = round(bm["spot"] - bm["change"], 2)
+    target_spot = round(bm["spot"], 2)
+    total_stocks = 10 if index_key in ("banknifty", "bankex") else 50
+    base_adv = round(total_stocks * 0.45)
+    base_dec = total_stocks - base_adv
 
     if spot_hint and spot_hint > 0:
         target_spot = round(float(spot_hint), 2)
@@ -328,20 +336,21 @@ def compute_breadth_contribution(
     is_bank = norm_key in ("banknifty", "niftybank")
 
     BENCHMARKS = {
-        "nifty50": {"name": "NIFTY 50", "spot": 24850.00, "change": 105.80, "pct": 0.43},
-        "sensex": {"name": "BSE SENSEX", "spot": 81250.00, "change": 320.50, "pct": 0.40},
-        "banknifty": {"name": "BANK NIFTY", "spot": 51600.00, "change": 249.65, "pct": 0.49},
-        "finnifty": {"name": "FINNIFTY", "spot": 23800.00, "change": 98.40, "pct": 0.42},
-        "midcpnifty": {"name": "MIDCAP SELECT", "spot": 12850.00, "change": 65.20, "pct": 0.51},
-        "niftyit": {"name": "NIFTY IT", "spot": 42100.00, "change": -180.50, "pct": -0.43},
-        "niftyauto": {"name": "NIFTY AUTO", "spot": 25400.00, "change": 145.00, "pct": 0.57},
-        "niftypharma": {"name": "NIFTY PHARMA", "spot": 22600.00, "change": 85.30, "pct": 0.38},
-        "niftymetal": {"name": "NIFTY METAL", "spot": 9650.00, "change": 72.00, "pct": 0.75},
-        "niftyfmcg": {"name": "NIFTY FMCG", "spot": 58200.00, "change": -95.00, "pct": -0.16},
-        "niftyenergy": {"name": "NIFTY ENERGY", "spot": 39400.00, "change": 130.00, "pct": 0.33},
-        "niftymidcap100": {"name": "NIFTY MIDCAP 100", "spot": 58700.00, "change": 290.00, "pct": 0.50},
-        "niftynext50": {"name": "NIFTY NEXT 50", "spot": 72400.00, "change": 310.00, "pct": 0.43},
-        "nifty500": {"name": "NIFTY 500", "spot": 23150.00, "change": 95.00, "pct": 0.41},
+        "nifty50": {"name": "NIFTY 50", "spot": 22600.00, "change": -87.65, "pct": -0.39},
+        "sensex": {"name": "BSE SENSEX", "spot": 73123.83, "change": -125.56, "pct": -0.17},
+        "banknifty": {"name": "BANK NIFTY", "spot": 54287.35, "change": -638.35, "pct": -1.16},
+        "finnifty": {"name": "FINNIFTY", "spot": 24403.00, "change": -254.70, "pct": -1.03},
+        "midcpnifty": {"name": "MIDCAP SELECT", "spot": 13033.05, "change": -282.15, "pct": -2.12},
+        "bankex": {"name": "BSE BANKEX", "spot": 61086.71, "change": -679.29, "pct": -1.10},
+        "niftyit": {"name": "NIFTY IT", "spot": 31995.50, "change": -85.75, "pct": -0.27},
+        "niftyauto": {"name": "NIFTY AUTO", "spot": 24862.30, "change": -149.20, "pct": -0.60},
+        "niftypharma": {"name": "NIFTY PHARMA", "spot": 25329.45, "change": -267.20, "pct": -1.04},
+        "niftymetal": {"name": "NIFTY METAL", "spot": 11478.20, "change": -320.15, "pct": -2.71},
+        "niftyfmcg": {"name": "NIFTY FMCG", "spot": 42680.70, "change": -424.75, "pct": -0.99},
+        "niftyenergy": {"name": "NIFTY ENERGY", "spot": 34520.05, "change": -581.40, "pct": -1.66},
+        "niftymidcap100": {"name": "NIFTY MIDCAP 100", "spot": 55800.65, "change": -1263.30, "pct": -2.21},
+        "niftynext50": {"name": "NIFTY NEXT 50", "spot": 65828.60, "change": -1525.55, "pct": -2.26},
+        "nifty500": {"name": "NIFTY 500", "spot": 21427.60, "change": -268.95, "pct": -1.24},
     }
 
     bm = BENCHMARKS.get(norm_key, {"name": custom_index_name or norm_key.upper(), "spot": 24800.0, "change": 100.0, "pct": 0.40})
@@ -356,6 +365,8 @@ def compute_breadth_contribution(
 
     if custom_constituents and len(custom_constituents) > 0:
         raw_stocks_ref = list(custom_constituents)
+    elif norm_key in ("bankex", "bsebankex"):
+        raw_stocks_ref = list(BANKEX_CONSTITUENTS)
     elif is_bank:
         raw_stocks_ref = list(BANKNIFTY_CONSTITUENTS)
     else:

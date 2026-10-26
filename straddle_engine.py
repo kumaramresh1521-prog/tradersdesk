@@ -21,7 +21,7 @@ INDEX_METADATA = {
         "upstox_key": "NSE_INDEX|Nifty 50",
         "angel_key": "nifty50",
         "step": 50,
-        "base_spot": 25000.0,
+        "base_spot": 22600.0,
         "base_atm_iv": 13.5,
         "default_weekday": 3,  # Thursday
         "is_monthly_only": False,
@@ -31,8 +31,8 @@ INDEX_METADATA = {
         "upstox_key": "NSE_INDEX|Nifty Bank",
         "angel_key": "banknifty",
         "step": 100,
-        "base_spot": 54500.0,
-        "base_atm_iv": 15.0,
+        "base_spot": 54300.0,
+        "base_atm_iv": 14.5,
         "default_weekday": 3,  # Last Thursday of month
         "is_monthly_only": True,
     },
@@ -41,7 +41,7 @@ INDEX_METADATA = {
         "upstox_key": "NSE_INDEX|Nifty Fin Service",
         "angel_key": "finnifty",
         "step": 50,
-        "base_spot": 25200.0,
+        "base_spot": 24400.0,
         "base_atm_iv": 14.0,
         "default_weekday": 3,  # Last Thursday of month
         "is_monthly_only": True,
@@ -51,8 +51,8 @@ INDEX_METADATA = {
         "upstox_key": "NSE_INDEX|NIFTY MID SELECT",
         "angel_key": "midcpnifty",
         "step": 25,
-        "base_spot": 13150.0,
-        "base_atm_iv": 15.5,
+        "base_spot": 13050.0,
+        "base_atm_iv": 15.0,
         "default_weekday": 0,  # Monday
         "is_monthly_only": False,
     },
@@ -61,7 +61,7 @@ INDEX_METADATA = {
         "upstox_key": "BSE_INDEX|SENSEX",
         "angel_key": "sensex",
         "step": 100,
-        "base_spot": 81500.0,
+        "base_spot": 73100.0,
         "base_atm_iv": 13.0,
         "default_weekday": 4,  # Friday
         "is_monthly_only": False,
@@ -71,7 +71,7 @@ INDEX_METADATA = {
         "upstox_key": "BSE_INDEX|BANKEX",
         "angel_key": "bankex",
         "step": 100,
-        "base_spot": 61200.0,
+        "base_spot": 61100.0,
         "base_atm_iv": 14.5,
         "default_weekday": 0,  # Monday
         "is_monthly_only": False,
