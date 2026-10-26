@@ -339,6 +339,36 @@ def solve_straddle_iv(spot: float, strike: float, T: float, r: float, target_pri
     return round((low_iv + high_iv) / 2.0, 2)
 
 
+def get_time_to_expiry(
+    sess_date: dt_date,
+    target_exp_date: dt_date,
+    hh: int,
+    mm: int,
+) -> float:
+    """
+    Computes annualized time-to-expiry (T) in trading-year convention (250 trading days * 375 mins = 93,750 mins).
+    Decays smoothly and continuously minute-by-minute with zero artificial jumps.
+    Clamps to minimum 5 minutes (T = 0.0000533) to prevent division by zero near expiry.
+    """
+    candle_mins = hh * 60 + mm
+    market_open_mins = 9 * 60 + 15    # 555
+    market_close_mins = 15 * 60 + 30  # 930
+
+    clamped_mins = min(market_close_mins, max(market_open_mins, candle_mins))
+    rem_mins_today = market_close_mins - clamped_mins
+
+    trading_days_after = 0
+    if target_exp_date > sess_date:
+        cur = sess_date + timedelta(days=1)
+        while cur <= target_exp_date:
+            if cur.weekday() < 5:  # Mon-Fri are trading days
+                trading_days_after += 1
+            cur += timedelta(days=1)
+
+    total_rem_mins = trading_days_after * 375.0 + rem_mins_today
+    return max(5.0, total_rem_mins) / 93750.0
+
+
 def compute_straddle_analytics(
     symbol: str,
     expiry: Optional[str] = None,
@@ -463,40 +493,6 @@ def compute_straddle_analytics(
                 has_live_legs = (live_ce_ltp > 0 or live_pe_ltp > 0)
                 break
 
-    # Expiry time fraction & interest rate
-    cur_T_annual = max(0.0005, max(0.15, dte) / 365.25)
-    last_t_rem = max(0.0002, cur_T_annual - (0.85 / 365.25))
-    r_rate = 0.07
-
-    if has_live_legs and not is_historical:
-        live_straddle_price = round(live_ce_ltp + live_pe_ltp, 2)
-        live_synth_future = round(chosen_strike + live_ce_ltp - live_pe_ltp, 2)
-        # Calibrate implied volatility so the Black-Scholes curve smoothly terminates at live market price (no cliff!)
-        calibrated_iv = solve_straddle_iv(spot_val, chosen_strike, last_t_rem, r_rate, live_straddle_price)
-        if calibrated_iv > 0:
-            live_iv = calibrated_iv
-    else:
-        # Theoretical valuation for historical replay or offline simulation
-        bs_ce = round(greeks.bs_price("CE", spot_val, chosen_strike, last_t_rem, r_rate, live_iv / 100.0), 2)
-        bs_pe = round(greeks.bs_price("PE", spot_val, chosen_strike, last_t_rem, r_rate, live_iv / 100.0), 2)
-        live_ce_ltp = bs_ce
-        live_pe_ltp = bs_pe
-        live_straddle_price = round(live_ce_ltp + live_pe_ltp, 2)
-        live_synth_future = round(chosen_strike + live_ce_ltp - live_pe_ltp, 2)
-
-    # Synthetic future smooth basis drift across the day
-    theo_last_ce = greeks.bs_price("CE", spot_val, chosen_strike, last_t_rem, r_rate, live_iv / 100.0)
-    theo_last_pe = greeks.bs_price("PE", spot_val, chosen_strike, last_t_rem, r_rate, live_iv / 100.0)
-    theo_last_synth = chosen_strike + theo_last_ce - theo_last_pe
-    synth_drift = (live_synth_future - theo_last_synth) if (has_live_legs and not is_historical) else 0.0
-
-    # 5. Build Intraday 1-Minute Timeline Points
-    points = []
-    cum_vol = 0
-    cum_pv = 0.0
-    all_prices = []
-    all_spots = []
-
     # Check live market timing bounds for today's session
     market_open_time = dt_time(9, 15)
     market_close_time = dt_time(15, 30)
@@ -520,6 +516,66 @@ def compute_straddle_analytics(
         if filtered or not is_pre_market:
             raw_candles = filtered
 
+    # Determine latest candle time for exact Black-Scholes calibration
+    if raw_candles:
+        last_t_raw = str(raw_candles[-1].get("time") or "")
+        last_hhmm = last_t_raw[11:16] if len(last_t_raw) >= 16 else (last_t_raw[:5] if ":" in last_t_raw else "")
+        if last_hhmm and ":" in last_hhmm:
+            try:
+                latest_h, latest_m = map(int, last_hhmm.split(":"))
+            except Exception:
+                latest_h, latest_m = (now_dt.hour, now_dt.minute) if is_active_market_hours else (15, 30)
+        else:
+            latest_h, latest_m = (now_dt.hour, now_dt.minute) if is_active_market_hours else (15, 30)
+    else:
+        latest_h, latest_m = (now_dt.hour, now_dt.minute) if is_active_market_hours else (15, 30)
+
+    # Continuous trading-minutes annualized time-to-expiry at latest point
+    T_latest = get_time_to_expiry(sess_d, target_exp_d, latest_h, latest_m)
+    r_rate = 0.07
+
+    if has_live_legs and not is_historical:
+        live_straddle_price = round(live_ce_ltp + live_pe_ltp, 2)
+        live_synth_future = round(chosen_strike + live_ce_ltp - live_pe_ltp, 2)
+        # Calibrate implied volatility at exact latest candle time T_latest (zero cliff guaranteed!)
+        calibrated_iv = solve_straddle_iv(spot_val, chosen_strike, T_latest, r_rate, live_straddle_price)
+        if calibrated_iv > 0:
+            live_iv = calibrated_iv
+    else:
+        # Theoretical valuation for historical replay or offline simulation
+        bs_ce = round(greeks.bs_price("CE", spot_val, chosen_strike, T_latest, r_rate, live_iv / 100.0), 2)
+        bs_pe = round(greeks.bs_price("PE", spot_val, chosen_strike, T_latest, r_rate, live_iv / 100.0), 2)
+        live_ce_ltp = bs_ce
+        live_pe_ltp = bs_pe
+        live_straddle_price = round(live_ce_ltp + live_pe_ltp, 2)
+        live_synth_future = round(chosen_strike + live_ce_ltp - live_pe_ltp, 2)
+
+    # Market skew offsets at T_latest: captures call/put skew so legs smoothly terminate at exact LTPs
+    theo_latest_ce = greeks.bs_price("CE", spot_val, chosen_strike, T_latest, r_rate, live_iv / 100.0)
+    theo_latest_pe = greeks.bs_price("PE", spot_val, chosen_strike, T_latest, r_rate, live_iv / 100.0)
+    ce_offset = (live_ce_ltp - theo_latest_ce) if has_live_legs else 0.0
+    pe_offset = (live_pe_ltp - theo_latest_pe) if has_live_legs else 0.0
+
+    # Synthetic future smooth basis drift across the day
+    theo_latest_synth = chosen_strike + theo_latest_ce - theo_latest_pe
+    synth_drift = (live_synth_future - theo_latest_synth) if (has_live_legs and not is_historical) else 0.0
+
+    # Greeks calculation fallback if broker feed returns zero
+    if live_delta == 0.0 and live_gamma == 0.0:
+        ce_gk = greeks.bs_greeks("CE", spot_val, chosen_strike, T_latest, r_rate, live_iv / 100.0)
+        pe_gk = greeks.bs_greeks("PE", spot_val, chosen_strike, T_latest, r_rate, live_iv / 100.0)
+        live_delta = round(ce_gk["delta"] + pe_gk["delta"], 4)
+        live_gamma = round(ce_gk["gamma"] + pe_gk["gamma"], 6)
+        live_theta = round(ce_gk["theta"] + pe_gk["theta"], 2)
+        live_vega = round(ce_gk["vega"] + pe_gk["vega"], 2)
+
+    # 5. Build Intraday 1-Minute Timeline Points
+    points = []
+    cum_vol = 0
+    cum_pv = 0.0
+    all_prices = []
+    all_spots = []
+
     if raw_candles and len(raw_candles) >= 3:
         total_pts = len(raw_candles)
         last_candle_close = float(raw_candles[-1].get("close") or 0)
@@ -537,8 +593,13 @@ def compute_straddle_analytics(
             else:
                 smooth_spots.append(0.5 * val + 0.3 * closes[i-1] + 0.2 * closes[i-2])
 
+        # Anchor final smooth spot exactly to spot_val for zero-cliff continuity
+        if not is_historical and spot_val > 0:
+            smooth_spots[-1] = spot_val
+            if len(smooth_spots) >= 2:
+                smooth_spots[-2] = round(0.5 * smooth_spots[-2] + 0.5 * spot_val, 2)
+
         for i, candle in enumerate(raw_candles):
-            raw_c = float(candle.get("close") or (spot_val - offset))
             c_spot = round(smooth_spots[i], 2)
             t_raw = str(candle.get("time") or "")
             if len(t_raw) <= 5 and ":" in t_raw:
@@ -548,22 +609,22 @@ def compute_straddle_analytics(
             else:
                 iso_time = t_raw or f"{session_date}T09:15:00"
 
-            # Progress through session (09:15 to 15:30 is 375 minutes)
             t_hhmm = t_raw[11:16] if len(t_raw) >= 16 else (t_raw[:5] if ":" in t_raw else "")
+            c_h, c_m = 9, 15
             if t_hhmm and ":" in t_hhmm:
                 try:
                     c_h, c_m = map(int, t_hhmm.split(":"))
-                    elapsed_m = max(0, (c_h - 9) * 60 + (c_m - 15))
-                    frac_done = min(1.0, elapsed_m / 374.0)
                 except Exception:
-                    frac_done = i / max(1, total_pts - 1)
-            else:
-                frac_done = i / max(1, total_pts - 1)
+                    pass
 
-            t_rem = max(0.0002, cur_T_annual - (frac_done * 0.85 / 365.25))
+            t_rem = get_time_to_expiry(sess_d, target_exp_d, c_h, c_m)
+            frac_done = i / max(1, total_pts - 1)
 
-            c_p = round(greeks.bs_price("CE", c_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0), 2)
-            p_p = round(greeks.bs_price("PE", c_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0), 2)
+            bs_c = greeks.bs_price("CE", c_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0)
+            bs_p = greeks.bs_price("PE", c_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0)
+
+            c_p = round(max(0.05, bs_c + ce_offset), 2)
+            p_p = round(max(0.05, bs_p + pe_offset), 2)
             st_p = round(c_p + p_p, 2)
             synth = round((chosen_strike + c_p - p_p) + (frac_done * synth_drift), 2)
 
@@ -577,7 +638,7 @@ def compute_straddle_analytics(
 
             points.append({
                 "time": iso_time,
-                "spot": round(c_spot, 2),
+                "spot": c_spot,
                 "price": st_p,
                 "ce_price": c_p,
                 "pe_price": p_p,
@@ -587,7 +648,7 @@ def compute_straddle_analytics(
                 "volume": vol,
             })
 
-        # Anchor the very latest point to exact live market quotes smoothly
+        # Sanity reconfirmation of final point to exact live quotes
         if points and has_live_legs and not is_historical:
             points[-1]["price"] = live_straddle_price
             points[-1]["ce_price"] = live_ce_ltp
@@ -628,7 +689,6 @@ def compute_straddle_analytics(
             cum_shocks.append(cum_shocks[-1] + s)
 
         # Exact zero-pinned Brownian Bridge: B(m) = W(m) - tau * W(N-1)
-        # This mathematically guarantees B(0) = 0 and B(N-1) = 0 with zero cliff at session end!
         total_W = cum_shocks[max_minutes - 1] if max_minutes > 1 else 0.0
         bridge_vol = spot_val * 0.00030
 
@@ -641,10 +701,13 @@ def compute_straddle_analytics(
             B_m = (cum_shocks[m] - prog * total_W) * bridge_vol if max_minutes > 1 else 0.0
             walk_spot = round(open_spot + prog * (target_close_spot - open_spot) + B_m, 2)
 
-            t_rem = max(0.0002, cur_T_annual - (prog * 0.85 / 365.25))
+            t_rem = get_time_to_expiry(sess_d, target_exp_d, hh, mm)
 
-            c_p = round(greeks.bs_price("CE", walk_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0), 2)
-            p_p = round(greeks.bs_price("PE", walk_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0), 2)
+            bs_c = greeks.bs_price("CE", walk_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0)
+            bs_p = greeks.bs_price("PE", walk_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0)
+
+            c_p = round(max(0.05, bs_c + ce_offset), 2)
+            p_p = round(max(0.05, bs_p + pe_offset), 2)
             st_p = round(c_p + p_p, 2)
             synth = round((chosen_strike + c_p - p_p) + (prog * synth_drift), 2)
 
