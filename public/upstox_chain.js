@@ -698,19 +698,19 @@
       if (state.viewMode === 'greeks') {
         thead.innerHTML = `
           <tr class="modern-head-row">
-            <th style="text-align:right;">Delta</th>
-            <th style="text-align:right;">Gamma</th>
-            <th style="text-align:right;">Theta</th>
-            <th style="text-align:right;">Vega</th>
-            <th style="text-align:right;">IV</th>
-            <th style="text-align:right;">LTP</th>
-            <th class="modern-th-strike" style="text-align:center;">Strike</th>
-            <th style="text-align:left;">LTP</th>
-            <th style="text-align:left;">IV</th>
-            <th style="text-align:left;">Delta</th>
-            <th style="text-align:left;">Gamma</th>
-            <th style="text-align:left;">Theta</th>
-            <th style="text-align:left;">Vega</th>
+            <th style="text-align:right;" title="Call Delta (Rate of change of price per point move in spot)">Delta</th>
+            <th style="text-align:right;" title="Call Gamma (Acceleration of Delta per point move in spot)">Gamma</th>
+            <th style="text-align:right;" title="Call Theta (Daily time decay erosion in ₹)">Theta</th>
+            <th style="text-align:right;" title="Call Vega (Sensitivity of price per 1% move in IV in ₹)">Vega</th>
+            <th style="text-align:right;" title="Call Implied Volatility (IV)">IV</th>
+            <th style="text-align:right;" title="Call Last Traded Price (LTP)">LTP</th>
+            <th class="modern-th-strike" style="text-align:center;" title="Strike Price">Strike</th>
+            <th style="text-align:left;" title="Put Last Traded Price (LTP)">LTP</th>
+            <th style="text-align:left;" title="Put Implied Volatility (IV)">IV</th>
+            <th style="text-align:left;" title="Put Delta (Rate of change of price per point move in spot)">Delta</th>
+            <th style="text-align:left;" title="Put Gamma (Acceleration of Delta per point move in spot)">Gamma</th>
+            <th style="text-align:left;" title="Put Theta (Daily time decay erosion in ₹)">Theta</th>
+            <th style="text-align:left;" title="Put Vega (Sensitivity of price per 1% move in IV in ₹)">Vega</th>
           </tr>
         `;
       } else {
@@ -873,47 +873,47 @@
 
         tr.innerHTML = `
           <!-- Calls Greeks (Left) -->
-          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; color:#10b981;">
+          <td title="Call Delta: ${fmtNum(ceDelta, 2)} (Click strike to inspect)" style="cursor:pointer; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; color:#10b981;">
             ${fmtNum(ceDelta, 2)}
           </td>
-          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8;">
+          <td title="Call Gamma: ${fmtNum(ceGamma, 4)} (Click strike to inspect)" style="cursor:pointer; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8;">
             ${fmtNum(ceGamma, 4)}
           </td>
-          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#f59e0b;">
+          <td title="Call Theta: ₹${fmtNum(ceTheta, 1)} (Click strike to inspect)" style="cursor:pointer; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#f59e0b;">
             ₹${fmtNum(ceTheta, 1)}
           </td>
-          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; color:#a78bfa;">
+          <td title="Call Vega: ₹${fmtNum(ceVega, 1)} (Click strike to inspect)" style="cursor:pointer; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px; color:#a78bfa;">
             ₹${fmtNum(ceVega, 1)}
           </td>
-          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#38bdf8;">
+          <td title="Call IV: ${ceIv > 0 ? ceIv.toFixed(1) + '%' : '--'} (Click strike to inspect)" style="cursor:pointer; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#38bdf8;">
             ${ceIv > 0 ? ceIv.toFixed(1) + '%' : '--'}
           </td>
-          <td style="text-align:right; padding:4px 6px;">
+          <td style="cursor:pointer; text-align:right; padding:4px 6px;">
             <span class="modern-ltp-pill ${ceLtpClass}">${fmtNum(ceLtp, 2)}</span>
           </td>
 
           <!-- Center Strike Column -->
-          <td class="modern-cell-strike">
+          <td class="modern-cell-strike" title="Strike: ${strike} · ATM anchor">
             <span class="modern-strike-num">${strike.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </td>
 
           <!-- Puts Greeks (Right) -->
-          <td style="text-align:left; padding:4px 6px;">
+          <td style="cursor:pointer; text-align:left; padding:4px 6px;">
             <span class="modern-ltp-pill ${peLtpClass}">${fmtNum(peLtp, 2)}</span>
           </td>
-          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#38bdf8;">
+          <td title="Put IV: ${peIv > 0 ? peIv.toFixed(1) + '%' : '--'} (Click strike to inspect)" style="cursor:pointer; text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#38bdf8;">
             ${peIv > 0 ? peIv.toFixed(1) + '%' : '--'}
           </td>
-          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; color:#ef4444;">
+          <td title="Put Delta: ${fmtNum(peDelta, 2)} (Click strike to inspect)" style="cursor:pointer; text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; color:#ef4444;">
             ${fmtNum(peDelta, 2)}
           </td>
-          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8;">
+          <td title="Put Gamma: ${fmtNum(peGamma, 4)} (Click strike to inspect)" style="cursor:pointer; text-align:left; font-family:'JetBrains Mono',monospace; font-size:11px; color:#94a3b8;">
             ${fmtNum(peGamma, 4)}
           </td>
-          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#f59e0b;">
+          <td title="Put Theta: ₹${fmtNum(peTheta, 1)} (Click strike to inspect)" style="cursor:pointer; text-align:left; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#f59e0b;">
             ₹${fmtNum(peTheta, 1)}
           </td>
-          <td style="text-align:left; font-family:'JetBrains Mono',monospace; font-size:11px; color:#a78bfa;">
+          <td title="Put Vega: ₹${fmtNum(peVega, 1)} (Click strike to inspect)" style="cursor:pointer; text-align:left; font-family:'JetBrains Mono',monospace; font-size:11px; color:#a78bfa;">
             ₹${fmtNum(peVega, 1)}
           </td>
         `;
@@ -4127,32 +4127,63 @@
     }
 
     // 4f. View Switcher Toggle (1st: Default View, 2nd: Greeks View)
+    window.switchOptionChainView = function(mode) {
+      if (!_upstoxInitialized) {
+        ensureUpstoxInit();
+      }
+      state.viewMode = (mode === 'greeks') ? 'greeks' : 'default';
+      const btnDefault = document.getElementById('btnChainViewDefault');
+      const btnGreeks = document.getElementById('btnChainViewGreeks');
+      const mc = document.getElementById('modernOptMetricsCount');
+
+      if (state.viewMode === 'greeks') {
+        if (btnGreeks) {
+          btnGreeks.classList.add('active');
+          btnGreeks.style.background = '#2563eb';
+          btnGreeks.style.color = '#ffffff';
+          btnGreeks.style.fontWeight = '700';
+        }
+        if (btnDefault) {
+          btnDefault.classList.remove('active');
+          btnDefault.style.background = 'transparent';
+          btnDefault.style.color = '#64748b';
+          btnDefault.style.fontWeight = '600';
+        }
+        if (mc) mc.textContent = 'GREEKS MATRIX';
+      } else {
+        if (btnDefault) {
+          btnDefault.classList.add('active');
+          btnDefault.style.background = '#2563eb';
+          btnDefault.style.color = '#ffffff';
+          btnDefault.style.fontWeight = '700';
+        }
+        if (btnGreeks) {
+          btnGreeks.classList.remove('active');
+          btnGreeks.style.background = 'transparent';
+          btnGreeks.style.color = '#64748b';
+          btnGreeks.style.fontWeight = '600';
+        }
+        if (mc) mc.textContent = '13 METRICS';
+      }
+      if (state.chainData) {
+        renderTable(state.chainData);
+      } else {
+        fetchChain(false);
+      }
+    };
+
     const btnDefault = document.getElementById('btnChainViewDefault');
     const btnGreeks = document.getElementById('btnChainViewGreeks');
-    if (btnDefault && btnGreeks) {
-      btnDefault.addEventListener('click', () => {
-        state.viewMode = 'default';
-        btnDefault.classList.add('active');
-        btnDefault.style.background = '#2563eb';
-        btnDefault.style.color = '#ffffff';
-        btnGreeks.classList.remove('active');
-        btnGreeks.style.background = 'transparent';
-        btnGreeks.style.color = '#64748b';
-        const mc = document.getElementById('modernOptMetricsCount');
-        if (mc) mc.textContent = '13 METRICS';
-        if (state.chainData) renderTable(state.chainData);
+    if (btnDefault) {
+      btnDefault.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.switchOptionChainView('default');
       });
-      btnGreeks.addEventListener('click', () => {
-        state.viewMode = 'greeks';
-        btnGreeks.classList.add('active');
-        btnGreeks.style.background = '#2563eb';
-        btnGreeks.style.color = '#ffffff';
-        btnDefault.classList.remove('active');
-        btnDefault.style.background = 'transparent';
-        btnDefault.style.color = '#64748b';
-        const mc = document.getElementById('modernOptMetricsCount');
-        if (mc) mc.textContent = 'GREEKS MATRIX';
-        if (state.chainData) renderTable(state.chainData);
+    }
+    if (btnGreeks) {
+      btnGreeks.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.switchOptionChainView('greeks');
       });
     }
 
@@ -4253,6 +4284,9 @@
     },
     renderVisualizer: function () {
       if (state.chainData) renderVisualizerChart(state.chainData);
+    },
+    setViewMode: function (mode) {
+      if (window.switchOptionChainView) window.switchOptionChainView(mode);
     },
     setInstrument: function (key) {
       if (!_upstoxInitialized) {

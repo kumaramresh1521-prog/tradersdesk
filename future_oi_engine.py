@@ -36,6 +36,7 @@ _BHAV_SESSIONS_CACHE: Dict[str, Any] = {
 }
 
 _DELIVERY_DATA_CACHE = None
+_DELIVERY_DATA_MTIME = 0.0
 _DELIVERY_INDEX_COMPOSITE = {}
 _PCR_IV_DATA_CACHE = None
 
@@ -84,10 +85,12 @@ def _get_pcr_iv_for_symbol_date(symbol: str, date_str: str) -> Optional[dict]:
         return s_data[date_str]
     return None
 
-def _load_delivery_data() -> Dict[str, Any]:
-    global _DELIVERY_DATA_CACHE, _DELIVERY_INDEX_COMPOSITE
-    if _DELIVERY_DATA_CACHE is not None:
+def _load_delivery_data(force: bool = False) -> Dict[str, Any]:
+    global _DELIVERY_DATA_CACHE, _DELIVERY_INDEX_COMPOSITE, _DELIVERY_DATA_MTIME
+    current_mtime = DELIVERY_MASTER_FILE.stat().st_mtime if DELIVERY_MASTER_FILE.exists() else 0.0
+    if not force and _DELIVERY_DATA_CACHE is not None and current_mtime == _DELIVERY_DATA_MTIME:
         return _DELIVERY_DATA_CACHE
+    _DELIVERY_DATA_MTIME = current_mtime
     if DELIVERY_MASTER_FILE.exists():
         try:
             with open(DELIVERY_MASTER_FILE, "r", encoding="utf-8") as f:

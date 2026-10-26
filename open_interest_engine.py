@@ -492,6 +492,7 @@ def _compute_open_interest_data(
         "symbol": sym,
         "spot": spot,
         "spotPrice": spot,
+        "spot_price": spot,
         "change_pts": change_pts,
         "change_pct": change_pct,
         "atm_strike": atm_strike,

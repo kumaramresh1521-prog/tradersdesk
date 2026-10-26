@@ -1866,7 +1866,8 @@ def fetch_real_intraday_index_candles(index_key: str, date_value: str, interval_
             cached_obj = read_json(cache_file, {})
             c_data = cached_obj.get("data") or []
             c_age = time.time() - cached_obj.get("cached_at", 0)
-            if c_data and c_age < cache_ttl:
+            is_incomplete_today = (is_today and not is_market_open() and len(c_data) < (360 // interval_minutes))
+            if c_data and c_age < cache_ttl and not is_incomplete_today:
                 return c_data
         except Exception:
             pass
