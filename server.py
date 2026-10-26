@@ -1753,11 +1753,13 @@ def sample_index_candles(index_key: str, date_value: str, from_date: str = None,
         trading_dates = [end_dt]
 
     candles = []
-    base_price = float(config.get("seed", 24500))
+    base_price = float(config.get("seed", 22600.0))
+    session_change = 0.0
     try:
         live_q = get_live_market_index_quotes()
         if live_q.get(normalized, {}).get("spot"):
             base_price = float(live_q[normalized]["spot"])
+            session_change = float(live_q[normalized].get("change") or 0.0)
     except Exception:
         pass
     for dt in trading_dates:
@@ -1772,9 +1774,16 @@ def sample_index_candles(index_key: str, date_value: str, from_date: str = None,
             if start <= now_current < end:
                 end = now_current.replace(second=0, microsecond=0)
 
-        session_change_pct = rng.uniform(-0.015, 0.015)
-        day_open = round(base_price * (1.0 + rng.uniform(-0.004, 0.004)), 2)
-        day_close = base_price if (dt == now_current.date() and now_current < datetime.combine(dt, dt_time(15, 30)).replace(tzinfo=INDIA_TZ)) else round(day_open * (1.0 + session_change_pct), 2)
+        if dt == end_dt:
+            day_close = base_price
+            if session_change != 0:
+                day_open = round(day_close - session_change, 2)
+            else:
+                day_open = round(base_price * (1.0 + rng.uniform(-0.003, 0.003)), 2)
+        else:
+            session_change_pct = rng.uniform(-0.015, 0.015)
+            day_open = round(base_price * (1.0 + rng.uniform(-0.004, 0.004)), 2)
+            day_close = round(day_open * (1.0 + session_change_pct), 2)
 
         total_minutes = max(1, int((end - start).total_seconds() / 60))
         total_steps = max(1, total_minutes // max(1, interval_minutes))
@@ -9624,7 +9633,9 @@ def get_straddle_chart_response(params: dict) -> dict:
         # If nifty_data candles are unavailable from live broker, supply realistic 1m index candles
         if not nifty_data or not nifty_data.get("points"):
             try:
-                raw_c = sample_index_candles(idx_key, effective_dt, interval_minutes=1)
+                raw_c = fetch_real_intraday_index_candles(idx_key, effective_dt, interval_minutes=1)
+                if not raw_c:
+                    raw_c = sample_index_candles(idx_key, effective_dt, interval_minutes=1)
                 if raw_c:
                     pts = []
                     for c in raw_c:
@@ -9634,7 +9645,7 @@ def get_straddle_chart_response(params: dict) -> dict:
                             "high": c[2],
                             "low": c[3],
                             "close": c[4],
-                            "volume": c[5]
+                            "volume": c[5] if len(c) > 5 else 0
                         })
                     nifty_data = {
                         "ok": True,
@@ -9659,6 +9670,12 @@ def get_straddle_chart_response(params: dict) -> dict:
         else:
             if nifty_data and nifty_data.get("index"):
                 live_spot = nifty_data.get("index", {}).get("spot")
+            if not live_spot:
+                try:
+                    live_quotes = get_live_market_index_quotes()
+                    live_spot = (live_quotes.get(idx_key) or {}).get("spot") or None
+                except Exception:
+                    live_spot = None
 
         res = straddle_engine.compute_straddle_analytics(
             idx,
