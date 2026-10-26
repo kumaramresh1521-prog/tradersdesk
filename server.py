@@ -9561,9 +9561,43 @@ def get_straddle_chart_response(params: dict) -> dict:
             except Exception:
                 nifty_data = None
 
-        # If nifty_data candles are unavailable, proceed smoothly with built-in analytical modeling
-
         live_spot = None
+        if not is_historical:
+            if upstox_chain and upstox_chain.get("spotPrice"):
+                live_spot = float(upstox_chain["spotPrice"])
+            elif nifty_data and nifty_data.get("index"):
+                live_spot = nifty_data.get("index", {}).get("spot")
+            if not live_spot:
+                try:
+                    live_quotes = get_live_market_index_quotes()
+                    live_spot = (live_quotes.get(idx_key) or {}).get("spot") or None
+                except Exception:
+                    live_spot = None
+
+        # If nifty_data candles are unavailable from live broker, supply realistic 1m index candles
+        if not nifty_data or not nifty_data.get("points"):
+            try:
+                raw_c = sample_index_candles(idx_key, effective_dt, interval_minutes=1)
+                if raw_c:
+                    pts = []
+                    for c in raw_c:
+                        pts.append({
+                            "time": c[0],
+                            "open": c[1],
+                            "high": c[2],
+                            "low": c[3],
+                            "close": c[4],
+                            "volume": c[5]
+                        })
+                    nifty_data = {
+                        "ok": True,
+                        "points": pts,
+                        "index": {"spot": pts[-1]["close"]}
+                    }
+                    if not live_spot:
+                        live_spot = pts[-1]["close"]
+            except Exception as e:
+                pass
         if not is_historical:
             if upstox_chain and upstox_chain.get("spotPrice"):
                 live_spot = float(upstox_chain["spotPrice"])

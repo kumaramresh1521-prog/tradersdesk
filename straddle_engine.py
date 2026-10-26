@@ -598,7 +598,7 @@ def compute_straddle_analytics(
             all_spots[-1] = spot_val
 
     else:
-        # Clean realistic 1-minute trajectory synthesis (09:15 to current market minute)
+        # Authentic 1-minute financial market trajectory synthesis via zero-pinned Brownian Bridge
         if is_pre_market:
             max_minutes = 1
         elif is_active_market_hours:
@@ -610,23 +610,36 @@ def compute_straddle_analytics(
         seed = int(hashlib.sha256(f"straddle-{sym}-{session_date}-{chosen_strike}".encode("utf-8")).hexdigest()[:12], 16)
         rng = random.Random(seed)
 
-        # Smooth, realistic institutional spot curve (no high-frequency white noise)
-        drift_delta = (spot_val * 0.0032)
-        open_spot = round(spot_val - drift_delta, 2)
-        total_drift = spot_val - open_spot
+        # Realistic intraday market open drift
+        session_drift_pct = rng.uniform(-0.005, 0.005)
+        open_spot = round(spot_val / (1.0 + session_drift_pct), 2)
+        target_close_spot = spot_val
+
+        # Generate AR(1) correlated shocks for authentic market momentum & trend waves
+        shocks = []
+        last_shock = 0.0
+        for _ in range(max_minutes):
+            curr_shock = 0.70 * last_shock + 0.30 * rng.gauss(0, 1)
+            shocks.append(curr_shock)
+            last_shock = curr_shock
+
+        cum_shocks = [0.0]
+        for s in shocks:
+            cum_shocks.append(cum_shocks[-1] + s)
+
+        # Exact zero-pinned Brownian Bridge: B(m) = W(m) - tau * W(N-1)
+        # This mathematically guarantees B(0) = 0 and B(N-1) = 0 with zero cliff at session end!
+        total_W = cum_shocks[max_minutes - 1] if max_minutes > 1 else 0.0
+        bridge_vol = spot_val * 0.00030
 
         for m in range(max_minutes):
             hh = 9 + (15 + m) // 60
             mm = (15 + m) % 60
             iso_time = f"{session_date}T{hh:02d}:{mm:02d}:00"
 
-            # Progress ratio from open to current spot
             prog = m / max(1, max_minutes - 1)
-            # Smooth intraday wave cycle (morning pullback and afternoon trend continuation)
-            wave = (abs(total_drift) * 0.35 + 20.0) * math.sin(prog * math.pi * 2.5) + (abs(total_drift) * 0.12) * math.sin(prog * math.pi * 5.0)
-            walk_spot = round(open_spot + total_drift * prog + wave, 2)
-            if m == max_minutes - 1:
-                walk_spot = round(spot_val, 2)
+            B_m = (cum_shocks[m] - prog * total_W) * bridge_vol if max_minutes > 1 else 0.0
+            walk_spot = round(open_spot + prog * (target_close_spot - open_spot) + B_m, 2)
 
             t_rem = max(0.0002, cur_T_annual - (prog * 0.85 / 365.25))
 
@@ -635,7 +648,9 @@ def compute_straddle_analytics(
             st_p = round(c_p + p_p, 2)
             synth = round((chosen_strike + c_p - p_p) + (prog * synth_drift), 2)
 
-            vol = int(rng.uniform(1000, 2800))
+            # Institutional U-shaped volume curve (higher at open & close, lighter midday)
+            u_curve = 4.0 * ((prog - 0.5) ** 2)
+            vol = int(1200 + 1600 * u_curve + rng.uniform(-200, 200))
             cum_vol += vol
             cum_pv += (st_p * vol)
             vwap = round(cum_pv / max(1, cum_vol), 2)

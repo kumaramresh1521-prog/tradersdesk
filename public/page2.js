@@ -1122,25 +1122,19 @@
       }
     }
 
-    // Watermark in Center
-    ctx.save();
-    ctx.fillStyle = isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)";
-    ctx.font = "800 36px 'Inter', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(data.is_historical ? `${data.symbol} ${data.date} (HISTORICAL)` : `${data.symbol} STRADDLE DESK`, width / 2, height / 2);
-    ctx.restore();
+    // Center canvas kept pristine without visual clutter
 
     // Helper coordinate converters
     const getX = (idx) => padding.left + (chartW / (n - 1 || 1)) * idx;
     const getLeftY = (val) => padding.top + chartH - ((val - minLeft) / (maxLeft - minLeft || 1)) * chartH;
     const getRightY = (val) => padding.top + chartH - ((val - minRight) / (maxRight - minRight || 1)) * chartH;
 
-    // Curve A: Underlying Index Spot (Subtle Green Dashed Line on Right Axis)
+    // Curve A: Underlying Index Spot (Smooth Emerald Line on Right Axis)
     if (straddleState.visible.spot) {
       ctx.save();
-      ctx.strokeStyle = "rgba(16, 185, 129, 0.75)";
-      ctx.lineWidth = 1.8;
-      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.65)";
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([]);
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
         const x = getX(i);
@@ -2569,13 +2563,7 @@
       ctx.fillText(`${pctSign}${pctFromOpen.toFixed(1)}%`, width - padding.right + 10, y + 4);
     }
 
-    // Watermark
-    ctx.save();
-    ctx.fillStyle = isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)";
-    ctx.font = "800 32px 'Inter', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(`${data.symbol || "OPTIONS"} PREMIUM DECAY DESK`, width / 2, height / 2);
-    ctx.restore();
+    // Center canvas kept pristine without visual clutter
 
     // Helper coordinate converters
     const getX = (idx) => padding.left + (chartW / (n - 1 || 1)) * idx;
@@ -3112,25 +3100,19 @@
       }
     }
 
-    // Watermark
-    ctx.save();
-    ctx.fillStyle = isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)";
-    ctx.font = "800 32px 'Inter', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(`${data.symbol || "OPTIONS"} CALL vs PUT DESK`, width / 2, padding.top + topH / 2);
-    ctx.restore();
+    // Center canvas kept pristine without visual clutter
 
     const getX = (i) => padding.left + (chartW / (n - 1 || 1)) * i;
     const getTopY = (val) => padding.top + topH - ((val - minLeft) / (maxLeft - minLeft || 1)) * topH;
     const getSpotY = (val) => padding.top + topH - ((val - minSpot) / (maxSpot - minSpot || 1)) * topH;
     const getBottomY = (spread) => bottomTop + bottomH / 2 - (spread / (maxSpreadAbs || 1)) * (bottomH / 2);
 
-    // Plot Underlying Spot (Gold Dashed Line on Right Axis)
+    // Plot Underlying Spot (Smooth Gold Line on Right Axis)
     if (cvpState.visible.spot) {
       ctx.save();
-      ctx.strokeStyle = "rgba(234, 179, 8, 0.65)";
-      ctx.lineWidth = 1.6;
-      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = "rgba(234, 179, 8, 0.60)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([]);
       ctx.beginPath();
       for (let i = 0; i < n; i++) {
         const x = getX(i);
