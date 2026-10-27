@@ -3175,15 +3175,33 @@ let smartMoneyDataGlobal = null;
 let smHistoryGeometry = null;
 let smHistoryHoverIdx = null;
 
-async function loadSmartMoneyData(requestedDate = "") {
-  if (els.smRefreshBtn) {
-    els.smRefreshBtn.disabled = true;
-    els.smRefreshBtn.textContent = "Fetching...";
+async function loadSmartMoneyData(requestedDate = "", forceRefresh = false) {
+  const smBtn = els.smRefreshBtn;
+  const poiRefreshBtn = document.getElementById("poiRefreshBtn");
+  const poiLastUpd = document.getElementById("poiLastUpdated");
+
+  if (smBtn) {
+    smBtn.disabled = true;
+    smBtn.textContent = "Fetching...";
   }
+  if (poiRefreshBtn) {
+    poiRefreshBtn.disabled = true;
+    poiRefreshBtn.textContent = "Loading...";
+  }
+  if (poiLastUpd) {
+    poiLastUpd.textContent = "Fetching...";
+    poiLastUpd.style.background = "rgba(56,189,248,0.12)";
+    poiLastUpd.style.color = "#38bdf8";
+  }
+
   try {
     const payload = {};
-    if (requestedDate) {
-      payload.date = requestedDate;
+    const dateToUse = requestedDate || (els.smSessionSelect && els.smSessionSelect.value) || (els.smDateInput && els.smDateInput.value) || "";
+    if (dateToUse) {
+      payload.date = dateToUse;
+    }
+    if (forceRefresh) {
+      payload.refresh = true;
     }
     const res = await fetch("/api/smart-money", {
       method: "POST",
@@ -3192,8 +3210,21 @@ async function loadSmartMoneyData(requestedDate = "") {
     });
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.message || "Failed to load Smart Money data");
+    
+    // Synchronize global data references across Cash, F&O Derivatives & OI Matrix
     smartMoneyDataGlobal = data;
+    _poiData = data;
+    _poiLoaded = true;
+
+    // Render entire dashboard (KPIs, Cash table, F&O flows, and Open Interest Matrix)
     renderSmartMoneyDashboard(data);
+
+    if (poiLastUpd) {
+      poiLastUpd.textContent = "Updated: " + (data.date || "--");
+      poiLastUpd.style.background = "rgba(16,185,129,0.12)";
+      poiLastUpd.style.color = "#10b981";
+      poiLastUpd.style.borderColor = "rgba(16,185,129,0.25)";
+    }
   } catch (err) {
     console.error("Smart money load error:", err);
     if (els.smStatusBadge) {
@@ -3201,10 +3232,19 @@ async function loadSmartMoneyData(requestedDate = "") {
       els.smStatusBadge.style.background = "#fee2e2";
       els.smStatusBadge.style.color = "#b91c1c";
     }
+    if (poiLastUpd) {
+      poiLastUpd.textContent = "Error loading";
+      poiLastUpd.style.background = "rgba(239,68,68,0.12)";
+      poiLastUpd.style.color = "#ef4444";
+    }
   } finally {
-    if (els.smRefreshBtn) {
-      els.smRefreshBtn.disabled = false;
-      els.smRefreshBtn.textContent = "🔄 Fetch EOD Data";
+    if (smBtn) {
+      smBtn.disabled = false;
+      smBtn.textContent = "🔄 Fetch EOD Data";
+    }
+    if (poiRefreshBtn) {
+      poiRefreshBtn.disabled = false;
+      poiRefreshBtn.textContent = "🔄 Refresh Now";
     }
   }
 }
@@ -3695,14 +3735,18 @@ function switchP1FiiSubtab(tabKey) {
     }
   });
 
-  // Load POI desk on visit to OI tab
+  // Auto-render POI matrix instantly when visiting OI tab
   if (tabKey === "oi") {
-    if (smartMoneyDataGlobal) {
-      renderPoiDesk(smartMoneyDataGlobal);
+    const currentData = smartMoneyDataGlobal || _poiData;
+    if (currentData) {
+      renderPoiDesk(currentData);
     } else {
-      loadPoiDeskData(false);
+      const activeDate = (els.smSessionSelect && els.smSessionSelect.value) || (els.smDateInput && els.smDateInput.value) || "";
+      loadSmartMoneyData(activeDate, false);
     }
     startPoiAutoRefresh(120000);
+  } else {
+    stopPoiAutoRefresh();
   }
 }
 
@@ -3742,31 +3786,8 @@ function _poiBuildupSignal(netDelta, longDelta, shortDelta) {
 }
 
 async function loadPoiDeskData(forceRefresh = false) {
-  const refreshBtn = document.getElementById("poiRefreshBtn");
-  const lastUpdEl  = document.getElementById("poiLastUpdated");
-  if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = "Loading..."; }
-  if (lastUpdEl)  lastUpdEl.textContent = "Fetching...";
-
-  try {
-    const res = await fetch("/api/smart-money", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh: forceRefresh }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (!data.ok && !data.participants) throw new Error(data.message || "No data");
-    _poiData = data;
-    _poiLoaded = true;
-    renderPoiDesk(data);
-    if (lastUpdEl) lastUpdEl.textContent = "Updated: " + (data.date || "--");
-    _poiAutoUpdateBadge();
-  } catch (err) {
-    console.error("[POI Desk]", err);
-    if (lastUpdEl) lastUpdEl.textContent = "Error loading";
-  } finally {
-    if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = "🔄 Refresh Now"; }
-  }
+  const activeDate = (els.smSessionSelect && els.smSessionSelect.value) || (els.smDateInput && els.smDateInput.value) || "";
+  await loadSmartMoneyData(activeDate, forceRefresh);
 }
 
 function _poiAutoUpdateBadge() {
@@ -3788,6 +3809,8 @@ function stopPoiAutoRefresh() {
 
 function renderPoiDesk(data) {
   if (!data) return;
+  _poiData = data;
+  _poiLoaded = true;
   const parts     = data.participants || [];
   const trapRadar = data.trapRadar || {};
   const fiiM      = data.fiiMetrics || {};
@@ -3799,9 +3822,18 @@ function renderPoiDesk(data) {
   const sessionEl = document.getElementById("poiSessionLabel");
   if (sessionEl) sessionEl.textContent = "Session: " + (data.date || "--");
 
+  const lastUpdEl = document.getElementById("poiLastUpdated");
+  if (lastUpdEl) {
+    lastUpdEl.textContent = "Updated: " + (data.date || "--");
+    lastUpdEl.style.background = "rgba(16,185,129,0.12)";
+    lastUpdEl.style.color = "#10b981";
+    lastUpdEl.style.borderColor = "rgba(16,185,129,0.25)";
+  }
+
   _renderPoiSignalCards(data, fiiM, trapRadar);
-  _renderPoiTrendlyneMatrix(lookup);          // ← NEW transposed table
+  _renderPoiTrendlyneMatrix(lookup);          // ← Transposed Trendlyne-style table
   _renderPoiDivergenceRadar(data, trapRadar, fiiM);
+  _poiAutoUpdateBadge();
 }
 
 function _renderPoiSignalCards(data, fiiM, trapRadar) {
@@ -4175,7 +4207,8 @@ function _renderPoiDivergenceRadar(data, trapRadar, fiiM) {
         btn.style.color = "var(--text-secondary)";
       }
     });
-    if (_poiData) renderPoiDesk(_poiData);
+    const currentData = _poiData || smartMoneyDataGlobal;
+    if (currentData) renderPoiDesk(currentData);
   }
 
   if (btnDayChange) btnDayChange.addEventListener("click", () => setPoiViewMode("dayChange"));
@@ -10403,7 +10436,10 @@ if (els.mtfStockSort) {
 
 // Smart Money EOD Tracker listeners
 if (els.smRefreshBtn) {
-  els.smRefreshBtn.addEventListener("click", () => loadSmartMoneyData());
+  els.smRefreshBtn.addEventListener("click", () => {
+    const activeDate = (els.smSessionSelect && els.smSessionSelect.value) || (els.smDateInput && els.smDateInput.value) || "";
+    loadSmartMoneyData(activeDate, true);
+  });
 }
 if (els.smSessionSelect) {
   els.smSessionSelect.addEventListener("change", () => {
