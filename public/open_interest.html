@@ -930,10 +930,10 @@
           <button type="button" class="oi-sym-pill" data-sym="SENSEX">SENSEX</button>
         </div>
 
-        <!-- Custom F&O Symbol Dropdown -->
+        <!-- Custom F&O Symbol Dropdown & Quick Search -->
         <div class="oi-select-group">
           <label for="oiSymbolSelect" class="oi-select-label">Symbol</label>
-          <select id="oiSymbolSelect" class="oi-select" style="min-width: 140px;" onchange="onSymbolDropdownChange(this.value)">
+          <select id="oiSymbolSelect" class="oi-select" style="min-width: 160px; font-weight:700;" onchange="onSymbolDropdownChange(this.value)">
             <optgroup label="Major Indices">
               <option value="NIFTY" selected>NIFTY 50</option>
               <option value="BANKNIFTY">BANK NIFTY</option>
@@ -941,19 +941,232 @@
               <option value="MIDCPNIFTY">MIDCAP NIFTY</option>
               <option value="SENSEX">BSE SENSEX</option>
             </optgroup>
-            <optgroup label="Top F&amp;O Equities">
-              <option value="RELIANCE">RELIANCE</option>
-              <option value="HDFCBANK">HDFCBANK</option>
-              <option value="ICICIBANK">ICICIBANK</option>
-              <option value="INFY">INFY</option>
-              <option value="TCS">TCS</option>
-              <option value="SBIN">SBIN</option>
+            <optgroup label="All F&amp;O Stocks (215 Stocks A-Z)" id="oiStockOptgroup">
+              <option value="360ONE">360ONE</option>
+              <option value="ABB">ABB</option>
+              <option value="ABCAPITAL">ABCAPITAL</option>
+              <option value="ADANIENSOL">ADANIENSOL</option>
+              <option value="ADANIENT">ADANIENT</option>
+              <option value="ADANIGREEN">ADANIGREEN</option>
+              <option value="ADANIPORTS">ADANIPORTS</option>
+              <option value="ADANIPOWER">ADANIPOWER</option>
+              <option value="ALKEM">ALKEM</option>
+              <option value="AMBER">AMBER</option>
+              <option value="AMBUJACEM">AMBUJACEM</option>
+              <option value="ANANDRATHI">ANANDRATHI</option>
+              <option value="ANGELONE">ANGELONE</option>
+              <option value="APLAPOLLO">APLAPOLLO</option>
+              <option value="APOLLOHOSP">APOLLOHOSP</option>
+              <option value="ASHOKLEY">ASHOKLEY</option>
+              <option value="ASIANPAINT">ASIANPAINT</option>
+              <option value="ASTRAL">ASTRAL</option>
+              <option value="ATHERENERG">ATHERENERG</option>
+              <option value="AUBANK">AUBANK</option>
+              <option value="AUROPHARMA">AUROPHARMA</option>
+              <option value="AXISBANK">AXISBANK</option>
+              <option value="BAJAJ-AUTO">BAJAJ-AUTO</option>
+              <option value="BAJAJFINSV">BAJAJFINSV</option>
+              <option value="BAJAJHLDNG">BAJAJHLDNG</option>
+              <option value="BAJFINANCE">BAJFINANCE</option>
+              <option value="BANDHANBNK">BANDHANBNK</option>
+              <option value="BANKBARODA">BANKBARODA</option>
+              <option value="BANKINDIA">BANKINDIA</option>
+              <option value="BDL">BDL</option>
+              <option value="BEL">BEL</option>
+              <option value="BHARATFORG">BHARATFORG</option>
               <option value="BHARTIARTL">BHARTIARTL</option>
+              <option value="BHEL">BHEL</option>
+              <option value="BIOCON">BIOCON</option>
+              <option value="BLUESTARCO">BLUESTARCO</option>
+              <option value="BOSCHLTD">BOSCHLTD</option>
+              <option value="BPCL">BPCL</option>
+              <option value="BRITANNIA">BRITANNIA</option>
+              <option value="BSE">BSE</option>
+              <option value="CAMS">CAMS</option>
+              <option value="CANBK">CANBK</option>
+              <option value="CDSL">CDSL</option>
+              <option value="CGPOWER">CGPOWER</option>
+              <option value="CHOLAFIN">CHOLAFIN</option>
+              <option value="CIPLA">CIPLA</option>
+              <option value="COALINDIA">COALINDIA</option>
+              <option value="COCHINSHIP">COCHINSHIP</option>
+              <option value="COFORGE">COFORGE</option>
+              <option value="COLPAL">COLPAL</option>
+              <option value="CONCOR">CONCOR</option>
+              <option value="CROMPTON">CROMPTON</option>
+              <option value="CUMMINSIND">CUMMINSIND</option>
+              <option value="DABUR">DABUR</option>
+              <option value="DELHIVERY">DELHIVERY</option>
+              <option value="DIVISLAB">DIVISLAB</option>
+              <option value="DIXON">DIXON</option>
+              <option value="DLF">DLF</option>
+              <option value="DMART">DMART</option>
+              <option value="DRREDDY">DRREDDY</option>
+              <option value="EICHERMOT">EICHERMOT</option>
+              <option value="ENRIN">ENRIN</option>
+              <option value="ETERNAL">ETERNAL</option>
+              <option value="FEDERALBNK">FEDERALBNK</option>
+              <option value="FORCEMOT">FORCEMOT</option>
+              <option value="FORTIS">FORTIS</option>
+              <option value="GAIL">GAIL</option>
+              <option value="GLENMARK">GLENMARK</option>
+              <option value="GMRAIRPORT">GMRAIRPORT</option>
+              <option value="GODFRYPHLP">GODFRYPHLP</option>
+              <option value="GODREJCP">GODREJCP</option>
+              <option value="GODREJPROP">GODREJPROP</option>
+              <option value="GRASIM">GRASIM</option>
+              <option value="GVT&D">GVT&D</option>
+              <option value="HAL">HAL</option>
+              <option value="HAVELLS">HAVELLS</option>
+              <option value="HCLTECH">HCLTECH</option>
+              <option value="HDFCAMC">HDFCAMC</option>
+              <option value="HDFCBANK">HDFCBANK</option>
+              <option value="HDFCLIFE">HDFCLIFE</option>
+              <option value="HEROMOTOCO">HEROMOTOCO</option>
+              <option value="HINDALCO">HINDALCO</option>
+              <option value="HINDPETRO">HINDPETRO</option>
+              <option value="HINDUNILVR">HINDUNILVR</option>
+              <option value="HINDZINC">HINDZINC</option>
+              <option value="HYUNDAI">HYUNDAI</option>
+              <option value="ICICIBANK">ICICIBANK</option>
+              <option value="ICICIGI">ICICIGI</option>
+              <option value="ICICILIFE">ICICILIFE</option>
+              <option value="IDEA">IDEA</option>
+              <option value="IDFCFIRSTB">IDFCFIRSTB</option>
+              <option value="IEX">IEX</option>
+              <option value="INDHOTEL">INDHOTEL</option>
+              <option value="INDIANB">INDIANB</option>
+              <option value="INDIGO">INDIGO</option>
+              <option value="INDUSINDBK">INDUSINDBK</option>
+              <option value="INDUSTOWER">INDUSTOWER</option>
+              <option value="INFY">INFY</option>
+              <option value="INOXWIND">INOXWIND</option>
+              <option value="IOC">IOC</option>
+              <option value="IREDA">IREDA</option>
+              <option value="IRFC">IRFC</option>
               <option value="ITC">ITC</option>
+              <option value="JINDALSTEL">JINDALSTEL</option>
+              <option value="JIOFIN">JIOFIN</option>
+              <option value="JSWENERGY">JSWENERGY</option>
+              <option value="JSWSTEEL">JSWSTEEL</option>
+              <option value="JUBLFOOD">JUBLFOOD</option>
+              <option value="KALYANKJIL">KALYANKJIL</option>
+              <option value="KAYNES">KAYNES</option>
+              <option value="KEI">KEI</option>
+              <option value="KFINTECH">KFINTECH</option>
+              <option value="KOTAKBANK">KOTAKBANK</option>
+              <option value="KPITTECH">KPITTECH</option>
+              <option value="LAURUSLABS">LAURUSLABS</option>
+              <option value="LICHSGFIN">LICHSGFIN</option>
+              <option value="LICI">LICI</option>
+              <option value="LODHA">LODHA</option>
               <option value="LT">LT</option>
+              <option value="LTF">LTF</option>
+              <option value="LTM">LTM</option>
+              <option value="LUPIN">LUPIN</option>
+              <option value="M&M">M&M</option>
+              <option value="MAHABANK">MAHABANK</option>
+              <option value="MANAPPURAM">MANAPPURAM</option>
+              <option value="MANKIND">MANKIND</option>
+              <option value="MARICO">MARICO</option>
+              <option value="MARUTI">MARUTI</option>
+              <option value="MAXHEALTH">MAXHEALTH</option>
+              <option value="MAZDOCK">MAZDOCK</option>
+              <option value="MCX">MCX</option>
+              <option value="MFSL">MFSL</option>
+              <option value="MOTHERSON">MOTHERSON</option>
+              <option value="MOTILALOFS">MOTILALOFS</option>
+              <option value="MPHASIS">MPHASIS</option>
+              <option value="MUTHOOTFIN">MUTHOOTFIN</option>
+              <option value="NAM-INDIA">NAM-INDIA</option>
+              <option value="NATIONALUM">NATIONALUM</option>
+              <option value="NAUKRI">NAUKRI</option>
+              <option value="NBCC">NBCC</option>
+              <option value="NESTLEIND">NESTLEIND</option>
+              <option value="NHPC">NHPC</option>
+              <option value="NIFTYFPI">NIFTYFPI</option>
+              <option value="NMDC">NMDC</option>
+              <option value="NTPC">NTPC</option>
+              <option value="NYKAA">NYKAA</option>
+              <option value="OBEROIRLTY">OBEROIRLTY</option>
+              <option value="OFSS">OFSS</option>
+              <option value="OIL">OIL</option>
+              <option value="ONGC">ONGC</option>
+              <option value="PAGEIND">PAGEIND</option>
+              <option value="PATANJALI">PATANJALI</option>
+              <option value="PAYTM">PAYTM</option>
+              <option value="PERSISTENT">PERSISTENT</option>
+              <option value="PETRONET">PETRONET</option>
+              <option value="PFC">PFC</option>
+              <option value="PGEL">PGEL</option>
+              <option value="PHOENIXLTD">PHOENIXLTD</option>
+              <option value="PIDILITIND">PIDILITIND</option>
+              <option value="PIIND">PIIND</option>
+              <option value="PNB">PNB</option>
+              <option value="PNBHOUSING">PNBHOUSING</option>
+              <option value="POLICYBZR">POLICYBZR</option>
+              <option value="POLYCAB">POLYCAB</option>
+              <option value="POWERGRID">POWERGRID</option>
+              <option value="POWERINDIA">POWERINDIA</option>
+              <option value="PREMIERENE">PREMIERENE</option>
+              <option value="PRESTIGE">PRESTIGE</option>
+              <option value="RADICO">RADICO</option>
+              <option value="RBLBANK">RBLBANK</option>
+              <option value="RECLTD">RECLTD</option>
+              <option value="RELIANCE">RELIANCE</option>
+              <option value="RVNL">RVNL</option>
+              <option value="SAGILITY">SAGILITY</option>
+              <option value="SAIL">SAIL</option>
+              <option value="SBICARD">SBICARD</option>
+              <option value="SBILIFE">SBILIFE</option>
+              <option value="SBIN">SBIN</option>
+              <option value="SHREECEM">SHREECEM</option>
+              <option value="SHRIRAMFIN">SHRIRAMFIN</option>
+              <option value="SIEMENS">SIEMENS</option>
+              <option value="SOLARINDS">SOLARINDS</option>
+              <option value="SONACOMS">SONACOMS</option>
+              <option value="SRF">SRF</option>
+              <option value="SUNPHARMA">SUNPHARMA</option>
+              <option value="SUPREMEIND">SUPREMEIND</option>
+              <option value="SUZLON">SUZLON</option>
+              <option value="SWIGGY">SWIGGY</option>
+              <option value="TATACONSUM">TATACONSUM</option>
+              <option value="TATAELXSI">TATAELXSI</option>
               <option value="TATAMOTORS">TATAMOTORS</option>
+              <option value="TATAPOWER">TATAPOWER</option>
+              <option value="TATASTEEL">TATASTEEL</option>
+              <option value="TCS">TCS</option>
+              <option value="TECHM">TECHM</option>
+              <option value="TIINDIA">TIINDIA</option>
+              <option value="TITAN">TITAN</option>
+              <option value="TMPV">TMPV</option>
+              <option value="TORNTPHARM">TORNTPHARM</option>
+              <option value="TRENT">TRENT</option>
+              <option value="TVSMOTOR">TVSMOTOR</option>
+              <option value="UJJIVANSFB">UJJIVANSFB</option>
+              <option value="ULTRACEMCO">ULTRACEMCO</option>
+              <option value="UNIONBANK">UNIONBANK</option>
+              <option value="UNITDSPR">UNITDSPR</option>
+              <option value="UNOMINDA">UNOMINDA</option>
+              <option value="UPL">UPL</option>
+              <option value="VBL">VBL</option>
+              <option value="VEDL">VEDL</option>
+              <option value="VMM">VMM</option>
+              <option value="VOLTAS">VOLTAS</option>
+              <option value="WAAREEENER">WAAREEENER</option>
+              <option value="WIPRO">WIPRO</option>
+              <option value="YESBANK">YESBANK</option>
+              <option value="ZYDUSLIFE">ZYDUSLIFE</option>
             </optgroup>
           </select>
+        </div>
+
+        <div class="oi-select-group" style="position: relative;">
+          <label for="oiSymbolSearch" class="oi-select-label">Search</label>
+          <div style="position: relative; display: flex; align-items: center;">
+            <input type="text" id="oiSymbolSearch" class="oi-select" style="min-width: 130px; font-size: 11.5px; padding-left: 24px;" placeholder="Filter F&amp;O..." />
+            <span style="position: absolute; left: 7px; opacity: 0.5; font-size: 11px; pointer-events: none;">🔍</span>
+          </div>
         </div>
 
         <!-- Expiry Dropdown -->
@@ -1850,11 +2063,23 @@
 
     // Switch Symbol
     function onSymbolDropdownChange(sym) {
-      currentSymbol = sym;
+      if (!sym) return;
+      currentSymbol = sym.toUpperCase();
       const pills = document.querySelectorAll("#oiSymPills .oi-sym-pill");
       pills.forEach(p => {
         p.classList.toggle("active", p.getAttribute("data-sym") === currentSymbol);
       });
+      const symSel = document.getElementById("oiSymbolSelect");
+      if (symSel && symSel.value !== currentSymbol) {
+        symSel.value = currentSymbol;
+      }
+      // Synchronize URL and title
+      const targetUrl = `/open-interest/${currentSymbol.toLowerCase()}`;
+      if (window.location.pathname !== targetUrl && history.pushState) {
+        history.pushState(null, "", targetUrl);
+      }
+      document.title = `${currentSymbol} Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk`;
+      currentExpiry = "";
       fetchOiData(true);
     }
 
@@ -1921,18 +2146,63 @@
 
     // Initialize
     document.addEventListener("DOMContentLoaded", () => {
+      // 0. Parse Symbol from URL if specified (e.g. /open-interest/tatasteel or /open-interest/reliance)
+      const pathParts = window.location.pathname.split("/").filter(Boolean);
+      if (pathParts.length >= 2 && pathParts[0] === "open-interest") {
+        const rawSym = decodeURIComponent(pathParts[1]).toUpperCase();
+        if (rawSym && rawSym !== "OPEN-INTEREST" && rawSym !== "OPEN-INTEREST.HTML") {
+          currentSymbol = rawSym;
+        }
+      }
+
+      // Sync symbol dropdown with initial currentSymbol
+      const symSel = document.getElementById("oiSymbolSelect");
+      if (symSel) {
+        symSel.value = currentSymbol;
+      }
+
       // 1. Symbol quick pills
       const pills = document.querySelectorAll("#oiSymPills .oi-sym-pill");
       pills.forEach(p => {
+        p.classList.toggle("active", p.getAttribute("data-sym") === currentSymbol);
         p.addEventListener("click", () => {
-          pills.forEach(x => x.classList.remove("active"));
-          p.classList.add("active");
-          currentSymbol = p.getAttribute("data-sym") || "NIFTY";
-          const symSel = document.getElementById("oiSymbolSelect");
-          if (symSel) symSel.value = currentSymbol;
-          fetchOiData(true);
+          onSymbolDropdownChange(p.getAttribute("data-sym") || "NIFTY");
         });
       });
+
+      // Quick Symbol Search Filter
+      const searchInp = document.getElementById("oiSymbolSearch");
+      if (searchInp && symSel) {
+        searchInp.addEventListener("input", () => {
+          const q = searchInp.value.trim().toUpperCase();
+          const stockGroup = document.getElementById("oiStockOptgroup");
+          if (!stockGroup) return;
+          const options = stockGroup.querySelectorAll("option");
+          options.forEach(opt => {
+            const val = opt.value.toUpperCase();
+            const text = opt.textContent.toUpperCase();
+            const match = !q || val.includes(q) || text.includes(q);
+            opt.style.display = match ? "" : "none";
+          });
+        });
+
+        searchInp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const q = searchInp.value.trim().toUpperCase();
+            if (!q) return;
+            const stockGroup = document.getElementById("oiStockOptgroup");
+            if (!stockGroup) return;
+            const options = Array.from(stockGroup.querySelectorAll("option"));
+            const match = options.find(opt => opt.value.toUpperCase() === q || opt.value.toUpperCase().startsWith(q) || opt.textContent.toUpperCase().includes(q));
+            if (match) {
+              onSymbolDropdownChange(match.value);
+              searchInp.value = "";
+              options.forEach(opt => opt.style.display = "");
+            }
+          }
+        });
+      }
 
       // 2. Initial fetch & Start auto-refresh
       fetchOiData(true);

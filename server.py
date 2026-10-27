@@ -10858,7 +10858,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             return self.serve_html_with_seo("/calendar_studio.html", clean_path)
         elif clean_path in ROLLOVER_ROUTES:
             return self.serve_html_with_seo("/futures_rollover.html", clean_path)
-        elif clean_path in OI_ROUTES:
+        elif clean_path in OI_ROUTES or clean_path.startswith("/open-interest/"):
             return self.serve_html_with_seo("/open_interest.html", clean_path)
         elif clean_path in CHART_ROUTES:
             return self.serve_html_with_seo("/chart.html", clean_path)
