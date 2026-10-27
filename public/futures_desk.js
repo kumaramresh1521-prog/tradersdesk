@@ -1355,8 +1355,8 @@
           v: Number(s.v || 0),
           oi: Number(s.oi || 0),
           iv: s.iv !== null && s.iv !== undefined ? Number(s.iv) : 15.0,
-          dv: s.dv !== null && s.dv !== undefined ? Number(s.dv) : 50.0,
-          deliv_qty: s.deliv_qty !== null && s.deliv_qty !== undefined ? Number(s.deliv_qty) : 0,
+          dv: s.dv !== null && s.dv !== undefined ? Number(s.dv) : null,
+          deliv_qty: s.deliv_qty !== null && s.deliv_qty !== undefined ? Number(s.deliv_qty) : null,
           pcr: s.pcr !== null && s.pcr !== undefined ? Number(s.pcr) : 1.0,
           m20: s.m20 !== null && s.m20 !== undefined ? Number(s.m20) : null,
           m50: s.m50 !== null && s.m50 !== undefined ? Number(s.m50) : null,
@@ -1465,7 +1465,7 @@
     const isStock = oiState.symbolMeta.k === 'Stock';
     const exPanels = [
       oiState.indicators.rsi,
-      oiState.indicators.dv && isStock,
+      oiState.indicators.dv,
       oiState.indicators.iv,
       oiState.indicators.pcr
     ].filter(Boolean).length;
@@ -1484,7 +1484,7 @@
       1.2, // 1: Volume
       1.5, // 2: OI Bars
       oiState.indicators.rsi ? 1.3 : 0, // 3: RSI
-      (oiState.indicators.dv && isStock) ? 1.3 : 0, // 4: Delivery %
+      oiState.indicators.dv ? 1.3 : 0, // 4: Delivery %
       oiState.indicators.iv ? 1.3 : 0, // 5: IV
       oiState.indicators.pcr ? 1.3 : 0 // 6: PCR
     ];
@@ -1777,10 +1777,11 @@
     };
 
     const b = vis[vis.length - 1];
-    const adv = vis.length ? (vis.reduce((t, d) => t + (d.dv || 0), 0) / vis.length) : 50;
+    const validDvs = vis.map(d => d.dv).filter(v => v !== null && v !== undefined && !isNaN(v));
+    const adv = validDvs.length ? (validDvs.reduce((t, v) => t + v, 0) / validDvs.length) : 50;
     const apc = vis.length ? (vis.reduce((t, d) => t + (d.pcr || 1.0), 0) / vis.length) : 1.0;
 
-    if (oiState.indicators.dv && isStock && PN[4]) {
+    if (oiState.indicators.dv && PN[4]) {
       drawSubPanel(4, 'dv', 0, 100, '#6366f1', true, Math.round(adv));
     }
     if (oiState.indicators.iv && PN[5]) {
@@ -1882,8 +1883,9 @@
     const ivr = oiState.analyticsData?.ivRank ?? ((b.iv - imn) / (imx - imn || 1) * 100);
     const ivp = oiState.analyticsData?.ivPercentile ?? (ivs.filter(x => x < b.iv).length / (ivs.length || 1) * 100);
 
-    const adv = vis.reduce((t, d) => t + d.dv, 0) / vis.length;
-    const apc = vis.reduce((t, d) => t + d.pcr, 0) / vis.length;
+    const validDvs = vis.map(d => d.dv).filter(v => v !== null && v !== undefined && !isNaN(v));
+    const adv = validDvs.length ? (validDvs.reduce((t, v) => t + v, 0) / validDvs.length) : 50;
+    const apc = vis.reduce((t, d) => t + (d.pcr || 1.0), 0) / vis.length;
 
     let peak = a.h, maxDd = 0;
     vis.forEach(d => {
@@ -1910,7 +1912,14 @@
         ['IV Percentile', `${fmtNum(ivp, 0)}%`],
         ['IV − HV', `${(b.iv - vol) >= 0 ? '+' : ''}${fmtNum(b.iv - vol, 1)}`],
         ['PCR (OI)', `${fmtNum(b.pcr, 2)} (Avg: ${fmtNum(apc, 2)})`],
-        oiState.symbolMeta.k === 'Stock' ? ['Avg Delivery', `${fmtNum(adv, 1)}% (${fmtNum(b.dv, 1)}% today)`] : ['Max Pain Strike', `₹${fmtNum(oiState.maxPain, 0)}`]
+        ['Avg Delivery', (() => {
+          const lastEod = oiState.allBars.slice().reverse().find(d => d.dv !== null && d.dv !== undefined);
+          const lastEodDv = lastEod ? lastEod.dv : adv;
+          return (b.dv !== null && b.dv !== undefined)
+            ? `${fmtNum(adv, 1)}% (${fmtNum(b.dv, 1)}% today)`
+            : `${fmtNum(adv, 1)}% (${fmtNum(lastEodDv, 1)}% EOD)`;
+        })()],
+        ['Max Pain Strike', `₹${fmtNum(oiState.maxPain, 0)}`]
       ];
 
       statsGrid.innerHTML = statsList.map(([lbl, val]) => `
@@ -2111,9 +2120,9 @@
       if (n >= 1e3) return (n / 1e3).toFixed(1) + ' k';
       return n.toLocaleString('en-IN');
     };
-    const delivStr = isStock
-      ? ` &bull; Deliv: <b>${fmtNum(d.dv, 1)}%</b>${d.deliv_qty ? ' (' + formatShares(d.deliv_qty) + ')' : ''}`
-      : ` &bull; Deliv: <b>${fmtNum(d.dv, 1)}%</b>`;
+    const delivStr = (d.dv === null || d.dv === undefined)
+      ? ' &bull; Deliv: <span style="color:#94a3b8; font-style:italic;">Pending EOD</span>'
+      : ` &bull; Deliv: <b>${fmtNum(d.dv, 1)}%</b>${d.deliv_qty ? ' (' + formatShares(d.deliv_qty) + ')' : ''}`;
 
     tip.innerHTML = `
       <div style="font-weight:700; color:#38bdf8; margin-bottom:3px;">${formatOiDate(d.dt)}</div>

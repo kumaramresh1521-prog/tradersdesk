@@ -118,15 +118,6 @@ def _get_delivery_for_symbol_date(symbol: str, date_str: str) -> Optional[dict]:
     deliv_master = _load_delivery_data()
     sym = symbol.upper().strip()
 
-    # Index handling
-    if sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX", "NIFTYNXT50"):
-        clean_d = date_str.replace("-", "")
-        comp_dv = _DELIVERY_INDEX_COMPOSITE.get(clean_d) or _DELIVERY_INDEX_COMPOSITE.get(date_str)
-        if comp_dv is None and _DELIVERY_INDEX_COMPOSITE:
-            sorted_cd = sorted(_DELIVERY_INDEX_COMPOSITE.keys())
-            comp_dv = _DELIVERY_INDEX_COMPOSITE[sorted_cd[-1]]
-        return {"dv": comp_dv or 52.4, "deliv_qty": 0, "volume": 0, "turnover_cr": 0.0}
-
     s_data = deliv_master.get(sym)
     if not s_data and sym in SYMBOL_ALIASES:
         s_data = deliv_master.get(SYMBOL_ALIASES[sym])
@@ -134,32 +125,28 @@ def _get_delivery_for_symbol_date(symbol: str, date_str: str) -> Optional[dict]:
         rev = next((k for k, v in SYMBOL_ALIASES.items() if v == sym), None)
         if rev:
             s_data = deliv_master.get(rev)
+    if not s_data:
+        clean_sym = sym.replace(" 50", "").replace("-50", "").replace("BANK NIFTY", "BANKNIFTY").replace(" ", "")
+        s_data = deliv_master.get(clean_sym)
 
     if not s_data:
         return None
 
-    if date_str in s_data:
-        return s_data[date_str]
-
     clean_d = date_str.replace("-", "")
     if clean_d in s_data:
         return s_data[clean_d]
-
-    sorted_dates = sorted(s_data.keys())
-    if sorted_dates:
-        if clean_d.isdigit() and int(clean_d) >= int(sorted_dates[-1]):
-            return s_data[sorted_dates[-1]]
-        closest = min(sorted_dates, key=lambda d: abs(int(d) - int(clean_d if clean_d.isdigit() else sorted_dates[-1])))
-        return s_data[closest]
+    if date_str in s_data:
+        return s_data[date_str]
 
     return None
 
 def _get_symbol_average_delivery(symbol: str) -> float:
     deliv_master = _load_delivery_data()
     sym = symbol.upper().strip()
-    if sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX", "NIFTYNXT50"):
-        return 52.4
     s_data = deliv_master.get(sym) or deliv_master.get(SYMBOL_ALIASES.get(sym, ""))
+    if not s_data:
+        clean_sym = sym.replace(" 50", "").replace("-50", "").replace("BANK NIFTY", "BANKNIFTY").replace(" ", "")
+        s_data = deliv_master.get(clean_sym)
     if s_data:
         vals = [v.get("dv") for v in s_data.values() if v.get("dv") is not None]
         if vals:
@@ -170,6 +157,9 @@ def _get_latest_symbol_delivery(symbol: str) -> Optional[dict]:
     deliv_master = _load_delivery_data()
     sym = symbol.upper().strip()
     s_data = deliv_master.get(sym) or deliv_master.get(SYMBOL_ALIASES.get(sym, ""))
+    if not s_data:
+        clean_sym = sym.replace(" 50", "").replace("-50", "").replace("BANK NIFTY", "BANKNIFTY").replace(" ", "")
+        s_data = deliv_master.get(clean_sym)
     if s_data:
         sorted_dates = sorted(s_data.keys())
         if sorted_dates:
@@ -578,14 +568,14 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
             else:
                 iv = 14.5 if is_idx else 32.0
 
-        # Exact official NSE Security Delivery percentage & volume
+        # Exact official NSE Security Delivery percentage & volume (matches Delivery Desk 1:1)
         deliv_rec = _get_delivery_for_symbol_date(sym, dt_str)
-        if deliv_rec and "dv" in deliv_rec:
-            dv = float(deliv_rec["dv"])
+        if deliv_rec and "dv" in deliv_rec and deliv_rec["dv"] is not None:
+            dv = round(float(deliv_rec["dv"]), 1)
             deliv_qty = int(deliv_rec.get("deliv_qty", 0))
         else:
-            dv = _get_symbol_average_delivery(sym)
-            deliv_qty = 0
+            dv = None
+            deliv_qty = None
 
         cleaned_sessions.append({
             "date": dt_str,
@@ -597,7 +587,7 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
             "v": v,
             "oi": oi,
             "iv": round(iv, 2),
-            "dv": round(dv, 1),
+            "dv": dv,
             "deliv_qty": deliv_qty,
             "pcr": round(pcr, 2),
         })
@@ -624,9 +614,14 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
                 live_v = int(float(m_rec.get("volumeContracts") or m_rec.get("volume") or 0))
                 live_oi = int(float(m_rec.get("openInterest") or m_rec.get("oiContracts") or 0))
                 live_iv = float(m_rec.get("iv") or (14.5 if is_idx else 32.0))
-                latest_deliv = _get_latest_symbol_delivery(sym)
-                live_dv = round(float(latest_deliv["dv"]), 1) if latest_deliv else round(_get_symbol_average_delivery(sym), 1)
-                live_deliv_qty = int(latest_deliv.get("deliv_qty", 0)) if latest_deliv else 0
+                # Today's delivery is pending NSE EOD bhavcopy publication (usually after 18:00 IST)
+                today_deliv = _get_delivery_for_symbol_date(sym, today_str)
+                if today_deliv and today_deliv.get("dv") is not None:
+                    live_dv = round(float(today_deliv["dv"]), 1)
+                    live_deliv_qty = int(today_deliv.get("deliv_qty", 0))
+                else:
+                    live_dv = None
+                    live_deliv_qty = None
                 cleaned_sessions.append({
                     "date": today_str,
                     "dt": now_dt.strftime("%d-%b-%Y"),
@@ -933,7 +928,7 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
             "ivRank": iv_rank,
             "ivPercentile": iv_pct,
             "ivHvSpread": round(atm_iv - hv, 1),
-            "avgDelivery": round(sum(d.get("dv", 50.0) for d in cleaned_sessions) / len(cleaned_sessions), 1),
+            "avgDelivery": round(sum(d["dv"] for d in cleaned_sessions if d.get("dv") is not None) / (len([d for d in cleaned_sessions if d.get("dv") is not None]) or 1), 1),
             "avgPcr": round(sum(d.get("pcr", 1.0) for d in cleaned_sessions) / len(cleaned_sessions), 2),
         },
         "bias": {
@@ -962,12 +957,15 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
                 "IV beech mein: directional spreads theek rahenge."
             ),
             "deliveryCommentary": (
-                f"Cash Delivery high ({last_candle.get('dv', 50)}% vs {round(sum(d.get('dv', 50.0) for d in cleaned_sessions) / len(cleaned_sessions), 1)}% avg): Strong institutional accumulation & Demat absorption."
-                if not is_idx and last_candle.get("dv", 50) > (sum(d.get("dv", 50.0) for d in cleaned_sessions) / len(cleaned_sessions) + 3) else
-                f"Cash Delivery low ({last_candle.get('dv', 50)}% vs {round(sum(d.get('dv', 50.0) for d in cleaned_sessions) / len(cleaned_sessions), 1)}% avg): Predominantly intraday speculative churn."
-                if not is_idx and last_candle.get("dv", 50) < (sum(d.get("dv", 50.0) for d in cleaned_sessions) / len(cleaned_sessions) - 3) else
-                f"Cash Delivery steady at {last_candle.get('dv', 50)}% (Avg: {round(sum(d.get('dv', 50.0) for d in cleaned_sessions) / len(cleaned_sessions), 1)}%)."
-                if not is_idx else f"Index constituent cash flow absorption steady at {last_candle.get('dv', 52.4)}%."
+                (lambda: (
+                    (lambda d_vals, last_eod: (
+                        f"Cash Delivery high ({last_eod.get('dv')}% vs {round(sum(d_vals)/len(d_vals), 1)}% avg): Strong institutional accumulation & Demat absorption."
+                        if last_eod.get("dv") and last_eod["dv"] > (sum(d_vals)/len(d_vals) + 3) else
+                        f"Cash Delivery low ({last_eod.get('dv')}% vs {round(sum(d_vals)/len(d_vals), 1)}% avg): Predominantly intraday speculative churn."
+                        if last_eod.get("dv") and last_eod["dv"] < (sum(d_vals)/len(d_vals) - 3) else
+                        f"Cash Delivery steady at {last_eod.get('dv', round(sum(d_vals)/len(d_vals), 1))}% (Benchmark: {round(sum(d_vals)/len(d_vals), 1)}% Avg)."
+                    ))([d["dv"] for d in cleaned_sessions if d.get("dv") is not None] or [50.0], next((d for d in reversed(cleaned_sessions) if d.get("dv") is not None), {}))
+                ))()
             )
         },
         "watchlist": get_all_futures_symbols()[:20],

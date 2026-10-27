@@ -6705,10 +6705,21 @@ NIFTY_50_SYMBOLS = {
     "TMPV", "TATASTEEL", "TECHM", "TITAN", "TRENT", "ULTRACEMCO", "WIPRO"
 }
 
+_PARSED_DELIVERY_BHAV_CACHE = {}
+
 def parse_delivery_bhav_file(file_path: pathlib.Path) -> dict[str, dict]:
-    stocks = {}
+    global _PARSED_DELIVERY_BHAV_CACHE
     if not file_path.exists():
-        return stocks
+        return {}
+    try:
+        mtime = file_path.stat().st_mtime
+        cache_key = (str(file_path), mtime)
+        if cache_key in _PARSED_DELIVERY_BHAV_CACHE:
+            return _PARSED_DELIVERY_BHAV_CACHE[cache_key]
+    except Exception:
+        cache_key = None
+
+    stocks = {}
     try:
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
             reader = csv.reader(f)
@@ -6762,6 +6773,8 @@ def parse_delivery_bhav_file(file_path: pathlib.Path) -> dict[str, dict]:
                     continue
     except Exception:
         pass
+    if cache_key:
+        _PARSED_DELIVERY_BHAV_CACHE[cache_key] = stocks
     return stocks
 
 def compute_major_indices_delivery(stocks: dict[str, dict], baseline_sessions: list[dict[str, dict]]) -> list[dict]:
@@ -6914,6 +6927,8 @@ INDEX_DELIVERY_ALIAS_MAP = {
     "NIFTY ENERGY": ("niftyenergy", "NIFTY ENERGY"),
     "NIFTYENERGY": ("niftyenergy", "NIFTY ENERGY"),
     "SENSEX": ("sensex", "BSE SENSEX"),
+    "BANKEX": ("bankex", "BSE BANKEX"),
+    "BSE BANKEX": ("bankex", "BSE BANKEX"),
     "BSE SENSEX": ("sensex", "BSE SENSEX"),
 }
 
