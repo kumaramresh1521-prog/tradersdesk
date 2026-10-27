@@ -23686,11 +23686,11 @@ html[data-theme="light"] .pvo-toggle-label {
   border-radius: 2px;
 }
 
-.price-ind { background: #94a3b8; }
-html[data-theme="light"] .price-ind { background: #1e293b; }
+.price-ind { background: #38bdf8; }
+html[data-theme="light"] .price-ind { background: #0284c7; }
 
-.oi-ind { background: #38bdf8; }
-html[data-theme="light"] .oi-ind { background: #2563eb; }
+.oi-ind { background: #a855f7; }
+html[data-theme="light"] .oi-ind { background: #7c3aed; }
 
 .vwap-ind { background: #fbbf24; }
 html[data-theme="light"] .vwap-ind { background: #d97706; }

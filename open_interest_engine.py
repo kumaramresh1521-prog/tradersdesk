@@ -192,8 +192,33 @@ def _compute_open_interest_data(
             if exp_val:
                 expiries.append({"date": str(exp_val), "label": str(exp_lbl)})
 
+    # Load master FO bhavcopy options cache
+    fo_path = DATA_DIR / "fo_bhav_eod_master.json"
+    fo_data = {}
+    if fo_path.exists():
+        try:
+            with open(fo_path, "r", encoding="utf-8") as f:
+                fo_data = json.load(f)
+        except Exception:
+            fo_data = {}
+
     if not expiries:
-        # Check latest_fo_bhav_rollover.json
+        all_exps = fo_data.get("all_expiries_by_symbol", {}).get(sym, [])
+        if not all_exps and sym in fo_data.get("latest_options_by_expiry", {}):
+            all_exps = sorted(list(fo_data["latest_options_by_expiry"][sym].keys()))
+        if all_exps:
+            today_iso = now_ist().strftime("%Y-%m-%d")
+            upcoming = [e for e in all_exps if e >= today_iso] or all_exps
+            for exp_d in upcoming[:8]:
+                try:
+                    dt_obj = datetime.strptime(exp_d, "%Y-%m-%d")
+                    tag = "Weekly" if dt_obj.weekday() in (1, 3) else "Monthly"
+                    lbl = dt_obj.strftime("%d-%b-%Y") + f" ({tag})"
+                except Exception:
+                    lbl = exp_d
+                expiries.append({"date": exp_d, "label": lbl})
+
+    if not expiries:
         rollover_path = DATA_DIR / "latest_fo_bhav_rollover.json"
         if rollover_path.exists():
             try:
@@ -334,16 +359,18 @@ def _compute_open_interest_data(
             tot_call_change += c_chg
             tot_put_change += p_chg
     else:
-        # Load from fo_bhav_eod_master.json
-        fo_path = DATA_DIR / "fo_bhav_eod_master.json"
+        # Load from fo_bhav_eod_master.json with exact expiry partition
         raw_options = {}
-        if fo_path.exists():
-            try:
-                with open(fo_path, "r", encoding="utf-8") as f:
-                    d = json.load(f)
-                raw_options = d.get("latest_options", {}).get(sym, {})
-            except Exception:
-                raw_options = {}
+        if fo_data:
+            by_exp = fo_data.get("latest_options_by_expiry", {}).get(sym, {})
+            if sel_expiry and sel_expiry in by_exp:
+                raw_options = by_exp[sel_expiry]
+            elif by_exp:
+                today_iso = now_ist().strftime("%Y-%m-%d")
+                sorted_valid = sorted([e for e in by_exp.keys() if e >= today_iso]) or sorted(by_exp.keys())
+                raw_options = by_exp[sorted_valid[0]]
+            else:
+                raw_options = fo_data.get("latest_options", {}).get(sym, {})
 
         if raw_options:
             for k_str, val in raw_options.items():

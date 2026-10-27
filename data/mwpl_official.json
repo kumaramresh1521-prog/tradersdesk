@@ -1,5 +1,5 @@
 {
-  "ts": 1793038395.9884005,
+  "ts": 1793068762.0173852,
   "asOfDate": "26-Oct-2026",
   "records": {
     "AMBUJACEM": {
@@ -2987,7 +2987,7 @@
   },
   "bannedSymbols": [
     "SAIL",
-    "AMBUJACEM",
-    "KAYNES"
+    "KAYNES",
+    "AMBUJACEM"
   ]
 }

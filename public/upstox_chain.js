@@ -28,6 +28,55 @@
     isLoading: false,
   };
 
+  let _upstoxInitialized = false;
+
+  function switchOptionChainView(mode) {
+    state.viewMode = (mode === 'greeks') ? 'greeks' : 'default';
+    const btnDefault = document.getElementById('btnChainViewDefault');
+    const btnGreeks = document.getElementById('btnChainViewGreeks');
+    const mc = document.getElementById('modernOptMetricsCount');
+
+    if (state.viewMode === 'greeks') {
+      if (btnGreeks) {
+        btnGreeks.classList.add('active');
+        btnGreeks.style.background = '#2563eb';
+        btnGreeks.style.color = '#ffffff';
+        btnGreeks.style.fontWeight = '700';
+      }
+      if (btnDefault) {
+        btnDefault.classList.remove('active');
+        btnDefault.style.background = 'transparent';
+        btnDefault.style.color = '#64748b';
+        btnDefault.style.fontWeight = '600';
+      }
+      if (mc) mc.textContent = 'GREEKS MATRIX';
+    } else {
+      if (btnDefault) {
+        btnDefault.classList.add('active');
+        btnDefault.style.background = '#2563eb';
+        btnDefault.style.color = '#ffffff';
+        btnDefault.style.fontWeight = '700';
+      }
+      if (btnGreeks) {
+        btnGreeks.classList.remove('active');
+        btnGreeks.style.background = 'transparent';
+        btnGreeks.style.color = '#64748b';
+        btnGreeks.style.fontWeight = '600';
+      }
+      if (mc) mc.textContent = '13 METRICS';
+    }
+
+    if (!_upstoxInitialized) {
+      ensureUpstoxInit();
+    } else if (state.chainData) {
+      renderTable(state.chainData);
+    } else {
+      fetchChain(false);
+    }
+  }
+  window._switchOptionChainViewImpl = switchOptionChainView;
+  window.switchOptionChainView = switchOptionChainView;
+
   function fmtNum(n, decimals = 2) {
     if (n === null || n === undefined || isNaN(n)) return '--';
     return Number(n).toLocaleString('en-IN', {
@@ -4246,14 +4295,17 @@
     initVisualizerEvents();
   }
 
-  let _upstoxInitialized = false;
-
   function ensureUpstoxInit() {
     if (_upstoxInitialized) return;
     _upstoxInitialized = true;
     initListeners();
     loadSecuritiesMaster();
     fetchChain(false);
+    if (window._desiredChainView) {
+      const pending = window._desiredChainView;
+      window._desiredChainView = null;
+      switchOptionChainView(pending);
+    }
   }
 
   // Public Interface attached to window

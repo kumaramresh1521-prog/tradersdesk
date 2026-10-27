@@ -3417,8 +3417,8 @@
     const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
     const gridColor = isDark ? 'rgba(51, 65, 85, 0.4)' : '#f1f5f9';
     const axisTextColor = isDark ? '#94a3b8' : '#64748b';
-    const priceColor = isDark ? '#f1f5f9' : '#0f172a';
-    const oiColor = isDark ? '#38bdf8' : '#2563eb';
+    const priceColor = isDark ? '#38bdf8' : '#0284c7';
+    const oiColor = isDark ? '#a855f7' : '#7c3aed';
     const vwapColor = isDark ? '#fbbf24' : '#d97706';
 
     const padLeft = isMobile ? 48 : 75;
@@ -3513,14 +3513,14 @@
 
     // 3. Draw OI Gradient Fill & Line
     if (pvoState.toggles.oi && n > 0) {
-      // Area Fill
+      // Area Fill with institutional purple glow
       const grad = ctx.createLinearGradient(0, padTop, 0, padTop + plotH);
       if (isDark) {
-        grad.addColorStop(0, 'rgba(56, 189, 248, 0.22)');
-        grad.addColorStop(1, 'rgba(56, 189, 248, 0.00)');
+        grad.addColorStop(0, 'rgba(168, 85, 247, 0.28)');
+        grad.addColorStop(1, 'rgba(168, 85, 247, 0.01)');
       } else {
-        grad.addColorStop(0, 'rgba(37, 99, 235, 0.16)');
-        grad.addColorStop(1, 'rgba(37, 99, 235, 0.01)');
+        grad.addColorStop(0, 'rgba(124, 58, 237, 0.20)');
+        grad.addColorStop(1, 'rgba(124, 58, 237, 0.02)');
       }
 
       ctx.beginPath();
@@ -3593,9 +3593,13 @@
     if (pvoState.toggles.price && n > 0) {
       ctx.beginPath();
       ctx.strokeStyle = priceColor;
-      ctx.lineWidth = 2.0;
+      ctx.lineWidth = 2.6;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
+      if (isDark) {
+        ctx.shadowColor = 'rgba(56, 189, 248, 0.4)';
+        ctx.shadowBlur = 8;
+      }
       for (let i = 0; i < n; i++) {
         const x = getX(i);
         const y = getYPrice(series[i].price);
@@ -3603,6 +3607,7 @@
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
+      ctx.shadowBlur = 0;
 
       // Left Axis Callout Badge for Last Price
       const lastP = series[n - 1].price;

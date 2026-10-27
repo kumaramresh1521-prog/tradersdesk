@@ -499,6 +499,7 @@ def _generate_intraday_bars(
       - Sum of delta OI across bars equals (current_oi - start_oi)
       - Exact current price, spot, and basis consistency on the latest bar
     """
+    lot_size = _INDICES_META_MAP.get(symbol, {}).get("lot", 1)
     total_session_minutes = 375  # 09:15 to 15:30 IST
     step = max(1, interval_minutes)
     total_possible_bars = total_session_minutes // step
@@ -693,8 +694,11 @@ def _generate_intraday_bars(
             "l": b_l,
             "c": b_c,
             "v": b_vol,
+            "vContracts": b_vol // (max(1, lot_size)),
             "oi": curr_oi,
+            "oiContracts": curr_oi // (max(1, lot_size)),
             "oiChange": delta_oi,
+            "oiChangeContracts": delta_oi // (max(1, lot_size)),
             "oiChangePct": oi_pct,
             "priceChange": dp,
             "priceChangePct": dp_pct,
@@ -767,7 +771,7 @@ def compute_future_intraday_analytics(
     bhav_cls_oi = int(float(bhav.get("OpnIntrst") or 0)) if bhav else 0
     bhav_cls_px = float(bhav.get("ClsPric") or 0) if bhav else 0
     bhav_expiry = bhav.get("XpryDt", "") if bhav else "27-Oct-2026"
-    bhav_lot = int(float(bhav.get("NewBrdLotQty") or idx_meta["lot"])) if bhav else idx_meta["lot"]
+    bhav_lot = int(float(bhav.get("NewBrdLotQty") or lot_size)) if bhav else lot_size
 
     if is_today and fut_q:
         # Real live market feed
@@ -797,7 +801,8 @@ def compute_future_intraday_analytics(
         current_oi = int(float(bhav.get("OpnIntrst") or idx_meta["baseOi"]))
         day_oi_chg = int(float(bhav.get("ChngInOpnIntrst") or idx_meta["baseOiChg"]))
         start_oi = current_oi - day_oi_chg
-        tot_vol = int(float(bhav.get("TtlTradgVol") or idx_meta["baseVol"]))
+        tot_vol_contracts = int(float(bhav.get("TtlTradgVol") or (idx_meta["baseVol"] // bhav_lot)))
+        tot_vol = tot_vol_contracts * bhav_lot
         turnover_cr = round(float(bhav.get("TtlTrfVal") or 0.0) / 1e7, 1) or idx_meta["baseTurnoverCr"]
         lot_size = bhav_lot
         expiry_dt = bhav_expiry
@@ -815,7 +820,7 @@ def compute_future_intraday_analytics(
         start_oi = current_oi - day_oi_chg
         tot_vol = idx_meta["baseVol"]
         turnover_cr = idx_meta["baseTurnoverCr"]
-        lot_size = idx_meta["lot"]
+        lot_size = lot_size
         expiry_dt = "27-Oct-2026"
 
     basis_base = round(ltp - spot_px, 2)
@@ -909,6 +914,8 @@ def compute_future_intraday_analytics(
         "dayOiChangeContracts": day_oi_chg // (lot_size or 1),
         "dayOiChangePct": day_oi_chg_pct,
         "totalVolume": tot_vol,
+        "totalVolumeContracts": tot_vol // (lot_size or 1),
+        "totalVolumeShares": tot_vol,
         "turnoverCr": turnover_cr,
         "lotSize": lot_size,
         "expiry": expiry_dt,

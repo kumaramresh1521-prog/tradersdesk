@@ -69,12 +69,12 @@
     </noscript>
 
     <!-- Core Terminal Stylesheet -->
-    <link rel="stylesheet" href="/styles.css?v=20261018_v8">
+    <link rel="stylesheet" href="/styles.css?v=20261027_v1">
 
     <!-- Non-Blocking Secondary Stylesheet (Page 2 / Tools) -->
-    <link rel="preload" as="style" href="/page2.css?v=20261018_v8">
-    <link rel="stylesheet" href="/page2.css?v=20261018_v8" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="/page2.css?v=20261018_v8"></noscript>
+    <link rel="preload" as="style" href="/page2.css?v=20261027_v1">
+    <link rel="stylesheet" href="/page2.css?v=20261027_v1" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="/page2.css?v=20261027_v1"></noscript>
 
     <!-- Inlined Zero-Latency Anti-Tamper & Error Shield (0 Render Blocking) -->
     <script>
@@ -2155,9 +2155,20 @@
                 </div>
 
                 <!-- View Switcher Toggle: 1st Default View, 2nd Greeks View -->
+                <script>
+                  window.switchOptionChainView = window.switchOptionChainView || function(mode) {
+                    if (window._switchOptionChainViewImpl) {
+                      window._switchOptionChainViewImpl(mode);
+                    } else if (window.upstoxOptionChain && window.upstoxOptionChain.setViewMode) {
+                      window.upstoxOptionChain.setViewMode(mode);
+                    } else {
+                      window._desiredChainView = mode;
+                    }
+                  };
+                </script>
                 <div class="chain-view-toggle-grp" id="chainViewToggleGrp" style="display:inline-flex; align-items:center; background:rgba(148,163,184,0.14); border:1px solid rgba(148,163,184,0.28); border-radius:8px; padding:2px; gap:2px; position:relative; z-index:10;">
-                  <button type="button" class="chain-view-btn active" id="btnChainViewDefault" onclick="if(window.switchOptionChainView){window.switchOptionChainView('default');}" style="background:#2563eb; color:#ffffff; border:none; padding:5px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.15s ease;">Default View</button>
-                  <button type="button" class="chain-view-btn" id="btnChainViewGreeks" onclick="if(window.switchOptionChainView){window.switchOptionChainView('greeks');}" style="background:transparent; color:#64748b; border:none; padding:5px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s ease;">Greeks View</button>
+                  <button type="button" class="chain-view-btn active" id="btnChainViewDefault" onclick="window.switchOptionChainView('default');" style="background:#2563eb; color:#ffffff; border:none; padding:5px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.15s ease;">Default View</button>
+                  <button type="button" class="chain-view-btn" id="btnChainViewGreeks" onclick="window.switchOptionChainView('greeks');" style="background:transparent; color:#64748b; border:none; padding:5px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s ease;">Greeks View</button>
                 </div>
               </div>
 
@@ -6313,10 +6324,10 @@
       </button>
     </nav>
 
-    <script src="/upstox_chain.js?v=20261018_v8" defer></script>
-    <script src="/futures_desk.js?v=20261018_v8" defer></script>
-    <script src="/app.js?v=20261018_v8" defer></script>
-    <script src="/global_search.js?v=20261018_v8" defer></script>
-    <script src="/auth_sync.js?v=20261018_v8" defer></script>
+    <script src="/upstox_chain.js?v=20261027_v1" defer></script>
+    <script src="/futures_desk.js?v=20261027_v1" defer></script>
+    <script src="/app.js?v=20261027_v1" defer></script>
+    <script src="/global_search.js?v=20261027_v1" defer></script>
+    <script src="/auth_sync.js?v=20261027_v1" defer></script>
   </body>
 </html>

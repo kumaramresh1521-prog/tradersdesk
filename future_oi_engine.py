@@ -238,12 +238,16 @@ def _load_bhavcopy_eod_data(force: bool = False):
 
     symbols_data: Dict[str, List[dict]] = {}
     latest_options: Dict[str, Dict[float, dict]] = {}
+    latest_options_by_expiry: Dict[str, Dict[str, dict]] = {}
+    all_expiries_by_symbol: Dict[str, set] = {}
     dates_found = []
 
-    if cached_disk:
+    if cached_disk and "latest_options_by_expiry" in cached_disk:
         symbols_data = cached_disk.get("symbols_data", {})
         dates_found = list(cached_disk.get("dates", []))
         raw_opts = cached_disk.get("latest_options", {})
+        latest_options_by_expiry = cached_disk.get("latest_options_by_expiry", {})
+        all_expiries_by_symbol = {s: set(ex) for s, ex in cached_disk.get("all_expiries_by_symbol", {}).items()}
         for sym_k, strike_map in raw_opts.items():
             try:
                 latest_options[sym_k] = {float(k): v for k, v in strike_map.items()}
@@ -255,12 +259,14 @@ def _load_bhavcopy_eod_data(force: bool = False):
     new_csvs = [p for p in csv_files if p.stem.replace("BhavCopy_NSE_FO_", "") not in dates_found]
 
     # If force, ensure the latest Bhavcopy is re-parsed so options records (OI chg, LTP) are fresh
-    if not force and not new_csvs and symbols_data and dates_found:
+    if not force and not new_csvs and symbols_data and dates_found and latest_options_by_expiry:
         _BHAV_SESSIONS_CACHE = {
             "ts": now,
             "symbols_data": symbols_data,
             "dates": dates_found,
             "latest_options": latest_options,
+            "latest_options_by_expiry": latest_options_by_expiry,
+            "all_expiries_by_symbol": {s: sorted(list(ex)) for s, ex in all_expiries_by_symbol.items()}
         }
         return _BHAV_SESSIONS_CACHE
 
@@ -297,7 +303,9 @@ def _load_bhavcopy_eod_data(force: bool = False):
                             o = float(r.get("OpnPric") or c)
                             h = float(r.get("HghPric") or max(o, c))
                             l = float(r.get("LwPric") or min(o, c))
-                            v = int(float(r.get("TtlTradgVol") or 0))
+                            lot = int(float(r.get("NewBrdLotQty") or 1))
+                            v_contracts = int(float(r.get("TtlTradgVol") or 0))
+                            v_shares = v_contracts * lot
                             oi = int(float(r.get("OpnIntrst") or 0))
                             xpry = (r.get("XpryDt") or "").strip().replace("-", "")
 
@@ -305,42 +313,61 @@ def _load_bhavcopy_eod_data(force: bool = False):
                                 day_fut[sym] = []
                             day_fut[sym].append({
                                 "xpry": xpry,
-                                "o": o, "h": h, "l": l, "c": c, "v": v, "oi": oi,
-                                "isIndex": (tp in ("IDF", "FUTIDX"))
+                                "o": o, "h": h, "l": l, "c": c, "v": v_shares, "v_contracts": v_contracts, "oi": oi,
+                                "isIndex": (tp in ("IDF", "FUTIDX")), "lot": lot
                             })
                         except Exception:
                             pass
 
-                    # Options record for the latest session (for Option Chain distribution & Max Pain)
+                    # Options record for the latest session (partitioned cleanly by Expiry Date!)
                     elif is_latest and tp in ("STO", "IDO", "OPTSTK", "OPTIDX"):
                         try:
                             k = float(r.get("StrkPric") or 0)
+                            exp = (r.get("XpryDt") or "").strip()
                             opt_type = (r.get("OptnTp") or "").strip().upper()
                             oi = int(float(r.get("OpnIntrst") or 0))
                             oi_chg = int(float(r.get("ChngInOpnIntrst") or 0))
-                            cls_p = float(r.get("ClsPric") or 0.0)
+                            cls_p = float(r.get("ClsPric") or r.get("LastPric") or 0.0)
                             prev_p = float(r.get("PrvsClsgPric") or cls_p)
+                            lot = int(float(r.get("NewBrdLotQty") or 1))
+                            vol_contracts = int(float(r.get("TtlTradgVol") or 0))
+                            vol_shares = vol_contracts * lot
 
-                            if sym not in latest_options:
-                                latest_options[sym] = {}
-                            if k not in latest_options[sym]:
-                                latest_options[sym][k] = {
+                            if not exp or k <= 0:
+                                continue
+
+                            if sym not in latest_options_by_expiry:
+                                latest_options_by_expiry[sym] = {}
+                                all_expiries_by_symbol[sym] = set()
+
+                            all_expiries_by_symbol[sym].add(exp)
+
+                            if exp not in latest_options_by_expiry[sym]:
+                                latest_options_by_expiry[sym][exp] = {}
+
+                            k_str = str(k)
+                            if k_str not in latest_options_by_expiry[sym][exp]:
+                                latest_options_by_expiry[sym][exp][k_str] = {
                                     "c": 0, "p": 0,
                                     "c_chg": 0, "p_chg": 0,
                                     "c_ltp": 0.0, "p_ltp": 0.0,
-                                    "c_prev": 0.0, "p_prev": 0.0
+                                    "c_prev": 0.0, "p_prev": 0.0,
+                                    "c_vol": 0, "p_vol": 0
                                 }
 
+                            rec = latest_options_by_expiry[sym][exp][k_str]
                             if opt_type == "CE":
-                                latest_options[sym][k]["c"] += oi
-                                latest_options[sym][k]["c_chg"] += oi_chg
-                                latest_options[sym][k]["c_ltp"] = cls_p
-                                latest_options[sym][k]["c_prev"] = prev_p
+                                rec["c"] = oi
+                                rec["c_chg"] = oi_chg
+                                rec["c_ltp"] = cls_p
+                                rec["c_prev"] = prev_p
+                                rec["c_vol"] = vol_shares
                             elif opt_type == "PE":
-                                latest_options[sym][k]["p"] += oi
-                                latest_options[sym][k]["p_chg"] += oi_chg
-                                latest_options[sym][k]["p_ltp"] = cls_p
-                                latest_options[sym][k]["p_prev"] = prev_p
+                                rec["p"] = oi
+                                rec["p_chg"] = oi_chg
+                                rec["p_ltp"] = cls_p
+                                rec["p_prev"] = prev_p
+                                rec["p_vol"] = vol_shares
                         except Exception:
                             pass
 
@@ -376,12 +403,23 @@ def _load_bhavcopy_eod_data(force: bool = False):
     for sym in symbols_data:
         symbols_data[sym].sort(key=lambda x: x["date"])
 
+    # Populate latest_options with authentic near-month options contracts
+    latest_dt_str = dates_found[-1] if dates_found else ""
+    for sym, exp_map in latest_options_by_expiry.items():
+        valid_exps = sorted([e for e in exp_map.keys() if e.replace("-", "") >= latest_dt_str])
+        if not valid_exps:
+            valid_exps = sorted(exp_map.keys())
+        near_exp = valid_exps[0]
+        latest_options[sym] = {float(k): v for k, v in exp_map[near_exp].items()}
+
     dates_found = sorted(dates_found)
     _BHAV_SESSIONS_CACHE = {
         "ts": now,
         "symbols_data": symbols_data,
         "dates": dates_found,
         "latest_options": latest_options,
+        "latest_options_by_expiry": latest_options_by_expiry,
+        "all_expiries_by_symbol": {s: sorted(list(ex)) for s, ex in all_expiries_by_symbol.items()}
     }
 
     # Save to disk caches atomically for future instant loads

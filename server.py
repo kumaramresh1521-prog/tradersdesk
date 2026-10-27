@@ -11755,7 +11755,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             else:
                 self.send_header("Vary", "Accept-Encoding")
             self.send_header("Content-Length", str(len(send_data)))
-            self.send_header("Cache-Control", "no-store, max-age=0" if is_admin_page else "public, max-age=30, s-maxage=60, stale-while-revalidate=120")
+            self.send_header("Cache-Control", "no-store, max-age=0" if is_admin_page else "no-cache, must-revalidate")
             if is_admin_page:
                 self.send_header("X-Robots-Tag", "noindex, nofollow, noarchive")
             self.send_baseline_security_headers(html=True)
@@ -11792,13 +11792,15 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(data)))
 
             lower_clean = clean.lower()
-            if lower_clean.endswith((".css", ".js", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".ico", ".woff", ".woff2")):
-                self.send_header("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400")
+            if lower_clean.endswith((".css", ".js")):
+                self.send_header("Cache-Control", "no-cache, must-revalidate")
+            elif lower_clean.endswith((".svg", ".png", ".jpg", ".jpeg", ".webp", ".ico", ".woff", ".woff2")):
+                self.send_header("Cache-Control", "public, max-age=86400")
             elif lower_clean == "admin.html":
                 self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
                 self.send_header("X-Robots-Tag", "noindex, nofollow, noarchive")
             else:
-                self.send_header("Cache-Control", "public, max-age=3600")
+                self.send_header("Cache-Control", "no-cache, must-revalidate")
 
             self.send_baseline_security_headers()
             self.end_headers()
