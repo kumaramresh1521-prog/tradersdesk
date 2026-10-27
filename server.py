@@ -3784,21 +3784,37 @@ def compute_straddle_data(
             is_new_day = (curr_day != prev_day) if (curr_day and prev_day) else False
             prev_day = curr_day
 
-            # Exact multi-day DTE progression
+            # Exact multi-day DTE progression with 0 DTE terminal zero decay
             if candle_dt and expiry_dt:
-                sec_left = max(900.0, (expiry_dt - candle_dt).total_seconds())
-                cur_T = max(0.0001, sec_left / (365.25 * 86400.0))
+                sec_left = max(0.0, (expiry_dt - candle_dt).total_seconds())
+                is_exp_day = (expiry_dt.date() == candle_dt.date())
+                if is_exp_day and sec_left <= 0.0:
+                    c = round(max(0.0, close_p - strike), 2)
+                    p_val = round(max(0.0, strike - close_p), 2)
+                    straddle = round(c + p_val, 2)
+                else:
+                    cur_T = max(1.0, sec_left) / (365.25 * 86400.0)
+                    cur_iv = iv_dec * (1.0 + 0.05 * abs(close_p - strike) / max(1, strike))
+                    raw_c = greeks.bs_price("CE", close_p, strike, cur_T, r, cur_iv)
+                    raw_p = greeks.bs_price("PE", close_p, strike, cur_T, r, cur_iv)
+                    intr_c = max(0.0, close_p - strike)
+                    intr_p = max(0.0, strike - close_p)
+                    if is_exp_day:
+                        tau = min(1.0, sec_left / (375.0 * 60.0))
+                        decay_factor = math.pow(tau, 0.70)
+                        c = round(intr_c + (raw_c - intr_c) * decay_factor, 2)
+                        p_val = round(intr_p + (raw_p - intr_p) * decay_factor, 2)
+                    else:
+                        c = round(raw_c, 2)
+                        p_val = round(raw_p, 2)
+                    straddle = round(c + p_val, 2)
             else:
                 day_fraction = (i / max(1, total_points - 1)) * (float(straddle_days) * 0.85 / 365.0)
                 cur_T = max(0.0001, (dte_days / 365.0) - day_fraction)
-
-            cur_iv = iv_dec * (1.0 + 0.05 * abs(close_p - strike) / max(1, strike))
-
-            c = greeks.bs_price("CE", close_p, strike, cur_T, r, cur_iv)
-            p_val = greeks.bs_price("PE", close_p, strike, cur_T, r, cur_iv)
-            straddle = round(c + p_val, 2)
-            c = round(c, 2)
-            p_val = round(p_val, 2)
+                cur_iv = iv_dec * (1.0 + 0.05 * abs(close_p - strike) / max(1, strike))
+                c = round(greeks.bs_price("CE", close_p, strike, cur_T, r, cur_iv), 2)
+                p_val = round(greeks.bs_price("PE", close_p, strike, cur_T, r, cur_iv), 2)
+                straddle = round(c + p_val, 2)
 
             running_sum += straddle
             running_count += 1

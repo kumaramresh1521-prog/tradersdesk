@@ -1079,7 +1079,7 @@
     let minLeft = Math.min(...leftVals);
     let maxLeft = Math.max(...leftVals);
     const leftPad = Math.max(5, (maxLeft - minLeft) * 0.12);
-    minLeft = Math.floor(minLeft - leftPad);
+    minLeft = Math.max(0, Math.floor(minLeft - leftPad));
     maxLeft = Math.ceil(maxLeft + leftPad);
 
     // 2. Compute Right Y-Axis Range (Index Spot)
@@ -2529,13 +2529,14 @@
     const chartH = height - padding.top - padding.bottom;
 
     const openP = points[0].price || (data.latest ? data.latest.open_straddle : 100) || 100;
-    const totalExpectedDecay = Math.max(15, openP * 0.16);
+    const isExpiryToday = (data.dte === 0);
+    const totalExpectedDecay = isExpiryToday ? openP : Math.max(15, openP * 0.16);
 
     let allPrices = points.map(p => p.price).filter(v => v != null && !isNaN(v));
     allPrices.push(openP - totalExpectedDecay);
     allPrices.push(openP);
 
-    let minLeft = Math.floor(Math.min(...allPrices) * 0.96);
+    let minLeft = Math.max(0, Math.floor(Math.min(...allPrices) * 0.96));
     let maxLeft = Math.ceil(Math.max(...allPrices) * 1.04);
     if (maxLeft <= minLeft) { minLeft -= 10; maxLeft += 10; }
 
@@ -3061,7 +3062,7 @@
       if (cvpState.visible.put && p.pe_price != null) leftVals.push(p.pe_price);
     });
     if (leftVals.length === 0) leftVals = [60, 140];
-    let minLeft = Math.floor(Math.min(...leftVals) * 0.92);
+    let minLeft = Math.max(0, Math.floor(Math.min(...leftVals) * 0.92));
     let maxLeft = Math.ceil(Math.max(...leftVals) * 1.08);
     if (maxLeft <= minLeft) { minLeft -= 10; maxLeft += 10; }
 
@@ -3130,6 +3131,7 @@
 
     // Smooth 5-point kernel to eliminate 1-minute sawtooth jitter while preserving exact price trend
     const getSmoothedVal = (key, idx) => {
+      if (idx === 0 || idx === n - 1) return (points[idx] && points[idx][key] != null) ? points[idx][key] : 0;
       let sum = 0, count = 0;
       for (let offset = -2; offset <= 2; offset++) {
         const j = idx + offset;

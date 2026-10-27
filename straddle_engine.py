@@ -33,8 +33,8 @@ INDEX_METADATA = {
         "step": 100,
         "base_spot": 54300.0,
         "base_atm_iv": 14.5,
-        "default_weekday": 3,  # Last Thursday of month
-        "is_monthly_only": True,
+        "default_weekday": 2,  # Wednesday
+        "is_monthly_only": False,
     },
     "FINNIFTY": {
         "name": "FIN NIFTY",
@@ -43,8 +43,8 @@ INDEX_METADATA = {
         "step": 50,
         "base_spot": 24400.0,
         "base_atm_iv": 14.0,
-        "default_weekday": 3,  # Last Thursday of month
-        "is_monthly_only": True,
+        "default_weekday": 1,  # Tuesday
+        "is_monthly_only": False,
     },
     "MIDCPNIFTY": {
         "name": "MIDCAP NIFTY",
@@ -127,16 +127,16 @@ def _get_last_thursday_of_month(year: int, month: int) -> dt_date:
     return last_day - timedelta(days=offset)
 
 
-def get_index_expiries(key: str) -> list[dict]:
+def get_index_expiries(key: str, for_date: Optional[Any] = None) -> list[dict]:
     """
     Returns authentic, validated active expiries from exchange contracts with exact DTE.
-    If today is expiry day and current time < 15:30, today is included (DTE=0).
+    Includes session date if it is an expiry date (DTE=0).
     """
     sym = (key or "NIFTY").upper().strip()
     meta = INDEX_METADATA.get(sym, INDEX_METADATA["NIFTY"])
     now_dt = datetime.now(INDIA_TZ)
     today = now_dt.date()
-    is_after_market_close = now_dt.hour > 15 or (now_dt.hour == 15 and now_dt.minute >= 30)
+    ref_d = parse_date(for_date) or today
 
     raw_expiries = []
     try:
@@ -150,11 +150,9 @@ def get_index_expiries(key: str) -> list[dict]:
             exp_d = parse_date(r_exp)
             if not exp_d:
                 continue
-            if exp_d < today:
+            if exp_d < ref_d:
                 continue
-            if exp_d == today and is_after_market_close:
-                continue
-            dte = max(0, (exp_d - today).days)
+            dte = max(0, (exp_d - ref_d).days)
             tag = "Expires Today" if dte == 0 else ("Tomorrow" if dte == 1 else f"{dte} DTE")
             valid_expiries.append({
                 "value": exp_d.strftime("%Y-%m-%d"),
@@ -162,43 +160,23 @@ def get_index_expiries(key: str) -> list[dict]:
                 "dte": dte,
             })
 
-    # Intelligent exchange calendar fallback if broker feed returns empty
+    # Intelligent exchange calendar fallback if broker feed returns empty or filtered out
     if not valid_expiries:
-        if meta.get("is_monthly_only"):
-            curr_y = today.year
-            curr_m = today.month
-            for offset in range(4):
-                y = curr_y + (curr_m + offset - 1) // 12
-                m = (curr_m + offset - 1) % 12 + 1
-                exp_d = _get_last_thursday_of_month(y, m)
-                if exp_d < today or (exp_d == today and is_after_market_close):
-                    continue
-                dte = max(0, (exp_d - today).days)
-                tag = "Expires Today" if dte == 0 else f"{dte} DTE"
-                valid_expiries.append({
-                    "value": exp_d.strftime("%Y-%m-%d"),
-                    "label": f"{exp_d.strftime('%d %b %Y')} ({tag})",
-                    "dte": dte,
-                })
+        target_weekday = meta.get("default_weekday", 3)
+        if ref_d.weekday() == target_weekday:
+            days_ahead_start = 0
         else:
-            target_weekday = meta.get("default_weekday", 3)
-            # Check if today is the target weekday
-            if today.weekday() == target_weekday and not is_after_market_close:
-                days_ahead_start = 0
-            else:
-                days_ahead_start = (target_weekday - today.weekday() + 7) % 7
-                if days_ahead_start == 0:
-                    days_ahead_start = 7
+            days_ahead_start = (target_weekday - ref_d.weekday() + 7) % 7
 
-            for w in range(5):
-                exp_d = today + timedelta(days=days_ahead_start + (w * 7))
-                dte = max(0, (exp_d - today).days)
-                tag = "Expires Today" if dte == 0 else ("Tomorrow" if dte == 1 else f"{dte} DTE")
-                valid_expiries.append({
-                    "value": exp_d.strftime("%Y-%m-%d"),
-                    "label": f"{exp_d.strftime('%d %b %Y')} ({tag})",
-                    "dte": dte,
-                })
+        for w in range(6):
+            exp_d = ref_d + timedelta(days=days_ahead_start + (w * 7))
+            dte = max(0, (exp_d - ref_d).days)
+            tag = "Expires Today" if dte == 0 else ("Tomorrow" if dte == 1 else f"{dte} DTE")
+            valid_expiries.append({
+                "value": exp_d.strftime("%Y-%m-%d"),
+                "label": f"{exp_d.strftime('%d %b %Y')} ({tag})",
+                "dte": dte,
+            })
 
     return valid_expiries
 
@@ -290,13 +268,12 @@ def get_history_meta() -> dict:
 
     equity_items = []
     for k, meta in INDEX_METADATA.items():
-        exp_list = get_index_expiries(k)
-        top_exp = exp_list[0]["value"] if exp_list else today.strftime("%Y-%m-%d")
-        exp_d = parse_date(top_exp) or today
-        exp_lbl = exp_d.strftime("%d-%b-%Y")
-
         date_entries = []
         for day in recent_trading_days:
+            exp_list = get_index_expiries(k, for_date=day)
+            top_exp = exp_list[0]["value"] if exp_list else day.strftime("%Y-%m-%d")
+            exp_d = parse_date(top_exp) or day
+            exp_lbl = exp_d.strftime("%d-%b-%Y")
             date_entries.append({
                 "value": day.strftime("%Y-%m-%d"),
                 "label": day.strftime("%d %b %Y"),
@@ -347,8 +324,8 @@ def get_time_to_expiry(
 ) -> float:
     """
     Computes annualized time-to-expiry (T) in trading-year convention (250 trading days * 375 mins = 93,750 mins).
-    Decays smoothly and continuously minute-by-minute with zero artificial jumps.
-    Clamps to minimum 5 minutes (T = 0.0000533) to prevent division by zero near expiry.
+    Decays smoothly and continuously minute-by-minute.
+    At 15:30 on expiry day, returns 0.0 (strictly zero time value remaining).
     """
     candle_mins = hh * 60 + mm
     market_open_mins = 9 * 60 + 15    # 555
@@ -366,7 +343,68 @@ def get_time_to_expiry(
             cur += timedelta(days=1)
 
     total_rem_mins = trading_days_after * 375.0 + rem_mins_today
-    return max(5.0, total_rem_mins) / 93750.0
+    return max(0.0, total_rem_mins) / 93750.0
+
+
+def calc_option_leg(
+    opt_type: str,
+    spot: float,
+    strike: float,
+    sess_date: dt_date,
+    target_exp_date: dt_date,
+    hh: int,
+    mm: int,
+    r_rate: float,
+    iv_annual: float,
+    skew_offset: float = 0.0,
+) -> float:
+    """
+    Calculates exact institutional option leg price (CE or PE).
+    On expiry day (target_exp_date == sess_date), time value and market skew offsets smoothly decay
+    all the way to exactly 0.00 at 15:30 PM, leaving strictly intrinsic value.
+    For ATM at 15:30, intrinsic is 0.00, meaning straddle cleanly reaches 0.00.
+    """
+    is_call = opt_type.upper() == "CE"
+    intrinsic = max(0.0, spot - strike) if is_call else max(0.0, strike - spot)
+    
+    candle_mins = hh * 60 + mm
+    market_close_mins = 15 * 60 + 30
+    clamped_mins = min(market_close_mins, max(9 * 60 + 15, candle_mins))
+    rem_mins_today = market_close_mins - clamped_mins
+    
+    is_expiry_day = (target_exp_date == sess_date)
+    
+    if is_expiry_day and rem_mins_today <= 0.0:
+        # At market close on expiration day, all time value is strictly ZERO
+        return round(intrinsic, 2)
+    
+    trading_days_after = 0
+    if target_exp_date > sess_date:
+        cur = sess_date + timedelta(days=1)
+        while cur <= target_exp_date:
+            if cur.weekday() < 5:
+                trading_days_after += 1
+            cur += timedelta(days=1)
+            
+    total_rem_mins = trading_days_after * 375.0 + rem_mins_today
+    if total_rem_mins <= 0.0:
+        return round(intrinsic, 2)
+        
+    T = max(1.0, total_rem_mins) / 93750.0
+    bs = greeks.bs_price("CE" if is_call else "PE", spot, strike, T, r_rate, iv_annual)
+    raw_time_value = max(0.0, bs - intrinsic)
+    
+    if is_expiry_day:
+        tau = rem_mins_today / 375.0
+        decay_factor = math.pow(tau, 0.70)
+        eff_time_value = raw_time_value * decay_factor
+        eff_offset = skew_offset * decay_factor
+    else:
+        eff_time_value = raw_time_value
+        eff_offset = skew_offset
+        
+    leg_price = intrinsic + eff_time_value + eff_offset
+    return round(max(0.0, leg_price), 2)
 
 
 def compute_straddle_analytics(
@@ -395,7 +433,8 @@ def compute_straddle_analytics(
     is_historical = bool(date and date.strip() and date.strip() != today.strftime("%Y-%m-%d"))
 
     # 1. Resolve Active Expiries
-    valid_expiries = get_index_expiries(sym)
+    sess_d = parse_date(session_date) or today
+    valid_expiries = get_index_expiries(sym, for_date=sess_d)
     target_expiry = ""
     target_exp_d = None
 
@@ -543,8 +582,8 @@ def compute_straddle_analytics(
             live_iv = calibrated_iv
     else:
         # Theoretical valuation for historical replay or offline simulation
-        bs_ce = round(greeks.bs_price("CE", spot_val, chosen_strike, T_latest, r_rate, live_iv / 100.0), 2)
-        bs_pe = round(greeks.bs_price("PE", spot_val, chosen_strike, T_latest, r_rate, live_iv / 100.0), 2)
+        bs_ce = calc_option_leg("CE", spot_val, chosen_strike, sess_d, target_exp_d, latest_h, latest_m, r_rate, live_iv / 100.0)
+        bs_pe = calc_option_leg("PE", spot_val, chosen_strike, sess_d, target_exp_d, latest_h, latest_m, r_rate, live_iv / 100.0)
         live_ce_ltp = bs_ce
         live_pe_ltp = bs_pe
         live_straddle_price = round(live_ce_ltp + live_pe_ltp, 2)
@@ -617,14 +656,9 @@ def compute_straddle_analytics(
                 except Exception:
                     pass
 
-            t_rem = get_time_to_expiry(sess_d, target_exp_d, c_h, c_m)
             frac_done = i / max(1, total_pts - 1)
-
-            bs_c = greeks.bs_price("CE", c_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0)
-            bs_p = greeks.bs_price("PE", c_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0)
-
-            c_p = round(max(0.05, bs_c + ce_offset), 2)
-            p_p = round(max(0.05, bs_p + pe_offset), 2)
+            c_p = calc_option_leg("CE", c_spot, chosen_strike, sess_d, target_exp_d, c_h, c_m, r_rate, live_iv / 100.0, ce_offset)
+            p_p = calc_option_leg("PE", c_spot, chosen_strike, sess_d, target_exp_d, c_h, c_m, r_rate, live_iv / 100.0, pe_offset)
             st_p = round(c_p + p_p, 2)
             synth = round((chosen_strike + c_p - p_p) + (frac_done * synth_drift), 2)
 
@@ -701,13 +735,8 @@ def compute_straddle_analytics(
             B_m = (cum_shocks[m] - prog * total_W) * bridge_vol if max_minutes > 1 else 0.0
             walk_spot = round(open_spot + prog * (target_close_spot - open_spot) + B_m, 2)
 
-            t_rem = get_time_to_expiry(sess_d, target_exp_d, hh, mm)
-
-            bs_c = greeks.bs_price("CE", walk_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0)
-            bs_p = greeks.bs_price("PE", walk_spot, chosen_strike, t_rem, r_rate, live_iv / 100.0)
-
-            c_p = round(max(0.05, bs_c + ce_offset), 2)
-            p_p = round(max(0.05, bs_p + pe_offset), 2)
+            c_p = calc_option_leg("CE", walk_spot, chosen_strike, sess_d, target_exp_d, hh, mm, r_rate, live_iv / 100.0, ce_offset)
+            p_p = calc_option_leg("PE", walk_spot, chosen_strike, sess_d, target_exp_d, hh, mm, r_rate, live_iv / 100.0, pe_offset)
             st_p = round(c_p + p_p, 2)
             synth = round((chosen_strike + c_p - p_p) + (prog * synth_drift), 2)
 
