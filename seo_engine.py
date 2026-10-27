@@ -573,7 +573,7 @@ def load_all_seo_routes() -> dict[str, dict]:
                 "og_desc": meta.get("desc", ""),
                 "robots": "index, follow",
                 "category": _detect_category(clean_p),
-                "priority": "1.0" if clean_p == "/" else ("0.9" if clean_p in ("/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/mtf", "/breadth", "/straddle", "/premium-decay", "/call-vs-put-premium") else "0.8"),
+                "priority": "1.0" if clean_p == "/" else ("0.9" if clean_p in ("/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/mtf", "/straddle", "/premium-decay", "/call-vs-put-premium") else "0.8"),
                 "changefreq": "always" if clean_p in ("/", "/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/straddle", "/premium-decay", "/call-vs-put-premium") else "daily",
                 "custom": False,
                 "last_updated": time.strftime("%Y-%m-%d %H:%M:%S IST")
@@ -1303,7 +1303,7 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
 
     target_panel = route_panel_map.get(clean_p)
     if not target_panel:
-        for pfx, pnl in (("/futures", "panelFutures"), ("/delivery", "panelDelivery"), ("/mtf", "panelMtf"), ("/option", "panelUpstoxChain"), ("/fii", "panelSmartMoney"), ("/breadth", "panelBreadth")):
+        for pfx, pnl in (("/futures", "panelFutures"), ("/delivery", "panelDelivery"), ("/mtf", "panelMtf"), ("/option", "panelUpstoxChain"), ("/fii", "panelSmartMoney"), ("panelBreadth")):
             if clean_p.startswith(pfx):
                 target_panel = pnl
                 break

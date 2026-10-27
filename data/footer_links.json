@@ -6,8 +6,8 @@
       "title": "\ud83c\udfdb\ufe0f Institutional Desks",
       "links": [
         {
-          "label": "Market Breadth Pro",
-          "url": "/breadth",
+          "label": "Breadth & Contribution",
+          "url": "/breadth-contribution",
           "type": "inst",
           "target": "breadth"
         },
@@ -190,12 +190,6 @@
           "url": "https://www.nseindia.com",
           "type": "link",
           "target": "_blank"
-        },
-        {
-          "label": "Platform Administration \ud83d\udd12",
-          "url": "/admin",
-          "type": "link",
-          "target": "_self"
         }
       ]
     }

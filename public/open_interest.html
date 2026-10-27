@@ -746,37 +746,149 @@
       <div class="inst-nav-item"><a href="/" class="inst-nav-btn"><span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span></a></div>
       <div class="inst-nav-item has-dropdown">
         <a href="/futures" class="inst-nav-btn"><span class="inst-nav-icon">📈</span> <span class="nav-label">Futures</span><span class="inst-nav-arrow">▾</span></a>
-        <div class="inst-dropdown inst-dropdown-md">
-          <div class="inst-dropdown-col">
-            <span class="inst-dropdown-header">Futures Market &amp; Structure</span>
-            <a href="/futures" class="inst-dd-item"><span class="dd-icon">📊</span><div class="dd-text"><span class="dd-title">Future Marketwatch</span><span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span></div></a>
-            <a href="/futures/buildup" class="inst-dd-item"><span class="dd-icon">⚡</span><div class="dd-text"><span class="dd-title">Buildup Quadrants</span><span class="dd-sub">Long/Short buildup, covering &amp; unwinding radar</span></div></a>
-            <a href="/futures/rollover" class="inst-dd-item"><span class="dd-icon">📑</span><div class="dd-text"><span class="dd-title">Futures Rollover Matrix</span><span class="dd-sub">Expiry rollover %, 3M/6M averages &amp; historical velocity</span></div></a>
+                    <div class="inst-dropdown inst-dropdown-md">
+              <div class="inst-dropdown-col">
+                <span class="inst-dropdown-header">📊 Trading &amp; Open Interest</span>
+                <!-- Submenu 1: Future Marketwatch -->
+                <a href="/futures" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'matrix');}">
+                  <span class="dd-icon">📊</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future Marketwatch</span>
+                    <span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span>
+                  </div>
+                </a>
+                <!-- Submenu 2: Future Open Interest -->
+                <a href="/futures/open-interest" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'openInterest');}">
+                  <span class="dd-icon">📈</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future Open Interest <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
+                    <span class="dd-sub">Multi-panel EOD &amp; Live chart, delivery % &amp; option chain</span>
+                  </div>
+                </a>
+                <!-- Submenu 3: Future Intraday Price vs OI -->
+                <a href="/futures/future-intraday" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureIntraday');}">
+                  <span class="dd-icon">⚡</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future Intraday <span class="p2-badge p2-badge-teal" style="margin-left:4px;">LIVE</span></span>
+                    <span class="dd-sub">5-Min Price vs OI divergence, VWAP &amp; Basis (7 Indices)</span>
+                  </div>
+                </a>
+                <!-- Submenu 4: Future vs Open Interest -->
+                <a href="/futures/future-vs-oi" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureVsOi');}">
+                  <span class="dd-icon">🎯</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future vs Open Interest <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
+                    <span class="dd-sub">Dual-axis divergence analysis &amp; historical replay engine</span>
+                  </div>
+                </a>
+              </div>
+              <div class="inst-dropdown-col">
+                <span class="inst-dropdown-header">⚡ Market Structure &amp; Risk</span>
+                <!-- Submenu 5: Future Buildup -->
+                <a href="/futures/buildup" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'buildup');}">
+                  <span class="dd-icon">🧭</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Buildup Quadrants</span>
+                    <span class="dd-sub">Long/short buildup &amp; institutional unwinding flows</span>
+                  </div>
+                </a>
+                <!-- Submenu 6: Future Heatmap -->
+                <a href="/futures/heatmap" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'heatmap');}">
+                  <span class="dd-icon">🗺️</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Futures Heatmap</span>
+                    <span class="dd-sub">Sectoral visual heat &amp; momentum distribution map</span>
+                  </div>
+                </a>
+                <!-- Submenu 7: Future Index Term Structure -->
+                <a href="/futures/indices" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'indices');}">
+                  <span class="dd-icon">📐</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Index Term Structure</span>
+                    <span class="dd-sub">Cash-futures basis, cost of carry &amp; term curve</span>
+                  </div>
+                </a>
+                <!-- Submenu 8: MWPL and Ban Radar -->
+                <a href="/futures/mwpl" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'mwpl');}">
+                  <span class="dd-icon">🚫</span>
+                  <div class="dd-text">
+                    <span class="dd-title">MWPL &amp; Ban Radar</span>
+                    <span class="dd-sub">Market-Wide Position Limit tracker &amp; ban alerts</span>
+                  </div>
+                </a>
+                <!-- Submenu 9: Futures Rollover Matrix -->
+                <a href="/futures/rollover" class="inst-dd-item" title="Open Dedicated Futures Rollover Matrix Terminal">
+                  <span class="dd-icon">🔄</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Futures Rollover Matrix <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
+                    <span class="dd-sub">Expiry rollover %, 3M/6M averages &amp; historical velocity</span>
+                  </div>
+                </a>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
       <div class="inst-nav-item has-dropdown">
         <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight active" id="navOptions"><span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span><span class="inst-nav-arrow">▾</span></a>
-        <div class="inst-dropdown inst-dropdown-md">
-          <div class="inst-dropdown-col">
-            <span class="inst-dropdown-header">Derivatives Suite</span>
-            <a href="/open-interest/nifty" class="inst-dd-item active" style="background:rgba(37,99,235,0.08);">
-              <span class="dd-icon">📊</span>
-              <div class="dd-text">
-                <span class="dd-title" style="color:#2563eb; font-weight:700;">Open Interest Analysis <span class="p2-badge p2-badge-blue" style="margin-left:4px;">OI</span></span>
-                <span class="dd-sub">Live Call vs Put distribution, PCR &amp; Max Pain</span>
+                    <div class="inst-dropdown inst-dropdown-md">
+              <div class="inst-dropdown-col">
+                <span class="inst-dropdown-header">⚡ Option Chains &amp; OI Analytics</span>
+                <!-- Submenu 1: Option Chain Pro -->
+                <a href="/option-chain-pro" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'upstoxChain');}">
+                  <span class="dd-icon">⚡</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Option Chain Pro <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
+                    <span class="dd-sub">Live multi-broker chain, Greeks, PCR &amp; IV skew</span>
+                  </div>
+                </a>
+                <!-- Submenu 2: Open Interest Analysis -->
+                <a href="/open-interest/nifty" class="inst-dd-item" title="Live Nifty &amp; F&amp;O Call vs Put Open Interest, PCR &amp; Max Pain">
+                  <span class="dd-icon">📊</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Open Interest Analysis <span class="p2-badge p2-badge-blue" style="margin-left:4px;">OI</span></span>
+                    <span class="dd-sub">Live Call vs Put distribution, PCR &amp; Max Pain strike</span>
+                  </div>
+                </a>
+                <!-- Submenu 3: Breadth & Net Contribution -->
+                <a href="/breadth-contribution" class="inst-dd-item" style="text-decoration:none; color:inherit;">
+                  <span class="dd-icon">⚖️</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Breadth &amp; Net Contribution <span class="p2-badge p2-badge-cyan" style="margin-left:4px;">LIVE</span></span>
+                    <span class="dd-sub">Intraday breadth advance/decline &amp; stock point impact</span>
+                  </div>
+                </a>
               </div>
-            </a>
-            <a href="/option-chain-pro" class="inst-dd-item"><span class="dd-icon">⚡</span><div class="dd-text"><span class="dd-title">Option Chain Pro <span class="p2-badge p2-badge-teal" style="margin-left:4px;">LIVE</span></span><span class="dd-sub">Multi-broker live chain, Greeks, PCR &amp; IV skew</span></div></a>
-            <a href="/straddle" class="inst-dd-item"><span class="dd-icon">📉</span><div class="dd-text"><span class="dd-title">ATM Straddle</span><span class="dd-sub">Combined CE+PE premium decay, IV crush &amp; Greeks</span></div></a>
-            <a href="/premium-decay" class="inst-dd-item"><span class="dd-icon">🔻</span><div class="dd-text"><span class="dd-title">Premium Decay <span class="p2-badge p2-badge-orange" style="margin-left:4px;">NEW</span></span><span class="dd-sub">Intraday theta erosion, IV crush &amp; leg breakdown</span></div></a>
-            <a href="/call-vs-put-premium" class="inst-dd-item"><span class="dd-icon">⚖️</span><div class="dd-text"><span class="dd-title">Call vs Put Premium <span class="p2-badge p2-badge-cyan" style="margin-left:4px;">NEW</span></span><span class="dd-sub">Live CE vs PE comparison, decay skew &amp; imbalance</span></div></a>
+              <div class="inst-dropdown-col">
+                <span class="inst-dropdown-header">📉 Premium Decay &amp; Strategies</span>
+                <!-- Submenu 4: ATM Straddle -->
+                <a href="/straddle" class="inst-dd-item" style="text-decoration:none; color:inherit;">
+                  <span class="dd-icon">📉</span>
+                  <div class="dd-text">
+                    <span class="dd-title">ATM Straddle <span class="p2-badge p2-badge-rose" id="navStraddleValueBadge" style="margin-left:4px;">₹--</span></span>
+                    <span class="dd-sub">Live combined CE+PE premium decay &amp; synthetic curve</span>
+                  </div>
+                </a>
+                <!-- Submenu 5: Premium Decay -->
+                <a href="/premium-decay" class="inst-dd-item" style="text-decoration:none; color:inherit;">
+                  <span class="dd-icon">🔻</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Premium Decay <span class="p2-badge p2-badge-orange" style="margin-left:4px;">NEW</span></span>
+                    <span class="dd-sub">Intraday theta erosion, IV crush &amp; leg breakdown chart</span>
+                  </div>
+                </a>
+                <!-- Submenu 6: Call vs Put Premium -->
+                <a href="/call-vs-put-premium" class="inst-dd-item" style="text-decoration:none; color:inherit;">
+                  <span class="dd-icon">⚔️</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Call vs Put Premium <span class="p2-badge p2-badge-cyan" style="margin-left:4px;">NEW</span></span>
+                    <span class="dd-sub">Live CE vs PE comparison, decay skew &amp; imbalance</span>
+                  </div>
+                </a>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
       <!-- CHARTS -->
       <div class="inst-nav-item"><a href="/chart" class="inst-nav-btn inst-nav-btn-blue"><span class="inst-nav-icon">📈</span> <span class="nav-label">Charts</span><span class="p2-badge p2-badge-teal">PRO</span></a></div>
-      <div class="inst-nav-item"><a href="/breadth" class="inst-nav-btn"><span class="inst-nav-icon">📉</span> <span class="nav-label">Breadth Pro</span></a></div>
+      <div class="inst-nav-item"><a href="/breadth-contribution" class="inst-nav-btn"><span class="inst-nav-icon">⚖️</span> <span class="nav-label">Contribution</span></a></div>
       <div class="inst-nav-item"><a href="/fii-dii" class="inst-nav-btn"><span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII &amp; DII</span></a></div>
       <div class="inst-nav-item"><a href="/delivery" class="inst-nav-btn"><span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery</span></a></div>
       <div class="inst-nav-item"><a href="/mtf" class="inst-nav-btn"><span class="inst-nav-icon">💳</span> <span class="nav-label">MTF Book</span></a></div>
@@ -1063,7 +1175,7 @@
               🏛️ Institutional Desks
             </h4>
             <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
-              <a href="/breadth" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('breadth', '', '/breadth', event); }">Market Breadth Pro</a>
+              <a href="/breadth-contribution" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('breadth', '', '/breadth', event); }">Market Breadth & Contribution</a>
               <a href="/fii-dii" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('smartMoney', '', '/fii-dii', event); }">FII &amp; DII Smart Money</a>
               <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('delivery', '', '/delivery', event); }">Cash Delivery Absorption</a>
               <a href="/mtf" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('mtf', '', '/mtf', event); }">MTF Margin Trading Book</a>
@@ -1140,7 +1252,7 @@
         <a href="/futures/rollover" class="oi-action-btn" style="text-decoration:none;">📑 Futures Rollover</a>
         <a href="/option-chain-pro" class="oi-action-btn" style="text-decoration:none;">⚡ Option Chain Pro</a>
         <a href="/straddle" class="oi-action-btn" style="text-decoration:none;">📉 Straddle Desk</a>
-        <a href="/breadth" class="oi-action-btn" style="text-decoration:none;">📉 Breadth Pro</a>
+        <a href="/breadth-contribution" class="oi-action-btn" style="text-decoration:none;">⚖️ Contribution</a>
         <a href="/fii-dii" class="oi-action-btn" style="text-decoration:none;">🏛️ FII &amp; DII Flow</a>
         <a href="/delivery" class="oi-action-btn" style="text-decoration:none;">📦 Cash Delivery</a>
         <a href="/mtf" class="oi-action-btn" style="text-decoration:none;">💳 MTF Loan Book</a>

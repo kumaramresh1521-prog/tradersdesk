@@ -151,7 +151,7 @@ def get_default_footer_links() -> dict:
                 "id": "col1",
                 "title": "🏛️ Institutional Desks",
                 "links": [
-                    {"label": "Market Breadth Pro", "url": "/breadth", "type": "inst", "target": "breadth"},
+                    {"label": "Breadth & Contribution", "url": "/breadth-contribution", "type": "link", "target": "_self"},
                     {"label": "FII & DII Smart Money", "url": "/fii-dii", "type": "inst", "target": "smartMoney"},
                     {"label": "Cash Delivery Absorption", "url": "/delivery", "type": "inst", "target": "delivery"},
                     {"label": "MTF Margin Trading Book", "url": "/mtf", "type": "inst", "target": "mtf"},
@@ -10716,8 +10716,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/futures/price-vs-oi",
             "/futures/future-price-vs-oi",
             "/futures/intraday",
-            "/market-breadth",
-            "/breadth",
             "/smart-money",
             "/fii-dii",
             "/fii-dii-derivatives",
@@ -10802,7 +10800,8 @@ class RequestHandler(BaseHTTPRequestHandler):
         REDIRECT_301_MAP = {
             "/options": "/option-chain-pro",
             "/option-chain": "/option-chain-pro",
-            "/market-breadth": "/breadth",
+            "/breadth": "/breadth-contribution",
+            "/market-breadth": "/breadth-contribution",
             "/smart-money": "/fii-dii",
             "/fii-dii-cash": "/fii-dii",
             "/fii-dii-derivatives": "/fii-dii",

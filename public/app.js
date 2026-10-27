@@ -12268,12 +12268,14 @@ const ROUTE_CONFIG = {
     desc: "Interactive EOD and real-time multi-panel futures candlestick charts, open interest buildup, delivery %, RSI, and Option Chain Max Pain."
   },
   "/market-breadth": {
-    desk: "breadth",
+    redirect: "/breadth-contribution",
+    desk: "contribution",
     title: "Market Breadth & Point and Figure (PnF) Analytics Desk | TradersDesk",
     desc: "Institutional Market Breadth engine with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum."
   },
   "/breadth": {
-    desk: "breadth",
+    redirect: "/breadth-contribution",
+    desk: "contribution",
     title: "Market Breadth & Point and Figure (PnF) Analytics Desk | TradersDesk",
     desc: "Institutional Market Breadth engine with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum."
   },
@@ -12437,7 +12439,7 @@ const DESK_TO_URL = {
   options:       "/option-chain-pro",
   straddle:      "/straddle",
   futures:       "/futures",
-  breadth:       "/breadth",
+  breadth:       "/breadth-contribution",
   smartmoney:    "/fii-dii",
   smartMoney:    "/fii-dii",
   fiidii:        "/fii-dii",
