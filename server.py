@@ -8985,11 +8985,11 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
                     "endTime": cur_cutoff_hhmm
                 })
                 try:
-                    b_res = future_b.result(timeout=5.0)
+                    b_res = future_b.result(timeout=15.0)
                 except Exception:
                     b_res = {}
                 try:
-                    n_res = future_n.result(timeout=5.0)
+                    n_res = future_n.result(timeout=10.0)
                 except Exception:
                     n_res = {}
         except Exception:

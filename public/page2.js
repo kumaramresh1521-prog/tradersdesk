@@ -3583,7 +3583,7 @@
       if (latestBreadthEl) latestBreadthEl.textContent = bSum.latestBreadth !== undefined ? `${Number(bSum.latestBreadth).toFixed(2)}%` : "--";
       if (openBreadthEl) openBreadthEl.textContent = bSum.openBreadth !== undefined ? `${Number(bSum.openBreadth).toFixed(2)}%` : "--";
       if (breadthChgEl) {
-        const chg = bSum.change;
+        const chg = bSum.change !== undefined ? bSum.change : bSum.breadthChange;
         const sign = (chg || 0) >= 0 ? "+" : "";
         breadthChgEl.textContent = chg !== undefined ? `${sign}${Number(chg).toFixed(2)} pts` : "--";
         if (changeMetricEl) {

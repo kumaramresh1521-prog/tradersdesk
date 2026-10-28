@@ -538,8 +538,14 @@ def compute_breadth_contribution(
 
             if has_real_breadth and b_obj.get("breadth") is not None:
                 b_val = round(float(b_obj.get("breadth")), 2)
-                b_x = int(b_obj.get("x") if b_obj.get("x") is not None else round(tot_stk * b_val / 100.0))
-                b_o = int(b_obj.get("o") if b_obj.get("o") is not None else (tot_stk - b_x))
+                raw_x = b_obj.get("x")
+                raw_o = b_obj.get("o")
+                if raw_x is not None and raw_o is not None and (int(raw_x) + int(raw_o)) == tot_stk:
+                    b_x = int(raw_x)
+                    b_o = int(raw_o)
+                else:
+                    b_x = max(0, min(tot_stk, int(round(tot_stk * b_val / 100.0))))
+                    b_o = max(0, tot_stk - b_x)
             else:
                 # Smooth spot-correlated advance/decline progression
                 minute_progress = min(1.0, max(0.0, i / max(1.0, float(len(all_minutes) - 1))))
