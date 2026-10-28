@@ -1,0 +1,299 @@
+{
+  "updatedAt": "2026-10-28T18:30:00Z",
+  "items": [
+    {
+      "id": "nav_dashboard",
+      "label": "Dashboard",
+      "url": "/",
+      "icon": "⬛",
+      "hasDropdown": false,
+      "badge": "",
+      "badgeColor": "",
+      "active": true
+    },
+    {
+      "id": "nav_futures",
+      "label": "Futures Dashboard",
+      "url": "/futures",
+      "icon": "📈",
+      "hasDropdown": true,
+      "badge": "",
+      "badgeColor": "",
+      "active": true,
+      "columns": [
+        {
+          "header": "📊 Trading & Open Interest",
+          "items": [
+            {
+              "id": "sub_fut_marketwatch",
+              "title": "Future Marketwatch",
+              "subtitle": "Active contracts matrix, LTP, OI & volume leaders",
+              "url": "/futures",
+              "icon": "📊",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_fut_oi",
+              "title": "Future Open Interest",
+              "subtitle": "Multi-panel EOD & Live chart, delivery % & option chain",
+              "url": "/futures/open-interest",
+              "icon": "📈",
+              "badge": "PRO",
+              "badgeColor": "teal",
+              "active": true
+            },
+            {
+              "id": "sub_fut_intraday",
+              "title": "Future Intraday",
+              "subtitle": "5-Min Price vs OI divergence, VWAP & Basis (7 Indices)",
+              "url": "/futures/future-intraday",
+              "icon": "⚡",
+              "badge": "LIVE",
+              "badgeColor": "teal",
+              "featureFlag": "futures_future_intraday",
+              "active": false
+            },
+            {
+              "id": "sub_fut_vsoi",
+              "title": "Future vs Open Interest",
+              "subtitle": "Dual-axis divergence analysis & historical replay engine",
+              "url": "/futures/future-vs-oi",
+              "icon": "🎯",
+              "badge": "PRO",
+              "badgeColor": "teal",
+              "featureFlag": "futures_future_vs_oi",
+              "active": false
+            }
+          ]
+        },
+        {
+          "header": "⚡ Market Structure & Risk",
+          "items": [
+            {
+              "id": "sub_fut_buildup",
+              "title": "Buildup Quadrants",
+              "subtitle": "Long/short buildup & institutional unwinding flows",
+              "url": "/futures/buildup",
+              "icon": "🧭",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_fut_heatmap",
+              "title": "Futures Heatmap",
+              "subtitle": "Sectoral visual heat & momentum distribution map",
+              "url": "/futures/heatmap",
+              "icon": "🗺️",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_fut_indices",
+              "title": "Index Term Structure",
+              "subtitle": "Cash-futures basis, cost of carry & term curve",
+              "url": "/futures/indices",
+              "icon": "📐",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_fut_mwpl",
+              "title": "MWPL & Ban Radar",
+              "subtitle": "Market-Wide Position Limit tracker & ban alerts",
+              "url": "/futures/mwpl",
+              "icon": "🚫",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_fut_rollover",
+              "title": "Futures Rollover Matrix",
+              "subtitle": "Expiry rollover %, 3M/6M averages & historical velocity",
+              "url": "/futures/rollover",
+              "icon": "🔄",
+              "badge": "PRO",
+              "badgeColor": "teal",
+              "active": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nav_options",
+      "label": "Options",
+      "url": "/option-chain-pro",
+      "icon": "⚡",
+      "hasDropdown": true,
+      "badge": "",
+      "badgeColor": "",
+      "highlight": true,
+      "active": true,
+      "columns": [
+        {
+          "header": "⚡ Option Chains & OI Analytics",
+          "items": [
+            {
+              "id": "sub_opt_chain",
+              "title": "Option Chain Pro",
+              "subtitle": "Live multi-broker chain, Greeks, PCR & IV skew",
+              "url": "/option-chain-pro",
+              "icon": "⚡",
+              "badge": "PRO",
+              "badgeColor": "teal",
+              "active": true
+            },
+            {
+              "id": "sub_opt_oi",
+              "title": "Open Interest Analysis",
+              "subtitle": "Live Call vs Put distribution, PCR & Max Pain strike",
+              "url": "/open-interest/nifty",
+              "icon": "📊",
+              "badge": "OI",
+              "badgeColor": "blue",
+              "active": true
+            },
+            {
+              "id": "sub_opt_breadth",
+              "title": "Breadth & Net Contribution",
+              "subtitle": "Intraday breadth advance/decline & stock point impact",
+              "url": "/breadth-contribution",
+              "icon": "⚖️",
+              "badge": "LIVE",
+              "badgeColor": "cyan",
+              "active": true
+            }
+          ]
+        },
+        {
+          "header": "📉 Premium Decay & Strategies",
+          "items": [
+            {
+              "id": "sub_opt_straddle",
+              "title": "ATM Straddle",
+              "subtitle": "Live combined CE+PE premium decay & synthetic curve",
+              "url": "/straddle",
+              "icon": "📉",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_opt_decay",
+              "title": "Premium Decay",
+              "subtitle": "Intraday theta erosion, IV crush & leg breakdown chart",
+              "url": "/premium-decay",
+              "icon": "🔻",
+              "badge": "NEW",
+              "badgeColor": "orange",
+              "active": true
+            },
+            {
+              "id": "sub_opt_call_put",
+              "title": "Call vs Put Premium",
+              "subtitle": "Live CE vs PE comparison, decay skew & imbalance",
+              "url": "/call-vs-put-premium",
+              "icon": "⚔️",
+              "badge": "NEW",
+              "badgeColor": "cyan",
+              "active": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nav_charts",
+      "label": "Charts",
+      "url": "/chart",
+      "icon": "📈",
+      "hasDropdown": false,
+      "badge": "PRO",
+      "badgeColor": "teal",
+      "active": true
+    },
+    {
+      "id": "nav_fiidii",
+      "label": "FII / DII Desk",
+      "url": "/fii-dii",
+      "icon": "🏛️",
+      "hasDropdown": true,
+      "badge": "",
+      "badgeColor": "",
+      "active": true,
+      "columns": [
+        {
+          "header": "Smart Money Flow",
+          "items": [
+            {
+              "id": "sub_fii_cash",
+              "title": "FII / DII Cash Market",
+              "subtitle": "Daily net buy/sell flow, monthly & yearly trends",
+              "url": "/fii-dii",
+              "icon": "💵",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_fii_fno",
+              "title": "FII / DII Derivatives",
+              "subtitle": "Index futures, options OI & participant positioning",
+              "url": "/fii-dii",
+              "icon": "⚡",
+              "badge": "F&O",
+              "badgeColor": "teal",
+              "active": true
+            },
+            {
+              "id": "sub_fii_matrix",
+              "title": "Participant OI Matrix",
+              "subtitle": "Client, DII, FII & Pro net contract positioning matrix",
+              "url": "/fii-dii#oi",
+              "icon": "📊",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nav_delivery",
+      "label": "Delivery Desk",
+      "url": "/delivery",
+      "icon": "📦",
+      "hasDropdown": false,
+      "badge": "",
+      "badgeColor": "",
+      "active": true
+    },
+    {
+      "id": "nav_mtf",
+      "label": "MTF Desk",
+      "url": "/mtf",
+      "icon": "💳",
+      "hasDropdown": false,
+      "badge": "",
+      "badgeColor": "",
+      "active": true
+    },
+    {
+      "id": "nav_blog",
+      "label": "Market Insights",
+      "url": "/blog",
+      "icon": "✍️",
+      "hasDropdown": false,
+      "badge": "NEW",
+      "badgeColor": "teal",
+      "active": true
+    }
+  ]
+}

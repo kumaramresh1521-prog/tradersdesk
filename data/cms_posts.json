@@ -1,0 +1,56 @@
+[
+  {
+    "title": "Gamma Squeeze Dynamics in Nifty Options",
+    "slug": "gamma-squeeze-dynamics-nifty-options",
+    "category": "Options Strategy",
+    "author": "TradersDesk Quantitative Research",
+    "readTime": "6 min read",
+    "status": "published",
+    "coverImage": "",
+    "excerpt": "A deep dive into how institutional dealer gamma positioning triggers accelerated market squeezes.",
+    "format": "markdown",
+    "content": "# Gamma Squeeze Dynamics\n\nUnderstanding market maker gamma inventory...\n\n## Acceleration Points\nWhen call open interest heavily concentrates around ATM strikes, positive dealer delta hedging accelerates upswings.",
+    "publishedAt": "2026-10-28",
+    "id": "post_1793186031"
+  },
+  {
+    "id": "post_1",
+    "slug": "how-to-trade-intraday-breadth-and-point-contribution",
+    "title": "Mastering Intraday Market Breadth & Stock Point Contribution",
+    "author": "TradersDesk Quantitative Research",
+    "category": "Market Breadth",
+    "tags": [
+      "Breadth",
+      "Nifty 50",
+      "Intraday Strategy",
+      "Point Contribution"
+    ],
+    "coverImage": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&auto=format&fit=crop&q=80",
+    "excerpt": "Learn how reading constituent point contribution and advance/decline participation prevents false breakout traps during major index expiries.",
+    "format": "markdown",
+    "readTime": "4 min read",
+    "published": true,
+    "publishedAt": "2026-10-28",
+    "content": "# Mastering Intraday Market Breadth & Stock Point Contribution\n\nMany retail traders lose money trading NIFTY index breakouts because they look only at the spot index price. If Reliance and HDFC Bank rally by 1.5%, Nifty can surge 80 points even if 35 out of 50 stocks are falling!\n\n---\n\n## The Divergence Trap\n\nWhen you see:\n1. **Index Spot making New Highs**, but\n2. **Breadth % stalling below 40% (O-Dominance)**\n\nThis is a classic **Heavyweight Skew Divergence**. Institutional smart money frequently uses 1 or 2 mega-cap stocks to prop up the index while distributing mid and large-cap holdings across the board.\n\n---\n\n## How to Trade With TradersDesk Breadth Desk\n\n- **Rule 1: Confluence Check**\n  Never take a trend-following long trade unless Breadth % is above its **20 SMA** and Advancing stocks outnumber Decliners (`X > 25`).\n- **Rule 2: Drag vs Support Split Bar**\n  Check the **Net Points Badge** at the bottom of the Breadth desk. If the dragging points exceed supporting points, any morning spike is prone to aggressive mean-reversion.\n\n> *\"Trade the market that is actually participating, not just the index headline.\"*"
+  },
+  {
+    "id": "post_2",
+    "slug": "understanding-fii-derivatives-positioning-matrix",
+    "title": "Decoding FII Institutional Derivatives Positioning & OI Matrix",
+    "author": "TradersDesk Quantitative Research",
+    "category": "F&O Insights",
+    "tags": [
+      "FII",
+      "DII",
+      "Smart Money",
+      "OI Matrix"
+    ],
+    "coverImage": "https://images.unsplash.com/photo-1642543492481-44e81e3914a7?w=800&auto=format&fit=crop&q=80",
+    "excerpt": "How to interpret Client vs FII vs Proprietary option writing and index futures long/short contracts to identify market turning points.",
+    "format": "markdown",
+    "readTime": "6 min read",
+    "published": true,
+    "publishedAt": "2026-10-27",
+    "content": "# Decoding FII Institutional Derivatives Positioning & OI Matrix\n\nForeign Institutional Investors (FIIs) trade with massive capital reserves. Unlike retail participants who mostly buy out-of-the-money (OTM) options, FIIs and Proprietary desks operate as net option writers and futures hedgers.\n\n---\n\n## The 4 Market Participants\n\n1. **Client (Retail & HNIs)**: High volume of Call/Put buyers, typically long gamma.\n2. **DII (Domestic Mutual Funds & Insurance)**: Primarily long equity, occasional protective put hedges.\n3. **FII (Foreign Portfolio Investors)**: Sophisticated multi-leg arbitrage, index futures directional bias.\n4. **Pro (Proprietary Trading Desks / Broker Arbitrageurs)**: Market makers, short volatility sellers.\n\n---\n\n## Reading the Smart Money Matrix\n\nWhen FII Index Futures Long % drops below **15%**, historical data shows extreme exhaustion in selling, setting up explosive short-covering rallies."
+  }
+]

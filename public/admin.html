@@ -779,6 +779,81 @@
         background-color: #ffffff;
       }
 
+    
+      /* CMS & Navigation Builder Styles */
+      .nav-builder-card {
+        background: #060b17;
+        border: 1px solid var(--adm-border);
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+      .nav-builder-card:hover {
+        border-color: rgba(56, 189, 248, 0.3);
+      }
+      .cms-editor-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        height: 480px;
+        margin-top: 14px;
+      }
+      .cms-editor-pane {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      .cms-editor-textarea {
+        flex: 1;
+        width: 100%;
+        background: #040814;
+        border: 1px solid var(--adm-border);
+        border-radius: 8px;
+        padding: 14px;
+        color: #f8fafc;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        resize: none;
+        outline: none;
+        box-sizing: border-box;
+      }
+      .cms-editor-textarea:focus {
+        border-color: #38bdf8;
+      }
+      .cms-preview-pane {
+        flex: 1;
+        background: #071026;
+        border: 1px solid var(--adm-border);
+        border-radius: 8px;
+        padding: 18px;
+        overflow-y: auto;
+        color: #cbd5e1;
+        font-size: 13.5px;
+        line-height: 1.7;
+      }
+      .cms-table-view {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .cms-table-view th {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 10px 14px;
+        font-size: 12px;
+        color: var(--adm-muted);
+        text-align: left;
+        border-bottom: 1px solid var(--adm-border);
+      }
+      .cms-table-view td {
+        padding: 12px 14px;
+        font-size: 13px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        color: #cbd5e1;
+      }
+      .cms-table-view tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
     </style>
   <!-- MOBILE-FIX-INJECTED-v2 -->
 
@@ -858,6 +933,18 @@
           </div>
           <div class="admin-nav-item" data-tab="footer" onclick="switchAdminTab('footer')">
             <span class="icon">🔗</span> Footer Link Manager
+          </div>
+          <div class="admin-nav-item" data-tab="navigation" onclick="switchAdminTab('navigation')">
+            <span class="icon">🧭</span> Menu &amp; Submenus
+          </div>
+          <div class="admin-nav-item" data-tab="pages" onclick="switchAdminTab('pages')">
+            <span class="icon">📄</span> Dynamic Pages CMS
+          </div>
+          <div class="admin-nav-item" data-tab="blog" onclick="switchAdminTab('blog')">
+            <span class="icon">✍️</span> Blog &amp; Articles
+          </div>
+          <div class="admin-nav-item" data-tab="cloud" onclick="switchAdminTab('cloud')">
+            <span class="icon">☁️</span> Google Cloud &amp; Ops
           </div>
         </nav>
 
@@ -1734,6 +1821,264 @@
           </div>
         </section>
 
+
+        <!-- TAB 10: NAVIGATION & MENU BUILDER -->
+        <section id="panelNavigation" class="admin-panel-view">
+          <div class="admin-header">
+            <div>
+              <h1>🧭 Master Header Navigation &amp; Submenu Manager</h1>
+              <p>Add, customize, reorder header menus and dropdown submenus. New items automatically inherit institutional terminal styling with icons, badges, and responsive layouts.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-adm-primary" onclick="addNewTopNavMenu()">➕ Add Top Menu</button>
+              <button type="button" class="btn-adm-primary" style="background:#10b981;" onclick="saveNavBuilderData()">💾 Save Navigation</button>
+              <button type="button" class="btn-adm-danger" onclick="loadNavBuilderData()">🔄 Reload</button>
+            </div>
+          </div>
+
+          <div id="admNavAlert" class="alert-adm" style="display:none; margin-bottom:16px;"></div>
+
+          <!-- Real-Time Interactive Header Preview -->
+          <div class="adm-card" style="border: 1px solid #38bdf8; background: #071026;">
+            <div class="adm-card-header" style="border-bottom: 1px solid rgba(56, 189, 248, 0.2); margin-bottom:12px;">
+              <h3 style="color:#38bdf8; font-size:14px; display:flex; align-items:center; gap:8px;">
+                <span>👁️</span> Real-Time Header Navigation Preview
+              </h3>
+              <span class="p2-badge p2-badge-teal">EXACT VISITOR BAR</span>
+            </div>
+            <div id="navLivePreviewWrap" style="overflow-x:auto; padding:10px; background:#040814; border-radius:8px;">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Menu Items List -->
+          <div id="navMenuItemsContainer">
+            <div style="padding:40px; text-align:center; color:var(--adm-muted);">⏳ Loading navigation menus...</div>
+          </div>
+        </section>
+
+        <!-- TAB 11: DYNAMIC PAGES CMS -->
+        <section id="panelPages" class="admin-panel-view">
+          <div class="admin-header">
+            <div>
+              <h1>📄 Dynamic Pages CMS (Markdown &amp; HTML)</h1>
+              <p>Create and manage custom institutional pages (e.g. <code>/trading-handbook</code>, <code>/algo-rules</code>, <code>/strategy-vault</code>). Write in Markdown or raw HTML with real-time split preview.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-adm-primary" onclick="openNewPageModal()">➕ Create New Page</button>
+              <button type="button" class="btn-adm-danger" onclick="loadCmsPagesList()">🔄 Refresh</button>
+            </div>
+          </div>
+
+          <div id="admPagesAlert" class="alert-adm" style="display:none; margin-bottom:16px;"></div>
+
+          <div class="adm-card" style="padding:0; overflow:hidden;">
+            <table class="cms-table-view">
+              <thead>
+                <tr>
+                  <th>PAGE TITLE</th>
+                  <th>URL SLUG</th>
+                  <th>FORMAT</th>
+                  <th>LAST UPDATED</th>
+                  <th>STATUS</th>
+                  <th style="text-align:right;">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="cmsPagesTableBody">
+                <tr><td colspan="6" style="text-align:center; padding:30px; color:var(--adm-muted);">⏳ Loading pages...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- TAB 12: BLOG & MARKET RESEARCH CMS -->
+        <section id="panelBlog" class="admin-panel-view">
+          <div class="admin-header">
+            <div>
+              <h1>✍️ Market Research &amp; Article Studio</h1>
+              <p>Publish options strategies, market breadth research, and algorithmic analysis articles to <code>/blog</code> and <code>/blog/[slug]</code>.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-adm-primary" onclick="openNewBlogModal()">➕ Write New Article</button>
+              <button type="button" class="btn-adm-danger" onclick="loadCmsBlogList()">🔄 Refresh</button>
+            </div>
+          </div>
+
+          <div id="admBlogAlert" class="alert-adm" style="display:none; margin-bottom:16px;"></div>
+
+          <div class="adm-card" style="padding:0; overflow:hidden;">
+            <table class="cms-table-view">
+              <thead>
+                <tr>
+                  <th>ARTICLE TITLE</th>
+                  <th>CATEGORY</th>
+                  <th>SLUG &amp; URL</th>
+                  <th>PUBLISH DATE</th>
+                  <th>STATUS</th>
+                  <th style="text-align:right;">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="cmsBlogTableBody">
+                <tr><td colspan="6" style="text-align:center; padding:30px; color:var(--adm-muted);">⏳ Loading articles...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- TAB 13: GOOGLE CLOUD & PLATFORM OPS -->
+        <section id="panelCloud" class="admin-panel-view">
+          <div class="admin-header">
+            <div>
+              <h1>☁️ Google Cloud &amp; Platform Operations</h1>
+              <p>Manage Cloud Run deployment, broadcast global live announcement banners, and toggle instant platform maintenance mode.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <a href="/deploy_gcp.bat" download class="btn-adm-primary" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                <span>📥</span> Windows Script (deploy_gcp.bat)
+              </a>
+              <a href="/deploy_gcp.sh" download class="btn-adm-primary" style="background:#0284c7; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                <span>📥</span> Linux Script (deploy_gcp.sh)
+              </a>
+            </div>
+          </div>
+
+          <div id="admCloudAlert" class="alert-adm" style="display:none; margin-bottom:16px;"></div>
+
+          <!-- SECTION 1: GLOBAL LIVE ANNOUNCEMENT BANNER -->
+          <div class="adm-card" style="border: 1px solid rgba(56, 189, 248, 0.4);">
+            <div class="adm-card-header">
+              <h3 style="color:#38bdf8; display:flex; align-items:center; gap:8px;">
+                <span>📢</span> Global Live Announcement / Breaking News Ticker
+              </h3>
+              <span id="announcementBadgeStatus" class="p2-badge p2-badge-teal">ACTIVE ON ALL DESKS</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--adm-muted); margin-bottom:18px;">
+              Display a high-visibility real-time alert ticker at the very top of all visitor pages (e.g. Weekly Expiry warning, new strategy launch, holiday notice).
+            </p>
+
+            <div style="display:grid; grid-template-columns: 1fr 2fr 1fr; gap:16px; margin-bottom:14px;">
+              <div class="adm-form-group">
+                <label>Banner Display Status</label>
+                <select id="annEnabled" class="adm-input" onchange="renderAnnouncementPreview()">
+                  <option value="true">Enabled (Visible to all visitors)</option>
+                  <option value="false">Disabled (Hidden)</option>
+                </select>
+              </div>
+              <div class="adm-form-group">
+                <label>Announcement Text</label>
+                <input type="text" id="annText" class="adm-input" placeholder="e.g. Live Institutional Derivatives Flow matrix is now active!" oninput="renderAnnouncementPreview()" />
+              </div>
+              <div class="adm-form-group">
+                <label>Alert Type</label>
+                <select id="annType" class="adm-input" onchange="renderAnnouncementPreview()">
+                  <option value="info">Info (Cyan Glow)</option>
+                  <option value="alert">Alert (Amber Warning)</option>
+                  <option value="danger">Urgent / Expiry (Red)</option>
+                  <option value="success">Success (Emerald Green)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; margin-bottom:18px;">
+              <div class="adm-form-group">
+                <label>Badge Label</label>
+                <input type="text" id="annBadge" class="adm-input" placeholder="e.g. LIVE, EXPIRY, NEW" oninput="renderAnnouncementPreview()" />
+              </div>
+              <div class="adm-form-group">
+                <label>Call-to-Action Link Label</label>
+                <input type="text" id="annLinkLabel" class="adm-input" placeholder="e.g. Read Handbook &rarr;" oninput="renderAnnouncementPreview()" />
+              </div>
+              <div class="adm-form-group">
+                <label>Call-to-Action Link URL</label>
+                <input type="text" id="annLinkUrl" class="adm-input" placeholder="e.g. /trading-handbook" oninput="renderAnnouncementPreview()" />
+              </div>
+            </div>
+
+            <!-- Real-Time Announcement Preview -->
+            <div style="margin-bottom:18px;">
+              <label style="font-size:11px; font-weight:700; color:var(--adm-muted); text-transform:uppercase; margin-bottom:6px; display:block;">Live Banner Preview</label>
+              <div id="annLivePreview" style="padding:10px 16px; border-radius:8px; display:flex; align-items:center; gap:12px; font-size:13px; font-weight:600;"></div>
+            </div>
+
+            <button type="button" class="btn-adm-primary" style="background:#10b981;" onclick="saveAnnouncementBarSettings()">💾 Save &amp; Broadcast Announcement</button>
+          </div>
+
+          <!-- SECTION 2: PLATFORM MAINTENANCE MODE -->
+          <div class="adm-card" style="border: 1px solid rgba(239, 68, 68, 0.4);">
+            <div class="adm-card-header">
+              <h3 style="color:#f87171; display:flex; align-items:center; gap:8px;">
+                <span>🛠️</span> Instant Platform Maintenance Mode
+              </h3>
+              <span id="maintBadgeStatus" class="p2-badge p2-badge-teal">SYSTEM ONLINE</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--adm-muted); margin-bottom:18px;">
+              When activated, public visitors are shown an institutional system maintenance screen. Admin access remains 100% reachable via direct secret PIN.
+            </p>
+
+            <div style="display:grid; grid-template-columns: 1fr 2fr; gap:16px; margin-bottom:16px;">
+              <div class="adm-form-group">
+                <label>Maintenance Mode State</label>
+                <select id="maintEnabled" class="adm-input" onchange="updateMaintUIState()">
+                  <option value="false">🟢 Offline / Disabled (Public Platform Live)</option>
+                  <option value="true">🔴 Active / Enabled (Visitors Redirected to Maintenance)</option>
+                </select>
+              </div>
+              <div class="adm-form-group">
+                <label>Maintenance Screen Headline</label>
+                <input type="text" id="maintTitle" class="adm-input" placeholder="e.g. Scheduled Settlement &amp; System Upgrade" />
+              </div>
+            </div>
+
+            <div class="adm-form-group" style="margin-bottom:18px;">
+              <label>Detailed Visitor Explanation</label>
+              <textarea id="maintMessage" class="adm-input" style="height:70px; resize:none;" placeholder="Explain maintenance reason, expected resumption time..."></textarea>
+            </div>
+
+            <button type="button" class="btn-adm-danger" onclick="saveMaintenanceSettings()">⚠️ Update Maintenance Mode</button>
+          </div>
+
+          <!-- SECTION 3: GOOGLE CLOUD RUN STATS & DEPLOY GUIDE -->
+          <div class="stat-grid" style="margin-bottom:24px;">
+            <div class="stat-box">
+              <div class="stat-label">CLOUD RUN RUNTIME</div>
+              <div class="stat-val" style="color:#34d399;">Python 3.11</div>
+              <small style="color:var(--adm-muted);">Lightweight slim container</small>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">PORT AUTODETECTION</div>
+              <div class="stat-val" style="color:#60a5fa;">$PORT Native</div>
+              <small style="color:var(--adm-muted);">Cloud Run port 8080 ready</small>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">PERSISTENT STORAGE</div>
+              <div class="stat-val" style="color:#fbbf24;">Supabase Active</div>
+              <small style="color:var(--adm-muted);">State synced across containers</small>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">ADMIN PANEL SECURITY</div>
+              <div class="stat-val" style="color:#a855f7;">Zero Public Links</div>
+              <small style="color:var(--adm-muted);">100% hidden direct URL only</small>
+            </div>
+          </div>
+
+          <!-- 3-Step Guide -->
+          <div class="adm-card">
+            <div class="adm-card-header">
+              <h3 style="color:#60a5fa;">🚀 3-Step Instant Deployment to Google Cloud Run</h3>
+              <span class="p2-badge p2-badge-teal">OFFICIAL GCP ENGINE</span>
+            </div>
+            <div style="font-size:13px; color:#cbd5e1; line-height:1.7;">
+              <p><strong>Step 1: Install &amp; Login to Google Cloud CLI</strong></p>
+              <pre class="diag-card-detail" style="margin-bottom:12px;">gcloud auth login</pre>
+
+              <p><strong>Step 2: Set your Google Cloud Project</strong></p>
+              <pre class="diag-card-detail" style="margin-bottom:12px;">gcloud config set project YOUR_PROJECT_ID</pre>
+
+              <p><strong>Step 3: Run 1-Command Deployment</strong></p>
+              <pre class="diag-card-detail" style="color:#38bdf8;">gcloud run deploy tradersdesk --source . --region asia-south1 --allow-unauthenticated</pre>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -1899,6 +2244,18 @@
         }
         if (tabName === 'features') {
           loadAdminFeatureFlags();
+        }
+        if (tabName === 'navigation') {
+          loadNavBuilderData();
+        }
+        if (tabName === 'pages') {
+          loadCmsPagesList();
+        }
+        if (tabName === 'blog') {
+          loadCmsBlogList();
+        }
+        if (tabName === 'cloud') {
+          loadCloudOpsData();
         }
       }
 
@@ -3695,5 +4052,1038 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal: Dynamic Page Editor (Markdown & HTML) -->
+    <div id="modalCmsPage" class="adm-modal-overlay">
+      <div class="adm-modal-box" style="max-width:960px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--adm-border); padding-bottom:14px;">
+          <div>
+            <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalPageTitleText">📄 Dynamic Page Editor</h3>
+            <span style="font-size:12px; color:#94a3b8;">Write in Markdown or raw HTML with real-time split preview</span>
+          </div>
+          <button type="button" onclick="closeCmsPageModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
+        </div>
+
+        <form id="cmsPageForm" onsubmit="event.preventDefault(); submitCmsPage();">
+          <input type="hidden" id="cmsPageId" />
+          <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:14px;">
+            <div class="adm-form-group">
+              <label>Page Title</label>
+              <input type="text" id="cmsPageTitle" class="adm-input" placeholder="e.g. Quantitative Strategy Guide" required oninput="autoSlugPage(this.value)" />
+            </div>
+            <div class="adm-form-group">
+              <label>URL Slug (Direct: /slug or /p/slug)</label>
+              <input type="text" id="cmsPageSlug" class="adm-input" placeholder="e.g. strategy-guide" required />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:14px;">
+            <div class="adm-form-group">
+              <label>Format</label>
+              <select id="cmsPageFormat" class="adm-input" onchange="renderCmsPagePreview()">
+                <option value="markdown">Markdown (.md - Recommended)</option>
+                <option value="html">Raw HTML</option>
+              </select>
+            </div>
+            <div class="adm-form-group">
+              <label>Status</label>
+              <select id="cmsPageStatus" class="adm-input">
+                <option value="published">Published</option>
+                <option value="draft">Draft (Admin Only)</option>
+              </select>
+            </div>
+            <div class="adm-form-group">
+              <label>SEO Meta Description</label>
+              <input type="text" id="cmsPageMetaDesc" class="adm-input" placeholder="Brief search summary..." />
+            </div>
+          </div>
+
+          <!-- Split Editor -->
+          <div class="cms-editor-split">
+            <div class="cms-editor-pane">
+              <label style="font-size:11px; font-weight:700; color:var(--adm-muted); margin-bottom:6px;">SOURCE CONTENT (MARKDOWN / HTML)</label>
+              <textarea id="cmsPageContent" class="cms-editor-textarea" placeholder="# Heading&#10;&#10;Write your institutional content here...&#10;&#10;- Feature 1&#10;- Feature 2" oninput="renderCmsPagePreview()"></textarea>
+            </div>
+            <div class="cms-editor-pane">
+              <label style="font-size:11px; font-weight:700; color:var(--adm-muted); margin-bottom:6px;">REAL-TIME PREVIEW</label>
+              <div id="cmsPagePreview" class="cms-preview-pane"></div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid var(--adm-border); padding-top:16px;">
+            <button type="button" class="btn-adm-danger" id="btnDeleteCmsPage" style="display:none;" onclick="deleteCmsPage()">🗑️ Delete Page</button>
+            <div style="display:flex; gap:10px; margin-left:auto;">
+              <button type="button" class="seo-pill-btn" onclick="closeCmsPageModal()">Cancel</button>
+              <button type="submit" class="btn-adm-primary" style="background:#10b981;">💾 Save &amp; Publish Page</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Blog Article Editor -->
+    <div id="modalCmsBlog" class="adm-modal-overlay">
+      <div class="adm-modal-box" style="max-width:960px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--adm-border); padding-bottom:14px;">
+          <div>
+            <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalBlogTitleText">✍️ Article Editor</h3>
+            <span style="font-size:12px; color:#94a3b8;">Publish quantitative research and guides to /blog</span>
+          </div>
+          <button type="button" onclick="closeCmsBlogModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
+        </div>
+
+        <form id="cmsBlogForm" onsubmit="event.preventDefault(); submitCmsBlog();">
+          <input type="hidden" id="cmsBlogId" />
+          <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:14px;">
+            <div class="adm-form-group">
+              <label>Article Title</label>
+              <input type="text" id="cmsBlogTitle" class="adm-input" placeholder="e.g. Mastering Nifty Straddle Decay" required oninput="autoSlugBlog(this.value)" />
+            </div>
+            <div class="adm-form-group">
+              <label>URL Slug (/blog/slug)</label>
+              <input type="text" id="cmsBlogSlug" class="adm-input" placeholder="e.g. mastering-nifty-straddle-decay" required />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px; margin-bottom:14px;">
+            <div class="adm-form-group">
+              <label>Category</label>
+              <select id="cmsBlogCategory" class="adm-input">
+                <option value="Options Strategy">Options Strategy</option>
+                <option value="Market Breadth">Market Breadth</option>
+                <option value="F&O Insights">F&O Insights</option>
+                <option value="Technical Analysis">Technical Analysis</option>
+                <option value="Market Education">Market Education</option>
+              </select>
+            </div>
+            <div class="adm-form-group">
+              <label>Author</label>
+              <input type="text" id="cmsBlogAuthor" class="adm-input" value="TradersDesk Quantitative Research" />
+            </div>
+            <div class="adm-form-group">
+              <label>Read Time</label>
+              <input type="text" id="cmsBlogReadTime" class="adm-input" value="5 min read" />
+            </div>
+            <div class="adm-form-group">
+              <label>Status</label>
+              <select id="cmsBlogStatus" class="adm-input">
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="adm-form-group" style="margin-bottom:14px;">
+            <label>Cover Image URL (Optional)</label>
+            <input type="text" id="cmsBlogCover" class="adm-input" placeholder="https://images.unsplash.com/..." />
+          </div>
+
+          <div class="adm-form-group" style="margin-bottom:14px;">
+            <label>Article Short Excerpt</label>
+            <input type="text" id="cmsBlogExcerpt" class="adm-input" placeholder="1-2 sentence hook for the card..." required />
+          </div>
+
+          <!-- Split Editor -->
+          <div class="cms-editor-split">
+            <div class="cms-editor-pane">
+              <label style="font-size:11px; font-weight:700; color:var(--adm-muted); margin-bottom:6px;">ARTICLE CONTENT (MARKDOWN)</label>
+              <textarea id="cmsBlogContent" class="cms-editor-textarea" placeholder="# Article Title&#10;&#10;Write your research post here..." oninput="renderCmsBlogPreview()"></textarea>
+            </div>
+            <div class="cms-editor-pane">
+              <label style="font-size:11px; font-weight:700; color:var(--adm-muted); margin-bottom:6px;">REAL-TIME PREVIEW</label>
+              <div id="cmsBlogPreview" class="cms-preview-pane"></div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid var(--adm-border); padding-top:16px;">
+            <button type="button" class="btn-adm-danger" id="btnDeleteCmsBlog" style="display:none;" onclick="deleteCmsBlog()">🗑️ Delete Article</button>
+            <div style="display:flex; gap:10px; margin-left:auto;">
+              <button type="button" class="seo-pill-btn" onclick="closeCmsBlogModal()">Cancel</button>
+              <button type="submit" class="btn-adm-primary" style="background:#10b981;">💾 Publish Article</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Add Submenu Item -->
+    <div id="modalAddSubmenu" class="adm-modal-overlay">
+      <div class="adm-modal-box" style="max-width:540px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--adm-border); padding-bottom:12px;">
+          <h3 style="margin:0; font-size:16px; font-weight:800; color:#fff;">➕ Add Dropdown Submenu Item</h3>
+          <button type="button" onclick="closeAddSubmenuModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">&times;</button>
+        </div>
+        <input type="hidden" id="subModalMenuIdx" />
+        <input type="hidden" id="subModalColIdx" />
+        <div class="adm-form-group" style="margin-bottom:12px;">
+          <label>Submenu Title</label>
+          <input type="text" id="subModalTitle" class="adm-input" placeholder="e.g. Option Chain Live Matrix" required />
+        </div>
+        <div class="adm-form-group" style="margin-bottom:12px;">
+          <label>Subtitle / Description</label>
+          <input type="text" id="subModalSub" class="adm-input" placeholder="e.g. Real-time Greeks, PCR and OI shifts" />
+        </div>
+        <div class="adm-form-group" style="margin-bottom:12px;">
+          <label>URL / Destination Link</label>
+          <input type="text" id="subModalUrl" class="adm-input" placeholder="e.g. /open_interest.html or /trading-handbook" required />
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:18px;">
+          <div class="adm-form-group">
+            <label>Icon</label>
+            <input type="text" id="subModalIcon" class="adm-input" value="⚡" />
+          </div>
+          <div class="adm-form-group">
+            <label>Badge</label>
+            <input type="text" id="subModalBadge" class="adm-input" placeholder="HOT, LIVE, NEW" />
+          </div>
+          <div class="adm-form-group">
+            <label>Badge Color</label>
+            <select id="subModalBadgeColor" class="adm-input">
+              <option value="teal">Teal (Green)</option>
+              <option value="blue">Blue</option>
+              <option value="amber">Amber</option>
+              <option value="rose">Rose (Red)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="seo-pill-btn" onclick="closeAddSubmenuModal()">Cancel</button>
+          <button type="button" class="btn-adm-primary" onclick="confirmAddSubmenuItem()">Add Submenu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC FOR NAVIGATION, CMS PAGES, BLOG & CLOUD OPS -->
+    <script>
+      // =========================================================================
+      // 1. SIMPLE CLIENT-SIDE MARKDOWN PARSER FOR REAL-TIME SPLIT PREVIEWS
+      // =========================================================================
+      function parseClientMarkdown(md) {
+        if (!md) return '<p style="color:var(--adm-muted); font-style:italic;">Live preview will appear here as you type...</p>';
+        let lines = md.split('\n');
+        let htmlOut = [];
+        let inList = false;
+
+        for (let line of lines) {
+          let trimmed = line.trim();
+          if (trimmed.startsWith('# ')) {
+            if (inList) { htmlOut.push('</ul>'); inList = false; }
+            htmlOut.push('<h1 style="font-size:22px; font-weight:800; color:#fff; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px; margin:16px 0 10px 0;">' + escapeHtml(trimmed.slice(2)) + '</h1>');
+          } else if (trimmed.startsWith('## ')) {
+            if (inList) { htmlOut.push('</ul>'); inList = false; }
+            htmlOut.push('<h2 style="font-size:18px; font-weight:700; color:#38bdf8; margin:14px 0 8px 0;">' + escapeHtml(trimmed.slice(3)) + '</h2>');
+          } else if (trimmed.startsWith('### ')) {
+            if (inList) { htmlOut.push('</ul>'); inList = false; }
+            htmlOut.push('<h3 style="font-size:15px; font-weight:700; color:#e2e8f0; margin:12px 0 6px 0;">' + escapeHtml(trimmed.slice(4)) + '</h3>');
+          } else if (trimmed.startsWith('> ')) {
+            if (inList) { htmlOut.push('</ul>'); inList = false; }
+            htmlOut.push('<blockquote style="border-left:3px solid #38bdf8; background:rgba(56,189,248,0.06); padding:8px 14px; margin:10px 0; border-radius:0 6px 6px 0; color:#cbd5e1;">' + escapeHtml(trimmed.slice(2)) + '</blockquote>');
+          } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            if (!inList) { htmlOut.push('<ul style="padding-left:20px; margin:8px 0;">'); inList = true; }
+            htmlOut.push('<li>' + formatInlineMd(trimmed.slice(2)) + '</li>');
+          } else if (trimmed === '') {
+            if (inList) { htmlOut.push('</ul>'); inList = false; }
+          } else {
+            if (inList) { htmlOut.push('</ul>'); inList = false; }
+            htmlOut.push('<p style="margin:8px 0; line-height:1.6;">' + formatInlineMd(trimmed) + '</p>');
+          }
+        }
+        if (inList) htmlOut.push('</ul>');
+        return htmlOut.join('');
+      }
+
+      function formatInlineMd(text) {
+        return escapeHtml(text)
+          .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fff;">$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/`(.*?)`/g, '<code style="background:rgba(255,255,255,0.08); padding:2px 5px; border-radius:4px; font-family:monospace; color:#38bdf8;">$1</code>');
+      }
+
+      function escapeHtml(str) {
+        return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      // =========================================================================
+      // 2. MASTER NAVIGATION BUILDER
+      // =========================================================================
+      let _navMasterData = { items: [] };
+
+      async function loadNavBuilderData() {
+        try {
+          const res = await fetch('/api/admin/navigation', { headers: getAuthHeaders() });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          _navMasterData = data || { items: [] };
+          renderNavBuilderUI();
+          renderNavLivePreview();
+        } catch(e) {
+          console.error("Failed loading nav master:", e);
+          document.getElementById('navMenuItemsContainer').innerHTML = '<div style="color:#f87171; padding:20px;">Failed to load navigation schema.</div>';
+        }
+      }
+
+      function renderNavBuilderUI() {
+        const container = document.getElementById('navMenuItemsContainer');
+        if (!_navMasterData.items || _navMasterData.items.length === 0) {
+          container.innerHTML = '<div style="padding:40px; text-align:center; color:var(--adm-muted);">No navigation items configured. Click "Add Top Menu" above.</div>';
+          return;
+        }
+
+        let html = '';
+        _navMasterData.items.forEach((item, idx) => {
+          const hasDd = Boolean(item.hasDropdown);
+          const cols = item.columns || [];
+          
+          html += `
+            <div class="nav-builder-card" style="border:1px solid rgba(255,255,255,0.08); border-radius:10px; background:#071026; padding:18px; margin-bottom:16px;">
+              <div class="nav-item-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:12px; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:20px;">${escapeHtml(item.icon || '📌')}</span>
+                  <span style="font-weight:800; font-size:15px; color:#fff;">${escapeHtml(item.label || 'Unnamed Menu')}</span>
+                  <span class="p2-badge p2-badge-${item.badgeColor || 'teal'}">${hasDd ? 'DROPDOWN MENU' : 'DIRECT LINK'}</span>
+                  ${item.badge ? `<span class="p2-badge p2-badge-${item.badgeColor || 'teal'}">${escapeHtml(item.badge)}</span>` : ''}
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" class="seo-pill-btn" onclick="moveNavMenuItem(${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>⬆</button>
+                  <button type="button" class="seo-pill-btn" onclick="moveNavMenuItem(${idx}, 1)" ${idx === _navMasterData.items.length - 1 ? 'disabled' : ''}>⬇</button>
+                  <button type="button" class="btn-adm-danger" style="padding:4px 10px; font-size:11px;" onclick="deleteNavMenuItem(${idx})">🗑️ Delete</button>
+                </div>
+              </div>
+
+              <!-- Top Menu Properties Grid -->
+              <div style="display:grid; grid-template-columns: 2fr 2fr 1fr 1fr 1fr; gap:12px; margin-bottom:14px;">
+                <div class="adm-form-group">
+                  <label>Menu Label</label>
+                  <input type="text" class="adm-input" value="${escapeHtml(item.label || '')}" oninput="updateNavField(${idx}, 'label', this.value)" />
+                </div>
+                <div class="adm-form-group">
+                  <label>URL Path</label>
+                  <input type="text" class="adm-input" value="${escapeHtml(item.url || '')}" oninput="updateNavField(${idx}, 'url', this.value)" />
+                </div>
+                <div class="adm-form-group">
+                  <label>Icon (Emoji)</label>
+                  <input type="text" class="adm-input" value="${escapeHtml(item.icon || '')}" oninput="updateNavField(${idx}, 'icon', this.value)" />
+                </div>
+                <div class="adm-form-group">
+                  <label>Badge</label>
+                  <input type="text" class="adm-input" value="${escapeHtml(item.badge || '')}" placeholder="HOT, NEW" oninput="updateNavField(${idx}, 'badge', this.value)" />
+                </div>
+                <div class="adm-form-group">
+                  <label>Has Dropdown?</label>
+                  <select class="adm-input" onchange="toggleNavDropdown(${idx}, this.value === 'true')">
+                    <option value="false" ${!hasDd ? 'selected' : ''}>Direct Link</option>
+                    <option value="true" ${hasDd ? 'selected' : ''}>Dropdown</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Submenu Items (if Dropdown) -->
+              ${hasDd ? `
+                <div style="background:rgba(0,0,0,0.3); border:1px dashed rgba(56,189,248,0.25); border-radius:8px; padding:14px; margin-top:12px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <span style="font-size:12px; font-weight:700; color:#38bdf8; text-transform:uppercase;">Dropdown Submenu Items (${cols.reduce((acc, c) => acc + (c.items ? c.items.length : 0), 0)} items)</span>
+                    <button type="button" class="btn-adm-primary" style="padding:4px 10px; font-size:11px;" onclick="openAddSubmenuModal(${idx}, 0)">➕ Add Submenu Item</button>
+                  </div>
+                  <div class="nav-sub-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:10px;">
+                    ${renderSubmenuCards(idx, cols)}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      function renderSubmenuCards(menuIdx, cols) {
+        let cardsHtml = '';
+        cols.forEach((col, colIdx) => {
+          (col.items || []).forEach((sub, subIdx) => {
+            cardsHtml += `
+              <div class="sub-item-card" style="background:#0b1329; border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:10px 12px; display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                  <div style="font-weight:700; font-size:12.5px; color:#f8fafc; display:flex; align-items:center; gap:6px;">
+                    <span>${escapeHtml(sub.icon || '⚡')}</span>
+                    <span>${escapeHtml(sub.title || 'Untitled')}</span>
+                  </div>
+                  <button type="button" onclick="deleteSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx})" style="background:none; border:none; color:#ef4444; font-size:14px; cursor:pointer;" title="Delete Submenu">&times;</button>
+                </div>
+                <div style="font-size:11px; color:#94a3b8; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                  ${escapeHtml(sub.sub || '')}
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-family:monospace; color:#38bdf8;">
+                  <span>${escapeHtml(sub.url || '#')}</span>
+                  ${sub.badge ? `<span class="p2-badge p2-badge-${sub.badgeColor || 'teal'}" style="font-size:9px; padding:1px 5px;">${escapeHtml(sub.badge)}</span>` : ''}
+                </div>
+              </div>
+            `;
+          });
+        });
+        return cardsHtml || '<div style="color:var(--adm-muted); font-size:12px; grid-column:1/-1;">No submenu items yet. Click "Add Submenu Item".</div>';
+      }
+
+      function updateNavField(idx, field, val) {
+        if (_navMasterData.items[idx]) {
+          _navMasterData.items[idx][field] = val;
+          renderNavLivePreview();
+        }
+      }
+
+      function toggleNavDropdown(idx, isDd) {
+        if (_navMasterData.items[idx]) {
+          _navMasterData.items[idx].hasDropdown = isDd;
+          if (isDd && (!_navMasterData.items[idx].columns || _navMasterData.items[idx].columns.length === 0)) {
+            _navMasterData.items[idx].columns = [{
+              title: "Quick Links",
+              items: [
+                { title: "Dashboard Overview", sub: "Live institutional tracking", url: "/page2.html", icon: "📊", badge: "NEW", badgeColor: "teal" }
+              ]
+            }];
+          }
+          renderNavBuilderUI();
+          renderNavLivePreview();
+        }
+      }
+
+      function moveNavMenuItem(idx, dir) {
+        const target = idx + dir;
+        if (target < 0 || target >= _navMasterData.items.length) return;
+        const temp = _navMasterData.items[idx];
+        _navMasterData.items[idx] = _navMasterData.items[target];
+        _navMasterData.items[target] = temp;
+        renderNavBuilderUI();
+        renderNavLivePreview();
+      }
+
+      function deleteNavMenuItem(idx) {
+        if (confirm('Are you sure you want to delete this menu item?')) {
+          _navMasterData.items.splice(idx, 1);
+          renderNavBuilderUI();
+          renderNavLivePreview();
+        }
+      }
+
+      function addNewTopNavMenu() {
+        const newItem = {
+          id: "nav_custom_" + Date.now(),
+          label: "New Menu",
+          url: "/custom-desk",
+          icon: "⚡",
+          hasDropdown: false,
+          badge: "NEW",
+          badgeColor: "teal",
+          highlight: false,
+          active: true
+        };
+        _navMasterData.items.push(newItem);
+        renderNavBuilderUI();
+        renderNavLivePreview();
+      }
+
+      function openAddSubmenuModal(menuIdx, colIdx) {
+        document.getElementById('subModalMenuIdx').value = menuIdx;
+        document.getElementById('subModalColIdx').value = colIdx;
+        document.getElementById('subModalTitle').value = '';
+        document.getElementById('subModalSub').value = '';
+        document.getElementById('subModalUrl').value = '';
+        document.getElementById('subModalBadge').value = 'NEW';
+        document.getElementById('modalAddSubmenu').classList.add('active');
+      }
+
+      function closeAddSubmenuModal() {
+        document.getElementById('modalAddSubmenu').classList.remove('active');
+      }
+
+      function confirmAddSubmenuItem() {
+        const mIdx = parseInt(document.getElementById('subModalMenuIdx').value);
+        const cIdx = parseInt(document.getElementById('subModalColIdx').value);
+        const title = document.getElementById('subModalTitle').value.trim();
+        const sub = document.getElementById('subModalSub').value.trim();
+        const url = document.getElementById('subModalUrl').value.trim();
+        const icon = document.getElementById('subModalIcon').value.trim() || '⚡';
+        const badge = document.getElementById('subModalBadge').value.trim();
+        const badgeColor = document.getElementById('subModalBadgeColor').value;
+
+        if (!title || !url) {
+          alert('Title and URL are required.');
+          return;
+        }
+
+        const menu = _navMasterData.items[mIdx];
+        if (!menu.columns || menu.columns.length === 0) {
+          menu.columns = [{ title: "Links", items: [] }];
+        }
+        if (!menu.columns[cIdx]) {
+          menu.columns[cIdx] = { title: "Links", items: [] };
+        }
+        if (!menu.columns[cIdx].items) {
+          menu.columns[cIdx].items = [];
+        }
+
+        menu.columns[cIdx].items.push({
+          title: title,
+          sub: sub,
+          url: url,
+          icon: icon,
+          badge: badge,
+          badgeColor: badgeColor
+        });
+
+        closeAddSubmenuModal();
+        renderNavBuilderUI();
+        renderNavLivePreview();
+      }
+
+      function deleteSubmenuItem(mIdx, cIdx, sIdx) {
+        if (confirm('Delete this submenu item?')) {
+          _navMasterData.items[mIdx].columns[cIdx].items.splice(sIdx, 1);
+          renderNavBuilderUI();
+          renderNavLivePreview();
+        }
+      }
+
+      function renderNavLivePreview() {
+        const wrap = document.getElementById('navLivePreviewWrap');
+        if (!wrap) return;
+
+        let navHtml = '<nav class="inst-nav" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
+        (_navMasterData.items || []).forEach(item => {
+          if (!item.active && item.active !== undefined) return;
+          const badgeHtml = item.badge ? `<span class="p2-badge p2-badge-${item.badgeColor || 'teal'}">${escapeHtml(item.badge)}</span>` : '';
+          navHtml += `
+            <div class="inst-nav-item" style="position:relative;">
+              <span class="inst-nav-btn ${item.highlight ? 'inst-nav-btn-highlight' : ''}" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#cbd5e1; font-size:12.5px; font-weight:600; cursor:pointer;">
+                <span>${escapeHtml(item.icon || '')}</span>
+                <span>${escapeHtml(item.label || '')}</span>
+                ${badgeHtml}
+                ${item.hasDropdown ? '<span style="font-size:10px; opacity:0.6;">▼</span>' : ''}
+              </span>
+            </div>
+          `;
+        });
+        navHtml += '</nav>';
+        wrap.innerHTML = navHtml;
+      }
+
+      async function saveNavBuilderData() {
+        try {
+          const res = await fetch('/api/admin/navigation', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(_navMasterData)
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            showNavAlert('Navigation menu saved and published successfully!', 'success');
+          } else {
+            showNavAlert(data.message || 'Failed to save navigation.', 'danger');
+          }
+        } catch(e) {
+          showNavAlert('Network error saving navigation: ' + e.message, 'danger');
+        }
+      }
+
+      function showNavAlert(msg, type) {
+        const el = document.getElementById('admNavAlert');
+        el.textContent = msg;
+        el.className = `alert-adm ${type}`;
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; }, 5000);
+      }
+
+      // =========================================================================
+      // 3. DYNAMIC PAGES CMS LOGIC
+      // =========================================================================
+      let _cmsPagesList = [];
+
+      async function loadCmsPagesList() {
+        try {
+          const res = await fetch('/api/admin/pages', { headers: getAuthHeaders() });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          _cmsPagesList = data.pages || [];
+          renderCmsPagesTable();
+        } catch(e) {
+          console.error("Failed loading CMS pages:", e);
+        }
+      }
+
+      function renderCmsPagesTable() {
+        const tbody = document.getElementById('cmsPagesTableBody');
+        if (!_cmsPagesList || _cmsPagesList.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--adm-muted);">No custom pages yet. Click "Create New Page" to publish one!</td></tr>';
+          return;
+        }
+
+        let html = '';
+        _cmsPagesList.forEach(page => {
+          const isPub = (page.status !== 'draft');
+          html += `
+            <tr>
+              <td><strong style="color:#fff;">${escapeHtml(page.title || 'Untitled')}</strong></td>
+              <td><code style="color:#38bdf8;">/${escapeHtml(page.slug)}</code></td>
+              <td><span class="p2-badge p2-badge-blue">${(page.format || 'markdown').toUpperCase()}</span></td>
+              <td style="color:var(--adm-muted); font-size:12px;">${escapeHtml(page.updatedAt ? page.updatedAt.slice(0, 10) : 'Recently')}</td>
+              <td><span class="p2-badge p2-badge-${isPub ? 'teal' : 'amber'}">${isPub ? 'PUBLISHED' : 'DRAFT'}</span></td>
+              <td style="text-align:right;">
+                <div style="display:inline-flex; gap:6px;">
+                  <a href="/${escapeHtml(page.slug)}" target="_blank" class="seo-pill-btn" style="text-decoration:none;">View ↗</a>
+                  <button type="button" class="btn-adm-primary" style="padding:4px 10px; font-size:11px;" onclick="editCmsPage('${escapeHtml(page.slug)}')">✏️ Edit</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      }
+
+      function openNewPageModal() {
+        document.getElementById('cmsPageId').value = '';
+        document.getElementById('cmsPageTitle').value = '';
+        document.getElementById('cmsPageSlug').value = '';
+        document.getElementById('cmsPageFormat').value = 'markdown';
+        document.getElementById('cmsPageStatus').value = 'published';
+        document.getElementById('cmsPageMetaDesc').value = '';
+        document.getElementById('cmsPageContent').value = '# Quantitative Strategy Guide\n\nWelcome to the institutional desk handbook.\n\n- **Breadth:** Real-time net advances\n- **Options:** Delta & Vega decay tracking';
+        document.getElementById('btnDeleteCmsPage').style.display = 'none';
+        document.getElementById('modalPageTitleText').textContent = '📄 Create New Custom Page';
+        renderCmsPagePreview();
+        document.getElementById('modalCmsPage').classList.add('active');
+      }
+
+      async function editCmsPage(slug) {
+        try {
+          const res = await fetch('/api/admin/page?slug=' + encodeURIComponent(slug), { headers: getAuthHeaders() });
+          const data = await res.json();
+          if (!data || !data.page) return;
+          const p = data.page;
+
+          document.getElementById('cmsPageId').value = p.id || '';
+          document.getElementById('cmsPageTitle').value = p.title || '';
+          document.getElementById('cmsPageSlug').value = p.slug || '';
+          document.getElementById('cmsPageFormat').value = p.format || 'markdown';
+          document.getElementById('cmsPageStatus').value = p.status || 'published';
+          document.getElementById('cmsPageMetaDesc').value = p.metaDescription || '';
+          document.getElementById('cmsPageContent').value = p.content || '';
+          document.getElementById('btnDeleteCmsPage').style.display = 'inline-block';
+          document.getElementById('modalPageTitleText').textContent = '📄 Edit Page: ' + (p.title || slug);
+          renderCmsPagePreview();
+          document.getElementById('modalCmsPage').classList.add('active');
+        } catch(e) {
+          alert('Failed loading page: ' + e.message);
+        }
+      }
+
+      function closeCmsPageModal() {
+        document.getElementById('modalCmsPage').classList.remove('active');
+      }
+
+      function autoSlugPage(val) {
+        const slugInput = document.getElementById('cmsPageSlug');
+        if (slugInput && !document.getElementById('cmsPageId').value) {
+          slugInput.value = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
+      }
+
+      function renderCmsPagePreview() {
+        const content = document.getElementById('cmsPageContent').value;
+        const fmt = document.getElementById('cmsPageFormat').value;
+        const preview = document.getElementById('cmsPagePreview');
+        if (fmt === 'markdown') {
+          preview.innerHTML = parseClientMarkdown(content);
+        } else {
+          preview.innerHTML = content || '<p style="color:var(--adm-muted);">Raw HTML preview...</p>';
+        }
+      }
+
+      async function submitCmsPage() {
+        const payload = {
+          id: document.getElementById('cmsPageId').value || undefined,
+          title: document.getElementById('cmsPageTitle').value.trim(),
+          slug: document.getElementById('cmsPageSlug').value.trim(),
+          format: document.getElementById('cmsPageFormat').value,
+          status: document.getElementById('cmsPageStatus').value,
+          metaDescription: document.getElementById('cmsPageMetaDesc').value.trim(),
+          content: document.getElementById('cmsPageContent').value
+        };
+
+        try {
+          const res = await fetch('/api/admin/pages/save', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            closeCmsPageModal();
+            loadCmsPagesList();
+            showPagesAlert('Page saved and published successfully!', 'success');
+          } else {
+            alert(data.message || 'Failed saving page.');
+          }
+        } catch(e) {
+          alert('Network error saving page: ' + e.message);
+        }
+      }
+
+      async function deleteCmsPage() {
+        const slug = document.getElementById('cmsPageSlug').value.trim();
+        if (!confirm(`Are you sure you want to permanently delete page "/${slug}"?`)) return;
+
+        try {
+          const res = await fetch('/api/admin/pages/delete', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ slug: slug })
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            closeCmsPageModal();
+            loadCmsPagesList();
+            showPagesAlert('Page deleted successfully.', 'success');
+          } else {
+            alert(data.message || 'Failed deleting page.');
+          }
+        } catch(e) {
+          alert('Network error deleting page: ' + e.message);
+        }
+      }
+
+      function showPagesAlert(msg, type) {
+        const el = document.getElementById('admPagesAlert');
+        el.textContent = msg;
+        el.className = `alert-adm ${type}`;
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; }, 5000);
+      }
+
+      // =========================================================================
+      // 4. BLOG & ARTICLES STUDIO LOGIC
+      // =========================================================================
+      let _cmsBlogList = [];
+
+      async function loadCmsBlogList() {
+        try {
+          const res = await fetch('/api/admin/blog/posts', { headers: getAuthHeaders() });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          _cmsBlogList = data.posts || [];
+          renderCmsBlogTable();
+        } catch(e) {
+          console.error("Failed loading CMS blog posts:", e);
+        }
+      }
+
+      function renderCmsBlogTable() {
+        const tbody = document.getElementById('cmsBlogTableBody');
+        if (!_cmsBlogList || _cmsBlogList.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--adm-muted);">No articles published yet. Click "Write New Article" above!</td></tr>';
+          return;
+        }
+
+        let html = '';
+        _cmsBlogList.forEach(post => {
+          const isPub = (post.status !== 'draft');
+          html += `
+            <tr>
+              <td><strong style="color:#fff;">${escapeHtml(post.title || 'Untitled Article')}</strong></td>
+              <td><span class="p2-badge p2-badge-blue">${escapeHtml(post.category || 'Insights')}</span></td>
+              <td><code style="color:#38bdf8;">/blog/${escapeHtml(post.slug)}</code></td>
+              <td style="color:var(--adm-muted); font-size:12px;">${escapeHtml(post.publishedAt || '')}</td>
+              <td><span class="p2-badge p2-badge-${isPub ? 'teal' : 'amber'}">${isPub ? 'PUBLISHED' : 'DRAFT'}</span></td>
+              <td style="text-align:right;">
+                <div style="display:inline-flex; gap:6px;">
+                  <a href="/blog/${escapeHtml(post.slug)}" target="_blank" class="seo-pill-btn" style="text-decoration:none;">View ↗</a>
+                  <button type="button" class="btn-adm-primary" style="padding:4px 10px; font-size:11px;" onclick="editCmsBlog('${escapeHtml(post.slug)}')">✏️ Edit</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      }
+
+      function openNewBlogModal() {
+        document.getElementById('cmsBlogId').value = '';
+        document.getElementById('cmsBlogTitle').value = '';
+        document.getElementById('cmsBlogSlug').value = '';
+        document.getElementById('cmsBlogCategory').value = 'Options Strategy';
+        document.getElementById('cmsBlogAuthor').value = 'TradersDesk Quantitative Research';
+        document.getElementById('cmsBlogReadTime').value = '5 min read';
+        document.getElementById('cmsBlogStatus').value = 'published';
+        document.getElementById('cmsBlogCover').value = '';
+        document.getElementById('cmsBlogExcerpt').value = '';
+        document.getElementById('cmsBlogContent').value = '# Intraday Market Breadth Dynamics\n\nAnalyzing the net advance-decline ratio during opening rotations...\n\n## Key Takeaways\n- Positive skew above +300 indicates institutional dominance\n- Track weighted point contribution alongside count';
+        document.getElementById('btnDeleteCmsBlog').style.display = 'none';
+        document.getElementById('modalBlogTitleText').textContent = '✍️ Write New Research Article';
+        renderCmsBlogPreview();
+        document.getElementById('modalCmsBlog').classList.add('active');
+      }
+
+      async function editCmsBlog(slug) {
+        try {
+          const res = await fetch('/api/blog/post/' + encodeURIComponent(slug));
+          const data = await res.json();
+          if (!data || !data.post) return;
+          const p = data.post;
+
+          document.getElementById('cmsBlogId').value = p.id || '';
+          document.getElementById('cmsBlogTitle').value = p.title || '';
+          document.getElementById('cmsBlogSlug').value = p.slug || '';
+          document.getElementById('cmsBlogCategory').value = p.category || 'Options Strategy';
+          document.getElementById('cmsBlogAuthor').value = p.author || 'TradersDesk Quantitative Research';
+          document.getElementById('cmsBlogReadTime').value = p.readTime || '5 min read';
+          document.getElementById('cmsBlogStatus').value = p.status || 'published';
+          document.getElementById('cmsBlogCover').value = p.coverImage || '';
+          document.getElementById('cmsBlogExcerpt').value = p.excerpt || '';
+          document.getElementById('cmsBlogContent').value = p.content || '';
+          document.getElementById('btnDeleteCmsBlog').style.display = 'inline-block';
+          document.getElementById('modalBlogTitleText').textContent = '✍️ Edit Article: ' + (p.title || slug);
+          renderCmsBlogPreview();
+          document.getElementById('modalCmsBlog').classList.add('active');
+        } catch(e) {
+          alert('Failed loading article: ' + e.message);
+        }
+      }
+
+      function closeCmsBlogModal() {
+        document.getElementById('modalCmsBlog').classList.remove('active');
+      }
+
+      function autoSlugBlog(val) {
+        const slugInput = document.getElementById('cmsBlogSlug');
+        if (slugInput && !document.getElementById('cmsBlogId').value) {
+          slugInput.value = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
+      }
+
+      function renderCmsBlogPreview() {
+        const content = document.getElementById('cmsBlogContent').value;
+        const preview = document.getElementById('cmsBlogPreview');
+        preview.innerHTML = parseClientMarkdown(content);
+      }
+
+      async function submitCmsBlog() {
+        const payload = {
+          id: document.getElementById('cmsBlogId').value || undefined,
+          title: document.getElementById('cmsBlogTitle').value.trim(),
+          slug: document.getElementById('cmsBlogSlug').value.trim(),
+          category: document.getElementById('cmsBlogCategory').value,
+          author: document.getElementById('cmsBlogAuthor').value.trim(),
+          readTime: document.getElementById('cmsBlogReadTime').value.trim(),
+          status: document.getElementById('cmsBlogStatus').value,
+          coverImage: document.getElementById('cmsBlogCover').value.trim(),
+          excerpt: document.getElementById('cmsBlogExcerpt').value.trim(),
+          format: "markdown",
+          content: document.getElementById('cmsBlogContent').value
+        };
+
+        try {
+          const res = await fetch('/api/admin/blog/save', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            closeCmsBlogModal();
+            loadCmsBlogList();
+            showBlogAlert('Article published successfully!', 'success');
+          } else {
+            alert(data.message || 'Failed saving article.');
+          }
+        } catch(e) {
+          alert('Network error saving article: ' + e.message);
+        }
+      }
+
+      async function deleteCmsBlog() {
+        const id = document.getElementById('cmsBlogId').value;
+        const slug = document.getElementById('cmsBlogSlug').value;
+        if (!confirm(`Are you sure you want to permanently delete article "${slug}"?`)) return;
+
+        try {
+          const res = await fetch('/api/admin/blog/delete', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ id: id, slug: slug })
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            closeCmsBlogModal();
+            loadCmsBlogList();
+            showBlogAlert('Article deleted successfully.', 'success');
+          } else {
+            alert(data.message || 'Failed deleting article.');
+          }
+        } catch(e) {
+          alert('Network error deleting article: ' + e.message);
+        }
+      }
+
+      function showBlogAlert(msg, type) {
+        const el = document.getElementById('admBlogAlert');
+        el.textContent = msg;
+        el.className = `alert-adm ${type}`;
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; }, 5000);
+      }
+
+      // =========================================================================
+      // 5. GOOGLE CLOUD OPS & PLATFORM SETTINGS LOGIC
+      // =========================================================================
+      let _platformSettings = {};
+
+      async function loadCloudOpsData() {
+        try {
+          const res = await fetch('/api/admin/settings', { headers: getAuthHeaders() });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          _platformSettings = (data && data.settings) ? data.settings : {};
+          populateCloudOpsUI();
+        } catch(e) {
+          console.error("Failed loading platform settings:", e);
+        }
+      }
+
+      function populateCloudOpsUI() {
+        const ann = _platformSettings.announcement_bar || {};
+        document.getElementById('annEnabled').value = ann.enabled ? 'true' : 'false';
+        document.getElementById('annText').value = ann.text || '';
+        document.getElementById('annType').value = ann.type || 'info';
+        document.getElementById('annBadge').value = ann.badge || 'NEW';
+        document.getElementById('annLinkLabel').value = ann.link_text || '';
+        document.getElementById('annLinkUrl').value = ann.link_url || '';
+        renderAnnouncementPreview();
+
+        const maint = _platformSettings.maintenance_mode || {};
+        document.getElementById('maintEnabled').value = maint.enabled ? 'true' : 'false';
+        document.getElementById('maintTitle').value = maint.title || '';
+        document.getElementById('maintMessage').value = maint.message || '';
+        updateMaintUIState();
+      }
+
+      function renderAnnouncementPreview() {
+        const enabled = document.getElementById('annEnabled').value === 'true';
+        const text = document.getElementById('annText').value;
+        const type = document.getElementById('annType').value;
+        const badge = document.getElementById('annBadge').value;
+        const linkLbl = document.getElementById('annLinkLabel').value;
+        const linkUrl = document.getElementById('annLinkUrl').value;
+
+        const badgeEl = document.getElementById('announcementBadgeStatus');
+        if (badgeEl) {
+          badgeEl.className = enabled ? 'p2-badge p2-badge-teal' : 'p2-badge p2-badge-amber';
+          badgeEl.textContent = enabled ? 'ACTIVE ON ALL DESKS' : 'DISABLED';
+        }
+
+        const preview = document.getElementById('annLivePreview');
+        if (!enabled) {
+          preview.style.background = 'rgba(255,255,255,0.03)';
+          preview.style.border = '1px dashed rgba(255,255,255,0.1)';
+          preview.style.color = 'var(--adm-muted)';
+          preview.innerHTML = '<em>Announcement banner is currently disabled. Visitors will not see a top alert ticker.</em>';
+          return;
+        }
+
+        let bg = 'rgba(56, 189, 248, 0.12)';
+        let border = '1px solid rgba(56, 189, 248, 0.3)';
+        let color = '#38bdf8';
+        if (type === 'alert') {
+          bg = 'rgba(245, 158, 11, 0.12)';
+          border = '1px solid rgba(245, 158, 11, 0.3)';
+          color = '#fbbf24';
+        } else if (type === 'danger') {
+          bg = 'rgba(239, 68, 68, 0.12)';
+          border = '1px solid rgba(239, 68, 68, 0.3)';
+          color = '#f87171';
+        } else if (type === 'success') {
+          bg = 'rgba(16, 185, 129, 0.12)';
+          border = '1px solid rgba(16, 185, 129, 0.3)';
+          color = '#34d399';
+        }
+
+        preview.style.background = bg;
+        preview.style.border = border;
+        preview.style.color = '#fff';
+        preview.innerHTML = `
+          ${badge ? `<span class="p2-badge p2-badge-teal" style="background:${color}; color:#000; font-weight:800;">${escapeHtml(badge)}</span>` : ''}
+          <span style="flex:1;">${escapeHtml(text || 'Announcement message goes here...')}</span>
+          ${linkLbl ? `<a href="${escapeHtml(linkUrl || '#')}" style="color:${color}; text-decoration:underline;">${escapeHtml(linkLbl)}</a>` : ''}
+        `;
+      }
+
+      function updateMaintUIState() {
+        const isEnabled = document.getElementById('maintEnabled').value === 'true';
+        const badge = document.getElementById('maintBadgeStatus');
+        if (badge) {
+          badge.className = isEnabled ? 'p2-badge p2-badge-rose' : 'p2-badge p2-badge-teal';
+          badge.textContent = isEnabled ? '503 MAINTENANCE ACTIVE' : 'SYSTEM ONLINE';
+        }
+      }
+
+      async function saveAnnouncementBarSettings() {
+        if (!_platformSettings.announcement_bar) _platformSettings.announcement_bar = {};
+        _platformSettings.announcement_bar.enabled = (document.getElementById('annEnabled').value === 'true');
+        _platformSettings.announcement_bar.text = document.getElementById('annText').value.trim();
+        _platformSettings.announcement_bar.type = document.getElementById('annType').value;
+        _platformSettings.announcement_bar.badge = document.getElementById('annBadge').value.trim();
+        _platformSettings.announcement_bar.link_text = document.getElementById('annLinkLabel').value.trim();
+        _platformSettings.announcement_bar.link_url = document.getElementById('annLinkUrl').value.trim();
+
+        try {
+          const res = await fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(_platformSettings)
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            showCloudAlert('Live Announcement ticker saved and broadcasted across all pages!', 'success');
+          } else {
+            alert(data.message || 'Failed saving settings.');
+          }
+        } catch(e) {
+          alert('Network error saving settings: ' + e.message);
+        }
+      }
+
+      async function saveMaintenanceSettings() {
+        const isEnabled = (document.getElementById('maintEnabled').value === 'true');
+        if (isEnabled && !confirm('WARNING: Turning on Maintenance Mode will temporarily lock public visitors out of the platform and display the maintenance screen. Proceed?')) {
+          return;
+        }
+
+        if (!_platformSettings.maintenance_mode) _platformSettings.maintenance_mode = {};
+        _platformSettings.maintenance_mode.enabled = isEnabled;
+        _platformSettings.maintenance_mode.title = document.getElementById('maintTitle').value.trim();
+        _platformSettings.maintenance_mode.message = document.getElementById('maintMessage').value.trim();
+
+        try {
+          const res = await fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(_platformSettings)
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            showCloudAlert(`Maintenance Mode updated: ${isEnabled ? 'ACTIVE' : 'OFFLINE (Public Live)'}`, isEnabled ? 'danger' : 'success');
+          } else {
+            alert(data.message || 'Failed updating maintenance mode.');
+          }
+        } catch(e) {
+          alert('Network error updating maintenance: ' + e.message);
+        }
+      }
+
+      function showCloudAlert(msg, type) {
+        const el = document.getElementById('admCloudAlert');
+        el.textContent = msg;
+        el.className = `alert-adm ${type}`;
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; }, 5000);
+      }
+    </script>
   </body>
 </html>

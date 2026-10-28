@@ -1,0 +1,23 @@
+[
+  {
+    "id": "page_handbook",
+    "slug": "trading-handbook",
+    "title": "Institutional Trading Handbook & Frameworks",
+    "format": "markdown",
+    "metaTitle": "Institutional Trading Handbook | TradersDesk Quantitative Analytics",
+    "metaDescription": "Master guide for index options, market breadth dynamics, PnF reversals, and FII/DII flow interpretation.",
+    "published": true,
+    "updatedAt": "2026-10-28T18:30:00Z",
+    "content": "# Institutional Trading Handbook\n\nWelcome to the official **TradersDesk Quantitative Framework Guide**. This handbook explains how our mathematical models, real-time market breadth, and options analytics operate.\n\n---\n\n## 1. Market Breadth Dynamics\n\nMarket breadth measures the underlying participation of scrips in an index move. While market-cap weighted indices can be manipulated by 2 or 3 heavyweights, true institutional accumulation is revealed only when broader constituents advance.\n\n- **X-Column Dominance**: Advancing stocks with bullish PnF breakout signals.\n- **O-Column Dominance**: Decliners registering support breaks.\n- **20 SMA Crosses**: Leading signals for sustained intraday trend extensions.\n\n---\n\n## 2. Cash Delivery vs F&O Buildup\n\nWhen Price rises accompanied by high cash delivery volume, it indicates genuine institutional absorption rather than temporary speculative leverage.\n\n| Signal Type | Delivery % | Futures OI | Institutional Meaning |\n|---|---|---|---|\n| Genuine Longs | > 60% | Increasing | Long-term institutional accumulation |\n| Short Covering | < 30% | Decreasing | Speculative bears squaring off |\n| Strong Bearish | > 60% | Increasing | Heavy institutional distribution |\n\n---\n\n## 3. Options Greek Calibration\n\nAll Black-Scholes valuations in TradersDesk are calibrated with continuous trading-minute time decay and live implied volatility surfaces across Upstox and Angel One real exchange feeds."
+  },
+  {
+    "title": "Automated Strategy Testing Guide",
+    "slug": "automated-strategy-guide",
+    "format": "markdown",
+    "status": "published",
+    "metaDescription": "Test guide created via admin API",
+    "content": "# Automated Strategy Testing Guide\n\nThis guide was published dynamically through the Admin CMS.\n\n- Real-time Execution\n- Statistical Edge",
+    "updatedAt": "2026-10-28T16:43:46.949360Z",
+    "id": "page_1793186026"
+  }
+]

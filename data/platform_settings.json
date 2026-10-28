@@ -1,0 +1,15 @@
+{
+  "maintenance_mode": {
+    "enabled": false,
+    "title": "Scheduled Maintenance",
+    "message": "Terminal is updating."
+  },
+  "announcement_bar": {
+    "enabled": true,
+    "type": "info",
+    "badge": "LIVE",
+    "text": "Live Institutional Derivatives Flow & Option Chain matrix is active.",
+    "link_text": "Read Handbook →",
+    "link_url": "/trading-handbook"
+  }
+}

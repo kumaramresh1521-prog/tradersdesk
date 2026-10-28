@@ -36,6 +36,7 @@ import tools_engine
 import supabase_engine
 import seo_engine
 import straddle_engine
+import cms_engine
 import breadth_contribution_engine
 import open_interest_engine
 import fii_dii_engine
@@ -196,8 +197,7 @@ def get_default_footer_links() -> dict:
                     {"label": "Terms of Institutional Service", "url": "/terms", "type": "link", "target": "_self"},
                     {"label": "Quantitative Model Methodologies", "url": "/about", "type": "link", "target": "_self"},
                     {"label": "Contact & Trader Support", "url": "/contact", "type": "link", "target": "_self"},
-                    {"label": "NSE Official Regulatory Archive ↗", "url": "https://www.nseindia.com", "type": "link", "target": "_blank"},
-                    {"label": "Platform Administration 🔒", "url": "/admin", "type": "link", "target": "_self"}
+                    {"label": "NSE Official Regulatory Archive ↗", "url": "https://www.nseindia.com", "type": "link", "target": "_blank"}
                 ]
             }
         ]
@@ -9892,6 +9892,23 @@ class RequestHandler(BaseHTTPRequestHandler):
         except Exception:
             pass
 
+    def send_html_response(self, status: int, html_str: str) -> None:
+        data = html_str.encode("utf-8")
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            cors_origin = self._get_cors_origin()
+            if cors_origin:
+                self.send_header("Access-Control-Allow-Origin", cors_origin)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        except Exception:
+            pass
+
     def read_body(self) -> dict:
         length = int(self.headers.get("Content-Length", "0") or 0)
         if length <= 0:
@@ -9905,6 +9922,37 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        if path == "/api/settings":
+            return self.send_json(200, {"ok": True, "settings": cms_engine.get_platform_settings()})
+
+        if path == "/api/admin/settings":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            return self.send_json(200, {"ok": True, "settings": cms_engine.get_platform_settings()})
+
+        # Institutional Maintenance Mode Gatekeeper
+        try:
+            _st = cms_engine.get_platform_settings().get("maintenance_mode", {})
+            if _st.get("enabled", False):
+                _is_exempt = (
+                    path.startswith("/admin") or
+                    path.startswith("/api/admin/") or
+                    path in ("/api/feature-flags", "/api/settings", "/api/status") or
+                    path.startswith("/styles.css") or
+                    path.startswith("/page2.css") or
+                    path.startswith("/css/") or
+                    path.startswith("/js/") or
+                    path.startswith("/favicon")
+                )
+                if not _is_exempt:
+                    _m_html = cms_engine.render_maintenance_page(
+                        title=_st.get("title"),
+                        message=_st.get("message")
+                    )
+                    return self.send_html_response(503, _m_html)
+        except Exception:
+            pass
+
         if path == "/api/status":
             sync_broker_settings_from_supabase_if_needed()
             active_broker = brokers.get_active_broker_name(env)
@@ -10490,6 +10538,41 @@ class RequestHandler(BaseHTTPRequestHandler):
 
             return self.send_json(200, get_default_footer_links())
 
+        # Navigation & CMS Public & Admin GET Endpoints
+        if path == "/api/navigation":
+            return self.send_json(200, cms_engine.get_navigation())
+
+        if path == "/api/admin/navigation":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            return self.send_json(200, cms_engine.get_navigation())
+
+        if path == "/api/admin/pages":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            return self.send_json(200, {"ok": True, "pages": cms_engine.list_pages()})
+
+        if path == "/api/admin/page":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            query = urllib.parse.parse_qs(parsed.query)
+            slug = query.get("slug", [""])[0]
+            page = cms_engine.get_page(slug)
+            return self.send_json(200 if page else 404, {"ok": bool(page), "page": page})
+
+        if path == "/api/blog/posts":
+            return self.send_json(200, {"ok": True, "posts": cms_engine.list_posts(published_only=True)})
+
+        if path.startswith("/api/blog/post/"):
+            b_slug = path[15:].strip()
+            b_post = cms_engine.get_post(b_slug)
+            return self.send_json(200 if b_post else 404, {"ok": bool(b_post), "post": b_post})
+
+        if path == "/api/admin/blog/posts":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            return self.send_json(200, {"ok": True, "posts": cms_engine.list_posts(published_only=False)})
+
         if path == "/api/feature-flags":
             return self.send_json(200, {"ok": True, "flags": get_feature_flags()})
 
@@ -10915,6 +10998,30 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "no-cache, must-revalidate")
             self.end_headers()
             return
+
+        # Dynamic CMS Blog & Page routes
+        if clean_path in ("/blog", "/blog/"):
+            blog_html = cms_engine.render_blog_index()
+            return self.send_html_response(200, blog_html)
+
+        if clean_path.startswith("/blog/"):
+            b_slug = clean_path[6:].strip().strip("/")
+            post_html = cms_engine.render_post_view(b_slug)
+            if post_html:
+                return self.send_html_response(200, post_html)
+
+        if clean_path.startswith("/p/"):
+            p_slug = clean_path[3:].strip().strip("/")
+            page_html = cms_engine.render_page_view(p_slug)
+            if page_html:
+                return self.send_html_response(200, page_html)
+
+        # Direct slug lookup for custom CMS pages (e.g. /trading-handbook)
+        custom_slug = clean_path.lstrip("/").strip()
+        if custom_slug and cms_engine.get_page(custom_slug):
+            page_html = cms_engine.render_page_view(custom_slug)
+            if page_html:
+                return self.send_html_response(200, page_html)
 
         if clean_path in INDEX_ROUTES:
             return self.serve_html_with_seo("/index.html", clean_path)
@@ -11514,6 +11621,55 @@ class RequestHandler(BaseHTTPRequestHandler):
                         "flags": get_feature_flags()
                     })
                 return self.send_json(400, {"ok": False, "message": "Invalid feature flags payload"})
+
+            # Navigation & CMS Admin POST Endpoints
+            if parsed.path == "/api/admin/settings":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                success = cms_engine.save_platform_settings(payload)
+                return self.send_json(200 if success else 400, {
+                    "ok": success,
+                    "message": "Platform settings updated successfully" if success else "Failed updating platform settings",
+                    "settings": cms_engine.get_platform_settings()
+                })
+
+            if parsed.path == "/api/admin/navigation":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                success = cms_engine.save_navigation(payload)
+                return self.send_json(200 if success else 500, {"ok": success, "message": "Navigation menu saved successfully" if success else "Failed saving navigation"})
+
+            if parsed.path == "/api/admin/pages/save":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                success = cms_engine.save_page(payload)
+                return self.send_json(200 if success else 400, {"ok": success, "message": "Page saved successfully" if success else "Failed saving page (slug required)"})
+
+            if parsed.path == "/api/admin/pages/delete":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                slug = payload.get("slug", "")
+                success = cms_engine.delete_page(slug)
+                return self.send_json(200 if success else 400, {"ok": success, "message": "Page deleted successfully" if success else "Failed deleting page"})
+
+            if parsed.path == "/api/admin/blog/save":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                success = cms_engine.save_post(payload)
+                return self.send_json(200 if success else 400, {"ok": success, "message": "Article saved successfully" if success else "Failed saving article"})
+
+            if parsed.path == "/api/admin/blog/delete":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                post_id = payload.get("id", "")
+                success = cms_engine.delete_post(post_id)
+                return self.send_json(200 if success else 400, {"ok": success, "message": "Article deleted successfully" if success else "Failed deleting article"})
 
             if parsed.path == "/api/admin/footer-links":
                 if not check_admin_request(self):
