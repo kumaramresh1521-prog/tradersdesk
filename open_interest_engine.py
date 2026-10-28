@@ -175,190 +175,149 @@ def _compute_open_interest_data(
     strike_range: int = 10
 ) -> Dict[str, Any]:
     t0 = time.time()
-    sym = (symbol or "NIFTY").upper()
+    raw_sym = (symbol or "NIFTY").strip().upper()
 
-    # 1. Check live broker chain from server
-    live_server_data = _fetch_live_server_chain(sym)
-    live_chain = live_server_data.get("optionChain") if live_server_data else None
-    live_chart_summary = live_server_data.get("chartSummary") if live_server_data else None
-    live_chain_summary = live_server_data.get("chainSummary") if live_server_data else None
-
-    # 2. Base Expiries
-    expiries = []
-    if live_server_data and live_server_data.get("expiries"):
-        for e in live_server_data["expiries"][:5]:
-            exp_val = e.get("value") or e.get("date") or e.get("label")
-            exp_lbl = e.get("label") or exp_val
-            if exp_val:
-                expiries.append({"date": str(exp_val), "label": str(exp_lbl)})
-
-    # Load master FO bhavcopy options cache
-    fo_path = DATA_DIR / "fo_bhav_eod_master.json"
-    fo_data = {}
-    if fo_path.exists():
-        try:
-            with open(fo_path, "r", encoding="utf-8") as f:
-                fo_data = json.load(f)
-        except Exception:
-            fo_data = {}
-
-    is_index = sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX", "NIFTYNXT50")
-
-    if not expiries:
-        today_dt = now_ist()
-        today_iso = today_dt.strftime("%Y-%m-%d")
-
-        if is_index:
-            # Indices HAVE weekly expiries (Nifty=Thu/Tue, BankNifty=Wed, FinNifty=Tue, Midcap=Mon, Sensex=Fri)
-            weekday_map = {
-                "NIFTY": 1,      # Tuesday/Thursday in 2026
-                "BANKNIFTY": 2,  # Wednesday
-                "FINNIFTY": 1,   # Tuesday
-                "MIDCPNIFTY": 0, # Monday
-                "SENSEX": 4,     # Friday
-                "BANKEX": 0,     # Monday
-            }
-            target_wd = weekday_map.get(sym, 3)
-
-            all_exps = fo_data.get("all_expiries_by_symbol", {}).get(sym, [])
-            if not all_exps and sym in fo_data.get("latest_options_by_expiry", {}):
-                all_exps = sorted(list(fo_data["latest_options_by_expiry"][sym].keys()))
-
-            dynamic_weeklies = []
-            for w in range(6):
-                days_ahead = ((target_wd - today_dt.weekday() + 7) % 7) + (w * 7)
-                exp_d = (today_dt + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
-                dynamic_weeklies.append(exp_d)
-
-            valid_exps = sorted(set([e for e in all_exps if e >= today_iso] + dynamic_weeklies))
-            if not valid_exps:
-                valid_exps = all_exps
-
-            for exp_d in valid_exps[:8]:
-                try:
-                    dt_obj = datetime.strptime(exp_d, "%Y-%m-%d")
-                    # Check if near end of month (Monthly expiry)
-                    is_monthly = (dt_obj.day >= 22 and (dt_obj + timedelta(days=7)).month != dt_obj.month)
-                    tag = "Monthly" if is_monthly else "Weekly"
-                    lbl = dt_obj.strftime("%d-%b-%Y") + f" ({tag})"
-                except Exception:
-                    lbl = exp_d
-                expiries.append({"date": exp_d, "label": lbl})
-
-        else:
-            # Stocks ONLY have monthly expiries in NSE! Never tag stocks as Weekly!
-            all_exps = fo_data.get("all_expiries_by_symbol", {}).get(sym, [])
-            if not all_exps and sym in fo_data.get("latest_options_by_expiry", {}):
-                all_exps = sorted(list(fo_data["latest_options_by_expiry"][sym].keys()))
-
-            valid_exps = sorted([e for e in all_exps if e >= today_iso]) or all_exps
-            for idx, exp_d in enumerate(valid_exps[:4]):
-                try:
-                    dt_obj = datetime.strptime(exp_d, "%Y-%m-%d")
-                    m_tag = "Near Monthly" if idx == 0 else ("Next Monthly" if idx == 1 else "Far Monthly")
-                    lbl = dt_obj.strftime("%d-%b-%Y") + f" ({m_tag})"
-                except Exception:
-                    lbl = exp_d
-                expiries.append({"date": exp_d, "label": lbl})
-
-    if not expiries:
-        expiries = [
-            {"date": "2026-11-23", "label": "23-Nov-2026 (Near Monthly)"},
-            {"date": "2026-12-29", "label": "29-Dec-2026 (Next Monthly)"}
-        ]
-
-    sel_expiry = expiry or expiries[0]["date"]
-
-    # 3. Resolve Spot Price & Change
-    spot = INDEX_DEFAULT_SPOTS.get(sym, 1000.0)
-    change_pts = 0.0
-    change_pct = 0.0
-
-    INDEX_DIRECT_MAP = {
-        "NIFTY50": "nifty50",
-        "NIFTY": "nifty50",
-        "NIFTYBANK": "banknifty",
-        "BANKNIFTY": "banknifty",
-        "NIFTYFINSERVICE": "finnifty",
-        "FINNIFTY": "finnifty",
-        "NIFTYMIDSELECT": "midcpnifty",
-        "MIDCPNIFTY": "midcpnifty",
-        "NIFTYNEXT50": "niftynext50",
-        "SENSEX": "sensex",
-        "BANKEX": "bankex"
+    # 1. Normalize Symbol & Resolve Instrument Key
+    INDEX_ALIAS_MAP = {
+        "NIFTY 50": "NIFTY",
+        "NIFTY50": "NIFTY",
+        "NIFTY": "NIFTY",
+        "BANK NIFTY": "BANKNIFTY",
+        "BANKNIFTY": "BANKNIFTY",
+        "NIFTY BANK": "BANKNIFTY",
+        "FIN NIFTY": "FINNIFTY",
+        "FINNIFTY": "FINNIFTY",
+        "NIFTY FIN SERVICE": "FINNIFTY",
+        "MIDCAP SELECT": "MIDCPNIFTY",
+        "MIDCPNIFTY": "MIDCPNIFTY",
+        "NIFTY MID SELECT": "MIDCPNIFTY",
+        "SENSEX": "SENSEX",
+        "BANKEX": "BANKEX",
+        "NEXT 50": "NIFTYNXT50",
+        "NIFTY NEXT 50": "NIFTYNXT50"
     }
+    sym = INDEX_ALIAS_MAP.get(raw_sym, raw_sym)
 
-    try:
-        import sys
-        srv = sys.modules.get("server")
-        if not srv:
-            import server as srv
-        if hasattr(srv, "get_live_market_index_quotes"):
-            quotes = srv.get_live_market_index_quotes() or {}
-            target_key = INDEX_DIRECT_MAP.get(sym.replace(" ", "").replace("_", "").upper())
-            if target_key and target_key in quotes:
-                q = quotes[target_key]
-                spot = float(q.get("spot") or spot)
-                change_pts = float(q.get("change") or change_pts)
-                change_pct = float(q.get("percentChange") or change_pct)
-    except Exception:
-        pass
+    import upstox_engine
+    ikey = upstox_engine.resolve_instrument_key(sym)
 
-    if live_chart_summary and live_chart_summary.get("close"):
-        spot = float(live_chart_summary["close"])
-        change_pts = float(live_chart_summary.get("change") or change_pts)
-        change_pct = float(live_chart_summary.get("percentChange") or change_pct)
-    elif sym not in INDEX_DEFAULT_SPOTS:
-        # Check stock CSV if equity
-        try:
-            sec_path = DATA_DIR / "sec_bhavdata_full_16102026.csv"
-            if sec_path.exists():
-                with open(sec_path, "r", encoding="utf-8") as f:
-                    for line in f:
-                        parts = [p.strip() for p in line.split(",")]
-                        if len(parts) > 8 and parts[0].upper() == sym:
-                            c = float(parts[8]) if parts[8] else 1000.0
-                            prev = float(parts[3]) if parts[3] else c
-                            spot = c
-                            change_pts = round(c - prev, 2)
-                            change_pct = round((change_pts / prev) * 100.0, 2) if prev > 0 else 0.0
-                            break
-        except Exception:
-            pass
+    # 2. Fetch Real Option Chain directly from upstox_engine
+    chain = upstox_engine.get_option_chain(ikey, expiry_date=expiry or "")
+
+    spot = float(chain.get("spotPrice") or chain.get("underlying_spot_price") or 0.0)
+    change_pts = float(chain.get("dayChange") or 0.0)
+    change_pct = float(chain.get("dayChangePct") or 0.0)
+
+    # If spot wasn't found from chain, get base price
+    if spot <= 0:
+        spot = upstox_engine.get_base_price(ikey)
+        if spot <= 0:
+            spot = INDEX_DEFAULT_SPOTS.get(sym, 1000.0)
 
     step = get_step_for_symbol(sym, spot)
     atm_strike = round(spot / step) * step
 
-    # 4. Resolve Strikes Data
+    # 3. Resolve Expiries
+    is_index = sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX", "NIFTYNXT50")
+    raw_exps = chain.get("availableExpiries") or []
+    sel_expiry = chain.get("expiry") or expiry or (raw_exps[0] if raw_exps else "")
+
+    expiries = []
+    today_dt = now_ist()
+    today_iso = today_dt.strftime("%Y-%m-%d")
+
+    if is_index:
+        weekday_map = {
+            "NIFTY": 1,
+            "BANKNIFTY": 2,
+            "FINNIFTY": 1,
+            "MIDCPNIFTY": 0,
+            "SENSEX": 4,
+            "BANKEX": 0,
+        }
+        target_wd = weekday_map.get(sym, 3)
+        dynamic_weeklies = []
+        for w in range(6):
+            days_ahead = ((target_wd - today_dt.weekday() + 7) % 7) + (w * 7)
+            exp_d = (today_dt + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+            dynamic_weeklies.append(exp_d)
+
+        combined_exps = sorted(set([e for e in raw_exps if e >= today_iso] + dynamic_weeklies))
+        for exp_d in combined_exps[:8]:
+            try:
+                dt_obj = datetime.strptime(exp_d, "%Y-%m-%d")
+                is_monthly = (dt_obj.day >= 22 and (dt_obj + timedelta(days=7)).month != dt_obj.month)
+                tag = "Monthly" if is_monthly else "Weekly"
+                lbl = dt_obj.strftime("%d-%b-%Y") + f" ({tag})"
+            except Exception:
+                lbl = exp_d
+            expiries.append({"date": exp_d, "label": lbl})
+    else:
+        valid_stk_exps = sorted([e for e in raw_exps if e >= today_iso]) or raw_exps
+        for idx, exp_d in enumerate(valid_stk_exps[:4]):
+            try:
+                dt_obj = datetime.strptime(exp_d, "%Y-%m-%d")
+                m_tag = "Near Monthly" if idx == 0 else ("Next Monthly" if idx == 1 else "Far Monthly")
+                lbl = dt_obj.strftime("%d-%b-%Y") + f" ({m_tag})"
+            except Exception:
+                lbl = exp_d
+            expiries.append({"date": exp_d, "label": lbl})
+
+    if not expiries and raw_exps:
+        for idx, exp_d in enumerate(raw_exps[:4]):
+            expiries.append({"date": exp_d, "label": exp_d})
+
+    if not sel_expiry and expiries:
+        sel_expiry = expiries[0]["date"]
+
+    # 4. Parse Strikes (Real Market Data)
+    chain_data = chain.get("data") or []
     parsed_strikes = []
     tot_call_oi = 0
     tot_put_oi = 0
     tot_call_change = 0
     tot_put_change = 0
 
-    # If live_chain from server has rows, use them!
-    if live_chain and isinstance(live_chain, list) and len(live_chain) > 0:
-        for r in live_chain:
-            k = float(r.get("strike", 0.0))
+    if chain_data:
+        for row in chain_data:
+            k = float(row.get("strike_price") or row.get("strike") or 0.0)
             if k <= 0:
                 continue
-            c_data = r.get("call") or {}
-            p_data = r.get("put") or {}
 
-            c_oi = int(c_data.get("oi") or 0)
-            p_oi = int(p_data.get("oi") or 0)
-            c_chg = int(c_data.get("oiChange") or round(c_oi * 0.04))
-            p_chg = int(p_data.get("oiChange") or round(p_oi * 0.05))
+            c_opts = row.get("call_options") or row.get("call") or {}
+            p_opts = row.get("put_options") or row.get("put") or {}
 
-            c_ltp = float(c_data.get("ltp") or max(0.50, round(max(0.0, spot - k) + 15.0, 2)))
-            p_ltp = float(p_data.get("ltp") or max(0.50, round(max(0.0, k - spot) + 15.0, 2)))
+            c_mkt = c_opts.get("market_data") or c_opts
+            p_mkt = p_opts.get("market_data") or p_opts
 
-            c_iv = float(c_data.get("iv") or 12.5)
-            p_iv = float(p_data.get("iv") or 13.5)
-            c_delta = float(c_data.get("delta") or 0.5)
-            p_delta = float(p_data.get("delta") or -0.5)
+            c_oi = int(c_mkt.get("oi") or 0)
+            p_oi = int(p_mkt.get("oi") or 0)
+            c_chg = int(c_mkt.get("oi_change") or c_mkt.get("oiChange") or 0)
+            p_chg = int(p_mkt.get("oi_change") or p_mkt.get("oiChange") or 0)
+
+            c_ltp = float(c_mkt.get("ltp") or 0.0)
+            p_ltp = float(p_mkt.get("ltp") or 0.0)
+            c_prev = float(c_mkt.get("close_price") or (c_ltp - (c_opts.get("dayChange") or 0.0)))
+            p_prev = float(p_mkt.get("close_price") or (p_ltp - (p_opts.get("dayChange") or 0.0)))
+
+            dist = k - spot
+            if c_ltp <= 0:
+                c_ltp = max(0.05, round(max(0.0, -dist) + max(5.0, 150.0 - abs(dist) * 0.2), 2))
+            if p_ltp <= 0:
+                p_ltp = max(0.05, round(max(0.0, dist) + max(5.0, 150.0 - abs(dist) * 0.2), 2))
+
+            c_price_chg = round(c_ltp - c_prev, 2)
+            p_price_chg = round(p_ltp - p_prev, 2)
 
             strike_pcr = round(p_oi / c_oi, 2) if c_oi > 0 else (99.0 if p_oi > 0 else 0.0)
+
+            c_grk = c_opts.get("option_greeks") or {}
+            p_grk = p_opts.get("option_greeks") or {}
+
+            c_iv = float(c_grk.get("iv") or 12.5)
+            p_iv = float(p_grk.get("iv") or 13.5)
+            c_delta = float(c_grk.get("delta") or round(max(0.01, min(0.99, 0.5 - dist / (step * 25.0))), 2))
+            p_delta = float(p_grk.get("delta") or round(max(-0.99, min(-0.01, -0.5 - dist / (step * 25.0))), 2))
 
             parsed_strikes.append({
                 "strike": k,
@@ -376,124 +335,18 @@ def _compute_open_interest_data(
                 "put_delta": p_delta,
                 "pcr": strike_pcr,
                 "net_oi": p_oi - c_oi,
-                "call_buildup": classify_buildup(c_data.get("change") or -change_pts, c_chg),
-                "put_buildup": classify_buildup(p_data.get("change") or change_pts, p_chg)
+                "call_buildup": classify_buildup(c_price_chg, c_chg),
+                "put_buildup": classify_buildup(p_price_chg, p_chg)
             })
             tot_call_oi += c_oi
             tot_put_oi += p_oi
             tot_call_change += c_chg
             tot_put_change += p_chg
-    else:
-        # Load from fo_bhav_eod_master.json with exact expiry partition
-        raw_options = {}
-        if fo_data:
-            by_exp = fo_data.get("latest_options_by_expiry", {}).get(sym, {})
-            if sel_expiry and sel_expiry in by_exp:
-                raw_options = by_exp[sel_expiry]
-            elif by_exp:
-                today_iso = now_ist().strftime("%Y-%m-%d")
-                sorted_valid = sorted([e for e in by_exp.keys() if e >= today_iso]) or sorted(by_exp.keys())
-                raw_options = by_exp[sorted_valid[0]]
-            else:
-                raw_options = fo_data.get("latest_options", {}).get(sym, {})
 
-        if raw_options:
-            for k_str, val in raw_options.items():
-                try:
-                    k = float(k_str)
-                    c_oi = int(val.get("c", 0) or 0)
-                    p_oi = int(val.get("p", 0) or 0)
-
-                    c_chg = int(val.get("c_chg", 0))
-                    p_chg = int(val.get("p_chg", 0))
-                    c_ltp = float(val.get("c_ltp") or 0.0)
-                    p_ltp = float(val.get("p_ltp") or 0.0)
-                    c_prev = float(val.get("c_prev") or c_ltp)
-                    p_prev = float(val.get("p_prev") or p_ltp)
-
-                    dist = k - spot
-                    if c_ltp <= 0:
-                        c_ltp = max(0.50, round(max(0.0, -dist) + max(12.0, 280.0 - abs(dist) * 0.22), 2))
-                    if p_ltp <= 0:
-                        p_ltp = max(0.50, round(max(0.0, dist) + max(12.0, 260.0 - abs(dist) * 0.22), 2))
-
-                    c_price_chg = round(c_ltp - c_prev, 2)
-                    p_price_chg = round(p_ltp - p_prev, 2)
-                    if c_price_chg == 0:
-                        c_price_chg = round(-change_pts * 0.4, 2) if dist > 0 else round(change_pts * 0.6, 2)
-                    if p_price_chg == 0:
-                        p_price_chg = round(change_pts * 0.4, 2) if dist < 0 else round(-change_pts * 0.6, 2)
-
-                    strike_pcr = round(p_oi / c_oi, 2) if c_oi > 0 else (99.0 if p_oi > 0 else 0.0)
-
-                    parsed_strikes.append({
-                        "strike": k,
-                        "is_atm": (k == atm_strike),
-                        "distance": round(k - spot, 1),
-                        "call_oi": c_oi,
-                        "put_oi": p_oi,
-                        "call_oi_change": c_chg,
-                        "put_oi_change": p_chg,
-                        "call_ltp": c_ltp,
-                        "put_ltp": p_ltp,
-                        "call_iv": 12.8,
-                        "put_iv": 13.4,
-                        "call_delta": round(max(0.05, min(0.95, 0.5 - dist / (step * 20.0))), 2),
-                        "put_delta": round(max(-0.95, min(-0.05, -0.5 - dist / (step * 20.0))), 2),
-                        "pcr": strike_pcr,
-                        "net_oi": p_oi - c_oi,
-                        "call_buildup": classify_buildup(c_price_chg, c_chg),
-                        "put_buildup": classify_buildup(p_price_chg, p_chg)
-                    })
-                    tot_call_oi += c_oi
-                    tot_put_oi += p_oi
-                    tot_call_change += c_chg
-                    tot_put_change += p_chg
-                except Exception:
-                    continue
-        else:
-            # Fallback strike generator
-            for i in range(-25, 26):
-                k = atm_strike + i * step
-                if k <= 0:
-                    continue
-                dist = k - spot
-                norm_dist = abs(dist) / (step * 8.0)
-                base_c = int(round(1800000 * math.exp(-0.5 * norm_dist**2)))
-                base_p = int(round(2100000 * math.exp(-0.5 * norm_dist**2)))
-                c_chg = int(round(base_c * 0.08))
-                p_chg = int(round(base_p * 0.09))
-                c_ltp = max(1.0, round(max(0.0, -dist) + max(15.0, 240.0 - abs(dist) * 0.25), 2))
-                p_ltp = max(1.0, round(max(0.0, dist) + max(15.0, 220.0 - abs(dist) * 0.25), 2))
-                pcr_k = round(base_p / base_c, 2) if base_c > 0 else 1.0
-
-                parsed_strikes.append({
-                    "strike": k,
-                    "is_atm": (k == atm_strike),
-                    "distance": round(dist, 1),
-                    "call_oi": base_c,
-                    "put_oi": base_p,
-                    "call_oi_change": c_chg,
-                    "put_oi_change": p_chg,
-                    "call_ltp": c_ltp,
-                    "put_ltp": p_ltp,
-                    "call_iv": 13.0,
-                    "put_iv": 14.0,
-                    "call_delta": 0.50,
-                    "put_delta": -0.50,
-                    "pcr": pcr_k,
-                    "net_oi": base_p - base_c,
-                    "call_buildup": classify_buildup(-change_pts, c_chg),
-                    "put_buildup": classify_buildup(change_pts, p_chg)
-                })
-                tot_call_oi += base_c
-                tot_put_oi += base_p
-                tot_call_change += c_chg
-                tot_put_change += p_chg
-
+    # Sort strikes ascending
     parsed_strikes.sort(key=lambda x: x["strike"])
 
-    # Ensure ATM strike is precisely aligned to closest strike to live spot
+    # Ensure ATM alignment
     if parsed_strikes:
         closest_idx = min(range(len(parsed_strikes)), key=lambda i: abs(parsed_strikes[i]["strike"] - spot))
         atm_strike = parsed_strikes[closest_idx]["strike"]
@@ -503,13 +356,7 @@ def _compute_open_interest_data(
     # 5. Filter according to strike_range around ATM
     filtered_strikes = parsed_strikes
     if strike_range and strike_range > 0 and len(parsed_strikes) > (strike_range * 2 + 1):
-        atm_idx = 0
-        min_d = float("inf")
-        for idx, row in enumerate(parsed_strikes):
-            d = abs(row["strike"] - atm_strike)
-            if d < min_d:
-                min_d = d
-                atm_idx = idx
+        atm_idx = min(range(len(parsed_strikes)), key=lambda i: abs(parsed_strikes[i]["strike"] - atm_strike))
         start_idx = max(0, atm_idx - strike_range)
         end_idx = min(len(parsed_strikes), atm_idx + strike_range + 1)
         filtered_strikes = parsed_strikes[start_idx:end_idx]
