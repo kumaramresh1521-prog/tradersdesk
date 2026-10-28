@@ -1,15 +1,15 @@
 {
   "maintenance_mode": {
     "enabled": false,
-    "title": "Scheduled Maintenance",
-    "message": "Terminal is updating."
+    "title": "Scheduled Maintenance & Settlement",
+    "message": "Market Data & Analytics Terminal is undergoing scheduled settlement processing. Live streaming and analysis will resume shortly."
   },
   "announcement_bar": {
-    "enabled": true,
+    "enabled": false,
     "type": "info",
     "badge": "LIVE",
-    "text": "Live Institutional Derivatives Flow & Option Chain matrix is active.",
-    "link_text": "Read Handbook →",
-    "link_url": "/trading-handbook"
+    "text": "",
+    "link_text": "",
+    "link_url": ""
   }
 }

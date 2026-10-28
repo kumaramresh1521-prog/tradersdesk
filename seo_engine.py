@@ -730,6 +730,96 @@ def rebuild_sitemap_xml() -> tuple[bool, str]:
             if not r_dict.get("path"):
                 r_dict["path"] = p_key
 
+        # Dynamically inject published CMS pages and blog posts into sitemap
+        try:
+            import cms_engine
+            if "/blog" not in all_r:
+                all_r["/blog"] = {
+                    "path": "/blog",
+                    "title": "Market Research & Quantitative Insights | TradersDesk",
+                    "desc": "In-depth technical analysis, market breadth dynamics, and derivatives research.",
+                    "canonical": "https://tradersdesk.in/blog",
+                    "priority": "0.8",
+                    "changefreq": "daily",
+                    "robots": "index, follow"
+                }
+            for post in cms_engine.list_posts(published_only=True):
+                pslug = post.get("slug")
+                if pslug:
+                    post_path = f"/blog/{pslug}"
+                    all_r[post_path] = {
+                        "path": post_path,
+                        "title": post.get("seoTitle") or post.get("title", "Article"),
+                        "desc": post.get("metaDescription") or post.get("excerpt", ""),
+                        "canonical": post.get("canonicalUrl") or f"https://tradersdesk.in/blog/{pslug}",
+                        "priority": "0.7",
+                        "changefreq": "weekly",
+                        "robots": post.get("robotsMeta", "index, follow"),
+                        "last_updated": post.get("publishedAt", "")
+                    }
+            for page in cms_engine.list_pages():
+                if page.get("status", "published").lower() != "draft":
+                    slug = page.get("slug")
+                    if slug:
+                        page_path = f"/{slug}"
+                        all_r[page_path] = {
+                            "path": page_path,
+                            "title": page.get("seoTitle") or page.get("title", "Page"),
+                            "desc": page.get("metaDescription", ""),
+                            "canonical": page.get("canonicalUrl") or f"https://tradersdesk.in/{slug}",
+                            "priority": "0.7",
+                            "changefreq": "weekly",
+                            "robots": page.get("robotsMeta", "index, follow"),
+                            "last_updated": page.get("updatedAt", "")[:10] if page.get("updatedAt") else ""
+                        }
+        except Exception as exc:
+            print(f"[SEO Engine] CMS sitemap sync note: {exc}")
+
+        # Dynamically inject published CMS pages and blog posts into sitemap
+        try:
+            import cms_engine
+            if "/blog" not in all_r:
+                all_r["/blog"] = {
+                    "path": "/blog",
+                    "title": "Market Research & Quantitative Insights | TradersDesk",
+                    "desc": "In-depth technical analysis, market breadth dynamics, and derivatives research.",
+                    "canonical": "https://tradersdesk.in/blog",
+                    "priority": "0.8",
+                    "changefreq": "daily",
+                    "robots": "index, follow"
+                }
+            for post in cms_engine.list_posts(published_only=True):
+                pslug = post.get("slug")
+                if pslug:
+                    post_path = f"/blog/{pslug}"
+                    all_r[post_path] = {
+                        "path": post_path,
+                        "title": post.get("seoTitle") or post.get("title", "Article"),
+                        "desc": post.get("metaDescription") or post.get("excerpt", ""),
+                        "canonical": post.get("canonicalUrl") or f"https://tradersdesk.in/blog/{pslug}",
+                        "priority": "0.7",
+                        "changefreq": "weekly",
+                        "robots": post.get("robotsMeta", "index, follow"),
+                        "last_updated": post.get("publishedAt", "")
+                    }
+            for page in cms_engine.list_pages():
+                if page.get("status", "published").lower() != "draft":
+                    slug = page.get("slug")
+                    if slug:
+                        page_path = f"/{slug}"
+                        all_r[page_path] = {
+                            "path": page_path,
+                            "title": page.get("seoTitle") or page.get("title", "Page"),
+                            "desc": page.get("metaDescription", ""),
+                            "canonical": page.get("canonicalUrl") or f"https://tradersdesk.in/{slug}",
+                            "priority": "0.7",
+                            "changefreq": "weekly",
+                            "robots": page.get("robotsMeta", "index, follow"),
+                            "last_updated": page.get("updatedAt", "")[:10] if page.get("updatedAt") else ""
+                        }
+        except Exception as exc:
+            print(f"[SEO Engine] CMS sitemap sync note: {exc}")
+
         lines = ['<?xml version="1.0" encoding="UTF-8"?>']
         lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
         # Sort routes: root first, then by priority desc

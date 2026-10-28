@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 data/system_vault.json
+data/broker_config.json
 *.pem
 *.key
 *.cert

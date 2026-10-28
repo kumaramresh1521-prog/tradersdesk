@@ -317,7 +317,7 @@ def list_posts(published_only: bool = True) -> List[Dict[str, Any]]:
             with open(POSTS_FILE, "r", encoding="utf-8") as f:
                 posts = json.load(f)
                 if published_only:
-                    return [p for p in posts if p.get("published", True)]
+                    return [p for p in posts if p.get("published", True) and p.get("status", "published").lower() != "draft"]
                 return posts
         except Exception:
             pass
@@ -376,9 +376,28 @@ def delete_post(post_id: str) -> bool:
 # 5. SHELL TEMPLATE BUILDER FOR PAGES & BLOG
 # ==============================================================================
 
-def render_cms_shell(title: str, description: str, body_content: str, current_path: str = "/") -> str:
+def render_cms_shell(
+    title: str,
+    description: str,
+    body_content: str,
+    current_path: str = "/",
+    custom_css: str = "",
+    canonical_url: str = "",
+    robots_meta: str = "index, follow",
+    keywords: str = "",
+    is_draft: bool = False
+) -> str:
     """Wraps any page or blog post in the unified TradersDesk terminal template."""
     nav_html = render_navigation_html(current_path)
+    canon = canonical_url.strip() if canonical_url else f"https://tradersdesk.in{current_path}"
+    robots = robots_meta.strip() if robots_meta else "index, follow"
+
+    draft_banner = """<div style="background:#eab308; color:#0f172a; padding:10px 16px; text-align:center; font-weight:800; font-size:12.5px; font-family:'JetBrains Mono', monospace; border-bottom:2px solid #ca8a04; letter-spacing:0.5px;">
+    &#x26A0;&#xFE0F; DRAFT PREVIEW MODE &mdash; This document is saved as a draft and is hidden from public indexing.
+  </div>""" if is_draft else ""
+
+    custom_style_block = f"<style>{custom_css}</style>" if custom_css.strip() else ""
+    keywords_tag = f'<meta name="keywords" content="{html.escape(keywords)}">' if keywords.strip() else ""
 
     return f"""<!DOCTYPE html>
 <html lang="en" data-theme="dark">
@@ -387,6 +406,40 @@ def render_cms_shell(title: str, description: str, body_content: str, current_pa
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{html.escape(title)} | TradersDesk</title>
   <meta name="description" content="{html.escape(description)}">
+  {keywords_tag}
+  <meta name="robots" content="{html.escape(robots)}">
+  <link rel="canonical" href="{html.escape(canon)}">
+
+  <!-- Favicons Suite -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+  <!-- OpenGraph & Social Cards -->
+  <meta property="og:site_name" content="TradersDesk">
+  <meta property="og:title" content="{html.escape(title)} | TradersDesk">
+  <meta property="og:description" content="{html.escape(description)}">
+  <meta property="og:image" content="/og-image.png">
+  <meta property="og:type" content="article" if "/blog/" in current_path else "website">
+  <meta property="og:url" content="{html.escape(canon)}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{html.escape(title)} | TradersDesk">
+  <meta name="twitter:description" content="{html.escape(description)}">
+  <meta name="twitter:image" content="/og-image.png">
+
+  <!-- Schema.org Structured Data -->
+  <script type="application/ld+json">
+  {{
+    "@context": "https://schema.org",
+    "@type": "FinancialService",
+    "name": "TradersDesk",
+    "url": "https://tradersdesk.in",
+    "logo": "https://tradersdesk.in/tradersdesk_header.svg",
+    "description": "Institutional Real-Time Stock Market Breadth, Option Chain Matrix & Algorithmic Derivatives Analytics Desk."
+  }}
+  </script>
+
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/page2.css">
@@ -427,14 +480,24 @@ def render_cms_shell(title: str, description: str, body_content: str, current_pa
     .blog-card-excerpt {{ font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 16px; flex: 1; }}
     .blog-card-meta {{ display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #64748b; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px; font-family: 'JetBrains Mono', monospace; }}
   </style>
+  {custom_style_block}
 </head>
 <body class="page2-body theme-dark">
-  <header class="page2-header">
-    <div class="inst-nav-row">
-      {nav_html}
+  {draft_banner}
+  <header class="page2-header" style="background:rgba(11,19,41,0.92); backdrop-filter:blur(8px); border-bottom:1px solid rgba(255,255,255,0.08); padding:8px 16px; position:sticky; top:0; z-index:100;">
+    <div class="inst-nav-row" style="display:flex; align-items:center; justify-content:space-between; width:100%; max-width:1440px; margin:0 auto;">
+      <div style="display:flex; align-items:center; gap:20px;">
+        <div class="inst-brand-left" style="display:flex; align-items:center;">
+          <a href="/" class="inst-brand" aria-label="TradersDesk Home" style="display:flex; align-items:center; text-decoration:none;">
+            <img src="/tradersdesk_header.svg" alt="TradersDesk" class="inst-brand-logo inst-brand-logo-dark" height="26">
+            <img src="/tradersdesk_header_light.svg" alt="TradersDesk" class="inst-brand-logo inst-brand-logo-light" height="26">
+          </a>
+        </div>
+        {nav_html}
+      </div>
       <div style="display:flex; align-items:center; gap:8px;">
         <button id="themeToggleBtn" class="page2-theme-toggle-btn" type="button" onclick="document.body.classList.toggle('white-theme');">
-          <span>🌙</span> <span>Mode</span>
+          <span>&#x1F319;</span> <span>Mode</span>
         </button>
       </div>
     </div>
@@ -447,33 +510,43 @@ def render_cms_shell(title: str, description: str, body_content: str, current_pa
   <footer style="margin-top: 60px; padding: 30px 20px; border-top: 1px solid rgba(255,255,255,0.06); text-align: center; color: #64748b; font-size: 12px;">
     &copy; 2026 TradersDesk.in &bull; Real-Time Quantitative Analytics &bull; SEBI Compliance Notice: Educational & Research Only
   </footer>
-  <script src="/js/site_announcement.js"></script>
-  <script src="/js/dynamic_nav.js"></script>
 </body>
 </html>"""
 
 
-def render_page_view(slug: str) -> Optional[str]:
+def render_page_view(slug: str, is_preview: bool = False) -> Optional[str]:
     page = get_page(slug)
     if not page:
+        return None
+
+    status = (page.get("status") or ("published" if page.get("published", True) else "draft")).lower()
+    if status == "draft" and not is_preview:
         return None
 
     raw = page.get("content", "")
     fmt = page.get("format", "markdown").lower()
     rendered_body = markdown_to_html(raw) if fmt == "markdown" else raw
 
+    draft_tag = '<span style="background:rgba(234,179,8,0.2); color:#eab308; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">DRAFT</span>' if status == "draft" else ""
+
     body_html = f"""<div class="cms-card">
-      <div style="margin-bottom:12px;">
+      <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
         <span class="cms-badge">Document &bull; {html.escape(page.get('updatedAt', '')[:10])}</span>
+        {draft_tag}
       </div>
       {rendered_body}
     </div>"""
 
     return render_cms_shell(
-        title=page.get("title", "Page"),
+        title=page.get("seoTitle") or page.get("title", "Page"),
         description=page.get("metaDescription", page.get("title", "")),
         body_content=body_html,
-        current_path=f"/{slug}"
+        current_path=f"/{slug}",
+        custom_css=page.get("customCss", ""),
+        canonical_url=page.get("canonicalUrl", ""),
+        robots_meta=page.get("robotsMeta", "index, follow"),
+        keywords=page.get("focusKeyword", ""),
+        is_draft=(status == "draft")
     )
 
 
@@ -514,9 +587,13 @@ def render_blog_index() -> str:
     )
 
 
-def render_post_view(slug: str) -> Optional[str]:
+def render_post_view(slug: str, is_preview: bool = False) -> Optional[str]:
     post = get_post(slug)
     if not post:
+        return None
+
+    status = (post.get("status") or ("published" if post.get("published", True) else "draft")).lower()
+    if status == "draft" and not is_preview:
         return None
 
     raw = post.get("content", "")
@@ -524,10 +601,15 @@ def render_post_view(slug: str) -> Optional[str]:
     rendered_body = markdown_to_html(raw) if fmt == "markdown" else raw
     cover = f'<img src="{html.escape(post["coverImage"])}" style="width:100%; max-height:360px; object-fit:cover; border-radius:10px; margin-bottom:24px;" />' if post.get("coverImage") else ""
 
+    draft_tag = '<span style="background:rgba(234,179,8,0.2); color:#eab308; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">DRAFT</span>' if status == "draft" else ""
+
     body_html = f"""<article class="cms-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <a href="/blog" style="color:#38bdf8; text-decoration:none; font-size:13px; font-weight:600;">&larr; Back to All Articles</a>
-        <span class="cms-badge">{html.escape(post.get('category', 'Insights'))}</span>
+        <div style="display:flex; gap:8px;">
+          <span class="cms-badge">{html.escape(post.get('category', 'Insights'))}</span>
+          {draft_tag}
+        </div>
       </div>
       {cover}
       <div style="font-size:12.5px; color:#64748b; font-family:'JetBrains Mono', monospace; margin-bottom:18px;">
@@ -539,10 +621,15 @@ def render_post_view(slug: str) -> Optional[str]:
     </article>"""
 
     return render_cms_shell(
-        title=post.get("title", "Article"),
-        description=post.get("excerpt", post.get("title", "")),
+        title=post.get("seoTitle") or post.get("title", "Article"),
+        description=post.get("metaDescription") or post.get("excerpt", post.get("title", "")),
         body_content=body_html,
-        current_path=f"/blog/{slug}"
+        current_path=f"/blog/{slug}",
+        custom_css=post.get("customCss", ""),
+        canonical_url=post.get("canonicalUrl", ""),
+        robots_meta=post.get("robotsMeta", "index, follow"),
+        keywords=post.get("focusKeyword", ""),
+        is_draft=(status == "draft")
     )
 
 

@@ -3781,3 +3781,45 @@ body.white-theme .footer-bottom,
 [data-feature-flag].feature-active {
   display: flex !important;
 }
+
+/* Standard Brand Bar for Page2 Header */
+.page2-header .inst-brand-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.page2-header .inst-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+.page2-header .inst-brand-logo-img {
+  height: 28px;
+  width: auto;
+  max-width: 170px;
+  display: block;
+  object-fit: contain;
+}
+.page2-header .inst-brand-logo-dark { display: block; }
+.page2-header .inst-brand-logo-light { display: none !important; }
+
+html[data-theme="light"] .page2-header .inst-brand-logo-dark,
+body[data-theme="light"] .page2-header .inst-brand-logo-dark {
+  display: none !important;
+}
+html[data-theme="light"] .page2-header .inst-brand-logo-light,
+body[data-theme="light"] .page2-header .inst-brand-logo-light {
+  display: block !important;
+}
+
+@media (max-width: 768px) {
+  .page2-header .inst-brand-bar {
+    padding: 6px 12px !important;
+  }
+  .page2-header .inst-brand-logo-img {
+    height: 24px !important;
+    max-width: 140px !important;
+  }
+}

@@ -1,6 +1,24 @@
 <!doctype html>
 <html lang="en" data-theme="light">
   <head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <meta property="og:image" content="https://tradersdesk.in/og-image.png">
+  <meta name="twitter:image" content="https://tradersdesk.in/og-image.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FinancialService",
+    "name": "TradersDesk.in",
+    "url": "https://tradersdesk.in",
+    "logo": "https://tradersdesk.in/favicon.svg",
+    "image": "https://tradersdesk.in/og-image.png",
+    "description": "Institutional Quantitative Derivatives & Market Breadth Terminal"
+  }
+  </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>TradersDesk.in | Institutional Derivatives, Options Greeks & Market Breadth Terminal</title>
@@ -245,10 +263,6 @@
             </button>
 
             <div class="status inst-api-status" id="apiStatus" title="Broker Gateway Connection State">Checking API...</div>
-            <button id="btnTopRefresh" type="button" class="inst-util-btn" onclick="if(typeof loadDashboardData==='function'){loadDashboardData(true);}else{location.reload();}" title="Refresh Live Market Data">
-              <span class="util-icon">🔄</span>
-              <span class="util-text">Refresh</span>
-            </button>
             <button id="themeToggleBtn" type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark / Light Theme">
               <span id="themeToggleIcon">🌙</span>
               <span class="theme-btn-text">Dark</span>
@@ -6324,7 +6338,5 @@
     <script src="/app.js?v=20261027_v1" defer></script>
     <script src="/global_search.js?v=20261027_v1" defer></script>
     <script src="/auth_sync.js?v=20261027_v1" defer></script>
-    <script src="/js/site_announcement.js"></script>
-  <script src="/js/dynamic_nav.js"></script>
-</body>
+  </body>
 </html>

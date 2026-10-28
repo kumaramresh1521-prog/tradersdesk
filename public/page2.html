@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <meta property="og:image" content="https://tradersdesk.in/og-image.png">
+  <meta name="twitter:image" content="https://tradersdesk.in/og-image.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FinancialService",
+    "name": "TradersDesk.in",
+    "url": "https://tradersdesk.in",
+    "logo": "https://tradersdesk.in/favicon.svg",
+    "image": "https://tradersdesk.in/og-image.png",
+    "description": "Institutional Quantitative Derivatives & Market Breadth Terminal"
+  }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TradersDesk.in | ATM Options Straddle, FII/DII &amp; Institutional Analytics</title>
@@ -64,7 +82,36 @@
   <!-- ====================================================================
        TOP MAIN NAVIGATION BAR
        ==================================================================== -->
-  <header class="page2-header">
+    <header class="page2-header">
+    <!-- Brand Bar with Official TradersDesk Logo -->
+    <div class="inst-brand-bar">
+      <div class="inst-brand-left">
+        <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in - Institutional Quant &amp; Derivatives Terminal">
+          <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px; width:auto;" onerror="this.style.display='none'; document.getElementById('p2BrandFallback').style.display='inline-flex';" />
+          <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px; width:auto;" onerror="this.style.display='none'; document.getElementById('p2BrandFallback').style.display='inline-flex';" />
+          <div class="inst-brand-fallback-text" id="p2BrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
+            <span class="fallback-traders" style="color:#ffffff;">Traders</span><span class="fallback-desk" style="color:#38bdf8;">Desk</span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
+          </div>
+        </a>
+      </div>
+      <div class="inst-right-controls">
+        <button id="mobileDotMenuBtn" type="button" class="inst-dot-menu-btn" onclick="openMobileDotMenu()" aria-label="Open All Navigation &amp; Desks" title="All Desks &amp; Menus">
+          <svg class="dot-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="8" cy="5" r="2.2" />
+            <circle cx="16" cy="5" r="2.2" />
+            <circle cx="8" cy="12" r="2.2" />
+            <circle cx="16" cy="12" r="2.2" />
+            <circle cx="8" cy="19" r="2.2" />
+            <circle cx="16" cy="19" r="2.2" />
+          </svg>
+          <span class="dot-menu-label">Menu</span>
+        </button>
+        <button id="themeToggleBtn" type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+          <span class="theme-icon">🌓</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Row 1: Institutional Mega-Menu Navigation -->
     <div class="inst-nav-row">
       <nav class="inst-nav" aria-label="Main Navigation" id="mainInstNav">
@@ -1487,7 +1534,5 @@
       </div>
     </div>
 
-    <script src="/js/site_announcement.js"></script>
-  <script src="/js/dynamic_nav.js"></script>
-</body>
+  </body>
 </html>

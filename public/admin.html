@@ -1,6 +1,24 @@
 <!doctype html>
 <html lang="en" data-theme="dark">
   <head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <meta property="og:image" content="https://tradersdesk.in/og-image.png">
+  <meta name="twitter:image" content="https://tradersdesk.in/og-image.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FinancialService",
+    "name": "TradersDesk.in",
+    "url": "https://tradersdesk.in",
+    "logo": "https://tradersdesk.in/favicon.svg",
+    "image": "https://tradersdesk.in/og-image.png",
+    "description": "Institutional Quantitative Derivatives & Market Breadth Terminal"
+  }
+  </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>TradersDesk | Executive Admin Command Center</title>
@@ -658,6 +676,9 @@
         align-items: center;
         justify-content: center;
         z-index: 10000;
+      }
+      .adm-modal-overlay.active {
+        display: flex !important;
       }
       .adm-modal-box {
         width: 100%;
@@ -4053,153 +4074,319 @@
       </div>
     </div>
 
-    <!-- Modal: Dynamic Page Editor (Markdown & HTML) -->
+    <!-- Modal: Dynamic Page Editor (WordPress-Grade Studio) -->
     <div id="modalCmsPage" class="adm-modal-overlay">
-      <div class="adm-modal-box" style="max-width:960px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--adm-border); padding-bottom:14px;">
-          <div>
-            <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalPageTitleText">📄 Dynamic Page Editor</h3>
-            <span style="font-size:12px; color:#94a3b8;">Write in Markdown or raw HTML with real-time split preview</span>
+      <div class="adm-modal-box" style="max-width:1040px; width:95%; max-height:92vh; display:flex; flex-direction:column;">
+        <!-- Modal Top Bar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--adm-border); padding-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:20px;">📄</span>
+            <div>
+              <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalPageTitleText">Dynamic Page Studio</h3>
+              <span style="font-size:11.5px; color:#94a3b8;" id="pageSlugLivePreview">https://tradersdesk.in/your-slug</span>
+            </div>
           </div>
-          <button type="button" onclick="closeCmsPageModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span id="pageStatusPill" class="p2-badge p2-badge-amber">DRAFT</span>
+            <button type="button" onclick="closeCmsPageModal()" style="background:none; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+          </div>
         </div>
 
-        <form id="cmsPageForm" onsubmit="event.preventDefault(); submitCmsPage();">
+        <!-- WordPress-Style Studio Tabs -->
+        <div style="display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px; margin-bottom:14px;">
+          <button type="button" id="tabBtnPageEditor" class="seo-pill-btn active" style="font-weight:700;" onclick="switchPageModalTab('editor')">✍️ Content &amp; Split Preview</button>
+          <button type="button" id="tabBtnPageSeo" class="seo-pill-btn" style="font-weight:700;" onclick="switchPageModalTab('seo')">🔍 Google Search SEO (Yoast/RankMath)</button>
+          <button type="button" id="tabBtnPageSettings" class="seo-pill-btn" style="font-weight:700;" onclick="switchPageModalTab('settings')">⚙️ Settings &amp; Custom Code</button>
+        </div>
+
+        <form id="cmsPageForm" style="display:flex; flex-direction:column; flex:1; overflow-y:auto;" onsubmit="event.preventDefault();">
           <input type="hidden" id="cmsPageId" />
-          <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:14px;">
-            <div class="adm-form-group">
-              <label>Page Title</label>
-              <input type="text" id="cmsPageTitle" class="adm-input" placeholder="e.g. Quantitative Strategy Guide" required oninput="autoSlugPage(this.value)" />
+
+          <!-- TAB 1: CONTENT & SPLIT PREVIEW -->
+          <div id="pageTabContent" class="modal-subtab-pane">
+            <div style="display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:12px;">
+              <div class="adm-form-group">
+                <label>Page Title</label>
+                <input type="text" id="cmsPageTitle" class="adm-input" placeholder="e.g. Institutional Trading Handbook" required oninput="autoSlugPage(this.value); updatePageSerpPreview();" />
+              </div>
+              <div class="adm-form-group">
+                <label>URL Slug (Direct: /slug or /p/slug)</label>
+                <input type="text" id="cmsPageSlug" class="adm-input" placeholder="e.g. trading-handbook" required oninput="updatePageSerpPreview();" />
+              </div>
             </div>
-            <div class="adm-form-group">
-              <label>URL Slug (Direct: /slug or /p/slug)</label>
-              <input type="text" id="cmsPageSlug" class="adm-input" placeholder="e.g. strategy-guide" required />
+
+            <!-- Formatting Toolbar -->
+            <div class="cms-toolbar" style="display:flex; flex-wrap:wrap; gap:4px; padding:6px 10px; background:#080e21; border:1px solid var(--adm-border); border-bottom:none; border-radius:8px 8px 0 0;">
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '**', '**', 'bold text')" title="Bold"><strong>B</strong></button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '*', '*', 'italic text')" title="Italic"><em>I</em></button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '# ', '', 'Heading 1')" title="Heading 1">H1</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '## ', '', 'Heading 2')" title="Heading 2">H2</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '### ', '', 'Heading 3')" title="Heading 3">H3</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '> ', '', 'Blockquote note...')" title="Quote">“</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '```python\n', '\n```', '# code here')" title="Code">&lt;&gt;</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '- ', '', 'Bullet item')" title="Bullet List">• List</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '1. ', '', 'Numbered item')" title="Numbered List">1. List</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '[', '](https://example.com)', 'Link Text')" title="Insert Link">🔗 Link</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '![', '](https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80)', 'Alt Text')" title="Insert Image">🖼️ Image</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '| Metric | Value | Benchmark |\n|---|---|---|\n| Advances | 1,420 | 1,200 |\n', '', '')" title="Insert Table">📊 Table</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '> [!NOTE]\n> Institutional trading desk directive.\n', '', '')" title="Insert Callout">⚡ Callout</button>
+            </div>
+
+            <!-- Split Editor -->
+            <div class="cms-editor-split" style="margin-top:0;">
+              <div class="cms-editor-pane">
+                <textarea id="cmsPageContent" class="cms-editor-textarea" style="border-radius:0 0 8px 8px;" placeholder="# Heading&#10;&#10;Write your institutional page content here in Markdown or raw HTML..." oninput="renderCmsPagePreview()"></textarea>
+              </div>
+              <div class="cms-editor-pane">
+                <div id="cmsPagePreview" class="cms-preview-pane"></div>
+              </div>
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:14px;">
-            <div class="adm-form-group">
-              <label>Format</label>
-              <select id="cmsPageFormat" class="adm-input" onchange="renderCmsPagePreview()">
-                <option value="markdown">Markdown (.md - Recommended)</option>
-                <option value="html">Raw HTML</option>
-              </select>
+          <!-- TAB 2: GOOGLE SEARCH SEO & SOCIAL SNIPPET -->
+          <div id="pageTabSeo" class="modal-subtab-pane" style="display:none;">
+            <p style="font-size:12.5px; color:#94a3b8; margin:0 0 14px 0;">Preview and configure how this page appears on Google Search and social media sharing cards.</p>
+
+            <!-- Google Search Result Snippet Box -->
+            <div style="background:#202124; border:1px solid #3c4043; border-radius:10px; padding:18px; margin-bottom:20px; font-family:arial,sans-serif;">
+              <div style="font-size:12px; color:#bdc1c6; display:flex; align-items:center; gap:6px; margin-bottom:5px;">
+                <img src="/favicon.svg" width="16" height="16" style="border-radius:50%;" />
+                <span>tradersdesk.in › <span id="pageSerpSlugPreview">trading-handbook</span></span>
+              </div>
+              <div id="pageSerpTitlePreview" style="color:#8ab4f8; font-size:18px; font-weight:400; line-height:1.3; margin-bottom:5px; cursor:pointer;">
+                Institutional Trading Handbook | TradersDesk.in
+              </div>
+              <div id="pageSerpDescPreview" style="color:#bdc1c6; font-size:13px; line-height:1.45;">
+                Comprehensive guide to institutional market breadth analytics, option chain Greeks, and algorithmic volatility trading.
+              </div>
             </div>
-            <div class="adm-form-group">
-              <label>Status</label>
-              <select id="cmsPageStatus" class="adm-input">
-                <option value="published">Published</option>
-                <option value="draft">Draft (Admin Only)</option>
-              </select>
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between;">
+                <label>Google Search Meta Title (50-60 characters recommended)</label>
+                <span id="pageTitleCharCount" style="font-size:11px; color:#94a3b8;">0 / 60</span>
+              </div>
+              <input type="text" id="cmsPageMetaTitle" class="adm-input" placeholder="e.g. Institutional Trading Handbook | TradersDesk" oninput="updatePageSerpPreview()" />
             </div>
-            <div class="adm-form-group">
-              <label>SEO Meta Description</label>
-              <input type="text" id="cmsPageMetaDesc" class="adm-input" placeholder="Brief search summary..." />
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between;">
+                <label>Google Search Meta Description (120-160 characters recommended)</label>
+                <span id="pageDescCharCount" style="font-size:11px; color:#94a3b8;">0 / 160</span>
+              </div>
+              <textarea id="cmsPageMetaDesc" class="adm-input" style="height:70px; resize:none;" placeholder="Brief summary displayed under the link in Google Search results..." oninput="updatePageSerpPreview()"></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:14px;">
+              <div class="adm-form-group">
+                <label>Focus Keywords &amp; Tags</label>
+                <input type="text" id="cmsPageKeywords" class="adm-input" placeholder="e.g. market breadth, option chain, nse trading" />
+              </div>
+              <div class="adm-form-group">
+                <label>Robots Indexing</label>
+                <select id="cmsPageRobots" class="adm-input">
+                  <option value="index, follow">Index, Follow (Recommended - Google Crawls &amp; Ranks)</option>
+                  <option value="noindex, nofollow">NoIndex, NoFollow (Private Document)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <label>Social Sharing Image URL (OpenGraph / Twitter Card)</label>
+              <input type="text" id="cmsPageOgImage" class="adm-input" placeholder="https://tradersdesk.in/og-image.png or unsplash URL" />
             </div>
           </div>
 
-          <!-- Split Editor -->
-          <div class="cms-editor-split">
-            <div class="cms-editor-pane">
-              <label style="font-size:11px; font-weight:700; color:var(--adm-muted); margin-bottom:6px;">SOURCE CONTENT (MARKDOWN / HTML)</label>
-              <textarea id="cmsPageContent" class="cms-editor-textarea" placeholder="# Heading&#10;&#10;Write your institutional content here...&#10;&#10;- Feature 1&#10;- Feature 2" oninput="renderCmsPagePreview()"></textarea>
+          <!-- TAB 3: SETTINGS & CODE -->
+          <div id="pageTabSettings" class="modal-subtab-pane" style="display:none;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+              <div class="adm-form-group">
+                <label>Format</label>
+                <select id="cmsPageFormat" class="adm-input" onchange="renderCmsPagePreview()">
+                  <option value="markdown">Markdown (.md - Recommended)</option>
+                  <option value="html">Raw HTML</option>
+                </select>
+              </div>
+              <div class="adm-form-group">
+                <label>Author / Desk</label>
+                <input type="text" id="cmsPageAuthor" class="adm-input" value="TradersDesk Institutional Desk" />
+              </div>
             </div>
-            <div class="cms-editor-pane">
-              <label style="font-size:11px; font-weight:700; color:var(--adm-muted); margin-bottom:6px;">REAL-TIME PREVIEW</label>
-              <div id="cmsPagePreview" class="cms-preview-pane"></div>
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <label>Custom Page CSS (Optional)</label>
+              <textarea id="cmsPageCustomCss" class="adm-input" style="height:80px; font-family:monospace; font-size:12px; resize:none;" placeholder="/* Extra custom styles for this page */"></textarea>
             </div>
           </div>
 
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid var(--adm-border); padding-top:16px;">
+          <!-- Footer Actions with Save Draft vs Publish -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-top:1px solid var(--adm-border); padding-top:14px;">
             <button type="button" class="btn-adm-danger" id="btnDeleteCmsPage" style="display:none;" onclick="deleteCmsPage()">🗑️ Delete Page</button>
             <div style="display:flex; gap:10px; margin-left:auto;">
               <button type="button" class="seo-pill-btn" onclick="closeCmsPageModal()">Cancel</button>
-              <button type="submit" class="btn-adm-primary" style="background:#10b981;">💾 Save &amp; Publish Page</button>
+              <button type="button" class="btn-adm-primary" style="background:#475569;" onclick="saveCmsPage(false)">📝 Save Draft</button>
+              <button type="button" class="btn-adm-primary" style="background:#10b981;" onclick="saveCmsPage(true)">🚀 Publish Page</button>
             </div>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Modal: Blog Article Editor -->
+    <!-- Modal: Blog Article Editor (WordPress-Grade Studio) -->
     <div id="modalCmsBlog" class="adm-modal-overlay">
-      <div class="adm-modal-box" style="max-width:960px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--adm-border); padding-bottom:14px;">
-          <div>
-            <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalBlogTitleText">✍️ Article Editor</h3>
-            <span style="font-size:12px; color:#94a3b8;">Publish quantitative research and guides to /blog</span>
+      <div class="adm-modal-box" style="max-width:1040px; width:95%; max-height:92vh; display:flex; flex-direction:column;">
+        <!-- Modal Top Bar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--adm-border); padding-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:20px;">✍️</span>
+            <div>
+              <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalBlogTitleText">Research Article Studio</h3>
+              <span style="font-size:11.5px; color:#94a3b8;" id="blogSlugLivePreview">https://tradersdesk.in/blog/your-slug</span>
+            </div>
           </div>
-          <button type="button" onclick="closeCmsBlogModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span id="blogStatusPill" class="p2-badge p2-badge-amber">DRAFT</span>
+            <button type="button" onclick="closeCmsBlogModal()" style="background:none; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+          </div>
         </div>
 
-        <form id="cmsBlogForm" onsubmit="event.preventDefault(); submitCmsBlog();">
+        <!-- WordPress-Style Studio Tabs -->
+        <div style="display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px; margin-bottom:14px;">
+          <button type="button" id="tabBtnBlogEditor" class="seo-pill-btn active" style="font-weight:700;" onclick="switchBlogModalTab('editor')">✍️ Article Content &amp; Split Preview</button>
+          <button type="button" id="tabBtnBlogSeo" class="seo-pill-btn" style="font-weight:700;" onclick="switchBlogModalTab('seo')">🔍 Google Search SEO (Yoast/RankMath)</button>
+          <button type="button" id="tabBtnBlogSettings" class="seo-pill-btn" style="font-weight:700;" onclick="switchBlogModalTab('settings')">⚙️ Taxonomy, Author &amp; Media</button>
+        </div>
+
+        <form id="cmsBlogForm" style="display:flex; flex-direction:column; flex:1; overflow-y:auto;" onsubmit="event.preventDefault();">
           <input type="hidden" id="cmsBlogId" />
-          <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:14px;">
-            <div class="adm-form-group">
-              <label>Article Title</label>
-              <input type="text" id="cmsBlogTitle" class="adm-input" placeholder="e.g. Mastering Nifty Straddle Decay" required oninput="autoSlugBlog(this.value)" />
+
+          <!-- TAB 1: ARTICLE CONTENT & SPLIT PREVIEW -->
+          <div id="blogTabContent" class="modal-subtab-pane">
+            <div style="display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:12px;">
+              <div class="adm-form-group">
+                <label>Article Title</label>
+                <input type="text" id="cmsBlogTitle" class="adm-input" placeholder="e.g. Mastering Nifty Straddle Decay Dynamics" required oninput="autoSlugBlog(this.value); updateBlogSerpPreview();" />
+              </div>
+              <div class="adm-form-group">
+                <label>URL Slug (/blog/slug)</label>
+                <input type="text" id="cmsBlogSlug" class="adm-input" placeholder="e.g. mastering-nifty-straddle-decay" required oninput="updateBlogSerpPreview();" />
+              </div>
             </div>
-            <div class="adm-form-group">
-              <label>URL Slug (/blog/slug)</label>
-              <input type="text" id="cmsBlogSlug" class="adm-input" placeholder="e.g. mastering-nifty-straddle-decay" required />
+
+            <!-- Formatting Toolbar -->
+            <div class="cms-toolbar" style="display:flex; flex-wrap:wrap; gap:4px; padding:6px 10px; background:#080e21; border:1px solid var(--adm-border); border-bottom:none; border-radius:8px 8px 0 0;">
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '**', '**', 'bold text')" title="Bold"><strong>B</strong></button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '*', '*', 'italic text')" title="Italic"><em>I</em></button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '# ', '', 'Article Heading')" title="Heading 1">H1</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '## ', '', 'Section Heading')" title="Heading 2">H2</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '### ', '', 'Subsection')" title="Heading 3">H3</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '> ', '', 'Key trading takeaway...')" title="Quote">“</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '```python\n', '\n```', '# quantitative logic')" title="Code">&lt;&gt;</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '- ', '', 'Bullet point')" title="Bullet List">• List</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '1. ', '', 'Numbered point')" title="Numbered List">1. List</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '[', '](https://tradersdesk.in/open_interest.html)', 'Option Chain Pro')" title="Insert Link">🔗 Link</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '![', '](https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80)', 'Market Chart')" title="Insert Image">🖼️ Image</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '| Strike | Call OI | Put OI |\n|---|---|---|\n| 22600 | 85.2L | 110.4L |\n', '', '')" title="Insert Table">📊 Table</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '> [!IMPORTANT]\n> High dealer gamma threshold reached.\n', '', '')" title="Insert Callout">⚡ Callout</button>
+            </div>
+
+            <!-- Split Editor -->
+            <div class="cms-editor-split" style="margin-top:0;">
+              <div class="cms-editor-pane">
+                <textarea id="cmsBlogContent" class="cms-editor-textarea" style="border-radius:0 0 8px 8px;" placeholder="# Article Title&#10;&#10;Write your quantitative research analysis here in Markdown..." oninput="renderCmsBlogPreview()"></textarea>
+              </div>
+              <div class="cms-editor-pane">
+                <div id="cmsBlogPreview" class="cms-preview-pane"></div>
+              </div>
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px; margin-bottom:14px;">
-            <div class="adm-form-group">
-              <label>Category</label>
-              <select id="cmsBlogCategory" class="adm-input">
-                <option value="Options Strategy">Options Strategy</option>
-                <option value="Market Breadth">Market Breadth</option>
-                <option value="F&O Insights">F&O Insights</option>
-                <option value="Technical Analysis">Technical Analysis</option>
-                <option value="Market Education">Market Education</option>
-              </select>
+          <!-- TAB 2: GOOGLE SEARCH SEO & SOCIAL SNIPPET -->
+          <div id="blogTabSeo" class="modal-subtab-pane" style="display:none;">
+            <p style="font-size:12.5px; color:#94a3b8; margin:0 0 14px 0;">Live snippet simulation of how this article will rank on Google Search.</p>
+
+            <!-- Google Search Snippet Box -->
+            <div style="background:#202124; border:1px solid #3c4043; border-radius:10px; padding:18px; margin-bottom:20px; font-family:arial,sans-serif;">
+              <div style="font-size:12px; color:#bdc1c6; display:flex; align-items:center; gap:6px; margin-bottom:5px;">
+                <img src="/favicon.svg" width="16" height="16" style="border-radius:50%;" />
+                <span>tradersdesk.in › blog › <span id="blogSerpSlugPreview">mastering-nifty-straddle-decay</span></span>
+              </div>
+              <div id="blogSerpTitlePreview" style="color:#8ab4f8; font-size:18px; font-weight:400; line-height:1.3; margin-bottom:5px; cursor:pointer;">
+                Mastering Nifty Straddle Decay Dynamics | TradersDesk.in
+              </div>
+              <div id="blogSerpDescPreview" style="color:#bdc1c6; font-size:13px; line-height:1.45;">
+                In-depth quantitative research on intraday straddle decay, dealer gamma hedging, and theta acceleration curves during weekly NSE index expiries.
+              </div>
             </div>
-            <div class="adm-form-group">
-              <label>Author</label>
-              <input type="text" id="cmsBlogAuthor" class="adm-input" value="TradersDesk Quantitative Research" />
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between;">
+                <label>Google Search Meta Title (50-60 characters)</label>
+                <span id="blogTitleCharCount" style="font-size:11px; color:#94a3b8;">0 / 60</span>
+              </div>
+              <input type="text" id="cmsBlogMetaTitle" class="adm-input" placeholder="e.g. Mastering Nifty Straddle Decay | Quantitative Research" oninput="updateBlogSerpPreview()" />
             </div>
-            <div class="adm-form-group">
-              <label>Read Time</label>
-              <input type="text" id="cmsBlogReadTime" class="adm-input" value="5 min read" />
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between;">
+                <label>Article Excerpt &amp; Search Description (120-160 characters)</label>
+                <span id="blogDescCharCount" style="font-size:11px; color:#94a3b8;">0 / 160</span>
+              </div>
+              <textarea id="cmsBlogExcerpt" class="adm-input" style="height:70px; resize:none;" placeholder="1-2 sentence hook displayed on the blog card and in Google Search snippets..." oninput="updateBlogSerpPreview()" required></textarea>
             </div>
-            <div class="adm-form-group">
-              <label>Status</label>
-              <select id="cmsBlogStatus" class="adm-input">
-                <option value="published">Published</option>
-                <option value="draft">Draft</option>
-              </select>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:14px;">
+              <div class="adm-form-group">
+                <label>Focus Keywords &amp; Tags</label>
+                <input type="text" id="cmsBlogKeywords" class="adm-input" placeholder="e.g. straddle decay, theta, gamma squeeze, options" />
+              </div>
+              <div class="adm-form-group">
+                <label>Canonical URL</label>
+                <input type="text" id="cmsBlogCanonical" class="adm-input" placeholder="https://tradersdesk.in/blog/slug (auto)" />
+              </div>
             </div>
           </div>
 
-          <div class="adm-form-group" style="margin-bottom:14px;">
-            <label>Cover Image URL (Optional)</label>
-            <input type="text" id="cmsBlogCover" class="adm-input" placeholder="https://images.unsplash.com/..." />
-          </div>
-
-          <div class="adm-form-group" style="margin-bottom:14px;">
-            <label>Article Short Excerpt</label>
-            <input type="text" id="cmsBlogExcerpt" class="adm-input" placeholder="1-2 sentence hook for the card..." required />
-          </div>
-
-          <!-- Split Editor -->
-          <div class="cms-editor-split">
-            <div class="cms-editor-pane">
-              <label style="font-size:11px; font-weight:700; color:var(--adm-muted); margin-bottom:6px;">ARTICLE CONTENT (MARKDOWN)</label>
-              <textarea id="cmsBlogContent" class="cms-editor-textarea" placeholder="# Article Title&#10;&#10;Write your research post here..." oninput="renderCmsBlogPreview()"></textarea>
+          <!-- TAB 3: TAXONOMY, AUTHOR & MEDIA -->
+          <div id="blogTabSettings" class="modal-subtab-pane" style="display:none;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
+              <div class="adm-form-group">
+                <label>Category</label>
+                <select id="cmsBlogCategory" class="adm-input">
+                  <option value="Options Strategy">Options Strategy</option>
+                  <option value="Market Breadth">Market Breadth</option>
+                  <option value="F&O Insights">F&O Insights</option>
+                  <option value="Technical Analysis">Technical Analysis</option>
+                  <option value="Market Education">Market Education</option>
+                  <option value="Institutional Research">Institutional Research</option>
+                </select>
+              </div>
+              <div class="adm-form-group">
+                <label>Author</label>
+                <input type="text" id="cmsBlogAuthor" class="adm-input" value="TradersDesk Quantitative Research" />
+              </div>
+              <div class="adm-form-group">
+                <label>Read Time</label>
+                <input type="text" id="cmsBlogReadTime" class="adm-input" value="5 min read" />
+              </div>
             </div>
-            <div class="cms-editor-pane">
-              <label style="font-size:11px; font-weight:700; color:var(--adm-muted); margin-bottom:6px;">REAL-TIME PREVIEW</label>
-              <div id="cmsBlogPreview" class="cms-preview-pane"></div>
+
+            <div class="adm-form-group" style="margin-bottom:16px;">
+              <label>Featured Cover Image URL</label>
+              <input type="text" id="cmsBlogCover" class="adm-input" placeholder="https://images.unsplash.com/..." oninput="updateBlogCoverThumbnail(this.value)" />
+              <div id="blogCoverThumbWrap" style="margin-top:10px; display:none;">
+                <img id="blogCoverThumb" src="" style="max-height:140px; border-radius:8px; border:1px solid var(--adm-border);" />
+              </div>
             </div>
           </div>
 
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid var(--adm-border); padding-top:16px;">
+          <!-- Footer Actions with Save Draft vs Publish -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-top:1px solid var(--adm-border); padding-top:14px;">
             <button type="button" class="btn-adm-danger" id="btnDeleteCmsBlog" style="display:none;" onclick="deleteCmsBlog()">🗑️ Delete Article</button>
             <div style="display:flex; gap:10px; margin-left:auto;">
               <button type="button" class="seo-pill-btn" onclick="closeCmsBlogModal()">Cancel</button>
-              <button type="submit" class="btn-adm-primary" style="background:#10b981;">💾 Publish Article</button>
+              <button type="button" class="btn-adm-primary" style="background:#475569;" onclick="saveCmsBlog(false)">📝 Save Draft</button>
+              <button type="button" class="btn-adm-primary" style="background:#10b981;" onclick="saveCmsBlog(true)">🚀 Publish Article</button>
             </div>
           </div>
         </form>
@@ -4210,11 +4397,12 @@
     <div id="modalAddSubmenu" class="adm-modal-overlay">
       <div class="adm-modal-box" style="max-width:540px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--adm-border); padding-bottom:12px;">
-          <h3 style="margin:0; font-size:16px; font-weight:800; color:#fff;">➕ Add Dropdown Submenu Item</h3>
+          <h3 style="margin:0; font-size:16px; font-weight:800; color:#fff;" id="subModalHeading">➕ Add Dropdown Submenu Item</h3>
           <button type="button" onclick="closeAddSubmenuModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">&times;</button>
         </div>
         <input type="hidden" id="subModalMenuIdx" />
         <input type="hidden" id="subModalColIdx" />
+        <input type="hidden" id="subModalSubIdx" />
         <div class="adm-form-group" style="margin-bottom:12px;">
           <label>Submenu Title</label>
           <input type="text" id="subModalTitle" class="adm-input" placeholder="e.g. Option Chain Live Matrix" required />
@@ -4258,6 +4446,94 @@
       // =========================================================================
       // 1. SIMPLE CLIENT-SIDE MARKDOWN PARSER FOR REAL-TIME SPLIT PREVIEWS
       // =========================================================================
+      
+      // =========================================================================
+      // WORDPRESS-GRADE CMS TOOLBAR & SERP PREVIEW HELPERS
+      // =========================================================================
+      function insertSyntax(textareaId, prefix, suffix, defaultText) {
+        const el = document.getElementById(textareaId);
+        if (!el) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const selected = el.value.substring(start, end) || defaultText;
+        const replacement = prefix + selected + suffix;
+        el.value = el.value.substring(0, start) + replacement + el.value.substring(end);
+        el.selectionStart = start + prefix.length;
+        el.selectionEnd = el.selectionStart + selected.length;
+        el.focus();
+        if (textareaId === 'cmsPageContent') renderCmsPagePreview();
+        if (textareaId === 'cmsBlogContent') renderCmsBlogPreview();
+      }
+
+      function switchPageModalTab(tabName) {
+        document.querySelectorAll('#modalCmsPage .seo-pill-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#modalCmsPage .modal-subtab-pane').forEach(p => p.style.display = 'none');
+        if (tabName === 'editor') {
+          document.getElementById('tabBtnPageEditor').classList.add('active');
+          document.getElementById('pageTabContent').style.display = 'block';
+        } else if (tabName === 'seo') {
+          document.getElementById('tabBtnPageSeo').classList.add('active');
+          document.getElementById('pageTabSeo').style.display = 'block';
+          updatePageSerpPreview();
+        } else if (tabName === 'settings') {
+          document.getElementById('tabBtnPageSettings').classList.add('active');
+          document.getElementById('pageTabSettings').style.display = 'block';
+        }
+      }
+
+      function switchBlogModalTab(tabName) {
+        document.querySelectorAll('#modalCmsBlog .seo-pill-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#modalCmsBlog .modal-subtab-pane').forEach(p => p.style.display = 'none');
+        if (tabName === 'editor') {
+          document.getElementById('tabBtnBlogEditor').classList.add('active');
+          document.getElementById('blogTabContent').style.display = 'block';
+        } else if (tabName === 'seo') {
+          document.getElementById('tabBtnBlogSeo').classList.add('active');
+          document.getElementById('blogTabSeo').style.display = 'block';
+          updateBlogSerpPreview();
+        } else if (tabName === 'settings') {
+          document.getElementById('tabBtnBlogSettings').classList.add('active');
+          document.getElementById('blogTabSettings').style.display = 'block';
+        }
+      }
+
+      function updatePageSerpPreview() {
+        const title = document.getElementById('cmsPageMetaTitle').value.trim() || document.getElementById('cmsPageTitle').value.trim() || 'Custom Page';
+        const desc = document.getElementById('cmsPageMetaDesc').value.trim() || 'Comprehensive guide to quantitative market intelligence and analytics.';
+        const slug = document.getElementById('cmsPageSlug').value.trim() || 'your-slug';
+
+        document.getElementById('pageSerpTitlePreview').textContent = title + ' | TradersDesk.in';
+        document.getElementById('pageSerpDescPreview').textContent = desc;
+        document.getElementById('pageSerpSlugPreview').textContent = slug;
+        document.getElementById('pageSlugLivePreview').textContent = 'https://tradersdesk.in/' + slug;
+        document.getElementById('pageTitleCharCount').textContent = title.length + ' / 60';
+        document.getElementById('pageDescCharCount').textContent = desc.length + ' / 160';
+      }
+
+      function updateBlogSerpPreview() {
+        const title = document.getElementById('cmsBlogMetaTitle').value.trim() || document.getElementById('cmsBlogTitle').value.trim() || 'Research Article';
+        const desc = document.getElementById('cmsBlogExcerpt').value.trim() || 'In-depth quantitative analysis and derivative insights for institutional traders.';
+        const slug = document.getElementById('cmsBlogSlug').value.trim() || 'your-slug';
+
+        document.getElementById('blogSerpTitlePreview').textContent = title + ' | TradersDesk.in';
+        document.getElementById('blogSerpDescPreview').textContent = desc;
+        document.getElementById('blogSerpSlugPreview').textContent = slug;
+        document.getElementById('blogSlugLivePreview').textContent = 'https://tradersdesk.in/blog/' + slug;
+        document.getElementById('blogTitleCharCount').textContent = title.length + ' / 60';
+        document.getElementById('blogDescCharCount').textContent = desc.length + ' / 160';
+      }
+
+      function updateBlogCoverThumbnail(url) {
+        const wrap = document.getElementById('blogCoverThumbWrap');
+        const img = document.getElementById('blogCoverThumb');
+        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+          img.src = url;
+          wrap.style.display = 'block';
+        } else {
+          wrap.style.display = 'none';
+        }
+      }
+
       function parseClientMarkdown(md) {
         if (!md) return '<p style="color:var(--adm-muted); font-style:italic;">Live preview will appear here as you type...</p>';
         let lines = md.split('\n');
@@ -4401,26 +4677,58 @@
         cols.forEach((col, colIdx) => {
           (col.items || []).forEach((sub, subIdx) => {
             cardsHtml += `
-              <div class="sub-item-card" style="background:#0b1329; border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:10px 12px; display:flex; flex-direction:column; gap:6px;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                  <div style="font-weight:700; font-size:12.5px; color:#f8fafc; display:flex; align-items:center; gap:6px;">
-                    <span>${escapeHtml(sub.icon || '⚡')}</span>
+              <div class="sub-item-card" style="background:#0b1329; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div style="font-weight:700; font-size:13px; color:#f8fafc; display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:16px;">${escapeHtml(sub.icon || '⚡')}</span>
                     <span>${escapeHtml(sub.title || 'Untitled')}</span>
                   </div>
-                  <button type="button" onclick="deleteSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx})" style="background:none; border:none; color:#ef4444; font-size:14px; cursor:pointer;" title="Delete Submenu">&times;</button>
+                  <div style="display:flex; align-items:center; gap:4px;">
+                    <button type="button" class="seo-pill-btn" style="padding:2px 6px; font-size:10px;" onclick="moveSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx}, -1)" ${subIdx === 0 ? 'disabled' : ''} title="Move Up">⬆</button>
+                    <button type="button" class="seo-pill-btn" style="padding:2px 6px; font-size:10px;" onclick="moveSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx}, 1)" ${subIdx === col.items.length - 1 ? 'disabled' : ''} title="Move Down">⬇</button>
+                    <button type="button" class="btn-adm-primary" style="padding:2px 8px; font-size:11px;" onclick="editSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx})" title="Edit Submenu">✏️ Edit</button>
+                    <button type="button" class="btn-adm-danger" style="padding:2px 6px; font-size:11px;" onclick="deleteSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx})" title="Delete Submenu">🗑️</button>
+                  </div>
                 </div>
-                <div style="font-size:11px; color:#94a3b8; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
-                  ${escapeHtml(sub.sub || '')}
+                <div style="font-size:11.5px; color:#94a3b8; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                  ${escapeHtml(sub.sub || 'No subtitle provided')}
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-family:monospace; color:#38bdf8;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-family:monospace; color:#38bdf8; border-top:1px solid rgba(255,255,255,0.04); padding-top:6px;">
                   <span>${escapeHtml(sub.url || '#')}</span>
-                  ${sub.badge ? `<span class="p2-badge p2-badge-${sub.badgeColor || 'teal'}" style="font-size:9px; padding:1px 5px;">${escapeHtml(sub.badge)}</span>` : ''}
+                  ${sub.badge ? `<span class="p2-badge p2-badge-${sub.badgeColor || 'teal'}" style="font-size:9.5px; padding:1px 6px;">${escapeHtml(sub.badge)}</span>` : ''}
                 </div>
               </div>
             `;
           });
         });
-        return cardsHtml || '<div style="color:var(--adm-muted); font-size:12px; grid-column:1/-1;">No submenu items yet. Click "Add Submenu Item".</div>';
+        return cardsHtml || '<div style="color:var(--adm-muted); font-size:12px; grid-column:1/-1; padding:10px 0;">No submenu items yet. Click "Add Submenu Item".</div>';
+      }
+
+      function moveSubmenuItem(mIdx, cIdx, sIdx, dir) {
+        const items = _navMasterData.items[mIdx].columns[cIdx].items;
+        const target = sIdx + dir;
+        if (target < 0 || target >= items.length) return;
+        const tmp = items[sIdx];
+        items[sIdx] = items[target];
+        items[target] = tmp;
+        renderNavBuilderUI();
+        renderNavLivePreview();
+      }
+
+      function editSubmenuItem(mIdx, cIdx, sIdx) {
+        const item = _navMasterData.items[mIdx].columns[cIdx].items[sIdx];
+        if (!item) return;
+        document.getElementById('subModalMenuIdx').value = mIdx;
+        document.getElementById('subModalColIdx').value = cIdx;
+        document.getElementById('subModalSubIdx').value = sIdx;
+        document.getElementById('subModalTitle').value = item.title || '';
+        document.getElementById('subModalSub').value = item.sub || '';
+        document.getElementById('subModalUrl').value = item.url || '';
+        document.getElementById('subModalIcon').value = item.icon || '⚡';
+        document.getElementById('subModalBadge').value = item.badge || '';
+        document.getElementById('subModalBadgeColor').value = item.badgeColor || 'teal';
+        document.getElementById('subModalHeading').textContent = '✏️ Edit Dropdown Submenu Item';
+        document.getElementById('modalAddSubmenu').classList.add('active');
       }
 
       function updateNavField(idx, field, val) {
@@ -4484,10 +4792,14 @@
       function openAddSubmenuModal(menuIdx, colIdx) {
         document.getElementById('subModalMenuIdx').value = menuIdx;
         document.getElementById('subModalColIdx').value = colIdx;
+        document.getElementById('subModalSubIdx').value = '';
         document.getElementById('subModalTitle').value = '';
         document.getElementById('subModalSub').value = '';
         document.getElementById('subModalUrl').value = '';
+        document.getElementById('subModalIcon').value = '⚡';
         document.getElementById('subModalBadge').value = 'NEW';
+        document.getElementById('subModalBadgeColor').value = 'teal';
+        document.getElementById('subModalHeading').textContent = '➕ Add Dropdown Submenu Item';
         document.getElementById('modalAddSubmenu').classList.add('active');
       }
 
@@ -4498,6 +4810,8 @@
       function confirmAddSubmenuItem() {
         const mIdx = parseInt(document.getElementById('subModalMenuIdx').value);
         const cIdx = parseInt(document.getElementById('subModalColIdx').value);
+        const sIdxVal = document.getElementById('subModalSubIdx').value;
+        const sIdx = sIdxVal !== '' ? parseInt(sIdxVal) : -1;
         const title = document.getElementById('subModalTitle').value.trim();
         const sub = document.getElementById('subModalSub').value.trim();
         const url = document.getElementById('subModalUrl').value.trim();
@@ -4521,14 +4835,20 @@
           menu.columns[cIdx].items = [];
         }
 
-        menu.columns[cIdx].items.push({
+        const subObj = {
           title: title,
           sub: sub,
           url: url,
           icon: icon,
           badge: badge,
           badgeColor: badgeColor
-        });
+        };
+
+        if (sIdx >= 0 && menu.columns[cIdx].items[sIdx]) {
+          menu.columns[cIdx].items[sIdx] = subObj;
+        } else {
+          menu.columns[cIdx].items.push(subObj);
+        }
 
         closeAddSubmenuModal();
         renderNavBuilderUI();
@@ -4643,12 +4963,21 @@
         document.getElementById('cmsPageTitle').value = '';
         document.getElementById('cmsPageSlug').value = '';
         document.getElementById('cmsPageFormat').value = 'markdown';
-        document.getElementById('cmsPageStatus').value = 'published';
+        document.getElementById('cmsPageMetaTitle').value = '';
         document.getElementById('cmsPageMetaDesc').value = '';
+        document.getElementById('cmsPageKeywords').value = '';
+        document.getElementById('cmsPageRobots').value = 'index, follow';
+        document.getElementById('cmsPageOgImage').value = '';
+        document.getElementById('cmsPageAuthor').value = 'TradersDesk Institutional Desk';
+        document.getElementById('cmsPageCustomCss').value = '';
         document.getElementById('cmsPageContent').value = '# Quantitative Strategy Guide\n\nWelcome to the institutional desk handbook.\n\n- **Breadth:** Real-time net advances\n- **Options:** Delta & Vega decay tracking';
         document.getElementById('btnDeleteCmsPage').style.display = 'none';
         document.getElementById('modalPageTitleText').textContent = '📄 Create New Custom Page';
+        document.getElementById('pageStatusPill').className = 'p2-badge p2-badge-amber';
+        document.getElementById('pageStatusPill').textContent = 'DRAFT';
+        switchPageModalTab('editor');
         renderCmsPagePreview();
+        updatePageSerpPreview();
         document.getElementById('modalCmsPage').classList.add('active');
       }
 
@@ -4656,19 +4985,35 @@
         try {
           const res = await fetch('/api/admin/page?slug=' + encodeURIComponent(slug), { headers: getAuthHeaders() });
           const data = await res.json();
-          if (!data || !data.page) return;
+          if (!data || !data.page) {
+            alert('Could not find page: ' + slug);
+            return;
+          }
           const p = data.page;
 
           document.getElementById('cmsPageId').value = p.id || '';
           document.getElementById('cmsPageTitle').value = p.title || '';
           document.getElementById('cmsPageSlug').value = p.slug || '';
           document.getElementById('cmsPageFormat').value = p.format || 'markdown';
-          document.getElementById('cmsPageStatus').value = p.status || 'published';
+          document.getElementById('cmsPageMetaTitle').value = p.metaTitle || p.title || '';
           document.getElementById('cmsPageMetaDesc').value = p.metaDescription || '';
+          document.getElementById('cmsPageKeywords').value = p.keywords || '';
+          document.getElementById('cmsPageRobots').value = p.robots || 'index, follow';
+          document.getElementById('cmsPageOgImage').value = p.ogImage || '';
+          document.getElementById('cmsPageAuthor').value = p.author || 'TradersDesk Institutional Desk';
+          document.getElementById('cmsPageCustomCss').value = p.customCss || '';
           document.getElementById('cmsPageContent').value = p.content || '';
+          
+          const isPub = (p.status !== 'draft');
+          const pill = document.getElementById('pageStatusPill');
+          pill.className = isPub ? 'p2-badge p2-badge-teal' : 'p2-badge p2-badge-amber';
+          pill.textContent = isPub ? 'PUBLISHED' : 'DRAFT';
+
           document.getElementById('btnDeleteCmsPage').style.display = 'inline-block';
           document.getElementById('modalPageTitleText').textContent = '📄 Edit Page: ' + (p.title || slug);
+          switchPageModalTab('editor');
           renderCmsPagePreview();
+          updatePageSerpPreview();
           document.getElementById('modalCmsPage').classList.add('active');
         } catch(e) {
           alert('Failed loading page: ' + e.message);
@@ -4676,7 +5021,8 @@
       }
 
       function closeCmsPageModal() {
-        document.getElementById('modalCmsPage').classList.remove('active');
+        const m = document.getElementById('modalCmsPage');
+        if (m) { m.style.display = 'none'; m.classList.remove('active'); }
       }
 
       function autoSlugPage(val) {
@@ -4697,14 +5043,27 @@
         }
       }
 
-      async function submitCmsPage() {
+      async function saveCmsPage(isPublish) {
+        const title = document.getElementById('cmsPageTitle').value.trim();
+        const slug = document.getElementById('cmsPageSlug').value.trim();
+        if (!title || !slug) {
+          alert('Page Title and URL Slug are required.');
+          return;
+        }
+
         const payload = {
           id: document.getElementById('cmsPageId').value || undefined,
-          title: document.getElementById('cmsPageTitle').value.trim(),
-          slug: document.getElementById('cmsPageSlug').value.trim(),
+          title: title,
+          slug: slug,
           format: document.getElementById('cmsPageFormat').value,
-          status: document.getElementById('cmsPageStatus').value,
+          status: isPublish ? 'published' : 'draft',
+          metaTitle: document.getElementById('cmsPageMetaTitle').value.trim() || title,
           metaDescription: document.getElementById('cmsPageMetaDesc').value.trim(),
+          keywords: document.getElementById('cmsPageKeywords').value.trim(),
+          robots: document.getElementById('cmsPageRobots').value,
+          ogImage: document.getElementById('cmsPageOgImage').value.trim(),
+          author: document.getElementById('cmsPageAuthor').value.trim(),
+          customCss: document.getElementById('cmsPageCustomCss').value.trim(),
           content: document.getElementById('cmsPageContent').value
         };
 
@@ -4718,7 +5077,7 @@
           if (res.ok && data.ok) {
             closeCmsPageModal();
             loadCmsPagesList();
-            showPagesAlert('Page saved and published successfully!', 'success');
+            showPagesAlert(isPublish ? `Page "${title}" published live successfully!` : `Page "${title}" saved as draft.`, 'success');
           } else {
             alert(data.message || 'Failed saving page.');
           }
@@ -4811,13 +5170,20 @@
         document.getElementById('cmsBlogCategory').value = 'Options Strategy';
         document.getElementById('cmsBlogAuthor').value = 'TradersDesk Quantitative Research';
         document.getElementById('cmsBlogReadTime').value = '5 min read';
-        document.getElementById('cmsBlogStatus').value = 'published';
         document.getElementById('cmsBlogCover').value = '';
         document.getElementById('cmsBlogExcerpt').value = '';
+        document.getElementById('cmsBlogMetaTitle').value = '';
+        document.getElementById('cmsBlogKeywords').value = '';
+        document.getElementById('cmsBlogCanonical').value = '';
         document.getElementById('cmsBlogContent').value = '# Intraday Market Breadth Dynamics\n\nAnalyzing the net advance-decline ratio during opening rotations...\n\n## Key Takeaways\n- Positive skew above +300 indicates institutional dominance\n- Track weighted point contribution alongside count';
         document.getElementById('btnDeleteCmsBlog').style.display = 'none';
         document.getElementById('modalBlogTitleText').textContent = '✍️ Write New Research Article';
+        document.getElementById('blogStatusPill').className = 'p2-badge p2-badge-amber';
+        document.getElementById('blogStatusPill').textContent = 'DRAFT';
+        updateBlogCoverThumbnail('');
+        switchBlogModalTab('editor');
         renderCmsBlogPreview();
+        updateBlogSerpPreview();
         document.getElementById('modalCmsBlog').classList.add('active');
       }
 
@@ -4825,7 +5191,10 @@
         try {
           const res = await fetch('/api/blog/post/' + encodeURIComponent(slug));
           const data = await res.json();
-          if (!data || !data.post) return;
+          if (!data || !data.post) {
+            alert('Could not find article: ' + slug);
+            return;
+          }
           const p = data.post;
 
           document.getElementById('cmsBlogId').value = p.id || '';
@@ -4834,13 +5203,24 @@
           document.getElementById('cmsBlogCategory').value = p.category || 'Options Strategy';
           document.getElementById('cmsBlogAuthor').value = p.author || 'TradersDesk Quantitative Research';
           document.getElementById('cmsBlogReadTime').value = p.readTime || '5 min read';
-          document.getElementById('cmsBlogStatus').value = p.status || 'published';
           document.getElementById('cmsBlogCover').value = p.coverImage || '';
           document.getElementById('cmsBlogExcerpt').value = p.excerpt || '';
+          document.getElementById('cmsBlogMetaTitle').value = p.metaTitle || p.title || '';
+          document.getElementById('cmsBlogKeywords').value = p.keywords || '';
+          document.getElementById('cmsBlogCanonical').value = p.canonicalUrl || '';
           document.getElementById('cmsBlogContent').value = p.content || '';
+
+          const isPub = (p.status !== 'draft');
+          const pill = document.getElementById('blogStatusPill');
+          pill.className = isPub ? 'p2-badge p2-badge-teal' : 'p2-badge p2-badge-amber';
+          pill.textContent = isPub ? 'PUBLISHED' : 'DRAFT';
+
+          updateBlogCoverThumbnail(p.coverImage || '');
           document.getElementById('btnDeleteCmsBlog').style.display = 'inline-block';
           document.getElementById('modalBlogTitleText').textContent = '✍️ Edit Article: ' + (p.title || slug);
+          switchBlogModalTab('editor');
           renderCmsBlogPreview();
+          updateBlogSerpPreview();
           document.getElementById('modalCmsBlog').classList.add('active');
         } catch(e) {
           alert('Failed loading article: ' + e.message);
@@ -4848,7 +5228,8 @@
       }
 
       function closeCmsBlogModal() {
-        document.getElementById('modalCmsBlog').classList.remove('active');
+        const m = document.getElementById('modalCmsBlog');
+        if (m) { m.style.display = 'none'; m.classList.remove('active'); }
       }
 
       function autoSlugBlog(val) {
@@ -4864,17 +5245,29 @@
         preview.innerHTML = parseClientMarkdown(content);
       }
 
-      async function submitCmsBlog() {
+      async function saveCmsBlog(isPublish) {
+        const title = document.getElementById('cmsBlogTitle').value.trim();
+        const slug = document.getElementById('cmsBlogSlug').value.trim();
+        const excerpt = document.getElementById('cmsBlogExcerpt').value.trim();
+
+        if (!title || !slug || !excerpt) {
+          alert('Title, URL Slug, and Short Excerpt are required.');
+          return;
+        }
+
         const payload = {
           id: document.getElementById('cmsBlogId').value || undefined,
-          title: document.getElementById('cmsBlogTitle').value.trim(),
-          slug: document.getElementById('cmsBlogSlug').value.trim(),
+          title: title,
+          slug: slug,
           category: document.getElementById('cmsBlogCategory').value,
           author: document.getElementById('cmsBlogAuthor').value.trim(),
           readTime: document.getElementById('cmsBlogReadTime').value.trim(),
-          status: document.getElementById('cmsBlogStatus').value,
+          status: isPublish ? 'published' : 'draft',
           coverImage: document.getElementById('cmsBlogCover').value.trim(),
-          excerpt: document.getElementById('cmsBlogExcerpt').value.trim(),
+          excerpt: excerpt,
+          metaTitle: document.getElementById('cmsBlogMetaTitle').value.trim() || title,
+          keywords: document.getElementById('cmsBlogKeywords').value.trim(),
+          canonicalUrl: document.getElementById('cmsBlogCanonical').value.trim(),
           format: "markdown",
           content: document.getElementById('cmsBlogContent').value
         };
@@ -4889,7 +5282,7 @@
           if (res.ok && data.ok) {
             closeCmsBlogModal();
             loadCmsBlogList();
-            showBlogAlert('Article published successfully!', 'success');
+            showBlogAlert(isPublish ? `Article "${title}" published live successfully!` : `Article "${title}" saved as draft.`, 'success');
           } else {
             alert(data.message || 'Failed saving article.');
           }

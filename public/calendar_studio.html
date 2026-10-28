@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <meta property="og:image" content="https://tradersdesk.in/og-image.png">
+  <meta name="twitter:image" content="https://tradersdesk.in/og-image.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FinancialService",
+    "name": "TradersDesk.in",
+    "url": "https://tradersdesk.in",
+    "logo": "https://tradersdesk.in/favicon.svg",
+    "image": "https://tradersdesk.in/og-image.png",
+    "description": "Institutional Quantitative Derivatives & Market Breadth Terminal"
+  }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calendar Spread Studio - Multi-Strike Calendar &amp; Diagonal Engine | TradersDesk</title>
@@ -1124,16 +1142,20 @@
        TOP HEADER: BRAND + TICKERS + ACTIONS
        ======================================== -->
   <header class="cs-header">
-    <!-- Brand -->
-    <div class="cs-brand">
-      <div class="cs-brand-icon">⚡</div>
-      <div class="cs-brand-texts">
-        <div class="cs-brand-title">
+        <!-- Brand -->
+    <div class="cs-brand" style="display:flex; align-items:center; gap:14px;">
+      <a href="/" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in - Quantitative Terminal">
+        <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="cs-logo-dark" style="height:28px; width:auto; display:block;" onerror="this.style.display='none';" />
+        <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="cs-logo-light" style="height:28px; width:auto; display:none;" onerror="this.style.display='none';" />
+      </a>
+      <div class="cs-brand-texts" style="border-left:1px solid rgba(255,255,255,0.1); padding-left:12px;">
+        <div class="cs-brand-title" style="font-size:13px; font-weight:800; display:flex; align-items:center; gap:6px;">
           OPTIONS CALENDAR STUDIO
           <span class="cs-badge cs-badge-pro">PRO</span>
         </div>
-        <div class="cs-brand-sub">Real-Time Spread Pricing · Black-Scholes Greeks</div>
+        <div class="cs-brand-sub" style="font-size:11px; color:#94a3b8;">Real-Time Spread Pricing • Black-Scholes Greeks</div>
       </div>
+    </div>
     </div>
 
     <!-- Live Ticker Cards -->
@@ -4020,7 +4042,5 @@
         </div>
       </footer>
 
-  <script src="/js/site_announcement.js"></script>
-  <script src="/js/dynamic_nav.js"></script>
 </body>
 </html>

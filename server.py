@@ -11000,26 +11000,28 @@ class RequestHandler(BaseHTTPRequestHandler):
             return
 
         # Dynamic CMS Blog & Page routes
+        is_preview = ("preview=true" in parsed.query.lower() or "preview=1" in parsed.query.lower() or check_admin_request(self))
+
         if clean_path in ("/blog", "/blog/"):
             blog_html = cms_engine.render_blog_index()
             return self.send_html_response(200, blog_html)
 
         if clean_path.startswith("/blog/"):
             b_slug = clean_path[6:].strip().strip("/")
-            post_html = cms_engine.render_post_view(b_slug)
+            post_html = cms_engine.render_post_view(b_slug, is_preview=is_preview)
             if post_html:
                 return self.send_html_response(200, post_html)
 
         if clean_path.startswith("/p/"):
             p_slug = clean_path[3:].strip().strip("/")
-            page_html = cms_engine.render_page_view(p_slug)
+            page_html = cms_engine.render_page_view(p_slug, is_preview=is_preview)
             if page_html:
                 return self.send_html_response(200, page_html)
 
         # Direct slug lookup for custom CMS pages (e.g. /trading-handbook)
         custom_slug = clean_path.lstrip("/").strip()
         if custom_slug and cms_engine.get_page(custom_slug):
-            page_html = cms_engine.render_page_view(custom_slug)
+            page_html = cms_engine.render_page_view(custom_slug, is_preview=is_preview)
             if page_html:
                 return self.send_html_response(200, page_html)
 
