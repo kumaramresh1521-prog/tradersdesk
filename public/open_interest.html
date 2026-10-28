@@ -690,6 +690,21 @@
       .oi-kpi-grid { grid-template-columns: 1fr; }
       .oi-svg-chart-container { height: 280px; }
     }
+
+    /* Option Chain Pro Combobox in OI Toolbar */
+    .oi-toolbar .upstox-combo-menu {
+      z-index: 1200;
+      min-width: 380px;
+      max-width: 480px;
+    }
+    .oi-svg-col-hover {
+      cursor: crosshair;
+      transition: fill 0.1s ease;
+    }
+    .oi-svg-col-hover:hover {
+      fill: rgba(56, 189, 248, 0.08);
+    }
+
   </style>
 </head>
 <body>
@@ -930,242 +945,49 @@
           <button type="button" class="oi-sym-pill" data-sym="SENSEX">SENSEX</button>
         </div>
 
-        <!-- Custom F&O Symbol Dropdown & Quick Search -->
-        <div class="oi-select-group">
-          <label for="oiSymbolSelect" class="oi-select-label">Symbol</label>
-          <select id="oiSymbolSelect" class="oi-select" style="min-width: 160px; font-weight:700;" onchange="onSymbolDropdownChange(this.value)">
-            <optgroup label="Major Indices">
-              <option value="NIFTY" selected>NIFTY 50</option>
-              <option value="BANKNIFTY">BANK NIFTY</option>
-              <option value="FINNIFTY">FIN NIFTY</option>
-              <option value="MIDCPNIFTY">MIDCAP NIFTY</option>
-              <option value="SENSEX">BSE SENSEX</option>
-            </optgroup>
-            <optgroup label="All F&amp;O Stocks (215 Stocks A-Z)" id="oiStockOptgroup">
-              <option value="360ONE">360ONE</option>
-              <option value="ABB">ABB</option>
-              <option value="ABCAPITAL">ABCAPITAL</option>
-              <option value="ADANIENSOL">ADANIENSOL</option>
-              <option value="ADANIENT">ADANIENT</option>
-              <option value="ADANIGREEN">ADANIGREEN</option>
-              <option value="ADANIPORTS">ADANIPORTS</option>
-              <option value="ADANIPOWER">ADANIPOWER</option>
-              <option value="ALKEM">ALKEM</option>
-              <option value="AMBER">AMBER</option>
-              <option value="AMBUJACEM">AMBUJACEM</option>
-              <option value="ANANDRATHI">ANANDRATHI</option>
-              <option value="ANGELONE">ANGELONE</option>
-              <option value="APLAPOLLO">APLAPOLLO</option>
-              <option value="APOLLOHOSP">APOLLOHOSP</option>
-              <option value="ASHOKLEY">ASHOKLEY</option>
-              <option value="ASIANPAINT">ASIANPAINT</option>
-              <option value="ASTRAL">ASTRAL</option>
-              <option value="ATHERENERG">ATHERENERG</option>
-              <option value="AUBANK">AUBANK</option>
-              <option value="AUROPHARMA">AUROPHARMA</option>
-              <option value="AXISBANK">AXISBANK</option>
-              <option value="BAJAJ-AUTO">BAJAJ-AUTO</option>
-              <option value="BAJAJFINSV">BAJAJFINSV</option>
-              <option value="BAJAJHLDNG">BAJAJHLDNG</option>
-              <option value="BAJFINANCE">BAJFINANCE</option>
-              <option value="BANDHANBNK">BANDHANBNK</option>
-              <option value="BANKBARODA">BANKBARODA</option>
-              <option value="BANKINDIA">BANKINDIA</option>
-              <option value="BDL">BDL</option>
-              <option value="BEL">BEL</option>
-              <option value="BHARATFORG">BHARATFORG</option>
-              <option value="BHARTIARTL">BHARTIARTL</option>
-              <option value="BHEL">BHEL</option>
-              <option value="BIOCON">BIOCON</option>
-              <option value="BLUESTARCO">BLUESTARCO</option>
-              <option value="BOSCHLTD">BOSCHLTD</option>
-              <option value="BPCL">BPCL</option>
-              <option value="BRITANNIA">BRITANNIA</option>
-              <option value="BSE">BSE</option>
-              <option value="CAMS">CAMS</option>
-              <option value="CANBK">CANBK</option>
-              <option value="CDSL">CDSL</option>
-              <option value="CGPOWER">CGPOWER</option>
-              <option value="CHOLAFIN">CHOLAFIN</option>
-              <option value="CIPLA">CIPLA</option>
-              <option value="COALINDIA">COALINDIA</option>
-              <option value="COCHINSHIP">COCHINSHIP</option>
-              <option value="COFORGE">COFORGE</option>
-              <option value="COLPAL">COLPAL</option>
-              <option value="CONCOR">CONCOR</option>
-              <option value="CROMPTON">CROMPTON</option>
-              <option value="CUMMINSIND">CUMMINSIND</option>
-              <option value="DABUR">DABUR</option>
-              <option value="DELHIVERY">DELHIVERY</option>
-              <option value="DIVISLAB">DIVISLAB</option>
-              <option value="DIXON">DIXON</option>
-              <option value="DLF">DLF</option>
-              <option value="DMART">DMART</option>
-              <option value="DRREDDY">DRREDDY</option>
-              <option value="EICHERMOT">EICHERMOT</option>
-              <option value="ENRIN">ENRIN</option>
-              <option value="ETERNAL">ETERNAL</option>
-              <option value="FEDERALBNK">FEDERALBNK</option>
-              <option value="FORCEMOT">FORCEMOT</option>
-              <option value="FORTIS">FORTIS</option>
-              <option value="GAIL">GAIL</option>
-              <option value="GLENMARK">GLENMARK</option>
-              <option value="GMRAIRPORT">GMRAIRPORT</option>
-              <option value="GODFRYPHLP">GODFRYPHLP</option>
-              <option value="GODREJCP">GODREJCP</option>
-              <option value="GODREJPROP">GODREJPROP</option>
-              <option value="GRASIM">GRASIM</option>
-              <option value="GVT&D">GVT&D</option>
-              <option value="HAL">HAL</option>
-              <option value="HAVELLS">HAVELLS</option>
-              <option value="HCLTECH">HCLTECH</option>
-              <option value="HDFCAMC">HDFCAMC</option>
-              <option value="HDFCBANK">HDFCBANK</option>
-              <option value="HDFCLIFE">HDFCLIFE</option>
-              <option value="HEROMOTOCO">HEROMOTOCO</option>
-              <option value="HINDALCO">HINDALCO</option>
-              <option value="HINDPETRO">HINDPETRO</option>
-              <option value="HINDUNILVR">HINDUNILVR</option>
-              <option value="HINDZINC">HINDZINC</option>
-              <option value="HYUNDAI">HYUNDAI</option>
-              <option value="ICICIBANK">ICICIBANK</option>
-              <option value="ICICIGI">ICICIGI</option>
-              <option value="ICICILIFE">ICICILIFE</option>
-              <option value="IDEA">IDEA</option>
-              <option value="IDFCFIRSTB">IDFCFIRSTB</option>
-              <option value="IEX">IEX</option>
-              <option value="INDHOTEL">INDHOTEL</option>
-              <option value="INDIANB">INDIANB</option>
-              <option value="INDIGO">INDIGO</option>
-              <option value="INDUSINDBK">INDUSINDBK</option>
-              <option value="INDUSTOWER">INDUSTOWER</option>
-              <option value="INFY">INFY</option>
-              <option value="INOXWIND">INOXWIND</option>
-              <option value="IOC">IOC</option>
-              <option value="IREDA">IREDA</option>
-              <option value="IRFC">IRFC</option>
-              <option value="ITC">ITC</option>
-              <option value="JINDALSTEL">JINDALSTEL</option>
-              <option value="JIOFIN">JIOFIN</option>
-              <option value="JSWENERGY">JSWENERGY</option>
-              <option value="JSWSTEEL">JSWSTEEL</option>
-              <option value="JUBLFOOD">JUBLFOOD</option>
-              <option value="KALYANKJIL">KALYANKJIL</option>
-              <option value="KAYNES">KAYNES</option>
-              <option value="KEI">KEI</option>
-              <option value="KFINTECH">KFINTECH</option>
-              <option value="KOTAKBANK">KOTAKBANK</option>
-              <option value="KPITTECH">KPITTECH</option>
-              <option value="LAURUSLABS">LAURUSLABS</option>
-              <option value="LICHSGFIN">LICHSGFIN</option>
-              <option value="LICI">LICI</option>
-              <option value="LODHA">LODHA</option>
-              <option value="LT">LT</option>
-              <option value="LTF">LTF</option>
-              <option value="LTM">LTM</option>
-              <option value="LUPIN">LUPIN</option>
-              <option value="M&M">M&M</option>
-              <option value="MAHABANK">MAHABANK</option>
-              <option value="MANAPPURAM">MANAPPURAM</option>
-              <option value="MANKIND">MANKIND</option>
-              <option value="MARICO">MARICO</option>
-              <option value="MARUTI">MARUTI</option>
-              <option value="MAXHEALTH">MAXHEALTH</option>
-              <option value="MAZDOCK">MAZDOCK</option>
-              <option value="MCX">MCX</option>
-              <option value="MFSL">MFSL</option>
-              <option value="MOTHERSON">MOTHERSON</option>
-              <option value="MOTILALOFS">MOTILALOFS</option>
-              <option value="MPHASIS">MPHASIS</option>
-              <option value="MUTHOOTFIN">MUTHOOTFIN</option>
-              <option value="NAM-INDIA">NAM-INDIA</option>
-              <option value="NATIONALUM">NATIONALUM</option>
-              <option value="NAUKRI">NAUKRI</option>
-              <option value="NBCC">NBCC</option>
-              <option value="NESTLEIND">NESTLEIND</option>
-              <option value="NHPC">NHPC</option>
-              <option value="NIFTYFPI">NIFTYFPI</option>
-              <option value="NMDC">NMDC</option>
-              <option value="NTPC">NTPC</option>
-              <option value="NYKAA">NYKAA</option>
-              <option value="OBEROIRLTY">OBEROIRLTY</option>
-              <option value="OFSS">OFSS</option>
-              <option value="OIL">OIL</option>
-              <option value="ONGC">ONGC</option>
-              <option value="PAGEIND">PAGEIND</option>
-              <option value="PATANJALI">PATANJALI</option>
-              <option value="PAYTM">PAYTM</option>
-              <option value="PERSISTENT">PERSISTENT</option>
-              <option value="PETRONET">PETRONET</option>
-              <option value="PFC">PFC</option>
-              <option value="PGEL">PGEL</option>
-              <option value="PHOENIXLTD">PHOENIXLTD</option>
-              <option value="PIDILITIND">PIDILITIND</option>
-              <option value="PIIND">PIIND</option>
-              <option value="PNB">PNB</option>
-              <option value="PNBHOUSING">PNBHOUSING</option>
-              <option value="POLICYBZR">POLICYBZR</option>
-              <option value="POLYCAB">POLYCAB</option>
-              <option value="POWERGRID">POWERGRID</option>
-              <option value="POWERINDIA">POWERINDIA</option>
-              <option value="PREMIERENE">PREMIERENE</option>
-              <option value="PRESTIGE">PRESTIGE</option>
-              <option value="RADICO">RADICO</option>
-              <option value="RBLBANK">RBLBANK</option>
-              <option value="RECLTD">RECLTD</option>
-              <option value="RELIANCE">RELIANCE</option>
-              <option value="RVNL">RVNL</option>
-              <option value="SAGILITY">SAGILITY</option>
-              <option value="SAIL">SAIL</option>
-              <option value="SBICARD">SBICARD</option>
-              <option value="SBILIFE">SBILIFE</option>
-              <option value="SBIN">SBIN</option>
-              <option value="SHREECEM">SHREECEM</option>
-              <option value="SHRIRAMFIN">SHRIRAMFIN</option>
-              <option value="SIEMENS">SIEMENS</option>
-              <option value="SOLARINDS">SOLARINDS</option>
-              <option value="SONACOMS">SONACOMS</option>
-              <option value="SRF">SRF</option>
-              <option value="SUNPHARMA">SUNPHARMA</option>
-              <option value="SUPREMEIND">SUPREMEIND</option>
-              <option value="SUZLON">SUZLON</option>
-              <option value="SWIGGY">SWIGGY</option>
-              <option value="TATACONSUM">TATACONSUM</option>
-              <option value="TATAELXSI">TATAELXSI</option>
-              <option value="TATAMOTORS">TATAMOTORS</option>
-              <option value="TATAPOWER">TATAPOWER</option>
-              <option value="TATASTEEL">TATASTEEL</option>
-              <option value="TCS">TCS</option>
-              <option value="TECHM">TECHM</option>
-              <option value="TIINDIA">TIINDIA</option>
-              <option value="TITAN">TITAN</option>
-              <option value="TMPV">TMPV</option>
-              <option value="TORNTPHARM">TORNTPHARM</option>
-              <option value="TRENT">TRENT</option>
-              <option value="TVSMOTOR">TVSMOTOR</option>
-              <option value="UJJIVANSFB">UJJIVANSFB</option>
-              <option value="ULTRACEMCO">ULTRACEMCO</option>
-              <option value="UNIONBANK">UNIONBANK</option>
-              <option value="UNITDSPR">UNITDSPR</option>
-              <option value="UNOMINDA">UNOMINDA</option>
-              <option value="UPL">UPL</option>
-              <option value="VBL">VBL</option>
-              <option value="VEDL">VEDL</option>
-              <option value="VMM">VMM</option>
-              <option value="VOLTAS">VOLTAS</option>
-              <option value="WAAREEENER">WAAREEENER</option>
-              <option value="WIPRO">WIPRO</option>
-              <option value="YESBANK">YESBANK</option>
-              <option value="ZYDUSLIFE">ZYDUSLIFE</option>
-            </optgroup>
-          </select>
-        </div>
+        <!-- Option Chain Pro Searchable Combobox (260+ Instruments) -->
+        <div class="oi-select-group upstox-combo-wrapper" id="oiDropdownWrap" style="min-width: 270px; position: relative;">
+          <label class="oi-select-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>Underlying Instrument</span>
+            <span style="font-size: 10.5px; opacity: 0.75; font-weight: 500;">(260+ F&amp;O)</span>
+          </label>
+          
+          <!-- Dropdown Trigger Button -->
+          <div id="oiSearchableTrigger" class="upstox-combo-trigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+            <div class="upstox-combo-selected">
+              <span id="oiComboIcon" class="combo-icon">⚡</span>
+              <span id="oiComboText" class="combo-text">NIFTY 50 (NSE)</span>
+              <span id="oiComboBadge" class="combo-badge badge-idx">Index</span>
+            </div>
+            <span id="oiComboArrow" class="combo-arrow">▼</span>
+          </div>
 
-        <div class="oi-select-group" style="position: relative;">
-          <label for="oiSymbolSearch" class="oi-select-label">Search</label>
-          <div style="position: relative; display: flex; align-items: center;">
-            <input type="text" id="oiSymbolSearch" class="oi-select" style="min-width: 130px; font-size: 11.5px; padding-left: 24px;" placeholder="Filter F&amp;O..." />
-            <span style="position: absolute; left: 7px; opacity: 0.5; font-size: 11px; pointer-events: none;">🔍</span>
+          <!-- Hidden Native Select (Kept for external compatibility) -->
+          <select id="oiSymbolSelect" style="display:none;" onchange="onSymbolDropdownChange(this.value)">
+            <option value="NIFTY" selected>NIFTY 50</option>
+          </select>
+
+          <!-- Searchable Popover Dropdown Menu -->
+          <div id="oiSearchableMenu" class="upstox-combo-menu" style="display:none;" role="listbox">
+            <!-- Search bar inside dropdown -->
+            <div class="upstox-combo-search-wrap">
+              <input type="text" id="oiDropdownSearchInput" placeholder="🔍 Search 260+ F&amp;O stocks &amp; indices (e.g. RELIANCE, TATA, BANK)..." autocomplete="off" spellcheck="false" />
+              <span id="oiComboMatchCount" class="combo-match-count">269 Instruments</span>
+            </div>
+
+            <!-- Category filter chips inside dropdown -->
+            <div class="upstox-combo-categories">
+              <button type="button" class="combo-cat-btn active" data-cat="ALL">All</button>
+              <button type="button" class="combo-cat-btn" data-cat="NSE Major Index">⚡ Indices</button>
+              <button type="button" class="combo-cat-btn" data-cat="NSE Sectoral Index">📊 Sectoral</button>
+              <button type="button" class="combo-cat-btn" data-cat="BSE Index">🏛️ BSE</button>
+              <button type="button" class="combo-cat-btn" data-cat="NSE F&amp;O Stock">📈 F&amp;O Stocks</button>
+            </div>
+
+            <!-- Scrollable items list -->
+            <div id="oiDropdownList" class="upstox-combo-list">
+              <div style="padding: 20px; text-align: center; color: #64748b; font-size: 12px;">⚡ Loading 260+ F&amp;O instruments...</div>
+            </div>
           </div>
         </div>
 
@@ -1726,22 +1548,387 @@
       }
     }
 
+        // ========================================================================
+    // OPTION CHAIN PRO SEARCHABLE COMBOBOX (260+ Instruments)
     // ========================================================================
-    // PURE SVG HIGH-DPI VECTOR CHART (ZERO FLICKER, ZERO BLUR, 100% STABLE)
+    let securitiesMasterData = null;
+    let activeComboCategory = 'ALL';
+    let comboSearchQuery = '';
+    let highlightedIndex = -1;
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function loadSecuritiesMaster() {
+      try {
+        const isDirectHttp = window.location.protocol.startsWith('http') && (window.location.port === '8000' || window.location.port === '');
+        const baseUrl = isDirectHttp ? '' : 'http://127.0.0.1:8000';
+        const res = await fetch(`${baseUrl}/api/upstox/securities`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && (data.indices || data.stocks)) {
+          securitiesMasterData = data;
+          populateNativeSelectOptions();
+          updateTriggerDisplay(currentSymbol);
+          renderSearchableList();
+        }
+      } catch (err) {
+        console.warn('Failed to load securities master list:', err);
+      }
+    }
+
+    function getInstrumentMeta(symOrKey) {
+      if (!securitiesMasterData) return null;
+      const all = [...(securitiesMasterData.indices || []), ...(securitiesMasterData.stocks || [])];
+      const target = (symOrKey || '').replace(/^(NSE_EQ|NSE_INDEX|BSE_INDEX)\|/, '').toUpperCase();
+      return all.find(x => {
+        if (x.symbol && x.symbol.toUpperCase() === target) return true;
+        if (x.key && x.key.toUpperCase() === symOrKey.toUpperCase()) return true;
+        const kSym = x.key ? x.key.split('|')[1].toUpperCase() : '';
+        if (kSym === target) return true;
+        return false;
+      });
+    }
+
+    function updateTriggerDisplay(sym) {
+      const triggerIcon = document.getElementById('oiComboIcon');
+      const triggerText = document.getElementById('oiComboText');
+      const triggerBadge = document.getElementById('oiComboBadge');
+      if (!triggerText) return;
+
+      const meta = getInstrumentMeta(sym);
+      if (!meta) {
+        triggerText.textContent = sym || 'NIFTY 50';
+        if (triggerIcon) triggerIcon.textContent = '⚡';
+        if (triggerBadge) {
+          triggerBadge.textContent = 'Index';
+          triggerBadge.className = 'combo-badge badge-idx';
+        }
+        return;
+      }
+
+      triggerText.textContent = meta.name ? `${meta.symbol} (${meta.name.slice(0, 24)})` : meta.symbol;
+      const isStock = meta.category === 'NSE F&O Stock';
+      const isBse = meta.category === 'BSE Index';
+      const isSec = meta.category && meta.category.includes('Sectoral');
+
+      if (triggerIcon) {
+        triggerIcon.textContent = isStock ? '📈' : (isBse ? '🏛️' : (isSec ? '📊' : '⚡'));
+      }
+      if (triggerBadge) {
+        triggerBadge.textContent = isStock ? 'Stock' : (isBse ? 'BSE' : (isSec ? 'Sector' : 'Index'));
+        triggerBadge.className = 'combo-badge ' + (isStock ? 'badge-stock' : (isBse ? 'badge-bse' : 'badge-idx'));
+      }
+    }
+
+    function populateNativeSelectOptions() {
+      const sel = document.getElementById('oiSymbolSelect');
+      if (!sel || !securitiesMasterData) return;
+      let html = '<optgroup label="Major & Sectoral Indices">';
+      (securitiesMasterData.indices || []).forEach(idx => {
+        const sym = idx.symbol.toUpperCase().replace(/\s+/g, '');
+        html += `<option value="${sym}">${escapeHtml(idx.symbol)} - ${escapeHtml(idx.name)}</option>`;
+      });
+      html += '</optgroup><optgroup label="All F&O Stocks (215+ A-Z)">';
+      (securitiesMasterData.stocks || []).forEach(stk => {
+        html += `<option value="${escapeHtml(stk.symbol)}">${escapeHtml(stk.symbol)} - ${escapeHtml(stk.name)}</option>`;
+      });
+      html += '</optgroup>';
+      sel.innerHTML = html;
+      sel.value = currentSymbol;
+    }
+
+    function renderSearchableList() {
+      const listEl = document.getElementById('oiDropdownList');
+      const matchCountEl = document.getElementById('oiComboMatchCount');
+      if (!listEl) return;
+
+      if (!securitiesMasterData) {
+        listEl.innerHTML = '<div style="padding:20px; text-align:center; color:#64748b; font-size:12px;">⚡ Loading instruments catalog...</div>';
+        return;
+      }
+
+      const all = [...(securitiesMasterData.indices || []), ...(securitiesMasterData.stocks || [])];
+      let filtered = all;
+
+      if (activeComboCategory !== 'ALL') {
+        filtered = filtered.filter(item => item.category === activeComboCategory);
+      }
+
+      if (comboSearchQuery) {
+        const q = comboSearchQuery.trim().toUpperCase();
+        filtered = filtered.filter(item => {
+          const sym = (item.symbol || '').toUpperCase();
+          const name = (item.name || '').toUpperCase();
+          const sec = (item.sector || '').toUpperCase();
+          return sym.includes(q) || name.includes(q) || sec.includes(q);
+        });
+      }
+
+      if (matchCountEl) {
+        matchCountEl.textContent = `${filtered.length} Instruments`;
+      }
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div style="padding:24px; text-align:center; color:#94a3b8; font-size:12px;">🔍 No instruments matching "<strong>${escapeHtml(comboSearchQuery)}</strong>"</div>`;
+        highlightedIndex = -1;
+        return;
+      }
+
+      let html = '';
+      const isAllUnfiltered = (activeComboCategory === 'ALL' && !comboSearchQuery);
+
+      if (isAllUnfiltered) {
+        const groups = [
+          { label: '⚡ NSE Major Indices', items: filtered.filter(x => x.category === 'NSE Major Index') },
+          { label: '📊 NSE Sectoral Indices', items: filtered.filter(x => x.category === 'NSE Sectoral Index') },
+          { label: '🏛️ BSE Indices', items: filtered.filter(x => x.category === 'BSE Index') },
+          { label: `📈 NSE F&O Stocks (${filtered.filter(x => x.category === 'NSE F&O Stock').length})`, items: filtered.filter(x => x.category === 'NSE F&O Stock') }
+        ];
+
+        groups.forEach(g => {
+          if (!g.items.length) return;
+          html += `<div class="combo-group-header">${g.label}</div>`;
+          g.items.forEach(item => {
+            html += renderItemHtml(item);
+          });
+        });
+      } else {
+        filtered.forEach(item => {
+          html += renderItemHtml(item);
+        });
+      }
+
+      listEl.innerHTML = html;
+
+      const renderedItems = listEl.querySelectorAll('.combo-item');
+      renderedItems.forEach(el => {
+        el.addEventListener('click', () => {
+          const sym = el.getAttribute('data-sym');
+          if (sym) setInstrument(sym);
+        });
+      });
+
+      highlightedIndex = -1;
+    }
+
+    function renderItemHtml(item) {
+      const isSelected = item.symbol.toUpperCase() === currentSymbol.toUpperCase();
+      const isStock = item.category === 'NSE F&O Stock';
+      const isBse = item.category === 'BSE Index';
+      const icon = isStock ? '📈' : (isBse ? '🏛️' : (item.category && item.category.includes('Sectoral') ? '📊' : '⚡'));
+
+      return `
+        <div class="combo-item ${isSelected ? 'is-selected' : ''}" data-sym="${escapeHtml(item.symbol)}" role="option" aria-selected="${isSelected}">
+          <div class="combo-item-left">
+            <div class="combo-item-title">
+              <span style="font-size:13px;">${icon}</span>
+              <span class="combo-item-sym">${escapeHtml(item.symbol)}</span>
+            </div>
+            <span class="combo-item-name">${escapeHtml(item.name || item.symbol)}</span>
+          </div>
+          <div class="combo-item-right">
+            ${item.sector ? `<span class="combo-item-sector">${escapeHtml(item.sector)}</span>` : ''}
+            ${item.lot ? `<span class="combo-item-lot">Lot ${item.lot}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function openCombobox() {
+      const trigger = document.getElementById('oiSearchableTrigger');
+      const menu = document.getElementById('oiSearchableMenu');
+      const input = document.getElementById('oiDropdownSearchInput');
+      if (!menu) return;
+
+      menu.style.display = 'flex';
+      if (trigger) {
+        trigger.classList.add('is-open');
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+      if (input) {
+        input.value = '';
+        comboSearchQuery = '';
+        setTimeout(() => input.focus(), 50);
+      }
+      renderSearchableList();
+
+      setTimeout(() => {
+        const selectedItem = menu.querySelector('.combo-item.is-selected');
+        if (selectedItem) {
+          selectedItem.scrollIntoView({ block: 'nearest' });
+        }
+      }, 60);
+    }
+
+    function closeCombobox() {
+      const trigger = document.getElementById('oiSearchableTrigger');
+      const menu = document.getElementById('oiSearchableMenu');
+      if (!menu) return;
+
+      menu.style.display = 'none';
+      if (trigger) {
+        trigger.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+      highlightedIndex = -1;
+    }
+
+    function toggleCombobox() {
+      const menu = document.getElementById('oiSearchableMenu');
+      if (!menu) return;
+      if (menu.style.display === 'none' || !menu.style.display) {
+        openCombobox();
+      } else {
+        closeCombobox();
+      }
+    }
+
+    function updateItemHighlight(items) {
+      items.forEach((item, idx) => {
+        if (idx === highlightedIndex) {
+          item.classList.add('is-highlighted');
+          item.scrollIntoView({ block: 'nearest' });
+        } else {
+          item.classList.remove('is-highlighted');
+        }
+      });
+    }
+
+    function setInstrument(sym) {
+      if (!sym) return;
+      currentSymbol = sym.toUpperCase().replace(/\s+/g, '');
+      currentExpiry = '';
+
+      updateTriggerDisplay(currentSymbol);
+      closeCombobox();
+
+      // Sync native select
+      const symSel = document.getElementById('oiSymbolSelect');
+      if (symSel) symSel.value = currentSymbol;
+
+      // Sync quick pills
+      const pills = document.querySelectorAll('#oiSymPills .oi-sym-pill');
+      pills.forEach(p => {
+        p.classList.toggle('active', p.getAttribute('data-sym') === currentSymbol);
+      });
+
+      // Synchronize URL and title
+      const targetUrl = `/open-interest/${currentSymbol.toLowerCase()}`;
+      if (window.location.pathname !== targetUrl && history.pushState) {
+        history.pushState(null, '', targetUrl);
+      }
+      document.title = `${currentSymbol} Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk`;
+
+      fetchOiData(true);
+    }
+
+    function initComboboxEvents() {
+      const trigger = document.getElementById('oiSearchableTrigger');
+      const menu = document.getElementById('oiSearchableMenu');
+      const input = document.getElementById('oiDropdownSearchInput');
+      const listEl = document.getElementById('oiDropdownList');
+
+      if (trigger) {
+        trigger.addEventListener('click', e => {
+          e.stopPropagation();
+          toggleCombobox();
+        });
+        trigger.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            openCombobox();
+          }
+        });
+      }
+
+      if (menu) {
+        menu.addEventListener('click', e => {
+          e.stopPropagation();
+        });
+      }
+
+      document.addEventListener('click', e => {
+        const wrap = document.getElementById('oiDropdownWrap');
+        if (wrap && !wrap.contains(e.target)) {
+          closeCombobox();
+        }
+      });
+
+      const catBtns = document.querySelectorAll('#oiSearchableMenu .combo-cat-btn');
+      catBtns.forEach(btn => {
+        btn.addEventListener('click', e => {
+          catBtns.forEach(b => b.classList.remove('active'));
+          e.currentTarget.classList.add('active');
+          activeComboCategory = e.currentTarget.getAttribute('data-cat') || 'ALL';
+          renderSearchableList();
+          if (input) input.focus();
+        });
+      });
+
+      if (input) {
+        input.addEventListener('input', e => {
+          comboSearchQuery = e.target.value;
+          renderSearchableList();
+        });
+
+        input.addEventListener('keydown', e => {
+          const items = listEl ? listEl.querySelectorAll('.combo-item') : [];
+          if (!items.length) return;
+
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightedIndex = Math.min(items.length - 1, highlightedIndex + 1);
+            updateItemHighlight(items);
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightedIndex = Math.max(0, highlightedIndex - 1);
+            updateItemHighlight(items);
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightedIndex >= 0 && highlightedIndex < items.length) {
+              const sym = items[highlightedIndex].getAttribute('data-sym');
+              if (sym) setInstrument(sym);
+            } else if (items.length > 0) {
+              const sym = items[0].getAttribute('data-sym');
+              if (sym) setInstrument(sym);
+            }
+          } else if (e.key === 'Escape') {
+            closeCombobox();
+          }
+        });
+      }
+    }
+
+    // ========================================================================
+    // PROFESSIONAL REAL-TIME HIGH-DPI SVG VECTOR CHART ENGINE
     // ========================================================================
     function renderSvgChart() {
       const svg = document.getElementById("oiSvgChart");
-      if (!svg || !oiData || !Array.isArray(oiData.strikes) || oiData.strikes.length === 0) return;
+      const container = document.getElementById("oiSvgChartContainer");
+      if (!svg || !container || !oiData || !Array.isArray(oiData.strikes) || oiData.strikes.length === 0) return;
 
       const strikes = oiData.strikes;
       const isDark = document.documentElement.getAttribute("data-theme") === "dark";
 
-      const width = 1000;
-      const height = 420;
-      const padTop = 38;
-      const padBottom = 46;
-      const padLeft = 68;
-      const padRight = 36;
+      // 1. Pixel-Accurate Responsive Geometry (Eliminate SVG distortion)
+      const rect = container.getBoundingClientRect();
+      const width = Math.max(760, Math.round(rect.width) || 1000);
+      const height = 440;
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.removeAttribute("preserveAspectRatio");
+
+      const padTop = 46;
+      const padBottom = 62; // Ample room for angled strike labels (-35deg)
+      const padLeft = 74;
+      const padRight = 38;
       const plotW = width - padLeft - padRight;
       const plotH = height - padTop - padBottom;
 
@@ -1751,57 +1938,79 @@
       const putColor = isDark ? "#34d399" : "#10b981";
       const atmColor = isDark ? "#fbbf24" : "#f59e0b";
 
-      // Compute Scales
+      // 2. Intelligent Scale Computation (No wasted blank half-charts!)
       let maxVal = 0;
       let minVal = 0;
+      let zeroY = padTop + plotH; // default baseline at bottom
 
       if (currentChartMode === "net") {
+        let maxNet = 0;
+        let minNet = 0;
         strikes.forEach(s => {
-          if (s.net_oi > maxVal) maxVal = s.net_oi;
-          if (s.net_oi < minVal) minVal = s.net_oi;
+          if (s.net_oi > maxNet) maxNet = s.net_oi;
+          if (s.net_oi < minNet) minNet = s.net_oi;
         });
-        const absVal = Math.max(Math.abs(maxVal), Math.abs(minVal)) * 1.15 || 100000;
-        maxVal = absVal;
-        minVal = -absVal;
+        if (minNet >= 0) {
+          minVal = 0;
+          maxVal = (maxNet * 1.15) || 100000;
+          zeroY = padTop + plotH;
+        } else if (maxNet <= 0) {
+          maxVal = 0;
+          minVal = (minNet * 1.15) || -100000;
+          zeroY = padTop;
+        } else {
+          const absVal = Math.max(Math.abs(maxNet), Math.abs(minNet)) * 1.15 || 100000;
+          maxVal = absVal;
+          minVal = -absVal;
+          zeroY = padTop + plotH * 0.5;
+        }
       } else if (currentChartMode === "change") {
+        let maxChg = 0;
+        let minChg = 0;
         strikes.forEach(s => {
           const c = s.call_oi_change || 0;
           const p = s.put_oi_change || 0;
-          if (c > maxVal) maxVal = c;
-          if (c < minVal) minVal = c;
-          if (p > maxVal) maxVal = p;
-          if (p < minVal) minVal = p;
+          if (c > maxChg) maxChg = c;
+          if (c < minChg) minChg = c;
+          if (p > maxChg) maxChg = p;
+          if (p < minChg) minChg = p;
         });
-        const absVal = Math.max(Math.abs(maxVal), Math.abs(minVal)) * 1.18 || 100000;
-        maxVal = absVal;
-        minVal = -absVal;
+        if (minChg >= 0) {
+          // All positive additions! Use full vertical height!
+          minVal = 0;
+          maxVal = (maxChg * 1.18) || 100000;
+          zeroY = padTop + plotH;
+        } else if (maxChg <= 0) {
+          // All unwinding!
+          maxVal = 0;
+          minVal = (minChg * 1.18) || -100000;
+          zeroY = padTop;
+        } else {
+          const absVal = Math.max(Math.abs(maxChg), Math.abs(minChg)) * 1.18 || 100000;
+          maxVal = absVal;
+          minVal = -absVal;
+          zeroY = padTop + plotH * 0.5;
+        }
       } else {
+        // Total OI mode: always positive
         strikes.forEach(s => {
           if (s.call_oi > maxVal) maxVal = s.call_oi;
           if (s.put_oi > maxVal) maxVal = s.put_oi;
         });
-        maxVal = maxVal * 1.15 || 100000;
+        maxVal = (maxVal * 1.16) || 100000;
         minVal = 0;
+        zeroY = padTop + plotH;
       }
 
       let svgHtml = "";
 
-      // Explicit Zero Baseline Line for Net OI or OI Change
-      if (minVal < 0 && maxVal > 0) {
-        const zeroY = padTop + plotH * (maxVal / (maxVal - minVal));
-        svgHtml += `
-          <line x1="${padLeft}" y1="${zeroY}" x2="${width - padRight}" y2="${zeroY}" stroke="${isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.3)'}" stroke-width="1.5" stroke-dasharray="4,3" />
-          <text x="${padLeft - 10}" y="${zeroY + 4}" fill="${textColor}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="700" text-anchor="end">0</text>
-        `;
-      }
-
-      // Horizontal Grid Lines & Y-Labels
-      const steps = (minVal < 0) ? 6 : 5;
+      // 3. Horizontal Grid Lines & Y-Axis Labels
+      const steps = (minVal < 0 && maxVal > 0) ? 6 : 5;
       for (let i = 0; i <= steps; i++) {
         const ratio = i / steps;
         const y = padTop + plotH * (1 - ratio);
         const val = minVal + ratio * (maxVal - minVal);
-        if (minVal < 0 && Math.abs(val) < (maxVal - minVal) * 0.04) continue; // Handled by zero line
+        if (minVal < 0 && maxVal > 0 && Math.abs(val) < (maxVal - minVal) * 0.035) continue;
 
         svgHtml += `
           <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="${gridColor}" stroke-width="1" />
@@ -1809,122 +2018,182 @@
         `;
       }
 
+      // Explicit Zero Baseline Line
+      if (minVal < 0 && maxVal > 0) {
+        svgHtml += `
+          <line x1="${padLeft}" y1="${zeroY}" x2="${width - padRight}" y2="${zeroY}" stroke="${isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.35)'}" stroke-width="1.5" stroke-dasharray="4,3" />
+          <text x="${padLeft - 10}" y="${zeroY + 4}" fill="${textColor}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="700" text-anchor="end">0</text>
+        `;
+      }
+
+      // 4. Slots & Geometry Calculations
       const n = strikes.length;
       const slotW = plotW / n;
-      const barPad = Math.max(3, slotW * 0.12);
-      const groupW = slotW - barPad * 2;
-      const singleW = Math.max(3, (groupW / 2) - 2);
+      const groupW = Math.max(6, Math.min(38, slotW * 0.78));
+      const singleW = Math.max(3, (groupW / 2) - 1.5);
 
       let atmX = null;
-      let resX = null;
-      let supX = null;
+      let resStrikeData = null;
+      let supStrikeData = null;
 
-      // Draw Bars
+      // Identify closest strike to spot for ATM guarantee
+      const spotVal = oiData.spot || 0;
+      let closestDist = Infinity;
+      let closestIdx = -1;
+      strikes.forEach((s, i) => {
+        const d = Math.abs(s.strike - spotVal);
+        if (d < closestDist) {
+          closestDist = d;
+          closestIdx = i;
+        }
+      });
+
+      // Find top Call & Put strikes for value labels on top of peak bars
+      const sortedCalls = [...strikes].sort((a, b) => b.call_oi - a.call_oi);
+      const sortedPuts = [...strikes].sort((a, b) => b.put_oi - a.put_oi);
+      const topCallStrikes = new Set(sortedCalls.slice(0, 3).map(x => x.strike));
+      const topPutStrikes = new Set(sortedPuts.slice(0, 3).map(x => x.strike));
+
+      // 5. Render Bars & Labels
       strikes.forEach((s, idx) => {
         const slotX = padLeft + idx * slotW;
         const centerX = slotX + slotW / 2;
 
-        if (s.is_atm) atmX = centerX;
-        if (oiData.key_resistance && s.strike === oiData.key_resistance.strike) resX = centerX;
-        if (oiData.key_support && s.strike === oiData.key_support.strike) supX = centerX;
+        const isAtm = (idx === closestIdx) || Boolean(s.is_atm);
+        if (isAtm) atmX = centerX;
+
+        if (oiData.key_resistance && s.strike === oiData.key_resistance.strike) {
+          resStrikeData = { centerX, strike: s.strike, oi: s.call_oi };
+        }
+        if (oiData.key_support && s.strike === oiData.key_support.strike) {
+          supStrikeData = { centerX, strike: s.strike, oi: s.put_oi };
+        }
+
+        // Invisible full-slot hover crosshair hitbox
+        svgHtml += `
+          <rect x="${slotX}" y="${padTop}" width="${slotW}" height="${plotH}" fill="transparent" class="oi-svg-col-hover" data-idx="${idx}" />
+        `;
 
         if (currentChartMode === "net") {
           const net = s.net_oi;
-          const zeroY = padTop + plotH * (maxVal / (maxVal - minVal));
-          const netY = padTop + plotH * (1 - (net - minVal) / (maxVal - minVal));
-          const bH = Math.max(2, Math.abs(netY - zeroY));
+          const netY = padTop + plotH * (1 - (net - minVal) / (maxVal - minVal || 1));
+          const bH = Math.max(3, Math.abs(netY - zeroY));
           const bY = Math.min(zeroY, netY);
           const barColor = net >= 0 ? putColor : callColor;
 
           svgHtml += `
-            <rect x="${centerX - groupW/2}" y="${bY}" width="${groupW}" height="${bH}" rx="3" fill="${barColor}" class="oi-svg-bar" data-idx="${idx}" />
+            <rect x="${centerX - groupW / 2}" y="${bY}" width="${groupW}" height="${bH}" rx="3" fill="${barColor}" class="oi-svg-bar" data-idx="${idx}" />
           `;
         } else if (currentChartMode === "change") {
           const cChg = s.call_oi_change || 0;
           const pChg = s.put_oi_change || 0;
-          const zeroY = padTop + plotH * 0.5;
 
-          const cH = Math.max(2, (Math.abs(cChg) / maxVal) * (plotH * 0.5));
-          const pH = Math.max(2, (Math.abs(pChg) / maxVal) * (plotH * 0.5));
+          const cH = Math.max(3, (Math.abs(cChg) / (maxVal - minVal || 1)) * plotH);
+          const pH = Math.max(3, (Math.abs(pChg) / (maxVal - minVal || 1)) * plotH);
 
           const cY = cChg >= 0 ? (zeroY - cH) : zeroY;
           const pY = pChg >= 0 ? (zeroY - pH) : zeroY;
 
           if (seriesVisibility.call) {
             svgHtml += `
-              <rect x="${centerX - singleW - 1}" y="${cY}" width="${singleW}" height="${cH}" rx="2" fill="${callColor}" opacity="${cChg < 0 ? '0.65' : '1.0'}" class="oi-svg-bar" data-idx="${idx}" />
+              <rect x="${centerX - singleW - 1}" y="${cY}" width="${singleW}" height="${cH}" rx="2" fill="${callColor}" opacity="${cChg < 0 ? '0.7' : '1.0'}" class="oi-svg-bar" data-idx="${idx}" />
             `;
           }
           if (seriesVisibility.put) {
             svgHtml += `
-              <rect x="${centerX + 1}" y="${pY}" width="${singleW}" height="${pH}" rx="2" fill="${putColor}" opacity="${pChg < 0 ? '0.65' : '1.0'}" class="oi-svg-bar" data-idx="${idx}" />
+              <rect x="${centerX + 1}" y="${pY}" width="${singleW}" height="${pH}" rx="2" fill="${putColor}" opacity="${pChg < 0 ? '0.7' : '1.0'}" class="oi-svg-bar" data-idx="${idx}" />
             `;
           }
         } else {
-          // Total OI
-          const cH = Math.max(2, (s.call_oi / maxVal) * plotH);
-          const pH = Math.max(2, (s.put_oi / maxVal) * plotH);
+          // Total OI mode
+          const cH = Math.max(3, (s.call_oi / (maxVal - minVal || 1)) * plotH);
+          const pH = Math.max(3, (s.put_oi / (maxVal - minVal || 1)) * plotH);
+
+          const callY = padTop + plotH - cH;
+          const putY = padTop + plotH - pH;
 
           if (seriesVisibility.call) {
             svgHtml += `
-              <rect x="${centerX - singleW - 1}" y="${padTop + plotH - cH}" width="${singleW}" height="${cH}" rx="3" fill="${callColor}" class="oi-svg-bar" data-idx="${idx}" />
+              <rect x="${centerX - singleW - 1}" y="${callY}" width="${singleW}" height="${cH}" rx="3" fill="${callColor}" class="oi-svg-bar" data-idx="${idx}" />
             `;
+            // Value label on peak Call bars (skip if this strike has RES badge)
+            const isResStrike = oiData.key_resistance && s.strike === oiData.key_resistance.strike;
+            if (topCallStrikes.has(s.strike) && cH > 32 && !isResStrike) {
+              svgHtml += `
+                <text x="${centerX - singleW / 2 - 1}" y="${callY - 5}" fill="${callColor}" font-size="9" font-family="JetBrains Mono, monospace" font-weight="700" text-anchor="middle">${formatOiLakhs(s.call_oi)}</text>
+              `;
+            }
           }
           if (seriesVisibility.put) {
             svgHtml += `
-              <rect x="${centerX + 1}" y="${padTop + plotH - pH}" width="${singleW}" height="${pH}" rx="3" fill="${putColor}" class="oi-svg-bar" data-idx="${idx}" />
+              <rect x="${centerX + 1}" y="${putY}" width="${singleW}" height="${pH}" rx="3" fill="${putColor}" class="oi-svg-bar" data-idx="${idx}" />
             `;
+            // Value label on peak Put bars (skip if this strike has SUP badge)
+            const isSupStrike = oiData.key_support && s.strike === oiData.key_support.strike;
+            if (topPutStrikes.has(s.strike) && pH > 32 && !isSupStrike) {
+              svgHtml += `
+                <text x="${centerX + singleW / 2 + 1}" y="${putY - 5}" fill="${putColor}" font-size="9" font-family="JetBrains Mono, monospace" font-weight="700" text-anchor="middle">${formatOiLakhs(s.put_oi)}</text>
+              `;
+            }
           }
         }
 
-        // Strike label below X axis
-        const isAtm = s.is_atm;
+        // 6. Angled Strike label below X axis (-35 deg prevents ANY clashing!)
         const strikeColor = isAtm ? atmColor : textColor;
-        const fontW = isAtm ? "bold" : "600";
+        const fontW = isAtm ? "800" : "600";
+        const fontSize = (n > 30) ? "9.5" : (n > 22 ? "10" : "11");
+
         svgHtml += `
-          <text x="${centerX}" y="${padTop + plotH + 18}" fill="${strikeColor}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="${fontW}" text-anchor="middle">${formatNumber(s.strike)}</text>
+          <text x="${centerX}" y="${padTop + plotH + 16}" fill="${strikeColor}" font-size="${fontSize}" font-family="JetBrains Mono, monospace" font-weight="${fontW}" text-anchor="end" transform="rotate(-35, ${centerX}, ${padTop + plotH + 16})">${formatNumber(s.strike)}</text>
         `;
       });
 
-      // ATM Line & Marker
+      // 7. Golden ATM Spot Marker & Vertical Guide
       if (atmX !== null) {
         svgHtml += `
-          <line x1="${atmX}" y1="${padTop - 10}" x2="${atmX}" y2="${padTop + plotH}" stroke="${atmColor}" stroke-width="1.8" stroke-dasharray="4,4" />
-          <rect x="${atmX - 34}" y="${padTop - 26}" width="68" height="20" rx="4" fill="${atmColor}" />
-          <text x="${atmX}" y="${padTop - 12}" fill="#ffffff" font-size="10" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">ATM SPOT</text>
+          <line x1="${atmX}" y1="${padTop - 8}" x2="${atmX}" y2="${padTop + plotH}" stroke="${atmColor}" stroke-width="1.8" stroke-dasharray="4,4" />
+          <rect x="${atmX - 42}" y="${padTop - 26}" width="84" height="20" rx="4" fill="${atmColor}" />
+          <text x="${atmX}" y="${padTop - 12}" fill="#ffffff" font-size="10" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">ATM ${formatNumber(spotVal)}</text>
         `;
       }
 
-      // Resistance Tag
-      if (resX !== null && currentChartMode === "total") {
-        svgHtml += `
-          <rect x="${resX - 28}" y="${padTop + 4}" width="56" height="18" rx="4" fill="${callColor}" />
-          <text x="${resX}" y="${padTop + 16}" fill="#ffffff" font-size="9.5" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">RES (CE)</text>
-        `;
-      }
+      // 8. Non-Colliding Resistance & Support Badges
+      if (currentChartMode === "total") {
+        if (resStrikeData) {
+          const resH = Math.max(3, (resStrikeData.oi / (maxVal - minVal || 1)) * plotH);
+          const resY = Math.max(padTop + 4, padTop + plotH - resH - 18);
+          // Positioned above left call bar
+          svgHtml += `
+            <rect x="${resStrikeData.centerX - singleW - 28}" y="${resY}" width="56" height="16" rx="3" fill="${callColor}" />
+            <text x="${resStrikeData.centerX - singleW}" y="${resY + 11.5}" fill="#ffffff" font-size="9" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">RES (CE)</text>
+          `;
+        }
 
-      // Support Tag
-      if (supX !== null && currentChartMode === "total") {
-        svgHtml += `
-          <rect x="${supX - 28}" y="${padTop + 24}" width="56" height="18" rx="4" fill="${putColor}" />
-          <text x="${supX}" y="${padTop + 36}" fill="#ffffff" font-size="9.5" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">SUP (PE)</text>
-        `;
+        if (supStrikeData) {
+          const supH = Math.max(3, (supStrikeData.oi / (maxVal - minVal || 1)) * plotH);
+          const supY = Math.max(padTop + 4, padTop + plotH - supH - 18);
+          // Positioned above right put bar (NEVER collides even on identical strike!)
+          svgHtml += `
+            <rect x="${supStrikeData.centerX + 2}" y="${supY}" width="56" height="16" rx="3" fill="${putColor}" />
+            <text x="${supStrikeData.centerX + singleW + 2}" y="${supY + 11.5}" fill="#ffffff" font-size="9" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">SUP (PE)</text>
+          `;
+        }
       }
 
       svg.innerHTML = svgHtml;
       bindSvgChartInteractions();
     }
 
-    // Chart Tooltip Hover Interactions
+    // Chart Tooltip Hover Interactions (Full vertical column crosshair)
     function bindSvgChartInteractions() {
       const container = document.getElementById("oiSvgChartContainer");
       const tooltip = document.getElementById("oiChartTooltip");
-      const bars = document.querySelectorAll(".oi-svg-bar");
+      const colHitboxes = document.querySelectorAll(".oi-svg-col-hover");
 
-      bars.forEach(b => {
-        b.addEventListener("mouseenter", (e) => {
+      colHitboxes.forEach(hit => {
+        hit.addEventListener("mouseenter", (e) => {
           if (!oiData || !oiData.strikes) return;
-          const idx = parseInt(b.getAttribute("data-idx"), 10);
+          const idx = parseInt(hit.getAttribute("data-idx"), 10);
           const s = oiData.strikes[idx];
           if (!s) return;
 
@@ -1933,8 +2202,8 @@
           const mouseY = e.clientY - rect.top;
 
           tooltip.style.display = "block";
-          tooltip.style.left = `${Math.min(rect.width - 210, Math.max(10, mouseX + 14))}px`;
-          tooltip.style.top = `${Math.min(rect.height - 140, Math.max(10, mouseY - 20))}px`;
+          tooltip.style.left = `${Math.min(rect.width - 230, Math.max(10, mouseX + 16))}px`;
+          tooltip.style.top = `${Math.min(rect.height - 150, Math.max(10, mouseY - 25))}px`;
 
           tooltip.innerHTML = `
             <div class="oi-tip-header">
@@ -1960,7 +2229,7 @@
           `;
         });
 
-        b.addEventListener("mouseleave", () => {
+        hit.addEventListener("mouseleave", () => {
           tooltip.style.display = "none";
         });
       });
@@ -1978,7 +2247,10 @@
       renderSvgChart();
     }
 
-    // Render Matrix Table
+
+    // ========================================================================
+    // STRIKE MATRIX & BUILDUP QUADRANTS TABLE
+    // ========================================================================
     function renderTable(strikes, atmStrike) {
       const tbody = document.getElementById("oiMatrixTableBody");
       if (!tbody) return;
@@ -1997,7 +2269,7 @@
 
       let html = "";
       strikes.forEach(s => {
-        const isAtm = (s.strike === atmStrike);
+        const isAtm = (s.strike === atmStrike) || Boolean(s.is_atm);
         const cBarPct = Math.round((s.call_oi / maxC) * 60);
         const pBarPct = Math.round((s.put_oi / maxP) * 60);
 
@@ -2012,7 +2284,7 @@
             <td style="text-align:left;">
               <span class="buildup-badge buildup-${cBuildupClass}">${s.call_buildup || 'Neutral'}</span>
             </td>
-            <td>₹${s.call_ltp.toFixed(2)}</td>
+            <td>₹${(s.call_ltp || 0).toFixed(2)}</td>
             <td class="${s.call_oi_change >= 0 ? 'delta-pos' : 'delta-neg'}">${cChgSign}${formatNumber(s.call_oi_change)}</td>
             <td>
               <div class="oi-cell-bar-wrap">
@@ -2026,7 +2298,7 @@
               ${isAtm ? '<span class="oi-atm-badge">ATM</span>' : ''}
             </td>
             <td style="text-align:center; font-weight:700; color:${s.pcr >= 1.05 ? 'var(--oi-put-green)' : (s.pcr <= 0.85 ? 'var(--oi-call-red)' : 'var(--oi-text)')};">
-              ${s.pcr.toFixed(2)}
+              ${(s.pcr || 0).toFixed(2)}
             </td>
 
             <td>
@@ -2036,7 +2308,7 @@
               </div>
             </td>
             <td class="${s.put_oi_change >= 0 ? 'delta-pos' : 'delta-neg'}">${pChgSign}${formatNumber(s.put_oi_change)}</td>
-            <td>₹${s.put_ltp.toFixed(2)}</td>
+            <td>₹${(s.put_ltp || 0).toFixed(2)}</td>
             <td style="text-align:right;">
               <span class="buildup-badge buildup-${pBuildupClass}">${s.put_buildup || 'Neutral'}</span>
             </td>
@@ -2064,23 +2336,7 @@
     // Switch Symbol
     function onSymbolDropdownChange(sym) {
       if (!sym) return;
-      currentSymbol = sym.toUpperCase();
-      const pills = document.querySelectorAll("#oiSymPills .oi-sym-pill");
-      pills.forEach(p => {
-        p.classList.toggle("active", p.getAttribute("data-sym") === currentSymbol);
-      });
-      const symSel = document.getElementById("oiSymbolSelect");
-      if (symSel && symSel.value !== currentSymbol) {
-        symSel.value = currentSymbol;
-      }
-      // Synchronize URL and title
-      const targetUrl = `/open-interest/${currentSymbol.toLowerCase()}`;
-      if (window.location.pathname !== targetUrl && history.pushState) {
-        history.pushState(null, "", targetUrl);
-      }
-      document.title = `${currentSymbol} Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk`;
-      currentExpiry = "";
-      fetchOiData(true);
+      setInstrument(sym);
     }
 
     function onExpiryChange(exp) {
@@ -2155,56 +2411,25 @@
         }
       }
 
-      // Sync symbol dropdown with initial currentSymbol
-      const symSel = document.getElementById("oiSymbolSelect");
-      if (symSel) {
-        symSel.value = currentSymbol;
-      }
-
       // 1. Symbol quick pills
       const pills = document.querySelectorAll("#oiSymPills .oi-sym-pill");
       pills.forEach(p => {
         p.classList.toggle("active", p.getAttribute("data-sym") === currentSymbol);
         p.addEventListener("click", () => {
-          onSymbolDropdownChange(p.getAttribute("data-sym") || "NIFTY");
+          setInstrument(p.getAttribute("data-sym") || "NIFTY");
         });
       });
 
-      // Quick Symbol Search Filter
-      const searchInp = document.getElementById("oiSymbolSearch");
-      if (searchInp && symSel) {
-        searchInp.addEventListener("input", () => {
-          const q = searchInp.value.trim().toUpperCase();
-          const stockGroup = document.getElementById("oiStockOptgroup");
-          if (!stockGroup) return;
-          const options = stockGroup.querySelectorAll("option");
-          options.forEach(opt => {
-            const val = opt.value.toUpperCase();
-            const text = opt.textContent.toUpperCase();
-            const match = !q || val.includes(q) || text.includes(q);
-            opt.style.display = match ? "" : "none";
-          });
-        });
+      // 2. Initialize Option Chain Pro Combobox
+      initComboboxEvents();
+      loadSecuritiesMaster();
 
-        searchInp.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            const q = searchInp.value.trim().toUpperCase();
-            if (!q) return;
-            const stockGroup = document.getElementById("oiStockOptgroup");
-            if (!stockGroup) return;
-            const options = Array.from(stockGroup.querySelectorAll("option"));
-            const match = options.find(opt => opt.value.toUpperCase() === q || opt.value.toUpperCase().startsWith(q) || opt.textContent.toUpperCase().includes(q));
-            if (match) {
-              onSymbolDropdownChange(match.value);
-              searchInp.value = "";
-              options.forEach(opt => opt.style.display = "");
-            }
-          }
-        });
-      }
+      // 3. Responsive SVG Chart on window resize
+      window.addEventListener("resize", () => {
+        renderSvgChart();
+      });
 
-      // 2. Initial fetch & Start auto-refresh
+      // 4. Initial fetch & Start auto-refresh
       fetchOiData(true);
       startAutoRefreshLoop();
     });

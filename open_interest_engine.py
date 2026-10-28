@@ -468,6 +468,13 @@ def _compute_open_interest_data(
 
     parsed_strikes.sort(key=lambda x: x["strike"])
 
+    # Ensure ATM strike is precisely aligned to closest strike to live spot
+    if parsed_strikes:
+        closest_idx = min(range(len(parsed_strikes)), key=lambda i: abs(parsed_strikes[i]["strike"] - spot))
+        atm_strike = parsed_strikes[closest_idx]["strike"]
+        for i, s in enumerate(parsed_strikes):
+            s["is_atm"] = (i == closest_idx)
+
     # 5. Filter according to strike_range around ATM
     filtered_strikes = parsed_strikes
     if strike_range and strike_range > 0 and len(parsed_strikes) > (strike_range * 2 + 1):
