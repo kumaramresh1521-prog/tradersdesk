@@ -24523,3 +24523,20 @@ html[data-theme="light"] .pvo-data-table tbody tr:hover {
     box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08) !important;
   }
 }
+
+/* Feature Flag Controlled Elements (Hidden by default when disabled) */
+[data-feature-flag],
+.inst-dd-item[data-feature-flag],
+a.inst-dd-item[data-feature-flag],
+.fut-tab-btn[data-feature-flag],
+a.fut-tab-btn[data-feature-flag] {
+  display: none !important;
+}
+.inst-dd-item[data-feature-flag].feature-active,
+a.inst-dd-item[data-feature-flag].feature-active {
+  display: flex !important;
+}
+.fut-tab-btn[data-feature-flag].feature-active,
+a.fut-tab-btn[data-feature-flag].feature-active {
+  display: inline-flex !important;
+}

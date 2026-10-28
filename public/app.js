@@ -1,3 +1,37 @@
+// --- Dynamic Feature Flags Initializer ---
+window._featureFlags = {
+  futures_future_intraday: false,
+  futures_future_vs_oi: false
+};
+
+window.applyFeatureFlags = async function() {
+  try {
+    const res = await fetch('/api/feature-flags');
+    const data = await res.json();
+    if (data && data.flags) {
+      window._featureFlags = data.flags;
+      Object.keys(data.flags).forEach(flag => {
+        const isEnabled = Boolean(data.flags[flag]);
+        document.querySelectorAll(`[data-feature-flag="${flag}"]`).forEach(el => {
+          if (isEnabled) {
+            el.classList.add('feature-active');
+            el.style.removeProperty('display');
+          } else {
+            el.classList.remove('feature-active');
+            el.style.setProperty('display', 'none', 'important');
+          }
+        });
+      });
+    }
+  } catch (_) {}
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.applyFeatureFlags);
+} else {
+  window.applyFeatureFlags();
+}
+
 const els = {
   apiStatus: document.getElementById("apiStatus"),
   dateInput: document.getElementById("dateInput"),

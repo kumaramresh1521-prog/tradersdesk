@@ -671,6 +671,114 @@
         box-shadow: 0 25px 60px rgba(0,0,0,0.8);
       }
 
+    
+      /* Feature Flags & Toggles Styling */
+      .feature-toggle-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        background: #060b17;
+        border: 1px solid var(--adm-border);
+        border-radius: 10px;
+        margin-bottom: 14px;
+        gap: 16px;
+      }
+      .feature-toggle-card:hover {
+        border-color: rgba(56, 189, 248, 0.4);
+      }
+      .feature-info {
+        flex: 1;
+      }
+      .feature-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 6px;
+      }
+      .feature-title h4 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: #f8fafc;
+      }
+      .feature-title code {
+        font-size: 11px;
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.1);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .feature-icon {
+        font-size: 20px;
+      }
+      .feature-desc {
+        margin: 0 0 8px 0;
+        font-size: 12.5px;
+        color: var(--adm-muted);
+        line-height: 1.5;
+      }
+      .feature-status-text {
+        font-size: 11.5px;
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .badge-disabled {
+        color: #f87171;
+        background: rgba(239, 68, 68, 0.15);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 700;
+      }
+      .badge-enabled {
+        color: #34d399;
+        background: rgba(16, 185, 129, 0.15);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 700;
+      }
+      .adm-switch {
+        position: relative;
+        display: inline-block;
+        width: 52px;
+        height: 28px;
+        flex-shrink: 0;
+      }
+      .adm-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .adm-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #1e293b;
+        transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 28px;
+        border: 1.5px solid #475569;
+      }
+      .adm-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 2.5px;
+        background-color: #94a3b8;
+        transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 50%;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+      }
+      .adm-switch input:checked + .adm-slider {
+        background-color: #059669;
+        border-color: #10b981;
+      }
+      .adm-switch input:checked + .adm-slider:before {
+        transform: translateX(23px);
+        background-color: #ffffff;
+      }
+
     </style>
   <!-- MOBILE-FIX-INJECTED-v2 -->
 
@@ -729,6 +837,9 @@
           </div>
           <div class="admin-nav-item" data-tab="commands" onclick="switchAdminTab('commands')">
             <span class="icon">⚡</span> Command Center
+          </div>
+          <div class="admin-nav-item" data-tab="features" onclick="switchAdminTab('features')">
+            <span class="icon">🎛️</span> Feature Flags &amp; Toggles
           </div>
           <div class="admin-nav-item" data-tab="logs" onclick="switchAdminTab('logs')">
             <span class="icon">🚨</span> Error &amp; Event Logs
@@ -1534,6 +1645,95 @@
           </div>
         </section>
 
+        <!-- TAB: FEATURE FLAGS & SUBMENU TOGGLES -->
+        <section id="panelFeatures" class="admin-panel-view">
+          <div class="admin-header">
+            <div>
+              <h1>🎛️ Feature Flags &amp; Submenu Toggles</h1>
+              <p>Turn experimental, work-in-progress, or under-maintenance desks and submenus ON or OFF across the platform in real time.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-adm-primary" onclick="saveAdminFeatureFlags()">💾 Save Flags</button>
+              <button type="button" class="btn-adm-danger" onclick="loadAdminFeatureFlags()">🔄 Reload Status</button>
+            </div>
+          </div>
+
+          <div id="admFeaturesAlert" class="alert-adm" style="display:none; margin-bottom:16px;"></div>
+
+          <div class="adm-card">
+            <div class="adm-card-header">
+              <div>
+                <h3 style="color:#f8fafc; font-size:16px;">📈 Futures Dashboard Submenus</h3>
+                <small style="color:var(--adm-muted);">Toggle visibility of Futures Dashboard submenus in navigation dropdowns, secondary tabs, and URLs.</small>
+              </div>
+              <span class="p2-badge p2-badge-teal" id="featureFlagsStatusBadge">LIVE PERSISTENCE</span>
+            </div>
+
+            <!-- Toggle Row 1: Future Intraday -->
+            <div class="feature-toggle-card">
+              <div class="feature-info">
+                <div class="feature-title">
+                  <span class="feature-icon">⚡</span>
+                  <div>
+                    <h4>Future Intraday Price vs OI</h4>
+                    <code>/futures/future-intraday</code>
+                  </div>
+                </div>
+                <p class="feature-desc">
+                  5-Min Price vs OI divergence, VWAP &amp; Basis across 7 indices. Under active improvements.
+                </p>
+                <div class="feature-status-text" id="statusText_future_intraday">
+                  Current Status: <span class="badge-disabled">OFF (Deleted / Hidden from Site)</span>
+                </div>
+              </div>
+              <div class="feature-control">
+                <label class="adm-switch">
+                  <input type="checkbox" id="flag_futures_future_intraday" onchange="onFeatureFlagToggle('futures_future_intraday', this.checked)">
+                  <span class="adm-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid var(--adm-border); margin:18px 0;" />
+
+            <!-- Toggle Row 2: Future vs Open Interest -->
+            <div class="feature-toggle-card">
+              <div class="feature-info">
+                <div class="feature-title">
+                  <span class="feature-icon">🎯</span>
+                  <div>
+                    <h4>Future vs Open Interest</h4>
+                    <code>/futures/future-vs-oi</code>
+                  </div>
+                </div>
+                <p class="feature-desc">
+                  Dual-axis divergence analysis &amp; historical replay engine. Under active improvements.
+                </p>
+                <div class="feature-status-text" id="statusText_future_vs_oi">
+                  Current Status: <span class="badge-disabled">OFF (Deleted / Hidden from Site)</span>
+                </div>
+              </div>
+              <div class="feature-control">
+                <label class="adm-switch">
+                  <input type="checkbox" id="flag_futures_future_vs_oi" onchange="onFeatureFlagToggle('futures_future_vs_oi', this.checked)">
+                  <span class="adm-slider"></span>
+                </label>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Documentation & Help Card -->
+          <div class="adm-card" style="background:#050b18; border-color:rgba(59,130,246,0.2);">
+            <h4 style="color:#60a5fa; margin:0 0 10px 0; font-size:14px;">ℹ️ How Submenu Feature Flags Work:</h4>
+            <ul style="color:var(--adm-muted); font-size:12.5px; line-height:1.7; margin:0; padding-left:18px;">
+              <li><strong>When OFF (Default):</strong> The submenu links are completely deleted/hidden from navigation headers, dropdowns, and mobile menus across the site. If any user tries to visit the direct URL, the server instantly performs a 307 redirect to <code>/futures</code>.</li>
+              <li><strong>When ON (Active):</strong> The submenu reappears immediately in the Futures navigation menus and becomes fully accessible to visitors.</li>
+              <li>Changes are saved directly to <code>data/feature_flags.json</code> and persist across server reboots.</li>
+            </ul>
+          </div>
+        </section>
+
       </main>
     </div>
 
@@ -1602,6 +1802,83 @@
         document.getElementById('adminSecretInput').value = '';
       }
 
+      
+      // 8. Feature Flags & Submenu Toggles Management
+      let _adminFeatureFlags = {
+        futures_future_intraday: false,
+        futures_future_vs_oi: false
+      };
+
+      async function loadAdminFeatureFlags() {
+        try {
+          const res = await fetch('/api/admin/feature-flags', { headers: getAuthHeaders() });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data && data.flags) {
+            _adminFeatureFlags = data.flags;
+            updateFeatureFlagsUI();
+          }
+        } catch(e) {
+          console.error("Error loading feature flags:", e);
+        }
+      }
+
+      function updateFeatureFlagsUI() {
+        const flagIntraday = Boolean(_adminFeatureFlags.futures_future_intraday);
+        const flagVsOi = Boolean(_adminFeatureFlags.futures_future_vs_oi);
+
+        const chkIntraday = document.getElementById('flag_futures_future_intraday');
+        if (chkIntraday) chkIntraday.checked = flagIntraday;
+        const txtIntraday = document.getElementById('statusText_future_intraday');
+        if (txtIntraday) {
+          txtIntraday.innerHTML = flagIntraday 
+            ? 'Current Status: <span class="badge-enabled">ON (Active in Navigation & URL)</span>'
+            : 'Current Status: <span class="badge-disabled">OFF (Deleted / Hidden from Site)</span>';
+        }
+
+        const chkVsOi = document.getElementById('flag_futures_future_vs_oi');
+        if (chkVsOi) chkVsOi.checked = flagVsOi;
+        const txtVsOi = document.getElementById('statusText_future_vs_oi');
+        if (txtVsOi) {
+          txtVsOi.innerHTML = flagVsOi 
+            ? 'Current Status: <span class="badge-enabled">ON (Active in Navigation & URL)</span>'
+            : 'Current Status: <span class="badge-disabled">OFF (Deleted / Hidden from Site)</span>';
+        }
+      }
+
+      async function onFeatureFlagToggle(key, isChecked) {
+        _adminFeatureFlags[key] = isChecked;
+        updateFeatureFlagsUI();
+        await saveAdminFeatureFlags(true);
+      }
+
+      async function saveAdminFeatureFlags(silent = false) {
+        const alertEl = document.getElementById('admFeaturesAlert');
+        try {
+          const res = await fetch('/api/admin/feature-flags', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ flags: _adminFeatureFlags })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            if (!silent) {
+              if (alertEl) {
+                alertEl.textContent = '✓ Feature flags updated successfully!';
+                alertEl.className = 'alert-adm alert-success';
+                alertEl.style.display = 'block';
+                setTimeout(() => { alertEl.style.display = 'none'; }, 3500);
+              }
+              showAdmAlert('✓ Feature flags saved successfully!', 'success');
+            }
+          } else {
+            showAdmAlert('❌ Failed to save feature flags: ' + (data.message || 'Unknown error'), 'error');
+          }
+        } catch(e) {
+          showAdmAlert('❌ Error saving feature flags: ' + e.message, 'error');
+        }
+      }
+
       function switchAdminTab(tabName) {
         document.querySelectorAll('.admin-nav-item').forEach(el => {
           el.classList.toggle('active', el.getAttribute('data-tab') === tabName);
@@ -1619,6 +1896,9 @@
         }
         if (tabName === 'seo') {
           loadSeoConfig();
+        }
+        if (tabName === 'features') {
+          loadAdminFeatureFlags();
         }
       }
 

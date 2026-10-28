@@ -3773,3 +3773,11 @@ body.white-theme .footer-bottom,
     white-space: nowrap;
   }
 }
+
+/* Feature Flag Controlled Elements (Hidden by default when disabled) */
+[data-feature-flag] {
+  display: none !important;
+}
+[data-feature-flag].feature-active {
+  display: flex !important;
+}

@@ -54,16 +54,16 @@
           "target": "upstoxChain"
         },
         {
-          "label": "Future Intraday Analytics",
-          "url": "/futures/future-intraday",
+          "label": "Future Open Interest & Buildup",
+          "url": "/futures/open-interest",
           "type": "inst",
-          "target": "futures:futureIntraday"
+          "target": "futures:openInterest"
         },
         {
-          "label": "Future vs Open Interest",
-          "url": "/futures/future-vs-oi",
+          "label": "Futures Sector Heatmap",
+          "url": "/futures/heatmap",
           "type": "inst",
-          "target": "futures:futureVsOi"
+          "target": "futures:heatmap"
         },
         {
           "label": "Future Marketwatch Matrix",

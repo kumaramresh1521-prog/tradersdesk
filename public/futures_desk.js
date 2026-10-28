@@ -146,6 +146,14 @@
     if (tabName === 'intraday' || tabName === 'future-intraday' || tabName === 'futintraday') tabName = 'futureIntraday';
     if (tabName === 'future-vs-oi' || tabName === 'price-vs-oi' || tabName === 'futurevsoi' || tabName === 'pvo') tabName = 'futureVsOi';
 
+    // Feature Flags Check: If subview is toggled OFF in Admin Panel, gracefully fallback to matrix
+    if (tabName === 'futureIntraday' && window._featureFlags && window._featureFlags.futures_future_intraday === false) {
+      tabName = 'matrix';
+    }
+    if (tabName === 'futureVsOi' && window._featureFlags && window._featureFlags.futures_future_vs_oi === false) {
+      tabName = 'matrix';
+    }
+
     state.activeSubTab = tabName;
 
     // Dynamically update header command bar for the active tool

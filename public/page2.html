@@ -41,6 +41,23 @@
 
   <link rel="stylesheet" href="/page2.css?v=20261027_v1">
   <script src="/security_shield.js"></script>
+    <style id="ffCriticalStyle">
+      [data-feature-flag],
+      .inst-dd-item[data-feature-flag],
+      a.inst-dd-item[data-feature-flag],
+      .fut-tab-btn[data-feature-flag],
+      a.fut-tab-btn[data-feature-flag] {
+        display: none !important;
+      }
+      .inst-dd-item[data-feature-flag].feature-active,
+      a.inst-dd-item[data-feature-flag].feature-active {
+        display: flex !important;
+      }
+      .fut-tab-btn[data-feature-flag].feature-active,
+      a.fut-tab-btn[data-feature-flag].feature-active {
+        display: inline-flex !important;
+      }
+    </style>
 </head>
 <body class="page2-body">
 
@@ -84,7 +101,7 @@
                   </div>
                 </a>
                 <!-- Submenu 3: Future Intraday Price vs OI -->
-                <a href="/futures/future-intraday" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureIntraday');}">
+                <a href="/futures/future-intraday" class="inst-dd-item" data-feature-flag="futures_future_intraday" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureIntraday');}">
                   <span class="dd-icon">⚡</span>
                   <div class="dd-text">
                     <span class="dd-title">Future Intraday <span class="p2-badge p2-badge-teal" style="margin-left:4px;">LIVE</span></span>
@@ -92,7 +109,7 @@
                   </div>
                 </a>
                 <!-- Submenu 4: Future vs Open Interest -->
-                <a href="/futures/future-vs-oi" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureVsOi');}">
+                <a href="/futures/future-vs-oi" class="inst-dd-item" data-feature-flag="futures_future_vs_oi" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureVsOi');}">
                   <span class="dd-icon">🎯</span>
                   <div class="dd-text">
                     <span class="dd-title">Future vs Open Interest <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>

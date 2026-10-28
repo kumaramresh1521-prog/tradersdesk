@@ -164,8 +164,8 @@ def get_default_footer_links() -> dict:
                 "title": "⚡ Derivatives & Options",
                 "links": [
                     {"label": "Upstox Option Chain Pro", "url": "/option-chain-pro", "type": "inst", "target": "upstoxChain"},
-                    {"label": "Future Intraday Analytics", "url": "/futures/future-intraday", "type": "inst", "target": "futures:futureIntraday"},
-                    {"label": "Future vs Open Interest", "url": "/futures/future-vs-oi", "type": "inst", "target": "futures:futureVsOi"},
+                    {"label": "Future Open Interest & Buildup", "url": "/futures/open-interest", "type": "inst", "target": "futures:openInterest"},
+                    {"label": "Futures Sector Heatmap", "url": "/futures/heatmap", "type": "inst", "target": "futures:heatmap"},
                     {"label": "Future Marketwatch Matrix", "url": "/futures", "type": "inst", "target": "futures:matrix"},
                     {"label": "Straddle Analytics Engine", "url": "/straddle", "type": "link", "target": "_self"},
                     {"label": "Options Premium Decay", "url": "/premium-decay", "type": "link", "target": "_self"},
@@ -203,6 +203,41 @@ def get_default_footer_links() -> dict:
         ]
     }
 
+
+
+FEATURE_FLAGS_FILE = DATA_DIR / "feature_flags.json"
+DEFAULT_FEATURE_FLAGS = {
+    "futures_future_intraday": False,
+    "futures_future_vs_oi": False,
+}
+
+def get_feature_flags() -> dict:
+    if not FEATURE_FLAGS_FILE.exists():
+        try:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            write_json(FEATURE_FLAGS_FILE, DEFAULT_FEATURE_FLAGS)
+        except Exception:
+            return dict(DEFAULT_FEATURE_FLAGS)
+    try:
+        flags = read_json(FEATURE_FLAGS_FILE, DEFAULT_FEATURE_FLAGS)
+        merged = dict(DEFAULT_FEATURE_FLAGS)
+        if isinstance(flags, dict):
+            merged.update(flags)
+        return merged
+    except Exception:
+        return dict(DEFAULT_FEATURE_FLAGS)
+
+def save_feature_flags(flags: dict) -> bool:
+    cur = get_feature_flags()
+    if isinstance(flags, dict):
+        for k, v in flags.items():
+            cur[k] = bool(v)
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        return write_json(FEATURE_FLAGS_FILE, cur)
+    except Exception as exc:
+        logger.error("Failed saving feature flags: %s", exc)
+        return False
 
 INSTRUMENT_URLS = [
     "https://margincalculator.angelone.in/OpenAPI_File/files/OpenAPIScripMaster.json",
@@ -10312,6 +10347,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             return self.send_json(200, {"ok": True, "movers": dash.get("marketMovers", {}), "date": dash.get("date"), "asOfDate": dash.get("asOfDate"), "isLive": dash.get("isLive")})
 
         if path == "/api/futures/intraday":
+            if not get_feature_flags().get("futures_future_intraday", False):
+                return self.send_json(200, {"ok": False, "disabled": True, "message": "Future Intraday is currently disabled in Admin Panel."})
             import future_intraday_engine
             query = urllib.parse.parse_qs(parsed.query)
             sym = query.get("symbol", ["NIFTY"])[0].strip().upper()
@@ -10328,6 +10365,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             return self.send_json(200, {"ok": True, "indices": future_intraday_engine.get_supported_indices_summary()})
 
         if path == "/api/futures/price-vs-oi":
+            if not get_feature_flags().get("futures_future_vs_oi", False):
+                return self.send_json(200, {"ok": False, "disabled": True, "message": "Future vs Open Interest is currently disabled in Admin Panel."})
             import future_price_vs_oi_engine
             query = urllib.parse.parse_qs(parsed.query)
             sym = query.get("symbol", ["NIFTY"])[0].strip().upper()
@@ -10450,6 +10489,14 @@ class RequestHandler(BaseHTTPRequestHandler):
                     pass
 
             return self.send_json(200, get_default_footer_links())
+
+        if path == "/api/feature-flags":
+            return self.send_json(200, {"ok": True, "flags": get_feature_flags()})
+
+        if path == "/api/admin/feature-flags":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            return self.send_json(200, {"ok": True, "flags": get_feature_flags()})
 
         # Admin Protected GET Endpoints
         if path == "/api/admin/verify":
@@ -10851,6 +10898,21 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_response(301)
             self.send_header("Location", target)
             self.send_header("Cache-Control", "public, max-age=86400")
+            self.end_headers()
+            return
+
+        # Feature Flags dynamic redirection for work-in-progress / disabled submenus
+        flags = get_feature_flags()
+        if not flags.get("futures_future_intraday", False) and clean_path in ("/futures/future-intraday", "/futures/intraday"):
+            self.send_response(307)
+            self.send_header("Location", "/futures")
+            self.send_header("Cache-Control", "no-cache, must-revalidate")
+            self.end_headers()
+            return
+        if not flags.get("futures_future_vs_oi", False) and clean_path in ("/futures/future-vs-oi", "/futures/price-vs-oi", "/futures/future-price-vs-oi"):
+            self.send_response(307)
+            self.send_header("Location", "/futures")
+            self.send_header("Cache-Control", "no-cache, must-revalidate")
             self.end_headers()
             return
 
@@ -11288,6 +11350,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, {"ok": True, "movers": dash.get("marketMovers", {}), "date": dash.get("date"), "asOfDate": dash.get("asOfDate"), "isLive": dash.get("isLive")})
 
             if parsed.path == "/api/futures/intraday":
+                if not get_feature_flags().get("futures_future_intraday", False):
+                    return self.send_json(200, {"ok": False, "disabled": True, "message": "Future Intraday is currently disabled in Admin Panel."})
                 import future_intraday_engine
                 payload = self.read_body()
                 sym = str(payload.get("symbol", "NIFTY")).strip().upper()
@@ -11304,6 +11368,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, {"ok": True, "indices": future_intraday_engine.get_supported_indices_summary()})
 
             if parsed.path == "/api/futures/price-vs-oi":
+                if not get_feature_flags().get("futures_future_vs_oi", False):
+                    return self.send_json(200, {"ok": False, "disabled": True, "message": "Future vs Open Interest is currently disabled in Admin Panel."})
                 import future_price_vs_oi_engine
                 payload = self.read_body()
                 sym = str(payload.get("symbol", "NIFTY")).strip().upper()
@@ -11435,6 +11501,20 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, res)
 
             # --- ADMIN PROTECTED POST ENDPOINTS ---
+            if parsed.path == "/api/admin/feature-flags":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                flags = payload.get("flags") if isinstance(payload, dict) and "flags" in payload else payload
+                if isinstance(flags, dict):
+                    save_feature_flags(flags)
+                    return self.send_json(200, {
+                        "ok": True,
+                        "message": "Feature flags updated successfully",
+                        "flags": get_feature_flags()
+                    })
+                return self.send_json(400, {"ok": False, "message": "Invalid feature flags payload"})
+
             if parsed.path == "/api/admin/footer-links":
                 if not check_admin_request(self):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})

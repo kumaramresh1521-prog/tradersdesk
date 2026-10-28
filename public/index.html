@@ -169,7 +169,24 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <!-- Static Client-Side Cache Manager -->
     <script src="/cache_manager.js?v=20260919_v1" defer></script>
-  </head>
+      <style id="ffCriticalStyle">
+      [data-feature-flag],
+      .inst-dd-item[data-feature-flag],
+      a.inst-dd-item[data-feature-flag],
+      .fut-tab-btn[data-feature-flag],
+      a.fut-tab-btn[data-feature-flag] {
+        display: none !important;
+      }
+      .inst-dd-item[data-feature-flag].feature-active,
+      a.inst-dd-item[data-feature-flag].feature-active {
+        display: flex !important;
+      }
+      .fut-tab-btn[data-feature-flag].feature-active,
+      a.fut-tab-btn[data-feature-flag].feature-active {
+        display: inline-flex !important;
+      }
+    </style>
+</head>
   <body>
     <main class="app">
       <!-- ================================================================
@@ -275,7 +292,7 @@
                   </div>
                 </a>
                 <!-- Submenu 3: Future Intraday Price vs OI -->
-                <a href="/futures/future-intraday" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureIntraday');}">
+                <a href="/futures/future-intraday" class="inst-dd-item" data-feature-flag="futures_future_intraday" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureIntraday');}">
                   <span class="dd-icon">⚡</span>
                   <div class="dd-text">
                     <span class="dd-title">Future Intraday <span class="p2-badge p2-badge-teal" style="margin-left:4px;">LIVE</span></span>
@@ -283,7 +300,7 @@
                   </div>
                 </a>
                 <!-- Submenu 4: Future vs Open Interest -->
-                <a href="/futures/future-vs-oi" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureVsOi');}">
+                <a href="/futures/future-vs-oi" class="inst-dd-item" data-feature-flag="futures_future_vs_oi" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureVsOi');}">
                   <span class="dd-icon">🎯</span>
                   <div class="dd-text">
                     <span class="dd-title">Future vs Open Interest <span class="p2-badge p2-badge-teal" style="margin-left:4px;">PRO</span></span>
@@ -1241,8 +1258,8 @@
           <div class="fut-subtabs-nav" style="display:flex; gap:6px; margin:0 0 14px 0; padding:6px; border-radius:8px; overflow-x:auto;">
             <a href="/futures" class="fut-tab-btn active" data-tab="matrix" onclick="return window.futuresDeskTabClick(event, 'matrix')">📊 Marketwatch</a>
             <a href="/futures/open-interest" class="fut-tab-btn" data-tab="openInterest" onclick="return window.futuresDeskTabClick(event, 'openInterest')">📈 Future Open Interest</a>
-            <a href="/futures/future-intraday" class="fut-tab-btn" data-tab="futureIntraday" onclick="return window.futuresDeskTabClick(event, 'futureIntraday')">⚡ Future Intraday</a>
-            <a href="/futures/future-vs-oi" class="fut-tab-btn" data-tab="futureVsOi" onclick="return window.futuresDeskTabClick(event, 'futureVsOi')">🎯 Future vs OI</a>
+            <a href="/futures/future-intraday" class="fut-tab-btn" data-tab="futureIntraday" data-feature-flag="futures_future_intraday" onclick="return window.futuresDeskTabClick(event, 'futureIntraday')">⚡ Future Intraday</a>
+            <a href="/futures/future-vs-oi" class="fut-tab-btn" data-tab="futureVsOi" data-feature-flag="futures_future_vs_oi" onclick="return window.futuresDeskTabClick(event, 'futureVsOi')">🎯 Future vs OI</a>
             <a href="/futures/buildup" class="fut-tab-btn" data-tab="buildup" onclick="return window.futuresDeskTabClick(event, 'buildup')">🧭 Buildup Quadrants</a>
             <a href="/futures/heatmap" class="fut-tab-btn" data-tab="heatmap" onclick="return window.futuresDeskTabClick(event, 'heatmap')">🗺️ Heatmap</a>
             <a href="/futures/indices" class="fut-tab-btn" data-tab="indices" onclick="return window.futuresDeskTabClick(event, 'indices')">📐 Index Term Structure</a>
