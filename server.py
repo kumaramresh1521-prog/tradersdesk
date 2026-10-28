@@ -10040,9 +10040,13 @@ class RequestHandler(BaseHTTPRequestHandler):
             interval = query.get("interval", ["ONE_MINUTE"])[0]
             force = query.get("refresh", ["false"])[0].lower() in ("1", "true")
             return self.send_json(200, get_cached_breadth_contribution(idx, date_param, interval=interval, force_refresh=force))
-        if path in ("/api/open-interest", "/api/open-interest/nifty"):
+        if path == "/api/open-interest" or path.startswith("/api/open-interest/"):
             query = urllib.parse.parse_qs(parsed.query)
-            sym = query.get("symbol", ["NIFTY"])[0]
+            sym = query.get("symbol", [None])[0]
+            if not sym and path.startswith("/api/open-interest/"):
+                sym = path.split("/api/open-interest/")[1].strip("/").upper()
+            if not sym:
+                sym = "NIFTY"
             exp = query.get("expiry", [None])[0]
             try:
                 s_range = int(query.get("range", query.get("strike_range", [10]))[0])
@@ -10912,9 +10916,13 @@ class RequestHandler(BaseHTTPRequestHandler):
                 interval = payload.get("interval") or "ONE_MINUTE"
                 force = bool(payload.get("refresh") or payload.get("fastRefresh"))
                 return self.send_json(200, get_cached_breadth_contribution(idx, date_param, interval=interval, force_refresh=force))
-            if parsed.path in ("/api/open-interest", "/api/open-interest/nifty"):
+            if parsed.path == "/api/open-interest" or parsed.path.startswith("/api/open-interest/"):
                 payload = self.read_body()
-                sym = payload.get("symbol", "NIFTY")
+                sym = payload.get("symbol")
+                if not sym and parsed.path.startswith("/api/open-interest/"):
+                    sym = parsed.path.split("/api/open-interest/")[1].strip("/").upper()
+                if not sym:
+                    sym = "NIFTY"
                 exp = payload.get("expiry")
                 try:
                     s_range = int(payload.get("range", payload.get("strike_range", 10)))

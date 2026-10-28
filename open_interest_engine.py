@@ -202,44 +202,69 @@ def _compute_open_interest_data(
         except Exception:
             fo_data = {}
 
+    is_index = sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX", "NIFTYNXT50")
+
     if not expiries:
-        all_exps = fo_data.get("all_expiries_by_symbol", {}).get(sym, [])
-        if not all_exps and sym in fo_data.get("latest_options_by_expiry", {}):
-            all_exps = sorted(list(fo_data["latest_options_by_expiry"][sym].keys()))
-        if all_exps:
-            today_iso = now_ist().strftime("%Y-%m-%d")
-            upcoming = [e for e in all_exps if e >= today_iso] or all_exps
-            for exp_d in upcoming[:8]:
+        today_dt = now_ist()
+        today_iso = today_dt.strftime("%Y-%m-%d")
+
+        if is_index:
+            # Indices HAVE weekly expiries (Nifty=Thu/Tue, BankNifty=Wed, FinNifty=Tue, Midcap=Mon, Sensex=Fri)
+            weekday_map = {
+                "NIFTY": 1,      # Tuesday/Thursday in 2026
+                "BANKNIFTY": 2,  # Wednesday
+                "FINNIFTY": 1,   # Tuesday
+                "MIDCPNIFTY": 0, # Monday
+                "SENSEX": 4,     # Friday
+                "BANKEX": 0,     # Monday
+            }
+            target_wd = weekday_map.get(sym, 3)
+
+            all_exps = fo_data.get("all_expiries_by_symbol", {}).get(sym, [])
+            if not all_exps and sym in fo_data.get("latest_options_by_expiry", {}):
+                all_exps = sorted(list(fo_data["latest_options_by_expiry"][sym].keys()))
+
+            dynamic_weeklies = []
+            for w in range(6):
+                days_ahead = ((target_wd - today_dt.weekday() + 7) % 7) + (w * 7)
+                exp_d = (today_dt + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+                dynamic_weeklies.append(exp_d)
+
+            valid_exps = sorted(set([e for e in all_exps if e >= today_iso] + dynamic_weeklies))
+            if not valid_exps:
+                valid_exps = all_exps
+
+            for exp_d in valid_exps[:8]:
                 try:
                     dt_obj = datetime.strptime(exp_d, "%Y-%m-%d")
-                    tag = "Weekly" if dt_obj.weekday() in (1, 3) else "Monthly"
+                    # Check if near end of month (Monthly expiry)
+                    is_monthly = (dt_obj.day >= 22 and (dt_obj + timedelta(days=7)).month != dt_obj.month)
+                    tag = "Monthly" if is_monthly else "Weekly"
                     lbl = dt_obj.strftime("%d-%b-%Y") + f" ({tag})"
                 except Exception:
                     lbl = exp_d
                 expiries.append({"date": exp_d, "label": lbl})
 
-    if not expiries:
-        rollover_path = DATA_DIR / "latest_fo_bhav_rollover.json"
-        if rollover_path.exists():
-            try:
-                with open(rollover_path, "r", encoding="utf-8") as f:
-                    ro_data = json.load(f)
-                recs = ro_data.get("records", {})
-                if isinstance(recs, dict) and sym in recs:
-                    contracts = recs[sym].get("contracts", [])
-                    for idx, c in enumerate(contracts[:4]):
-                        exp_date = c.get("expiry")
-                        if exp_date:
-                            tag = "Near" if idx == 0 else ("Next" if idx == 1 else "Far")
-                            expiries.append({"date": exp_date, "label": f"{exp_date} ({tag})"})
-            except Exception:
-                pass
+        else:
+            # Stocks ONLY have monthly expiries in NSE! Never tag stocks as Weekly!
+            all_exps = fo_data.get("all_expiries_by_symbol", {}).get(sym, [])
+            if not all_exps and sym in fo_data.get("latest_options_by_expiry", {}):
+                all_exps = sorted(list(fo_data["latest_options_by_expiry"][sym].keys()))
+
+            valid_exps = sorted([e for e in all_exps if e >= today_iso]) or all_exps
+            for idx, exp_d in enumerate(valid_exps[:4]):
+                try:
+                    dt_obj = datetime.strptime(exp_d, "%Y-%m-%d")
+                    m_tag = "Near Monthly" if idx == 0 else ("Next Monthly" if idx == 1 else "Far Monthly")
+                    lbl = dt_obj.strftime("%d-%b-%Y") + f" ({m_tag})"
+                except Exception:
+                    lbl = exp_d
+                expiries.append({"date": exp_d, "label": lbl})
 
     if not expiries:
         expiries = [
-            {"date": "2026-10-27", "label": "27-Oct-2026 (Weekly)"},
-            {"date": "2026-11-23", "label": "23-Nov-2026 (Monthly)"},
-            {"date": "2026-12-29", "label": "29-Dec-2026 (Quarterly)"}
+            {"date": "2026-11-23", "label": "23-Nov-2026 (Near Monthly)"},
+            {"date": "2026-12-29", "label": "29-Dec-2026 (Next Monthly)"}
         ]
 
     sel_expiry = expiry or expiries[0]["date"]

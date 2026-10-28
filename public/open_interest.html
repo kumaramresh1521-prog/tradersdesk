@@ -705,6 +705,42 @@
       fill: rgba(56, 189, 248, 0.08);
     }
 
+
+    /* Sensibull-Style Dual Subplot Open Interest Layout */
+    .oi-chart-subplot-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .oi-subplot-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .oi-subplot-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .oi-subplot-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      letter-spacing: 0.5px;
+    }
+    .oi-col-hitbox {
+      cursor: crosshair;
+      transition: fill 0.1s ease;
+    }
+    .oi-col-hitbox:hover {
+      fill: rgba(56, 189, 248, 0.08);
+    }
+
   </style>
 </head>
 <body>
@@ -1112,42 +1148,71 @@
     </section>
 
     <!-- Interactive Visual Chart Card -->
-    <section class="oi-chart-card" aria-label="Open Interest Chart">
+    <section class="oi-chart-card" aria-label="Open Interest Charts">
+      <!-- Control Bar with Layout View Mode Switcher -->
       <div class="oi-chart-header">
         <div class="oi-chart-title-group">
-          <h2 id="oiChartMainTitle">📊 Strike-Wise Open Interest Distribution</h2>
-          <p id="oiChartSubtitle">Comparing Call Open Interest (Resistance / Supply) vs Put Open Interest (Support / Demand)</p>
+          <h2 id="oiChartMainTitle">📊 Strike-Wise Open Interest &amp; Shift Analysis</h2>
+          <p id="oiChartSubtitle">Institutional Dual-Subplot Visualizer: Total Open Interest (Top) &amp; Intraday Shifts / Unwinding (Bottom)</p>
         </div>
 
         <!-- Mode Switcher -->
         <div class="oi-view-pills" id="oiChartModeGroup">
-          <button type="button" class="oi-view-pill active" data-mode="total" onclick="setChartMode('total')">Total OI</button>
+          <button type="button" class="oi-view-pill active" data-mode="dual" onclick="setChartMode('dual')">⚡ Dual Stacked (Sensibull)</button>
+          <button type="button" class="oi-view-pill" data-mode="total" onclick="setChartMode('total')">Total OI</button>
           <button type="button" class="oi-view-pill" data-mode="change" onclick="setChartMode('change')">OI Change</button>
-          <button type="button" class="oi-view-pill" data-mode="net" onclick="setChartMode('net')">Net OI (PE - CE)</button>
+          <button type="button" class="oi-view-pill" data-mode="net" onclick="setChartMode('net')">Net OI Diff</button>
         </div>
 
-        <!-- Chart Legend -->
+        <!-- Global Chart Legend -->
         <div class="oi-chart-legend">
           <div class="oi-legend-item" id="legendCallItem" onclick="toggleSeries('call')">
             <span class="oi-legend-dot call"></span>
-            <span>Call OI (Resistance)</span>
+            <span>Call (Resistance / CE)</span>
           </div>
           <div class="oi-legend-item" id="legendPutItem" onclick="toggleSeries('put')">
             <span class="oi-legend-dot put"></span>
-            <span>Put OI (Support)</span>
+            <span>Put (Support / PE)</span>
           </div>
           <div class="oi-legend-item">
             <span class="oi-legend-dot atm"></span>
-            <span>ATM Strike</span>
+            <span>ATM Spot</span>
           </div>
         </div>
       </div>
 
-      <!-- Pure SVG High-DPI Vector Chart Viewport -->
-      <div class="oi-svg-chart-container" id="oiSvgChartContainer">
-        <svg id="oiSvgChart" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
-        <div class="oi-interactive-tooltip" id="oiChartTooltip"></div>
+      <!-- Top Chart: Total Open Interest Distribution -->
+      <div id="oiTotalChartSection" class="oi-chart-subplot-wrap">
+        <div class="oi-subplot-header">
+          <div class="oi-subplot-title">
+            <span class="oi-subplot-badge">1. TOTAL OI</span>
+            <span style="font-weight: 700; font-size: 13px; color: var(--text-primary, #f8fafc);">Strike-Wise Open Interest Distribution</span>
+            <span style="font-size: 11px; color: var(--text-muted, #94a3b8);">(Call OI vs Put OI Contracts)</span>
+          </div>
+          <div id="oiTotalSubplotMeta" style="font-size: 11px; font-weight: 600; color: var(--text-muted, #94a3b8);"></div>
+        </div>
+        <div class="oi-svg-chart-container" id="oiTotalSvgContainer" style="height: 350px;">
+          <svg id="oiSvgChartTotal"></svg>
+        </div>
       </div>
+
+      <!-- Bottom Chart (Niche Chart): Intraday Open Interest Change & Unwinding -->
+      <div id="oiChangeChartSection" class="oi-chart-subplot-wrap" style="margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--oi-card-border, #334155);">
+        <div class="oi-subplot-header">
+          <div class="oi-subplot-title">
+            <span class="oi-subplot-badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);">2. OI CHANGE (NICHE CHART)</span>
+            <span style="font-weight: 700; font-size: 13px; color: var(--text-primary, #f8fafc);">Intraday Open Interest Change &amp; Shifts</span>
+            <span style="font-size: 11px; color: var(--text-muted, #94a3b8);">(Above 0 = Buildup / Writing | Below 0 = Unwinding / Covering)</span>
+          </div>
+          <div id="oiChangeSubplotMeta" style="font-size: 11px; font-weight: 600; color: var(--text-muted, #94a3b8);"></div>
+        </div>
+        <div class="oi-svg-chart-container" id="oiChangeSvgContainer" style="height: 270px;">
+          <svg id="oiSvgChartChange"></svg>
+        </div>
+      </div>
+
+      <!-- Unified Interactive Floating Tooltip -->
+      <div class="oi-interactive-tooltip" id="oiChartTooltip"></div>
     </section>
 
     <!-- Strike Matrix Buildup Table Card -->
@@ -1908,29 +1973,74 @@
     }
 
     // ========================================================================
-    // PROFESSIONAL REAL-TIME HIGH-DPI SVG VECTOR CHART ENGINE
+    // PROFESSIONAL REAL-TIME HIGH-DPI SVG VECTOR DUAL-CHART ENGINE (SENSIBULL LAYOUT)
     // ========================================================================
+    let currentChartLayout = "dual"; // 'dual', 'total', 'change', 'net'
+
+    function setChartMode(mode) {
+      currentChartLayout = mode;
+      const btns = document.querySelectorAll("#oiChartModeGroup .oi-view-pill");
+      btns.forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-mode") === mode);
+      });
+      const sub = document.getElementById("oiChartSubtitle");
+      if (sub) {
+        if (mode === "dual") {
+          sub.textContent = "Institutional Dual-Subplot Visualizer: Total Open Interest (Top) & Intraday Shifts / Unwinding (Bottom)";
+        } else if (mode === "total") {
+          sub.textContent = "Comparing Total Call Open Interest (Resistance / Supply) vs Put Open Interest (Support / Demand)";
+        } else if (mode === "change") {
+          sub.textContent = "Intraday Open Interest Shifts (Buildup Above Zero, Short Covering / Unwinding Below Zero)";
+        } else if (mode === "net") {
+          sub.textContent = "Net Open Interest Difference (Put OI minus Call OI: Green = Put Dominance, Red = Call Dominance)";
+        }
+      }
+      renderSvgChart();
+    }
+
     function renderSvgChart() {
-      const svg = document.getElementById("oiSvgChart");
-      const container = document.getElementById("oiSvgChartContainer");
-      if (!svg || !container || !oiData || !Array.isArray(oiData.strikes) || oiData.strikes.length === 0) return;
+      if (!oiData || !Array.isArray(oiData.strikes) || oiData.strikes.length === 0) return;
 
       const strikes = oiData.strikes;
       const isDark = document.documentElement.getAttribute("data-theme") === "dark";
 
-      // 1. Pixel-Accurate Responsive Geometry (Eliminate SVG distortion)
-      const rect = container.getBoundingClientRect();
-      const width = Math.max(760, Math.round(rect.width) || 1000);
-      const height = 440;
-      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-      svg.removeAttribute("preserveAspectRatio");
+      const totalSec = document.getElementById("oiTotalChartSection");
+      const changeSec = document.getElementById("oiChangeChartSection");
+      const totalSvg = document.getElementById("oiSvgChartTotal");
+      const changeSvg = document.getElementById("oiSvgChartChange");
+      const totalContainer = document.getElementById("oiTotalSvgContainer");
+      const changeContainer = document.getElementById("oiChangeSvgContainer");
 
-      const padTop = 46;
-      const padBottom = 62; // Ample room for angled strike labels (-35deg)
+      // Handle layout visibility
+      if (currentChartLayout === "total") {
+        if (totalSec) totalSec.style.display = "block";
+        if (changeSec) changeSec.style.display = "none";
+        if (totalContainer) totalContainer.style.height = "420px";
+      } else if (currentChartLayout === "change" || currentChartLayout === "net") {
+        if (totalSec) totalSec.style.display = "none";
+        if (changeSec) changeSec.style.display = "block";
+        if (changeContainer) changeContainer.style.height = "420px";
+      } else {
+        // 'dual' stacked layout (Sensibull default)
+        if (totalSec) totalSec.style.display = "block";
+        if (changeSec) changeSec.style.display = "block";
+        if (totalContainer) totalContainer.style.height = "340px";
+        if (changeContainer) changeContainer.style.height = "260px";
+      }
+
+      // Calculate common width from card
+      const parentCard = document.querySelector(".oi-chart-card");
+      const cardRect = parentCard ? parentCard.getBoundingClientRect() : { width: 1100 };
+      const width = Math.max(760, Math.round(cardRect.width - 44) || 1000);
+
       const padLeft = 74;
       const padRight = 38;
+      const padBottom = 58; // For angled strike labels
       const plotW = width - padLeft - padRight;
-      const plotH = height - padTop - padBottom;
+      const n = strikes.length;
+      const slotW = plotW / n;
+      const groupW = Math.max(6, Math.min(36, slotW * 0.78));
+      const singleW = Math.max(3, (groupW / 2) - 1.5);
 
       const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
       const textColor = isDark ? "#94a3b8" : "#64748b";
@@ -1938,105 +2048,7 @@
       const putColor = isDark ? "#34d399" : "#10b981";
       const atmColor = isDark ? "#fbbf24" : "#f59e0b";
 
-      // 2. Intelligent Scale Computation (No wasted blank half-charts!)
-      let maxVal = 0;
-      let minVal = 0;
-      let zeroY = padTop + plotH; // default baseline at bottom
-
-      if (currentChartMode === "net") {
-        let maxNet = 0;
-        let minNet = 0;
-        strikes.forEach(s => {
-          if (s.net_oi > maxNet) maxNet = s.net_oi;
-          if (s.net_oi < minNet) minNet = s.net_oi;
-        });
-        if (minNet >= 0) {
-          minVal = 0;
-          maxVal = (maxNet * 1.15) || 100000;
-          zeroY = padTop + plotH;
-        } else if (maxNet <= 0) {
-          maxVal = 0;
-          minVal = (minNet * 1.15) || -100000;
-          zeroY = padTop;
-        } else {
-          const absVal = Math.max(Math.abs(maxNet), Math.abs(minNet)) * 1.15 || 100000;
-          maxVal = absVal;
-          minVal = -absVal;
-          zeroY = padTop + plotH * 0.5;
-        }
-      } else if (currentChartMode === "change") {
-        let maxChg = 0;
-        let minChg = 0;
-        strikes.forEach(s => {
-          const c = s.call_oi_change || 0;
-          const p = s.put_oi_change || 0;
-          if (c > maxChg) maxChg = c;
-          if (c < minChg) minChg = c;
-          if (p > maxChg) maxChg = p;
-          if (p < minChg) minChg = p;
-        });
-        if (minChg >= 0) {
-          // All positive additions! Use full vertical height!
-          minVal = 0;
-          maxVal = (maxChg * 1.18) || 100000;
-          zeroY = padTop + plotH;
-        } else if (maxChg <= 0) {
-          // All unwinding!
-          maxVal = 0;
-          minVal = (minChg * 1.18) || -100000;
-          zeroY = padTop;
-        } else {
-          const absVal = Math.max(Math.abs(maxChg), Math.abs(minChg)) * 1.18 || 100000;
-          maxVal = absVal;
-          minVal = -absVal;
-          zeroY = padTop + plotH * 0.5;
-        }
-      } else {
-        // Total OI mode: always positive
-        strikes.forEach(s => {
-          if (s.call_oi > maxVal) maxVal = s.call_oi;
-          if (s.put_oi > maxVal) maxVal = s.put_oi;
-        });
-        maxVal = (maxVal * 1.16) || 100000;
-        minVal = 0;
-        zeroY = padTop + plotH;
-      }
-
-      let svgHtml = "";
-
-      // 3. Horizontal Grid Lines & Y-Axis Labels
-      const steps = (minVal < 0 && maxVal > 0) ? 6 : 5;
-      for (let i = 0; i <= steps; i++) {
-        const ratio = i / steps;
-        const y = padTop + plotH * (1 - ratio);
-        const val = minVal + ratio * (maxVal - minVal);
-        if (minVal < 0 && maxVal > 0 && Math.abs(val) < (maxVal - minVal) * 0.035) continue;
-
-        svgHtml += `
-          <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="${gridColor}" stroke-width="1" />
-          <text x="${padLeft - 10}" y="${y + 4}" fill="${textColor}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="600" text-anchor="end">${formatOiLakhs(val)}</text>
-        `;
-      }
-
-      // Explicit Zero Baseline Line
-      if (minVal < 0 && maxVal > 0) {
-        svgHtml += `
-          <line x1="${padLeft}" y1="${zeroY}" x2="${width - padRight}" y2="${zeroY}" stroke="${isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.35)'}" stroke-width="1.5" stroke-dasharray="4,3" />
-          <text x="${padLeft - 10}" y="${zeroY + 4}" fill="${textColor}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="700" text-anchor="end">0</text>
-        `;
-      }
-
-      // 4. Slots & Geometry Calculations
-      const n = strikes.length;
-      const slotW = plotW / n;
-      const groupW = Math.max(6, Math.min(38, slotW * 0.78));
-      const singleW = Math.max(3, (groupW / 2) - 1.5);
-
-      let atmX = null;
-      let resStrikeData = null;
-      let supStrikeData = null;
-
-      // Identify closest strike to spot for ATM guarantee
+      // Closest strike to spot for ATM guarantee
       const spotVal = oiData.spot || 0;
       let closestDist = Infinity;
       let closestIdx = -1;
@@ -2048,183 +2060,316 @@
         }
       });
 
-      // Find top Call & Put strikes for value labels on top of peak bars
-      const sortedCalls = [...strikes].sort((a, b) => b.call_oi - a.call_oi);
-      const sortedPuts = [...strikes].sort((a, b) => b.put_oi - a.put_oi);
-      const topCallStrikes = new Set(sortedCalls.slice(0, 3).map(x => x.strike));
-      const topPutStrikes = new Set(sortedPuts.slice(0, 3).map(x => x.strike));
+      // -------------------------------------------------------------
+      // 1. RENDER TOP CHART: TOTAL OPEN INTEREST (Call OI vs Put OI)
+      // -------------------------------------------------------------
+      if (totalSec && totalSec.style.display !== "none" && totalSvg && totalContainer) {
+        const tHeight = currentChartLayout === "total" ? 420 : 340;
+        totalSvg.setAttribute("viewBox", `0 0 ${width} ${tHeight}`);
+        const padTop = 44;
+        const plotH = tHeight - padTop - padBottom;
 
-      // 5. Render Bars & Labels
-      strikes.forEach((s, idx) => {
-        const slotX = padLeft + idx * slotW;
-        const centerX = slotX + slotW / 2;
+        let maxTotal = 0;
+        strikes.forEach(s => {
+          if (s.call_oi > maxTotal) maxTotal = s.call_oi;
+          if (s.put_oi > maxTotal) maxTotal = s.put_oi;
+        });
+        maxTotal = (maxTotal * 1.16) || 100000;
 
-        const isAtm = (idx === closestIdx) || Boolean(s.is_atm);
-        if (isAtm) atmX = centerX;
+        let svgHtml = "";
 
-        if (oiData.key_resistance && s.strike === oiData.key_resistance.strike) {
-          resStrikeData = { centerX, strike: s.strike, oi: s.call_oi };
-        }
-        if (oiData.key_support && s.strike === oiData.key_support.strike) {
-          supStrikeData = { centerX, strike: s.strike, oi: s.put_oi };
-        }
-
-        // Invisible full-slot hover crosshair hitbox
-        svgHtml += `
-          <rect x="${slotX}" y="${padTop}" width="${slotW}" height="${plotH}" fill="transparent" class="oi-svg-col-hover" data-idx="${idx}" />
-        `;
-
-        if (currentChartMode === "net") {
-          const net = s.net_oi;
-          const netY = padTop + plotH * (1 - (net - minVal) / (maxVal - minVal || 1));
-          const bH = Math.max(3, Math.abs(netY - zeroY));
-          const bY = Math.min(zeroY, netY);
-          const barColor = net >= 0 ? putColor : callColor;
-
+        // Horizontal Grid Lines & Y-Labels
+        const steps = 5;
+        for (let i = 0; i <= steps; i++) {
+          const ratio = i / steps;
+          const y = padTop + plotH * (1 - ratio);
+          const val = ratio * maxTotal;
           svgHtml += `
-            <rect x="${centerX - groupW / 2}" y="${bY}" width="${groupW}" height="${bH}" rx="3" fill="${barColor}" class="oi-svg-bar" data-idx="${idx}" />
+            <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="${gridColor}" stroke-width="1" />
+            <text x="${padLeft - 10}" y="${y + 4}" fill="${textColor}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="600" text-anchor="end">${formatOiLakhs(val)}</text>
           `;
-        } else if (currentChartMode === "change") {
-          const cChg = s.call_oi_change || 0;
-          const pChg = s.put_oi_change || 0;
+        }
 
-          const cH = Math.max(3, (Math.abs(cChg) / (maxVal - minVal || 1)) * plotH);
-          const pH = Math.max(3, (Math.abs(pChg) / (maxVal - minVal || 1)) * plotH);
+        let atmX = null;
+        let resStrikeData = null;
+        let supStrikeData = null;
 
-          const cY = cChg >= 0 ? (zeroY - cH) : zeroY;
-          const pY = pChg >= 0 ? (zeroY - pH) : zeroY;
+        const sortedCalls = [...strikes].sort((a, b) => b.call_oi - a.call_oi);
+        const sortedPuts = [...strikes].sort((a, b) => b.put_oi - a.put_oi);
+        const topCallStrikes = new Set(sortedCalls.slice(0, 3).map(x => x.strike));
+        const topPutStrikes = new Set(sortedPuts.slice(0, 3).map(x => x.strike));
 
-          if (seriesVisibility.call) {
-            svgHtml += `
-              <rect x="${centerX - singleW - 1}" y="${cY}" width="${singleW}" height="${cH}" rx="2" fill="${callColor}" opacity="${cChg < 0 ? '0.7' : '1.0'}" class="oi-svg-bar" data-idx="${idx}" />
-            `;
+        strikes.forEach((s, idx) => {
+          const slotX = padLeft + idx * slotW;
+          const centerX = slotX + slotW / 2;
+
+          const isAtm = (idx === closestIdx) || Boolean(s.is_atm);
+          if (isAtm) atmX = centerX;
+
+          if (oiData.key_resistance && s.strike === oiData.key_resistance.strike) {
+            resStrikeData = { centerX, strike: s.strike, oi: s.call_oi };
           }
-          if (seriesVisibility.put) {
-            svgHtml += `
-              <rect x="${centerX + 1}" y="${pY}" width="${singleW}" height="${pH}" rx="2" fill="${putColor}" opacity="${pChg < 0 ? '0.7' : '1.0'}" class="oi-svg-bar" data-idx="${idx}" />
-            `;
+          if (oiData.key_support && s.strike === oiData.key_support.strike) {
+            supStrikeData = { centerX, strike: s.strike, oi: s.put_oi };
           }
-        } else {
-          // Total OI mode
-          const cH = Math.max(3, (s.call_oi / (maxVal - minVal || 1)) * plotH);
-          const pH = Math.max(3, (s.put_oi / (maxVal - minVal || 1)) * plotH);
 
+          // Full vertical hover hitbox
+          svgHtml += `
+            <rect x="${slotX}" y="${padTop}" width="${slotW}" height="${plotH}" fill="transparent" class="oi-col-hitbox" data-idx="${idx}" />
+          `;
+
+          // Bars
+          const cH = Math.max(3, (s.call_oi / maxTotal) * plotH);
+          const pH = Math.max(3, (s.put_oi / maxTotal) * plotH);
           const callY = padTop + plotH - cH;
           const putY = padTop + plotH - pH;
 
           if (seriesVisibility.call) {
             svgHtml += `
-              <rect x="${centerX - singleW - 1}" y="${callY}" width="${singleW}" height="${cH}" rx="3" fill="${callColor}" class="oi-svg-bar" data-idx="${idx}" />
+              <rect x="${centerX - singleW - 1}" y="${callY}" width="${singleW}" height="${cH}" rx="3" fill="${callColor}" class="oi-bar-call" data-idx="${idx}" />
             `;
-            // Value label on peak Call bars (skip if this strike has RES badge)
-            const isResStrike = oiData.key_resistance && s.strike === oiData.key_resistance.strike;
-            if (topCallStrikes.has(s.strike) && cH > 32 && !isResStrike) {
+            const isRes = resStrikeData && resStrikeData.strike === s.strike;
+            if (topCallStrikes.has(s.strike) && cH > 32 && !isRes) {
               svgHtml += `
                 <text x="${centerX - singleW / 2 - 1}" y="${callY - 5}" fill="${callColor}" font-size="9" font-family="JetBrains Mono, monospace" font-weight="700" text-anchor="middle">${formatOiLakhs(s.call_oi)}</text>
               `;
             }
           }
+
           if (seriesVisibility.put) {
             svgHtml += `
-              <rect x="${centerX + 1}" y="${putY}" width="${singleW}" height="${pH}" rx="3" fill="${putColor}" class="oi-svg-bar" data-idx="${idx}" />
+              <rect x="${centerX + 1}" y="${putY}" width="${singleW}" height="${pH}" rx="3" fill="${putColor}" class="oi-bar-put" data-idx="${idx}" />
             `;
-            // Value label on peak Put bars (skip if this strike has SUP badge)
-            const isSupStrike = oiData.key_support && s.strike === oiData.key_support.strike;
-            if (topPutStrikes.has(s.strike) && pH > 32 && !isSupStrike) {
+            const isSup = supStrikeData && supStrikeData.strike === s.strike;
+            if (topPutStrikes.has(s.strike) && pH > 32 && !isSup) {
               svgHtml += `
                 <text x="${centerX + singleW / 2 + 1}" y="${putY - 5}" fill="${putColor}" font-size="9" font-family="JetBrains Mono, monospace" font-weight="700" text-anchor="middle">${formatOiLakhs(s.put_oi)}</text>
               `;
             }
           }
+
+          // Angled strike label below X-axis
+          const strikeColor = isAtm ? atmColor : textColor;
+          const fontW = isAtm ? "800" : "600";
+          const fontSize = (n > 30) ? "9.5" : (n > 22 ? "10" : "11");
+          svgHtml += `
+            <text x="${centerX}" y="${padTop + plotH + 16}" fill="${strikeColor}" font-size="${fontSize}" font-family="JetBrains Mono, monospace" font-weight="${fontW}" text-anchor="end" transform="rotate(-35, ${centerX}, ${padTop + plotH + 16})">${formatNumber(s.strike)}</text>
+          `;
+        });
+
+        // Golden ATM Guide
+        if (atmX !== null) {
+          svgHtml += `
+            <line x1="${atmX}" y1="${padTop - 8}" x2="${atmX}" y2="${padTop + plotH}" stroke="${atmColor}" stroke-width="1.8" stroke-dasharray="4,4" />
+            <rect x="${atmX - 42}" y="${padTop - 26}" width="84" height="20" rx="4" fill="${atmColor}" />
+            <text x="${atmX}" y="${padTop - 12}" fill="#ffffff" font-size="10" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">ATM ${formatNumber(spotVal)}</text>
+          `;
         }
 
-        // 6. Angled Strike label below X axis (-35 deg prevents ANY clashing!)
-        const strikeColor = isAtm ? atmColor : textColor;
-        const fontW = isAtm ? "800" : "600";
-        const fontSize = (n > 30) ? "9.5" : (n > 22 ? "10" : "11");
-
-        svgHtml += `
-          <text x="${centerX}" y="${padTop + plotH + 16}" fill="${strikeColor}" font-size="${fontSize}" font-family="JetBrains Mono, monospace" font-weight="${fontW}" text-anchor="end" transform="rotate(-35, ${centerX}, ${padTop + plotH + 16})">${formatNumber(s.strike)}</text>
-        `;
-      });
-
-      // 7. Golden ATM Spot Marker & Vertical Guide
-      if (atmX !== null) {
-        svgHtml += `
-          <line x1="${atmX}" y1="${padTop - 8}" x2="${atmX}" y2="${padTop + plotH}" stroke="${atmColor}" stroke-width="1.8" stroke-dasharray="4,4" />
-          <rect x="${atmX - 42}" y="${padTop - 26}" width="84" height="20" rx="4" fill="${atmColor}" />
-          <text x="${atmX}" y="${padTop - 12}" fill="#ffffff" font-size="10" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">ATM ${formatNumber(spotVal)}</text>
-        `;
-      }
-
-      // 8. Non-Colliding Resistance & Support Badges
-      if (currentChartMode === "total") {
+        // Resistance & Support Badges (Non-colliding)
         if (resStrikeData) {
-          const resH = Math.max(3, (resStrikeData.oi / (maxVal - minVal || 1)) * plotH);
+          const resH = Math.max(3, (resStrikeData.oi / maxTotal) * plotH);
           const resY = Math.max(padTop + 4, padTop + plotH - resH - 18);
-          // Positioned above left call bar
           svgHtml += `
             <rect x="${resStrikeData.centerX - singleW - 28}" y="${resY}" width="56" height="16" rx="3" fill="${callColor}" />
             <text x="${resStrikeData.centerX - singleW}" y="${resY + 11.5}" fill="#ffffff" font-size="9" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">RES (CE)</text>
           `;
         }
-
         if (supStrikeData) {
-          const supH = Math.max(3, (supStrikeData.oi / (maxVal - minVal || 1)) * plotH);
+          const supH = Math.max(3, (supStrikeData.oi / maxTotal) * plotH);
           const supY = Math.max(padTop + 4, padTop + plotH - supH - 18);
-          // Positioned above right put bar (NEVER collides even on identical strike!)
           svgHtml += `
             <rect x="${supStrikeData.centerX + 2}" y="${supY}" width="56" height="16" rx="3" fill="${putColor}" />
             <text x="${supStrikeData.centerX + singleW + 2}" y="${supY + 11.5}" fill="#ffffff" font-size="9" font-family="Inter, sans-serif" font-weight="800" text-anchor="middle">SUP (PE)</text>
           `;
         }
+
+        totalSvg.innerHTML = svgHtml;
       }
 
-      svg.innerHTML = svgHtml;
-      bindSvgChartInteractions();
+      // -------------------------------------------------------------
+      // 2. RENDER BOTTOM CHART: OI CHANGE / UNWINDING ("Niche Chart")
+      // -------------------------------------------------------------
+      if (changeSec && changeSec.style.display !== "none" && changeSvg && changeContainer) {
+        const cHeight = (currentChartLayout === "change" || currentChartLayout === "net") ? 420 : 260;
+        changeSvg.setAttribute("viewBox", `0 0 ${width} ${cHeight}`);
+        const padTop = 32;
+        const plotH = cHeight - padTop - padBottom;
+
+        let maxChg = 0;
+        let minChg = 0;
+
+        if (currentChartLayout === "net") {
+          strikes.forEach(s => {
+            if (s.net_oi > maxChg) maxChg = s.net_oi;
+            if (s.net_oi < minChg) minChg = s.net_oi;
+          });
+        } else {
+          strikes.forEach(s => {
+            const c = s.call_oi_change || 0;
+            const p = s.put_oi_change || 0;
+            if (c > maxChg) maxChg = c;
+            if (c < minChg) minChg = c;
+            if (p > maxChg) maxChg = p;
+            if (p < minChg) minChg = p;
+          });
+        }
+
+        let minVal = 0;
+        let maxVal = 0;
+        let zeroY = padTop + plotH;
+
+        if (minChg >= 0) {
+          minVal = 0;
+          maxVal = (maxChg * 1.18) || 100000;
+          zeroY = padTop + plotH;
+        } else if (maxChg <= 0) {
+          maxVal = 0;
+          minVal = (minChg * 1.18) || -100000;
+          zeroY = padTop;
+        } else {
+          const absVal = Math.max(Math.abs(maxChg), Math.abs(minChg)) * 1.18 || 100000;
+          maxVal = absVal;
+          minVal = -absVal;
+          zeroY = padTop + plotH * 0.5;
+        }
+
+        let svgHtml = "";
+
+        // Horizontal Grid Lines & Y-Labels
+        const steps = 4;
+        for (let i = 0; i <= steps; i++) {
+          const ratio = i / steps;
+          const y = padTop + plotH * (1 - ratio);
+          const val = minVal + ratio * (maxVal - minVal);
+          if (minVal < 0 && maxVal > 0 && Math.abs(val) < (maxVal - minVal) * 0.04) continue;
+          svgHtml += `
+            <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="${gridColor}" stroke-width="1" />
+            <text x="${padLeft - 10}" y="${y + 4}" fill="${textColor}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="600" text-anchor="end">${formatOiLakhs(val)}</text>
+          `;
+        }
+
+        // Dashed Zero Baseline
+        if (minVal < 0 && maxVal > 0) {
+          svgHtml += `
+            <line x1="${padLeft}" y1="${zeroY}" x2="${width - padRight}" y2="${zeroY}" stroke="${isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.35)'}" stroke-width="1.5" stroke-dasharray="4,3" />
+            <text x="${padLeft - 10}" y="${zeroY + 4}" fill="${textColor}" font-size="11" font-family="JetBrains Mono, monospace" font-weight="700" text-anchor="end">0</text>
+          `;
+        }
+
+        let atmX = null;
+
+        strikes.forEach((s, idx) => {
+          const slotX = padLeft + idx * slotW;
+          const centerX = slotX + slotW / 2;
+
+          const isAtm = (idx === closestIdx) || Boolean(s.is_atm);
+          if (isAtm) atmX = centerX;
+
+          // Full vertical hover hitbox
+          svgHtml += `
+            <rect x="${slotX}" y="${padTop}" width="${slotW}" height="${plotH}" fill="transparent" class="oi-col-hitbox" data-idx="${idx}" />
+          `;
+
+          if (currentChartLayout === "net") {
+            const net = s.net_oi;
+            const netY = padTop + plotH * (1 - (net - minVal) / (maxVal - minVal || 1));
+            const bH = Math.max(3, Math.abs(netY - zeroY));
+            const bY = Math.min(zeroY, netY);
+            const barColor = net >= 0 ? putColor : callColor;
+            svgHtml += `
+              <rect x="${centerX - groupW / 2}" y="${bY}" width="${groupW}" height="${bH}" rx="3" fill="${barColor}" class="oi-bar-net" data-idx="${idx}" />
+            `;
+          } else {
+            // OI Change Mode
+            const cChg = s.call_oi_change || 0;
+            const pChg = s.put_oi_change || 0;
+
+            const cH = Math.max(3, (Math.abs(cChg) / (maxVal - minVal || 1)) * plotH);
+            const pH = Math.max(3, (Math.abs(pChg) / (maxVal - minVal || 1)) * plotH);
+
+            const cY = cChg >= 0 ? (zeroY - cH) : zeroY;
+            const pY = pChg >= 0 ? (zeroY - pH) : zeroY;
+
+            if (seriesVisibility.call) {
+              svgHtml += `
+                <rect x="${centerX - singleW - 1}" y="${cY}" width="${singleW}" height="${cH}" rx="2" fill="${callColor}" opacity="${cChg < 0 ? '0.75' : '1.0'}" class="oi-bar-call-chg" data-idx="${idx}" />
+              `;
+            }
+            if (seriesVisibility.put) {
+              svgHtml += `
+                <rect x="${centerX + 1}" y="${pY}" width="${singleW}" height="${pH}" rx="2" fill="${putColor}" opacity="${pChg < 0 ? '0.75' : '1.0'}" class="oi-bar-put-chg" data-idx="${idx}" />
+              `;
+            }
+          }
+
+          // Angled strike label below X-axis
+          const strikeColor = isAtm ? atmColor : textColor;
+          const fontW = isAtm ? "800" : "600";
+          const fontSize = (n > 30) ? "9.5" : (n > 22 ? "10" : "11");
+          svgHtml += `
+            <text x="${centerX}" y="${padTop + plotH + 16}" fill="${strikeColor}" font-size="${fontSize}" font-family="JetBrains Mono, monospace" font-weight="${fontW}" text-anchor="end" transform="rotate(-35, ${centerX}, ${padTop + plotH + 16})">${formatNumber(s.strike)}</text>
+          `;
+        });
+
+        // Continuation of ATM Spot guide
+        if (atmX !== null) {
+          svgHtml += `
+            <line x1="${atmX}" y1="${padTop}" x2="${atmX}" y2="${padTop + plotH}" stroke="${atmColor}" stroke-width="1.8" stroke-dasharray="4,4" />
+          `;
+        }
+
+        changeSvg.innerHTML = svgHtml;
+      }
+
+      bindUnifiedChartInteractions();
     }
 
-    // Chart Tooltip Hover Interactions (Full vertical column crosshair)
-    function bindSvgChartInteractions() {
-      const container = document.getElementById("oiSvgChartContainer");
+    // Unified Crosshair Hover Interaction across BOTH Charts
+    function bindUnifiedChartInteractions() {
+      const parentCard = document.querySelector(".oi-chart-card");
       const tooltip = document.getElementById("oiChartTooltip");
-      const colHitboxes = document.querySelectorAll(".oi-svg-col-hover");
+      const hitboxes = document.querySelectorAll(".oi-col-hitbox");
 
-      colHitboxes.forEach(hit => {
+      hitboxes.forEach(hit => {
         hit.addEventListener("mouseenter", (e) => {
           if (!oiData || !oiData.strikes) return;
           const idx = parseInt(hit.getAttribute("data-idx"), 10);
           const s = oiData.strikes[idx];
           if (!s) return;
 
-          const rect = container.getBoundingClientRect();
+          const rect = parentCard.getBoundingClientRect();
           const mouseX = e.clientX - rect.left;
           const mouseY = e.clientY - rect.top;
 
           tooltip.style.display = "block";
-          tooltip.style.left = `${Math.min(rect.width - 230, Math.max(10, mouseX + 16))}px`;
-          tooltip.style.top = `${Math.min(rect.height - 150, Math.max(10, mouseY - 25))}px`;
+          tooltip.style.left = `${Math.min(rect.width - 240, Math.max(10, mouseX + 16))}px`;
+          tooltip.style.top = `${Math.min(rect.height - 160, Math.max(10, mouseY - 25))}px`;
+
+          const cChgSign = s.call_oi_change >= 0 ? "+" : "";
+          const pChgSign = s.put_oi_change >= 0 ? "+" : "";
+          const netSign = s.net_oi >= 0 ? "+" : "";
 
           tooltip.innerHTML = `
             <div class="oi-tip-header">
               <span>STRIKE ${formatNumber(s.strike)} ${s.is_atm ? '(ATM)' : ''}</span>
-              <span style="color:#ffffff;">PCR ${s.pcr.toFixed(2)}</span>
+              <span style="color:#ffffff;">PCR ${(s.pcr || 0).toFixed(2)}</span>
             </div>
             <div class="oi-tip-row call">
-              <span>Call OI:</span>
-              <span class="oi-tip-val">${formatNumber(s.call_oi)} (${s.call_oi_change >= 0 ? '+' : ''}${formatNumber(s.call_oi_change)})</span>
+              <span>Call OI (Total):</span>
+              <span class="oi-tip-val">${formatOiLakhs(s.call_oi)} (${cChgSign}${formatOiLakhs(s.call_oi_change)})</span>
             </div>
             <div class="oi-tip-row put">
-              <span>Put OI:</span>
-              <span class="oi-tip-val">${formatNumber(s.put_oi)} (${s.put_oi_change >= 0 ? '+' : ''}${formatNumber(s.put_oi_change)})</span>
+              <span>Put OI (Total):</span>
+              <span class="oi-tip-val">${formatOiLakhs(s.put_oi)} (${pChgSign}${formatOiLakhs(s.put_oi_change)})</span>
             </div>
             <div class="oi-tip-row" style="color:#cbd5e1; font-size:11px; margin-top:4px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">
-              <span>Net (PE - CE):</span>
-              <span class="oi-tip-val ${s.net_oi >= 0 ? 'delta-pos' : 'delta-neg'}">${s.net_oi >= 0 ? '+' : ''}${formatOiLakhs(s.net_oi)}</span>
+              <span>Net Shift (PE - CE):</span>
+              <span class="oi-tip-val ${s.net_oi >= 0 ? 'delta-pos' : 'delta-neg'}">${netSign}${formatOiLakhs(s.net_oi)}</span>
             </div>
             <div class="oi-tip-row" style="font-size:10.5px; margin-top:2px;">
               <span>Buildup:</span>
-              <span style="font-weight:700;">CE: ${s.call_buildup} | PE: ${s.put_buildup}</span>
+              <span style="font-weight:700;">CE: ${s.call_buildup || 'Neutral'} | PE: ${s.put_buildup || 'Neutral'}</span>
             </div>
           `;
         });
@@ -2246,7 +2391,6 @@
       }
       renderSvgChart();
     }
-
 
     // ========================================================================
     // STRIKE MATRIX & BUILDUP QUADRANTS TABLE
@@ -2353,22 +2497,7 @@
       fetchOiData(true);
     }
 
-    function setChartMode(mode) {
-      currentChartMode = mode;
-      const btns = document.querySelectorAll("#oiChartModeGroup .oi-view-pill");
-      btns.forEach(b => {
-        b.classList.toggle("active", b.getAttribute("data-mode") === mode);
-      });
-      const sub = document.getElementById("oiChartSubtitle");
-      if (sub) {
-        sub.textContent = mode === "change" ?
-          "Intraday Open Interest Shifts (Buildup, Short Covering, Long Unwinding per Strike)" :
-          (mode === "net" ?
-            "Net Open Interest Difference (Put OI minus Call OI: Green = Put Dominance, Red = Call Dominance)" :
-            "Comparing Call Open Interest (Resistance / Supply) vs Put Open Interest (Support / Demand)");
-      }
-      renderSvgChart();
-    }
+
 
     // Export CSV
     function exportOiToCsv() {

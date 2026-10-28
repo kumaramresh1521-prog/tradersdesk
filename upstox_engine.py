@@ -29,6 +29,11 @@ from typing import Any, Dict, List, Optional
 import dotenv
 dotenv.load_dotenv()
 
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent
+DATA_DIR = ROOT_DIR / "data"
+
 logger = logging.getLogger("upstox_engine")
 
 _INVALID_TOKENS: Dict[str, float] = {}
@@ -258,7 +263,25 @@ def get_all_fno_stocks() -> List[Dict[str, Any]]:
     except Exception as e:
         logger.warning("Failed to load bhavcopy symbols in upstox_engine: %s", e)
 
-    sorted_stocks = sorted(list(stocks_dict.values()), key=lambda x: x["symbol"])
+    # Strictly filter to valid active NSE F&O stocks (exclude delisted/non-FNO symbols like ATGL, DEVYANI, etc.)
+    valid_fno_symbols = set()
+    try:
+        mwpl_path = DATA_DIR / "mwpl_official.json"
+        if mwpl_path.exists():
+            with open(mwpl_path, "r", encoding="utf-8") as f:
+                valid_fno_symbols.update(k.upper().strip() for k in json.load(f).get("records", {}).keys())
+        fo_path = DATA_DIR / "fo_bhav_eod_master.json"
+        if fo_path.exists():
+            with open(fo_path, "r", encoding="utf-8") as f:
+                fo_data = json.load(f)
+                valid_fno_symbols.update(k.upper().strip() for k in fo_data.get("latest_options_by_expiry", {}).keys())
+    except Exception:
+        pass
+    excluded_idx = {"NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50", "NIFTYFPI", "SENSEX", "BANKEX"}
+    valid_fno_symbols -= excluded_idx
+
+    filtered_dict = {k: v for k, v in stocks_dict.items() if (not valid_fno_symbols or k in valid_fno_symbols)}
+    sorted_stocks = sorted(list(filtered_dict.values()), key=lambda x: x["symbol"])
     _ALL_STOCKS_CACHE = sorted_stocks
     _ALL_STOCKS_MAP = {s["symbol"]: s for s in sorted_stocks}
     _ALL_STOCKS_MAP.update({s["key"]: s for s in sorted_stocks})
