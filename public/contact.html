@@ -275,7 +275,44 @@
         text-decoration: underline;
       }
     </style>
-  </head>
+  <script src="/global_search.js?v=20261029_mob" defer></script>
+
+  <style>
+    @media (max-width: 768px) {
+      header.inst-header {
+        padding: 8px 12px !important;
+      }
+      header.inst-header > div {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px !important;
+        align-items: center;
+      }
+      header.inst-header > div > a:first-child {
+        flex: 0 0 auto;
+      }
+      header.inst-header > div > div {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 5px !important;
+        align-items: center !important;
+      }
+      header.inst-header > div > div > a {
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+        border-radius: 6px !important;
+        background: rgba(255,255,255,0.07) !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        white-space: nowrap !important;
+        line-height: 1.4 !important;
+      }
+      header.inst-header img {
+        height: 22px !important;
+        width: auto !important;
+      }
+    }
+  </style>
+</head>
   <body>
   <header class="inst-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: #080c17; padding: 10px 20px;">
     <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
@@ -496,5 +533,56 @@
         }, 600);
       }
     </script>
-  </body>
+  
+    <!-- ================================
+         MOBILE BOTTOM NAVIGATION DOCK
+         Visible only on mobile <= 768px
+         ================================ -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNavGlobal" aria-label="Mobile Navigation Dock">
+      <a class="mob-nav-item" href="/" title="Dashboard">
+        <span class="mob-nav-icon">&#9889;</span>
+        <span class="mob-nav-label">Options</span>
+      </a>
+      <a class="mob-nav-item" href="/futures" title="Futures">
+        <span class="mob-nav-icon">&#128200;</span>
+        <span class="mob-nav-label">Futures</span>
+      </a>
+      <a class="mob-nav-item mob-nav-search-center" href="/" onclick="event.preventDefault(); if(typeof openGlobalSearch==='function') openGlobalSearch();" title="Search">
+        <span class="mob-nav-icon">&#128269;</span>
+        <span class="mob-nav-label">Search</span>
+      </a>
+      <a class="mob-nav-item" href="/#delivery" title="Delivery">
+        <span class="mob-nav-icon">&#128230;</span>
+        <span class="mob-nav-label">Delivery</span>
+      </a>
+      <a class="mob-nav-item" href="/blog" title="Market Insights">
+        <span class="mob-nav-icon">&#128240;</span>
+        <span class="mob-nav-label">Insights</span>
+      </a>
+    </nav>
+
+    <!-- Mobile Global Search Script (if not already loaded) -->
+    <script>
+    if (typeof openGlobalSearch === 'undefined') {
+      document.querySelectorAll('.mob-nav-search-center').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.location.href = '/?search=1';
+        });
+      });
+    }
+    // Highlight active nav item based on current path
+    (function() {
+      var path = window.location.pathname;
+      document.querySelectorAll('#mobileBottomNavGlobal .mob-nav-item').forEach(function(a) {
+        var href = a.getAttribute('href');
+        if (href && href !== '/' && path.startsWith(href)) {
+          a.classList.add('active');
+        } else if (href === '/' && (path === '/' || path === '')) {
+          a.classList.add('active');
+        }
+      });
+    })();
+    </script>
+</body>
 </html>

@@ -24571,8 +24571,7 @@ a.fut-tab-btn[data-feature-flag].feature-active {
   */
   .inst-nav,
   nav.inst-nav,
-  #mainInstNav,
-  .inst-nav-row {
+  #mainInstNav {
     display: none !important;
   }
 }
@@ -24757,4 +24756,766 @@ a.fut-tab-btn[data-feature-flag].feature-active {
     padding: 40px 20px !important;
     text-align: center;
   }
+}
+
+
+/* ============================================================================
+   INSTITUTIONAL MOBILE TERMINAL UI SYSTEM (TradersDesk Mobile 2.0)
+   Strictly scoped to max-width: 768px (Desktop remains 100% untouched)
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  /* ── Universal Body Padding for Fixed Bottom Navigation ── */
+  body {
+    padding-bottom: 70px !important;
+  }
+
+  /* ── Clean Top Brand Bar Across All Pages ── */
+  .inst-brand-bar,
+  .page2-header,
+  .cs-header {
+    height: 54px !important;
+    min-height: 54px !important;
+    padding: 0 14px !important;
+  }
+
+  .inst-brand-logo,
+  .inst-brand img,
+  .cs-brand img {
+    height: 24px !important;
+    max-height: 24px !important;
+    width: auto !important;
+  }
+
+  /* Light theme logo & header adjustments */
+  [data-theme="light"] .inst-header,
+  [data-theme="light"] .page2-header,
+  [data-theme="light"] .cs-header,
+  html[data-theme="light"] .inst-brand-bar,
+  body.white-theme .page2-header {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+  }
+
+  /* ── Static Pages Responsive Header (About, Contact, Terms, etc.) ── */
+  .static-brand-header,
+  header.inst-header > div[style*="max-width: 1200px"] {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 6px 0 !important;
+  }
+
+  header.inst-header div[style*="gap:16px"] {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+
+  header.inst-header div[style*="gap:16px"] a {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    background: rgba(255, 255, 255, 0.05);
+    white-space: nowrap !important;
+  }
+
+  /* ── 1. Benchmark Indices (1-Column Sleek Institutional Cards) ── */
+  .inst-indices-row {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .inst-idx-card {
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+    gap: 10px !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  }
+
+  [data-theme="light"] .inst-idx-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+  }
+
+  .idx-card-top {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .idx-title-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .idx-name {
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.2px !important;
+  }
+
+  .idx-badge {
+    font-size: 10px !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+  }
+
+  .idx-spot-block {
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    margin: 4px 0 !important;
+  }
+
+  .idx-spot {
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.5px !important;
+    line-height: 1 !important;
+  }
+
+  .idx-chg {
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    padding: 3px 8px !important;
+    border-radius: 6px !important;
+  }
+
+  .idx-meta-strip {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    margin-top: 4px !important;
+  }
+
+  .idx-meta-pill {
+    padding: 6px 10px !important;
+    font-size: 11.5px !important;
+    border-radius: 6px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  [data-theme="light"] .idx-meta-pill {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  .idx-card-cta {
+    margin-top: 6px !important;
+    text-align: right !important;
+  }
+
+  .idx-card-cta span {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #38bdf8 !important;
+  }
+
+  /* ── 2. Market Sentiment & Surveillance Desk (Clean 2-Column Balanced Grid) ── */
+  .inst-kpi-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .inst-kpi-card {
+    padding: 12px 14px !important;
+    border-radius: 10px !important;
+    min-height: 82px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+
+  /* Reset the nth-child(5) span that was causing the 6th card to be orphaned */
+  .inst-kpi-card:nth-child(5) {
+    grid-column: span 1 !important;
+  }
+
+  .inst-kpi-label {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.3px !important;
+  }
+
+  .inst-kpi-val {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    margin: 3px 0 !important;
+  }
+
+  .inst-kpi-sub {
+    font-size: 10px !important;
+    opacity: 0.8 !important;
+  }
+
+  /* ── 3. Institutional Quantitative Suites (1-Column Modern App Cards) ── */
+  .inst-dash-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-bottom: 24px !important;
+  }
+
+  .inst-dash-module {
+    border-radius: 12px !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    overflow: hidden !important;
+  }
+
+  [data-theme="light"] .inst-dash-module {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
+  }
+
+  .inst-dm-header {
+    padding: 12px 14px 8px 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .inst-dm-icon-wrap {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .inst-dm-title-box {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .inst-dm-title {
+    font-size: 14.5px !important;
+    font-weight: 800 !important;
+    color: #f8fafc !important;
+    display: block !important;
+  }
+
+  [data-theme="light"] .inst-dm-title {
+    color: #0f172a !important;
+  }
+
+  .inst-dm-desc-tag {
+    font-size: 11px !important;
+    color: #94a3b8 !important;
+    display: block !important;
+  }
+
+  .inst-dm-badge {
+    font-size: 9.5px !important;
+    padding: 2px 7px !important;
+    border-radius: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .inst-dm-body {
+    padding: 0 14px 10px 14px !important;
+  }
+
+  .inst-dm-body p {
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+    color: #94a3b8 !important;
+    margin: 0 !important;
+  }
+
+  [data-theme="light"] .inst-dm-body p {
+    color: #64748b !important;
+  }
+
+  /* Card Footer with clean non-overlapping links */
+  .inst-dm-footer {
+    padding: 10px 14px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    background: rgba(0, 0, 0, 0.15) !important;
+  }
+
+  [data-theme="light"] .inst-dm-footer {
+    border-top-color: #f1f5f9 !important;
+    background: #f8fafc !important;
+  }
+
+  .inst-dm-go {
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    color: #38bdf8 !important;
+  }
+
+  [data-theme="light"] .inst-dm-go {
+    color: #2563eb !important;
+  }
+
+  /* ── 4. Horizontal Touch-Scroll Ribbons for Filters & Category Pills ── */
+  .fut-intraday-index-ribbon,
+  .category-pill-ribbon,
+  .cs-filters,
+  .inst-tab-ribbon {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+    margin: 8px 0 !important;
+  }
+
+  .fut-intraday-index-ribbon::-webkit-scrollbar,
+  .category-pill-ribbon::-webkit-scrollbar,
+  .cs-filters::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .fut-intraday-idx-btn,
+  .category-pill-btn {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    padding: 6px 12px !important;
+    font-size: 11.5px !important;
+  }
+
+  /* ── 5. Responsive Institutional Tables ── */
+  .table-responsive,
+  .inst-table-wrap,
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-width: 100% !important;
+    border-radius: 8px !important;
+  }
+
+  /* ── 6. CMS Articles & Handbook Readability ── */
+  .cms-container,
+  .article-container {
+    padding: 16px 14px !important;
+    max-width: 100% !important;
+  }
+
+  .cms-title,
+  .article-title {
+    font-size: 22px !important;
+    line-height: 1.3 !important;
+  }
+
+  .cms-body p,
+  .article-body p {
+    font-size: 14.5px !important;
+    line-height: 1.65 !important;
+  }
+
+  /* ── 7. Universal Bottom Navigation Bar (Fixed 5-item Dock) ── */
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 58px !important;
+    background: rgba(10, 15, 28, 0.96) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.5) !important;
+    z-index: 99999 !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    padding: 0 4px !important;
+  }
+
+  html[data-theme="light"] .mobile-bottom-nav,
+  body.white-theme .mobile-bottom-nav {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-top-color: #cbd5e1 !important;
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .mob-nav-item {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    color: #94a3b8 !important;
+    padding: 6px 0 !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  html[data-theme="light"] .mob-nav-item,
+  body.white-theme .mob-nav-item {
+    color: #64748b !important;
+  }
+
+  .mob-nav-icon {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 2px !important;
+  }
+
+  .mob-nav-label {
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.3px !important;
+    text-transform: uppercase !important;
+  }
+
+  .mob-nav-item:hover,
+  .mob-nav-item.active {
+    color: #38bdf8 !important;
+  }
+
+  html[data-theme="light"] .mob-nav-item.active,
+  body.white-theme .mob-nav-item.active {
+    color: #2563eb !important;
+  }
+
+  .mob-nav-item.active .mob-nav-icon {
+    transform: scale(1.15) !important;
+  }
+
+  .mob-nav-search-center .mob-nav-icon {
+    font-size: 21px !important;
+  }
+}
+
+
+/* ============================================================================
+   STATIC PAGES MOBILE FIX (about, contact, terms, privacy, disclaimer)
+   Strictly scoped to max-width: 768px - Desktop 100% untouched
+   ============================================================================ */
+
+@media (max-width: 768px) {
+
+  /* ── Static page header (inline-style headers in about/contact/terms) ── */
+  header.inst-header {
+    padding: 10px 14px !important;
+  }
+
+  /* The inner flex wrapper of static headers */
+  header.inst-header > div,
+  header.inst-header > div[style] {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* Logo image in static headers */
+  header.inst-header img {
+    height: 24px !important;
+    width: auto !important;
+  }
+
+  /* Back links / nav links in static headers */
+  header.inst-header div[style*="gap:16px"],
+  header.inst-header div[style*="gap: 16px"] {
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+  header.inst-header div[style*="gap:16px"] a,
+  header.inst-header div[style*="gap: 16px"] a {
+    font-size: 11px !important;
+    padding: 4px 10px !important;
+    border-radius: 6px !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    white-space: nowrap !important;
+  }
+
+  /* ── Static Content Sections ── */
+  .static-page-content,
+  main.static-main,
+  .about-wrap,
+  .contact-wrap {
+    padding: 20px 14px !important;
+    max-width: 100% !important;
+  }
+
+  /* ── Futures Rollover Page: Filter tabs → scrollable ── */
+  .fut-fw-header-row,
+  .fut-fw-tab-strip,
+  .fut-tab-btn-group {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 6px !important;
+    padding-bottom: 4px !important;
+  }
+  .fut-fw-header-row::-webkit-scrollbar,
+  .fut-fw-tab-strip::-webkit-scrollbar {
+    display: none !important;
+  }
+  .fut-fw-tab-btn,
+  .fut-tab-btn {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: 11.5px !important;
+    padding: 6px 12px !important;
+  }
+
+  /* ── OI Page: Tabs and filters ── */
+  .oi-tab-row,
+  .oi-filter-row,
+  .oi-strike-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 6px !important;
+    padding: 4px 0 !important;
+  }
+  .oi-tab-row::-webkit-scrollbar,
+  .oi-filter-row::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* ── CMS pages (blog, handbook, custom pages) ── */
+  .cms-container {
+    padding: 16px 14px 80px 14px !important;
+    max-width: 100% !important;
+  }
+
+  .cms-container h1 {
+    font-size: 22px !important;
+    line-height: 1.3 !important;
+  }
+
+  .cms-container h2 {
+    font-size: 18px !important;
+    line-height: 1.35 !important;
+  }
+
+  .cms-container h3 {
+    font-size: 15px !important;
+  }
+
+  .cms-container p,
+  .cms-container li {
+    font-size: 14.5px !important;
+    line-height: 1.7 !important;
+  }
+
+  .cms-container pre,
+  .cms-container code {
+    font-size: 12px !important;
+    overflow-x: auto !important;
+  }
+
+  .cms-container table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    font-size: 12.5px !important;
+  }
+
+  /* ── Blog Index Page ── */
+  .blog-grid,
+  .blog-cards-wrap {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .blog-card,
+  .post-card {
+    border-radius: 12px !important;
+  }
+
+  .blog-card-title,
+  .post-card-title {
+    font-size: 17px !important;
+    line-height: 1.35 !important;
+  }
+
+  .blog-card-excerpt,
+  .post-card-excerpt {
+    font-size: 13px !important;
+  }
+
+  /* ── Calendar Studio Page ── */
+  .cs-header {
+    padding: 10px 14px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .cs-brand {
+    gap: 8px !important;
+  }
+
+  .cs-brand img {
+    height: 22px !important;
+    width: auto !important;
+  }
+
+  .cs-filters {
+    gap: 6px !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    padding: 8px 12px !important;
+    scrollbar-width: none !important;
+  }
+  .cs-filters::-webkit-scrollbar { display: none; }
+
+  /* ── Futures Tab Buttons at top of page ── */
+  .fut-tab-bar {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 6px !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  }
+  .fut-tab-bar::-webkit-scrollbar { display: none; }
+
+  .fut-tab-btn {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    padding: 7px 14px !important;
+    border-radius: 8px !important;
+    min-height: 36px !important;
+  }
+
+  /* ── Tables in Futures / OI pages ── */
+  .fut-mw-table-wrap,
+  .oi-table-wrap,
+  .mw-table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 8px !important;
+  }
+
+  .fut-mw-table,
+  .oi-table,
+  .mw-table {
+    font-size: 11.5px !important;
+    min-width: 600px !important;
+  }
+
+  .fut-mw-table th,
+  .fut-mw-table td,
+  .oi-table th,
+  .oi-table td {
+    padding: 8px 10px !important;
+    white-space: nowrap !important;
+  }
+
+  /* ── CMS/Blog article page top nav header ── */
+  .page2-header {
+    padding: 8px 14px !important;
+    min-height: 50px !important;
+  }
+
+  .page2-header .inst-nav-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .page2-header nav.inst-nav {
+    display: none !important;
+  }
+
+  .page2-theme-toggle-btn {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+    border-radius: 7px !important;
+  }
+
+  /* ── Section Headings consistent mobile size ── */
+  .inst-section-heading {
+    margin-bottom: 12px !important;
+    padding: 0 !important;
+  }
+
+  .section-title-text {
+    font-size: 12px !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .section-subtitle-tag {
+    font-size: 9px !important;
+    padding: 2px 7px !important;
+  }
+
+  /* ── Macro ribbon pills scroll fix ── */
+  .inst-macro-ribbon {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-bottom: 6px !important;
+  }
+  .inst-macro-ribbon::-webkit-scrollbar { display: none; }
+
+  .macro-pill {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: 11px !important;
+  }
+
+  /* ── Open Interest strike selector pills ── */
+  .oi-strike-pills {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    gap: 6px !important;
+    padding: 6px 0 !important;
+  }
+  .oi-strike-pills::-webkit-scrollbar { display: none; }
+
+  /* ── Dashboard refresh button on mobile (smaller) ── */
+  .inst-hero-refresh-btn {
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+  }
+
+  /* ── Card row inside inst-dash panels ── */
+  .inst-dash-hero {
+    padding: 10px 0 0 0 !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Announcement / info banners */
+  .inst-announce-bar,
+  .info-bar,
+  .update-bar {
+    font-size: 11px !important;
+    padding: 8px 12px !important;
+    text-align: center !important;
+  }
+
 }

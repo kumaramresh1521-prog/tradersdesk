@@ -510,6 +510,15 @@ def render_cms_shell(
   <footer style="margin-top: 60px; padding: 30px 20px; border-top: 1px solid rgba(255,255,255,0.06); text-align: center; color: #64748b; font-size: 12px;">
     &copy; 2026 TradersDesk.in &bull; Real-Time Quantitative Analytics &bull; SEBI Compliance Notice: Educational & Research Only
   </footer>
+
+  <!-- Mobile Bottom Navigation (visible on mobile <= 768px) -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNavGlobal" aria-label="Mobile Navigation">
+    <a class="mob-nav-item" href="/" title="Dashboard"><span class="mob-nav-icon">&#9889;</span><span class="mob-nav-label">Options</span></a>
+    <a class="mob-nav-item" href="/futures" title="Futures"><span class="mob-nav-icon">&#128200;</span><span class="mob-nav-label">Futures</span></a>
+    <a class="mob-nav-item mob-nav-search-center" href="/?search=1" title="Search"><span class="mob-nav-icon">&#128269;</span><span class="mob-nav-label">Search</span></a>
+    <a class="mob-nav-item" href="/#delivery" title="Delivery"><span class="mob-nav-icon">&#128230;</span><span class="mob-nav-label">Delivery</span></a>
+    <a class="mob-nav-item" href="/blog" title="Market Insights"><span class="mob-nav-icon">&#128240;</span><span class="mob-nav-label">Insights</span></a>
+  </nav>
 </body>
 </html>"""
 
