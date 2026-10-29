@@ -16,13 +16,17 @@ if %ERRORLEVEL% NEQ 0 (
 :: 2. Set Project & Region
 set SERVICE_NAME=tradersdesk
 set REGION=asia-south1
+set PROJECT_ID=trading-509214
 
 echo [INFO] Deploying container directly to Google Cloud Run...
+echo Project: %PROJECT_ID%
 echo Service: %SERVICE_NAME%
 echo Region:  %REGION%
 echo.
 
-gcloud run deploy %SERVICE_NAME% ^
+call gcloud config set project %PROJECT_ID% --quiet
+
+call gcloud run deploy %SERVICE_NAME% ^
     --source . ^
     --region %REGION% ^
     --platform managed ^
@@ -36,6 +40,10 @@ if %ERRORLEVEL% EQU 0 (
     echo.
     echo =====================================================================
     echo [SUCCESS] TradersDesk is LIVE on Google Cloud!
+    echo.
+    echo [RECOMMENDED] Activate Market-Hours Cost Optimizer (~81%% savings):
+    echo Run: setup_market_schedule.bat
+    echo.
     echo Manage everything from your secret Admin Console: /admin.html
     echo =====================================================================
 ) else (

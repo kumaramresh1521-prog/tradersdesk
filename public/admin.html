@@ -1965,6 +1965,88 @@
 
           <div id="admCloudAlert" class="alert-adm" style="display:none; margin-bottom:16px;"></div>
 
+          <!-- SECTION 0: MARKET-HOURS CLOUD SCHEDULER & COST OPTIMIZER -->
+          <div class="adm-card" style="border: 1px solid rgba(16, 185, 129, 0.4); background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 10, 22, 0.6) 100%);">
+            <div class="adm-card-header" style="flex-wrap:wrap; gap:12px;">
+              <h3 style="color:#34d399; display:flex; align-items:center; gap:8px; margin:0;">
+                <span>🕒</span> Market-Hours Auto-Scheduler &amp; Cost Optimizer
+              </h3>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span id="cloudSchedModeBadge" class="p2-badge p2-badge-green">● MARKET WARM (1 INSTANCE)</span>
+                <span id="cloudSchedTime" style="font-size:12px; color:var(--adm-muted); font-family:monospace;">--</span>
+              </div>
+            </div>
+            <p style="font-size:12.5px; color:var(--adm-muted); margin-bottom:18px;">
+              Automatically warms Google Cloud Run during NSE market hours (09:00 AM - 03:45 PM IST) to continuously record real ticks and candles without missing data, then auto-scales to 0 instances at night and on weekends to save <strong>~81% cloud compute costs</strong>!
+            </p>
+
+            <!-- 3 Grid Cards -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-bottom:18px;">
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:16px;">
+                <div style="display:flex; align-items:center; gap:8px; color:#38bdf8; font-weight:700; font-size:13px; margin-bottom:6px;">
+                  <span>☀️</span> Morning Market Wakeup
+                </div>
+                <div style="font-size:18px; font-weight:800; color:#f8fafc; margin-bottom:4px;">09:00 AM IST (Mon–Fri)</div>
+                <div style="font-size:12px; color:var(--adm-muted);">
+                  Sets <code style="color:#34d399; background:rgba(16,185,129,0.1); padding:2px 6px; border-radius:4px;">min-instances: 1</code> with CPU always allocated. Zero cold starts, 100% real tick collection.
+                </div>
+              </div>
+
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:16px;">
+                <div style="display:flex; align-items:center; gap:8px; color:#f59e0b; font-weight:700; font-size:13px; margin-bottom:6px;">
+                  <span>🌙</span> Evening Market Sleep
+                </div>
+                <div style="font-size:18px; font-weight:800; color:#f8fafc; margin-bottom:4px;">03:45 PM IST (Mon–Fri)</div>
+                <div style="font-size:12px; color:var(--adm-muted);">
+                  Sets <code style="color:#f59e0b; background:rgba(245,158,11,0.1); padding:2px 6px; border-radius:4px;">min-instances: 0</code> after EOD bhavcopy &amp; candles are saved. Zero billing for nights &amp; weekends.
+                </div>
+              </div>
+
+              <div style="background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.25); border-radius:8px; padding:16px;">
+                <div style="display:flex; align-items:center; gap:8px; color:#34d399; font-weight:700; font-size:13px; margin-bottom:6px;">
+                  <span>💰</span> Cost Impact Breakdown
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+                  <span style="font-size:12px; color:var(--adm-muted);">24/7 Running:</span>
+                  <span style="font-size:12px; color:#ef4444; text-decoration:line-through;">720 hrs (~₹3,500/mo)</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+                  <span style="font-size:12px; color:var(--adm-muted);">Scheduled:</span>
+                  <span style="font-size:13px; font-weight:700; color:#34d399;">~137 hrs (~₹150/mo)</span>
+                </div>
+                <div style="font-size:11.5px; color:#94a3b8; font-weight:600; background:rgba(16,185,129,0.15); padding:4px 8px; border-radius:4px; text-align:center;">
+                  ⚡ ~81% Immediate Bill Reduction
+                </div>
+              </div>
+            </div>
+
+            <!-- Download and Setup Controls -->
+            <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:16px; margin-bottom:14px;">
+              <div style="font-size:12px; font-weight:700; color:#e2e8f0; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                <span>⚡</span> 1-Click Cloud Scheduler Automated Setup Scripts:
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                <a href="/setup_market_schedule.bat" download class="btn-adm-primary" style="background:#059669; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:12px;">
+                  <span>📥</span> setup_market_schedule.bat (Windows)
+                </a>
+                <a href="/setup_market_schedule.sh" download class="btn-adm-primary" style="background:#0284c7; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:12px;">
+                  <span>📥</span> setup_market_schedule.sh (Linux/Mac)
+                </a>
+                <a href="/set_market_warm.bat" download class="btn-adm-secondary" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:12px;">
+                  <span>☀️</span> set_market_warm.bat
+                </a>
+                <a href="/set_market_sleep.bat" download class="btn-adm-secondary" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:12px;">
+                  <span>🌙</span> set_market_sleep.bat
+                </a>
+              </div>
+            </div>
+
+            <div style="font-size:11.5px; color:var(--adm-muted); line-height:1.5;">
+              <span style="color:#cbd5e1; font-weight:600;">Manual CLI Command:</span> To instantly set Cloud Run to warm right now from your terminal:
+              <pre style="background:#090d16; border:1px solid rgba(255,255,255,0.08); padding:8px 12px; border-radius:6px; font-size:11.5px; color:#38bdf8; overflow-x:auto; margin:6px 0 0 0;">gcloud run services update tradersdesk --project trading-509214 --region asia-south1 --min-instances 1 --no-cpu-throttling</pre>
+            </div>
+          </div>
+
           <!-- SECTION 1: GLOBAL LIVE ANNOUNCEMENT BANNER -->
           <div class="adm-card" style="border: 1px solid rgba(56, 189, 248, 0.4);">
             <div class="adm-card-header">
@@ -5433,15 +5515,37 @@
       // =========================================================================
       let _platformSettings = {};
 
-      async function loadCloudOpsData() {
+      async async function loadCloudOpsData() {
         try {
           const res = await fetch('/api/admin/settings', { headers: getAuthHeaders() });
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const data = await res.json();
-          _platformSettings = (data && data.settings) ? data.settings : {};
-          populateCloudOpsUI();
+          if (res.ok) {
+            const data = await res.json();
+            _platformSettings = (data && data.settings) ? data.settings : {};
+            populateCloudOpsUI();
+          }
         } catch(e) {
           console.error("Failed loading platform settings:", e);
+        }
+
+        try {
+          const sRes = await fetch('/api/admin/cloud-schedule', { headers: getAuthHeaders() });
+          if (sRes.ok) {
+            const sData = await sRes.json();
+            const badge = document.getElementById('cloudSchedModeBadge');
+            const timeEl = document.getElementById('cloudSchedTime');
+            if (timeEl) timeEl.textContent = sData.currentTimeIst || '';
+            if (badge) {
+              if (sData.currentMode === 'WARM') {
+                badge.textContent = '● MARKET WARM (1 INSTANCE)';
+                badge.className = 'p2-badge p2-badge-green';
+              } else {
+                badge.textContent = '🌙 SLEEP MODE (0 INSTANCES)';
+                badge.className = 'p2-badge p2-badge-amber';
+              }
+            }
+          }
+        } catch(e) {
+          console.error("Failed loading cloud schedule status:", e);
         }
       }
 

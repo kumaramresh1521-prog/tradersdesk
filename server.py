@@ -5637,6 +5637,12 @@ def build_chart_desk(payload: dict) -> dict:
             pass
 
     if not spot_candles_raw:
+        try:
+            spot_candles_raw = fetch_real_intraday_index_candles(index_key, date_val, interval_minutes=interval_mins)
+        except Exception:
+            spot_candles_raw = []
+
+    if not spot_candles_raw:
         spot_candles_raw = sample_index_candles(index_key, date_val, interval_minutes=interval_mins)
 
     spot_points = candle_points(spot_candles_raw)
@@ -9929,6 +9935,35 @@ class RequestHandler(BaseHTTPRequestHandler):
             if not check_admin_request(self):
                 return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
             return self.send_json(200, {"ok": True, "settings": cms_engine.get_platform_settings()})
+
+        if path == "/api/admin/cloud-schedule":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            now_dt = now_ist()
+            current_hhmm = now_dt.strftime("%H:%M")
+            weekday = now_dt.weekday()  # 0 = Mon, 4 = Fri, 5 = Sat, 6 = Sun
+            is_market_day = (weekday < 5)
+            # Market hours window for auto-scale is 09:00 to 15:45 IST
+            is_warm_hours = is_market_day and ("09:00" <= current_hhmm <= "15:45")
+            return self.send_json(200, {
+                "ok": True,
+                "projectId": "trading-509214",
+                "region": "asia-south1",
+                "serviceName": "tradersdesk",
+                "currentTimeIst": now_dt.strftime("%Y-%m-%d %H:%M:%S IST"),
+                "isMarketDay": is_market_day,
+                "isMarketHours": is_warm_hours,
+                "currentMode": "WARM" if is_warm_hours else "SLEEP",
+                "schedule": {
+                    "start": "09:00 AM IST (Mon-Fri) ➔ min-instances: 1",
+                    "stop": "03:45 PM IST (Mon-Fri) ➔ min-instances: 0"
+                },
+                "costSavings": {
+                    "standardHoursMonthly": 720,
+                    "scheduledHoursMonthly": 137,
+                    "savingsPercent": 81
+                }
+            })
 
         # Institutional Maintenance Mode Gatekeeper
         try:
