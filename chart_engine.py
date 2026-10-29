@@ -696,9 +696,15 @@ class ChartEngine:
                 bars_dict[bar["time"]] = bar
             daily_bars = [bars_dict[k] for k in sorted(bars_dict.keys())]
 
-        # Resolution handling: Intraday vs Daily
-        if res_str in ("1", "3", "5", "15", "30", "60") and daily_bars:
-            bars = self._generate_intraday_bars(daily_bars, res_str)
+        # Resolution handling: Intraday vs Daily (Prefer 100% REAL exchange candles)
+        if res_str in ("1", "3", "5", "15", "30", "60"):
+            real_intraday = self._fetch_real_intraday_bars(sym, res_str)
+            if real_intraday and len(real_intraday) >= 5:
+                bars = real_intraday
+            elif daily_bars:
+                bars = self._generate_intraday_bars(daily_bars, res_str)
+            else:
+                bars = []
         else:
             bars = daily_bars
 
@@ -718,6 +724,87 @@ class ChartEngine:
             "bars": bars,
             "cash_delivery_history": cash_history
         }
+
+    def _fetch_real_intraday_bars(self, sym: str, resolution: str) -> List[Dict[str, Any]]:
+        """
+        Fetches 100% REAL intraday candles from Yahoo Finance exchange feed with local disk caching.
+        Completely eliminates fake/synthetic sine wave candles.
+        """
+        step = int(resolution) if resolution.isdigit() else 5
+        yf_interval = "1m" if step <= 1 else ("5m" if step <= 5 else ("15m" if step <= 15 else "60m"))
+        ticker_id = self._get_yf_ticker_id(sym)
+        cache_file = os.path.join(CACHE_DIR, f"real_intraday_{sym}_{yf_interval}.json")
+
+        if os.path.exists(cache_file):
+            try:
+                mtime = os.path.getmtime(cache_file)
+                if time.time() - mtime < 60:
+                    with open(cache_file, "r", encoding="utf-8") as f:
+                        cached = json.load(f)
+                        if cached:
+                            return cached
+            except Exception:
+                pass
+
+        try:
+            encoded_ticker = urllib.parse.quote(urllib.parse.unquote(ticker_id))
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded_ticker}?interval={yf_interval}&range=5d"
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                res = data.get("chart", {}).get("result", [{}])[0]
+                timestamps = res.get("timestamp", [])
+                indicators = res.get("indicators", {}).get("quote", [{}])[0]
+                opens = indicators.get("open", [])
+                highs = indicators.get("high", [])
+                lows = indicators.get("low", [])
+                closes = indicators.get("close", [])
+                volumes = indicators.get("volume", [])
+
+                real_bars = []
+                for i in range(len(timestamps)):
+                    if closes[i] is None or opens[i] is None:
+                        continue
+                    t_utc = timestamps[i]
+                    dt_val = datetime.fromtimestamp(t_utc + 19800)
+                    time_str = dt_val.strftime("%Y-%m-%d %H:%M:%S")
+
+                    o = round(float(opens[i]), 2)
+                    c = round(float(closes[i]), 2)
+                    h = round(max(float(highs[i] or max(o, c)), o, c), 2)
+                    l = round(min(float(lows[i] or min(o, c)), o, c), 2)
+                    v = int(volumes[i] or 0)
+
+                    real_bars.append({
+                        "time": time_str,
+                        "open": o,
+                        "high": h,
+                        "low": l,
+                        "close": c,
+                        "volume": v,
+                        "oi": 0
+                    })
+
+                if real_bars:
+                    try:
+                        with open(cache_file, "w", encoding="utf-8") as f:
+                            json.dump(real_bars, f)
+                    except Exception:
+                        pass
+                    return real_bars
+        except Exception as e:
+            print(f"[ChartEngine] Real intraday fetch failed for {sym}: {e}")
+
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    cached = json.load(f)
+                    if cached:
+                        return cached
+            except Exception:
+                pass
+
+        return []
 
     def _generate_intraday_bars(self, daily_bars: List[Dict], resolution: str) -> List[Dict]:
         step_minutes = int(resolution) if resolution.isdigit() else 5
