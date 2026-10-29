@@ -24682,18 +24682,69 @@ a.fut-tab-btn[data-feature-flag].feature-active {
     border-radius: 20px !important;
   }
 
-  /* ── Results List — Full Remaining Height, Large Tap Targets ── */
+  /* ── Results List — Full Remaining Height, scrollable, NO fixed max-height ── */
   .gsearch-results-list {
-    flex: 1 !important;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;        /* critical for flex child to scroll */
+    max-height: none !important;     /* remove the 420px desktop cap */
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    padding: 8px 0 !important;
+    padding: 6px 0 !important;
   }
 
-  /* Larger tap targets for result rows */
+  /* ── Result Row: Stack vertically on mobile to prevent content merge ── */
   .gsearch-item-row {
-    padding: 12px 16px !important;
-    min-height: 56px !important;
+    flex-direction: column !important;   /* symbol on top, actions below */
+    align-items: flex-start !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+    min-height: unset !important;
+  }
+
+  /* Left content takes full width */
+  .gs-item-left {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Right action strip: full width row below symbol */
+  .gs-item-right {
+    width: 100% !important;
+  }
+
+  /* Action buttons strip wraps on mobile */
+  .gs-actions-strip {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  /* Action buttons: compact on mobile */
+  .gs-action-btn {
+    font-size: 11px !important;
+    padding: 5px 10px !important;
+    min-height: 32px !important;
+    border-radius: 6px !important;
+    flex-shrink: 0;
+  }
+
+  /* Symbol text stays on one line */
+  .gs-item-sym {
+    font-size: 15px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Name slightly smaller on mobile */
+  .gs-item-name {
+    font-size: 12px !important;
+    white-space: normal !important;     /* allow wrap for long names */
+  }
+
+  /* Sector tag */
+  .gs-item-sector {
+    font-size: 10px !important;
   }
 
   /* ── Footer — Hidden on mobile to save space ── */
@@ -24705,13 +24756,5 @@ a.fut-tab-btn[data-feature-flag].feature-active {
   .gsearch-empty-state {
     padding: 40px 20px !important;
     text-align: center;
-  }
-
-  /* Quick action buttons in results — larger on mobile */
-  .gs-action-btn {
-    min-height: 36px !important;
-    min-width: 36px !important;
-    padding: 6px 10px !important;
-    font-size: 12px !important;
   }
 }
