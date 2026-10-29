@@ -13657,3 +13657,64 @@ document.addEventListener('keydown', function(e) {
     if (window.closeMobileDotMenu) window.closeMobileDotMenu();
   }
 });
+
+
+// ── SYSTEMATIC SUBMENU AUTO-BALANCE ENGINE ──
+window.autoBalanceDropdowns = function() {
+  try {
+    document.querySelectorAll(".inst-dropdown").forEach(dropdown => {
+      const cols = Array.from(dropdown.querySelectorAll(".inst-dropdown-col"));
+      if (cols.length === 0) return;
+
+      // Check visible items in each column
+      cols.forEach(col => {
+        const items = Array.from(col.querySelectorAll(".inst-dd-item"));
+        const visibleItems = items.filter(el => {
+          const st = window.getComputedStyle(el);
+          return st.display !== "none" && !el.classList.contains("is-hidden");
+        });
+        if (visibleItems.length === 0) {
+          col.classList.add("is-empty");
+        } else {
+          col.classList.remove("is-empty");
+        }
+      });
+
+      const activeCols = cols.filter(c => !c.classList.contains("is-empty"));
+      if (activeCols.length <= 1) {
+        dropdown.classList.add("is-single-col");
+        dropdown.classList.remove("inst-dropdown-md");
+        dropdown.classList.add("inst-dropdown-sm");
+        return;
+      } else {
+        dropdown.classList.remove("is-single-col");
+        dropdown.classList.remove("inst-dropdown-sm");
+        dropdown.classList.add("inst-dropdown-md");
+
+        // Auto-balance if 2 columns have an uneven distribution (difference >= 2)
+        if (cols.length === 2 && activeCols.length === 2) {
+          const col0Items = Array.from(cols[0].querySelectorAll(".inst-dd-item")).filter(el => window.getComputedStyle(el).display !== "none");
+          const col1Items = Array.from(cols[1].querySelectorAll(".inst-dd-item")).filter(el => window.getComputedStyle(el).display !== "none");
+          const total = col0Items.length + col1Items.length;
+          const target0 = Math.ceil(total / 2);
+
+          if (col0Items.length < target0 - 1) {
+            const shiftCount = target0 - col0Items.length;
+            for (let i = 0; i < shiftCount; i++) {
+              if (col1Items[i]) {
+                cols[0].appendChild(col1Items[i]);
+              }
+            }
+          } else if (col0Items.length > target0 + 1) {
+            const excess = col0Items.slice(target0);
+            excess.forEach(el => cols[1].insertBefore(el, cols[1].querySelector(".inst-dd-item")));
+          }
+        }
+      }
+    });
+  } catch(err) {
+    console.warn("[Nav] autoBalanceDropdowns error:", err);
+  }
+};
+
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', () => setTimeout(window.autoBalanceDropdowns, 100)); } else { setTimeout(window.autoBalanceDropdowns, 100); }

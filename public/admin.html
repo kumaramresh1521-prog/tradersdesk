@@ -4658,6 +4658,7 @@
                 <div style="background:rgba(0,0,0,0.3); border:1px dashed rgba(56,189,248,0.25); border-radius:8px; padding:14px; margin-top:12px;">
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                     <span style="font-size:12px; font-weight:700; color:#38bdf8; text-transform:uppercase;">Dropdown Submenu Items (${cols.reduce((acc, c) => acc + (c.items ? c.items.length : 0), 0)} items)</span>
+                    <button type="button" class="seo-pill-btn" style="padding:4px 10px; font-size:11px; background:rgba(56,189,248,0.15); border-color:#38bdf8; color:#38bdf8; font-weight:700;" onclick="autoBalanceMenuColumns(${idx})" title="Automatically distribute items evenly across columns to prevent empty spaces">⚡ Auto-Balance Submenus</button>
                     <button type="button" class="btn-adm-primary" style="padding:4px 10px; font-size:11px;" onclick="openAddSubmenuModal(${idx}, 0)">➕ Add Submenu Item</button>
                   </div>
                   <div class="nav-sub-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:10px;">
@@ -4672,36 +4673,140 @@
         container.innerHTML = html;
       }
 
+      function autoBalanceMenuColumns(mIdx) {
+        const menu = _navMasterData.items[mIdx];
+        if (!menu || !menu.columns || menu.columns.length < 2) return;
+
+        // Gather all submenus across all columns
+        const allItems = [];
+        menu.columns.forEach(col => {
+          (col.items || []).forEach(it => allItems.push(it));
+        });
+
+        if (allItems.length === 0) return;
+
+        const numCols = menu.columns.length;
+        const perCol = Math.ceil(allItems.length / numCols);
+
+        // Distribute systematically
+        menu.columns.forEach((col, cIdx) => {
+          col.items = allItems.slice(cIdx * perCol, (cIdx + 1) * perCol);
+        });
+
+        renderNavBuilderUI();
+        renderNavLivePreview();
+        alert('⚡ Submenus automatically balanced and systematized across columns!');
+      }
+
+      function switchSubmenuColumn(mIdx, fromCol, sIdx) {
+        const menu = _navMasterData.items[mIdx];
+        if (!menu || !menu.columns || menu.columns.length < 2) return;
+
+        const targetCol = fromCol === 0 ? 1 : 0;
+        if (!menu.columns[targetCol]) {
+          menu.columns[targetCol] = { header: 'New Column', items: [] };
+        }
+        if (!menu.columns[targetCol].items) {
+          menu.columns[targetCol].items = [];
+        }
+
+        const itemToMove = menu.columns[fromCol].items.splice(sIdx, 1)[0];
+        if (itemToMove) {
+          menu.columns[targetCol].items.push(itemToMove);
+          renderNavBuilderUI();
+          renderNavLivePreview();
+        }
+      }
+
+      function toggleSubmenuActive(mIdx, cIdx, sIdx) {
+        const item = _navMasterData.items[mIdx].columns[cIdx].items[sIdx];
+        if (item) {
+          item.active = (item.active === undefined) ? false : !item.active;
+          renderNavBuilderUI();
+          renderNavLivePreview();
+        }
+      }
+
+      function updateColumnHeader(mIdx, cIdx, val) {
+        if (_navMasterData.items[mIdx] && _navMasterData.items[mIdx].columns && _navMasterData.items[mIdx].columns[cIdx]) {
+          _navMasterData.items[mIdx].columns[cIdx].header = val;
+          renderNavLivePreview();
+        }
+      }
+
       function renderSubmenuCards(menuIdx, cols) {
-        let cardsHtml = '';
+        if (!cols || cols.length === 0) {
+          return '<div style="color:var(--adm-muted); font-size:12px; padding:10px 0;">No columns configured.</div>';
+        }
+
+        let html = '';
         cols.forEach((col, colIdx) => {
-          (col.items || []).forEach((sub, subIdx) => {
-            cardsHtml += `
-              <div class="sub-item-card" style="background:#0b1329; border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:8px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <div style="font-weight:700; font-size:13px; color:#f8fafc; display:flex; align-items:center; gap:6px;">
-                    <span style="font-size:16px;">${escapeHtml(sub.icon || '⚡')}</span>
-                    <span>${escapeHtml(sub.title || 'Untitled')}</span>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:4px;">
-                    <button type="button" class="seo-pill-btn" style="padding:2px 6px; font-size:10px;" onclick="moveSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx}, -1)" ${subIdx === 0 ? 'disabled' : ''} title="Move Up">⬆</button>
-                    <button type="button" class="seo-pill-btn" style="padding:2px 6px; font-size:10px;" onclick="moveSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx}, 1)" ${subIdx === col.items.length - 1 ? 'disabled' : ''} title="Move Down">⬇</button>
-                    <button type="button" class="btn-adm-primary" style="padding:2px 8px; font-size:11px;" onclick="editSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx})" title="Edit Submenu">✏️ Edit</button>
-                    <button type="button" class="btn-adm-danger" style="padding:2px 6px; font-size:11px;" onclick="deleteSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx})" title="Delete Submenu">🗑️</button>
-                  </div>
+          const colItems = col.items || [];
+          const activeCount = colItems.filter(s => s.active !== false).length;
+          const otherColNum = colIdx === 0 ? 2 : 1;
+          const isOtherColAvailable = cols.length > 1;
+
+          html += `
+            <div class="nav-builder-col-box" style="background:#050c1e; border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:10px;">
+              <!-- Column Header Title with Inline Editor -->
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:6px; flex:1;">
+                  <span style="font-size:11px; font-weight:800; color:#38bdf8; text-transform:uppercase;">Col ${colIdx + 1}:</span>
+                  <input type="text" class="adm-input" style="padding:2px 8px; font-size:11.5px; font-weight:700; height:26px;" value="${escapeHtml(col.header || '')}" placeholder="Column Header" oninput="updateColumnHeader(${menuIdx}, ${colIdx}, this.value)" />
                 </div>
-                <div style="font-size:11.5px; color:#94a3b8; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
-                  ${escapeHtml(sub.sub || 'No subtitle provided')}
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; font-family:monospace; color:#38bdf8; border-top:1px solid rgba(255,255,255,0.04); padding-top:6px;">
-                  <span>${escapeHtml(sub.url || '#')}</span>
-                  ${sub.badge ? `<span class="p2-badge p2-badge-${sub.badgeColor || 'teal'}" style="font-size:9.5px; padding:1px 6px;">${escapeHtml(sub.badge)}</span>` : ''}
+                <div style="display:flex; align-items:center; gap:6px; margin-left:8px;">
+                  <span class="p2-badge p2-badge-teal" style="font-size:10px;">${activeCount}/${colItems.length} ACTIVE</span>
+                  <button type="button" class="btn-adm-primary" style="padding:2px 8px; font-size:10.5px;" onclick="openAddSubmenuModal(${menuIdx}, ${colIdx})" title="Add item to this column">➕ Add</button>
                 </div>
               </div>
-            `;
-          });
+
+              <!-- Submenu Items in this Column -->
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                ${colItems.length === 0 ? '<div style="color:#64748b; font-size:11px; padding:8px; text-align:center;">No items in this column.</div>' : ''}
+                ${colItems.map((sub, subIdx) => {
+                  const isActive = sub.active !== false;
+
+                  return `
+                    <div class="sub-item-card" style="background:${isActive ? '#0b1329' : 'rgba(15,23,42,0.45)'}; border:1px solid ${isActive ? 'rgba(255,255,255,0.08)' : 'rgba(239,68,68,0.3)'}; opacity:${isActive ? '1' : '0.65'}; border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:6px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-weight:700; font-size:12.5px; color:#f8fafc; display:flex; align-items:center; gap:6px;">
+                          <span style="font-size:15px;">${escapeHtml(sub.icon || '⚡')}</span>
+                          <span>${escapeHtml(sub.title || 'Untitled')}</span>
+                          <span class="p2-badge ${isActive ? 'p2-badge-teal' : 'p2-badge-rose'}" style="font-size:9px; padding:1px 5px;">${isActive ? 'VISIBLE' : 'DISABLED'}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:3px;">
+                          <!-- Visibility Toggle -->
+                          <button type="button" class="seo-pill-btn" style="padding:2px 6px; font-size:10px; ${!isActive ? 'color:#ef4444;' : ''}" onclick="toggleSubmenuActive(${menuIdx}, ${colIdx}, ${subIdx})" title="${isActive ? 'Click to Disable / Hide' : 'Click to Enable / Show'}">
+                            ${isActive ? '👁️' : '🚫'}
+                          </button>
+                          <!-- Switch Column -->
+                          ${isOtherColAvailable ? `
+                            <button type="button" class="seo-pill-btn" style="padding:2px 6px; font-size:10px; color:#38bdf8;" onclick="switchSubmenuColumn(${menuIdx}, ${colIdx}, ${subIdx})" title="Move to Column ${otherColNum}">
+                              ⇄ Col ${otherColNum}
+                            </button>
+                          ` : ''}
+                          <!-- Move Up/Down -->
+                          <button type="button" class="seo-pill-btn" style="padding:2px 5px; font-size:10px;" onclick="moveSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx}, -1)" ${subIdx === 0 ? 'disabled' : ''} title="Move Up">⬆</button>
+                          <button type="button" class="seo-pill-btn" style="padding:2px 5px; font-size:10px;" onclick="moveSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx}, 1)" ${subIdx === colItems.length - 1 ? 'disabled' : ''} title="Move Down">⬇</button>
+                          <!-- Edit & Delete -->
+                          <button type="button" class="btn-adm-primary" style="padding:2px 6px; font-size:10px;" onclick="editSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx})" title="Edit Submenu">✏️</button>
+                          <button type="button" class="btn-adm-danger" style="padding:2px 6px; font-size:10px;" onclick="deleteSubmenuItem(${menuIdx}, ${colIdx}, ${subIdx})" title="Delete Submenu">🗑️</button>
+                        </div>
+                      </div>
+                      ${sub.sub ? `<div style="font-size:11px; color:#94a3b8; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(sub.sub)}</div>` : ''}
+                      <div style="display:flex; justify-content:space-between; align-items:center; font-size:10.5px; font-family:monospace; color:#38bdf8; border-top:1px solid rgba(255,255,255,0.04); padding-top:4px;">
+                        <span>${escapeHtml(sub.url || '#')}</span>
+                        ${sub.badge ? `<span class="p2-badge p2-badge-${sub.badgeColor || 'teal'}" style="font-size:9px; padding:1px 5px;">${escapeHtml(sub.badge)}</span>` : ''}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
         });
-        return cardsHtml || '<div style="color:var(--adm-muted); font-size:12px; grid-column:1/-1; padding:10px 0;">No submenu items yet. Click "Add Submenu Item".</div>';
+
+        return html;
       }
 
       function moveSubmenuItem(mIdx, cIdx, sIdx, dir) {

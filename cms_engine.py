@@ -215,17 +215,22 @@ def render_navigation_html(current_path: str = "/") -> str:
             out.append('    <span class="inst-nav-arrow">▾</span>')
             out.append('  </a>')
 
-            # Render Dropdown Columns
-            columns = item.get("columns", [])
-            col_class = "inst-dropdown-md" if len(columns) >= 2 else "inst-dropdown-sm"
-            out.append(f'  <div class="inst-dropdown {col_class}">')
-            for col in columns:
+            # Render Dropdown Columns (Systematic Zero-Empty-Space Filter)
+            raw_columns = item.get("columns", [])
+            active_columns = []
+            for col in raw_columns:
+                active_subs = [sub for sub in col.get("items", []) if sub.get("active", True)]
+                if active_subs:
+                    active_columns.append((col, active_subs))
+
+            col_class = "inst-dropdown-md" if len(active_columns) >= 2 else "inst-dropdown-sm"
+            is_single = " is-single-col" if len(active_columns) == 1 else ""
+            out.append(f'  <div class="inst-dropdown {col_class}{is_single}">')
+            for col, active_subs in active_columns:
                 out.append('    <div class="inst-dropdown-col">')
                 if col.get("header"):
                     out.append(f'      <span class="inst-dropdown-header">{html.escape(col["header"])}</span>')
-                for sub in col.get("items", []):
-                    if not sub.get("active", True):
-                        continue
+                for sub in active_subs:
                     flag_attr = f' data-feature-flag="{html.escape(sub["featureFlag"])}"' if sub.get("featureFlag") else ""
                     sub_badge_html = f'<span class="p2-badge p2-badge-{sub.get("badgeColor","teal")}" style="margin-left:4px;">{html.escape(sub["badge"])}</span>' if sub.get("badge") else ""
                     out.append(f'      <a href="{html.escape(sub.get("url","#"))}" class="inst-dd-item"{flag_attr}>')

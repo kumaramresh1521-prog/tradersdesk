@@ -5,7 +5,7 @@
       "id": "nav_dashboard",
       "label": "Dashboard",
       "url": "/",
-      "icon": "⬛",
+      "icon": "\u2b1b",
       "hasDropdown": false,
       "badge": "",
       "badgeColor": "",
@@ -15,21 +15,21 @@
       "id": "nav_futures",
       "label": "Futures Dashboard",
       "url": "/futures",
-      "icon": "📈",
+      "icon": "\ud83d\udcc8",
       "hasDropdown": true,
       "badge": "",
       "badgeColor": "",
       "active": true,
       "columns": [
         {
-          "header": "📊 Trading & Open Interest",
+          "header": "\ud83d\udcca Trading & Open Interest",
           "items": [
             {
               "id": "sub_fut_marketwatch",
               "title": "Future Marketwatch",
               "subtitle": "Active contracts matrix, LTP, OI & volume leaders",
               "url": "/futures",
-              "icon": "📊",
+              "icon": "\ud83d\udcca",
               "badge": "",
               "badgeColor": "",
               "active": true
@@ -39,44 +39,17 @@
               "title": "Future Open Interest",
               "subtitle": "Multi-panel EOD & Live chart, delivery % & option chain",
               "url": "/futures/open-interest",
-              "icon": "📈",
+              "icon": "\ud83d\udcc8",
               "badge": "PRO",
               "badgeColor": "teal",
               "active": true
             },
             {
-              "id": "sub_fut_intraday",
-              "title": "Future Intraday",
-              "subtitle": "5-Min Price vs OI divergence, VWAP & Basis (7 Indices)",
-              "url": "/futures/future-intraday",
-              "icon": "⚡",
-              "badge": "LIVE",
-              "badgeColor": "teal",
-              "featureFlag": "futures_future_intraday",
-              "active": false
-            },
-            {
-              "id": "sub_fut_vsoi",
-              "title": "Future vs Open Interest",
-              "subtitle": "Dual-axis divergence analysis & historical replay engine",
-              "url": "/futures/future-vs-oi",
-              "icon": "🎯",
-              "badge": "PRO",
-              "badgeColor": "teal",
-              "featureFlag": "futures_future_vs_oi",
-              "active": false
-            }
-          ]
-        },
-        {
-          "header": "⚡ Market Structure & Risk",
-          "items": [
-            {
               "id": "sub_fut_buildup",
               "title": "Buildup Quadrants",
               "subtitle": "Long/short buildup & institutional unwinding flows",
               "url": "/futures/buildup",
-              "icon": "🧭",
+              "icon": "\ud83e\udded",
               "badge": "",
               "badgeColor": "",
               "active": true
@@ -86,17 +59,33 @@
               "title": "Futures Heatmap",
               "subtitle": "Sectoral visual heat & momentum distribution map",
               "url": "/futures/heatmap",
-              "icon": "🗺️",
+              "icon": "\ud83d\uddfa\ufe0f",
               "badge": "",
               "badgeColor": "",
               "active": true
             },
             {
+              "id": "sub_fut_intraday",
+              "title": "Future Intraday",
+              "subtitle": "5-Min Price vs OI divergence, VWAP & Basis (7 Indices)",
+              "url": "/futures/future-intraday",
+              "icon": "\u26a1",
+              "badge": "LIVE",
+              "badgeColor": "teal",
+              "featureFlag": "futures_future_intraday",
+              "active": false
+            }
+          ]
+        },
+        {
+          "header": "\u26a1 Market Structure & Risk",
+          "items": [
+            {
               "id": "sub_fut_indices",
               "title": "Index Term Structure",
               "subtitle": "Cash-futures basis, cost of carry & term curve",
               "url": "/futures/indices",
-              "icon": "📐",
+              "icon": "\ud83d\udcd0",
               "badge": "",
               "badgeColor": "",
               "active": true
@@ -106,7 +95,7 @@
               "title": "MWPL & Ban Radar",
               "subtitle": "Market-Wide Position Limit tracker & ban alerts",
               "url": "/futures/mwpl",
-              "icon": "🚫",
+              "icon": "\ud83d\udeab",
               "badge": "",
               "badgeColor": "",
               "active": true
@@ -116,10 +105,21 @@
               "title": "Futures Rollover Matrix",
               "subtitle": "Expiry rollover %, 3M/6M averages & historical velocity",
               "url": "/futures/rollover",
-              "icon": "🔄",
+              "icon": "\ud83d\udd04",
               "badge": "PRO",
               "badgeColor": "teal",
               "active": true
+            },
+            {
+              "id": "sub_fut_vsoi",
+              "title": "Future vs Open Interest",
+              "subtitle": "Dual-axis divergence analysis & historical replay engine",
+              "url": "/futures/future-vs-oi",
+              "icon": "\ud83c\udfaf",
+              "badge": "PRO",
+              "badgeColor": "teal",
+              "featureFlag": "futures_future_vs_oi",
+              "active": false
             }
           ]
         }
@@ -129,7 +129,7 @@
       "id": "nav_options",
       "label": "Options",
       "url": "/option-chain-pro",
-      "icon": "⚡",
+      "icon": "\u26a1",
       "hasDropdown": true,
       "badge": "",
       "badgeColor": "",
@@ -137,14 +137,14 @@
       "active": true,
       "columns": [
         {
-          "header": "⚡ Option Chains & OI Analytics",
+          "header": "\u26a1 Option Chains & OI Analytics",
           "items": [
             {
               "id": "sub_opt_chain",
               "title": "Option Chain Pro",
               "subtitle": "Live multi-broker chain, Greeks, PCR & IV skew",
               "url": "/option-chain-pro",
-              "icon": "⚡",
+              "icon": "\u26a1",
               "badge": "PRO",
               "badgeColor": "teal",
               "active": true
@@ -154,7 +154,7 @@
               "title": "Open Interest Analysis",
               "subtitle": "Live Call vs Put distribution, PCR & Max Pain strike",
               "url": "/open-interest/nifty",
-              "icon": "📊",
+              "icon": "\ud83d\udcca",
               "badge": "OI",
               "badgeColor": "blue",
               "active": true
@@ -164,7 +164,7 @@
               "title": "Breadth & Net Contribution",
               "subtitle": "Intraday breadth advance/decline & stock point impact",
               "url": "/breadth-contribution",
-              "icon": "⚖️",
+              "icon": "\u2696\ufe0f",
               "badge": "LIVE",
               "badgeColor": "cyan",
               "active": true
@@ -172,14 +172,14 @@
           ]
         },
         {
-          "header": "📉 Premium Decay & Strategies",
+          "header": "\ud83d\udcc9 Premium Decay & Strategies",
           "items": [
             {
               "id": "sub_opt_straddle",
               "title": "ATM Straddle",
               "subtitle": "Live combined CE+PE premium decay & synthetic curve",
               "url": "/straddle",
-              "icon": "📉",
+              "icon": "\ud83d\udcc9",
               "badge": "",
               "badgeColor": "",
               "active": true
@@ -189,7 +189,7 @@
               "title": "Premium Decay",
               "subtitle": "Intraday theta erosion, IV crush & leg breakdown chart",
               "url": "/premium-decay",
-              "icon": "🔻",
+              "icon": "\ud83d\udd3b",
               "badge": "NEW",
               "badgeColor": "orange",
               "active": true
@@ -199,7 +199,7 @@
               "title": "Call vs Put Premium",
               "subtitle": "Live CE vs PE comparison, decay skew & imbalance",
               "url": "/call-vs-put-premium",
-              "icon": "⚔️",
+              "icon": "\u2694\ufe0f",
               "badge": "NEW",
               "badgeColor": "cyan",
               "active": true
@@ -212,7 +212,7 @@
       "id": "nav_charts",
       "label": "Charts",
       "url": "/chart",
-      "icon": "📈",
+      "icon": "\ud83d\udcc8",
       "hasDropdown": false,
       "badge": "PRO",
       "badgeColor": "teal",
@@ -222,7 +222,7 @@
       "id": "nav_fiidii",
       "label": "FII / DII Desk",
       "url": "/fii-dii",
-      "icon": "🏛️",
+      "icon": "\ud83c\udfdb\ufe0f",
       "hasDropdown": true,
       "badge": "",
       "badgeColor": "",
@@ -236,7 +236,7 @@
               "title": "FII / DII Cash Market",
               "subtitle": "Daily net buy/sell flow, monthly & yearly trends",
               "url": "/fii-dii",
-              "icon": "💵",
+              "icon": "\ud83d\udcb5",
               "badge": "",
               "badgeColor": "",
               "active": true
@@ -246,7 +246,7 @@
               "title": "FII / DII Derivatives",
               "subtitle": "Index futures, options OI & participant positioning",
               "url": "/fii-dii",
-              "icon": "⚡",
+              "icon": "\u26a1",
               "badge": "F&O",
               "badgeColor": "teal",
               "active": true
@@ -256,7 +256,7 @@
               "title": "Participant OI Matrix",
               "subtitle": "Client, DII, FII & Pro net contract positioning matrix",
               "url": "/fii-dii#oi",
-              "icon": "📊",
+              "icon": "\ud83d\udcca",
               "badge": "",
               "badgeColor": "",
               "active": true
@@ -269,7 +269,7 @@
       "id": "nav_delivery",
       "label": "Delivery Desk",
       "url": "/delivery",
-      "icon": "📦",
+      "icon": "\ud83d\udce6",
       "hasDropdown": false,
       "badge": "",
       "badgeColor": "",
@@ -279,7 +279,7 @@
       "id": "nav_mtf",
       "label": "MTF Desk",
       "url": "/mtf",
-      "icon": "💳",
+      "icon": "\ud83d\udcb3",
       "hasDropdown": false,
       "badge": "",
       "badgeColor": "",
@@ -289,7 +289,7 @@
       "id": "nav_blog",
       "label": "Market Insights",
       "url": "/blog",
-      "icon": "✍️",
+      "icon": "\u270d\ufe0f",
       "hasDropdown": false,
       "badge": "NEW",
       "badgeColor": "teal",
