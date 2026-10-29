@@ -24558,3 +24558,160 @@ a.inst-dd-item[data-feature-flag].feature-active {
 a.fut-tab-btn[data-feature-flag].feature-active {
   display: inline-flex !important;
 }
+
+
+/* ============================================================
+   MOBILE NAV FIX — All changes strictly inside max-width: 860px
+   ============================================================ */
+
+@media (max-width: 860px) {
+  /* ── MOBILE NAV FIX: Hide horizontal nav row below logo ──
+     The 6-dot hamburger Menu button in the header handles
+     all navigation on mobile. The desktop nav row is redundant.
+  */
+  .inst-nav,
+  nav.inst-nav,
+  #mainInstNav,
+  .inst-nav-row {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* ── Mobile Search Center Button — subtle highlight ── */
+  .mob-nav-search-center {
+    position: relative;
+  }
+  .mob-nav-search-center .mob-nav-icon {
+    font-size: 22px !important;
+  }
+  .mob-nav-search-center:hover,
+  .mob-nav-search-center.active {
+    color: #38bdf8 !important;
+  }
+
+  /* ── Mobile Global Search Modal — Full Screen Optimized ── */
+  .gsearch-modal-backdrop {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+    align-items: flex-start !important;
+    background: rgba(8, 12, 22, 0.92) !important;
+  }
+
+  .gsearch-modal-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Search Input Row — Large & Easy to Tap ── */
+  .gsearch-input-wrap {
+    padding: 14px 16px !important;
+    gap: 10px !important;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+    min-height: 60px;
+  }
+
+  .gsearch-modal-input {
+    font-size: 16px !important;   /* Prevents iOS auto-zoom on focus */
+    font-weight: 500 !important;
+    height: 44px !important;
+    line-height: 44px !important;
+  }
+
+  .gsearch-input-icon {
+    font-size: 20px !important;
+  }
+
+  /* ── ESC badge replaced by visible Close text on mobile ── */
+  .gsearch-esc-badge {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 0 10px !important;
+  }
+  .gsearch-esc-badge kbd {
+    font-size: 12px !important;
+    padding: 3px 8px !important;
+    background: transparent !important;
+    border: none !important;
+    color: #94a3b8 !important;
+    font-family: inherit !important;
+  }
+  .gsearch-esc-badge::after {
+    content: "Close";
+    font-size: 12px;
+    color: #94a3b8;
+    margin-left: 4px;
+  }
+
+  /* ── Filter Pills — Horizontally Scrollable ── */
+  .gsearch-filter-pills {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 6px !important;
+    padding: 10px 14px !important;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .gsearch-filter-pills::-webkit-scrollbar {
+    display: none;
+  }
+  .gsearch-pill {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    min-height: 36px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+    border-radius: 20px !important;
+  }
+
+  /* ── Results List — Full Remaining Height, Large Tap Targets ── */
+  .gsearch-results-list {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 8px 0 !important;
+  }
+
+  /* Larger tap targets for result rows */
+  .gsearch-item-row {
+    padding: 12px 16px !important;
+    min-height: 56px !important;
+  }
+
+  /* ── Footer — Hidden on mobile to save space ── */
+  .gsearch-modal-footer {
+    display: none !important;
+  }
+
+  /* ── Empty State ── */
+  .gsearch-empty-state {
+    padding: 40px 20px !important;
+    text-align: center;
+  }
+
+  /* Quick action buttons in results — larger on mobile */
+  .gs-action-btn {
+    min-height: 36px !important;
+    min-width: 36px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+}
