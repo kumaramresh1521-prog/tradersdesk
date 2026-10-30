@@ -57,6 +57,10 @@
   }
   </script>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/styles.css?v=20261027_v1">
   <link rel="stylesheet" href="/page2.css?v=20261027_v1">
   <script src="/security_shield.js"></script>
     <style id="ffCriticalStyle">
@@ -75,6 +79,14 @@
       a.fut-tab-btn[data-feature-flag].feature-active {
         display: inline-flex !important;
       }
+      .dot-sub-item[data-feature-flag],
+      a.dot-sub-item[data-feature-flag] {
+        display: none !important;
+      }
+      .dot-sub-item[data-feature-flag].feature-active,
+      a.dot-sub-item[data-feature-flag].feature-active {
+        display: flex !important;
+      }
     </style>
 </head>
 <body class="page2-body">
@@ -82,18 +94,43 @@
   <!-- ====================================================================
        TOP MAIN NAVIGATION BAR
        ==================================================================== -->
-    <header class="page2-header">
+    <header class="inst-header page2-header" id="instTopHeader">
     <!-- Brand Bar with Official TradersDesk Logo -->
     <div class="inst-brand-bar">
       <div class="inst-brand-left">
-        <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in - Institutional Quant &amp; Derivatives Terminal">
-          <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px; width:auto;" onerror="this.style.display='none'; document.getElementById('p2BrandFallback').style.display='inline-flex';" />
-          <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px; width:auto;" onerror="this.style.display='none'; document.getElementById('p2BrandFallback').style.display='inline-flex';" />
-          <div class="inst-brand-fallback-text" id="p2BrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
-            <span class="fallback-traders" style="color:#ffffff;">Traders</span><span class="fallback-desk" style="color:#38bdf8;">Desk</span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
+        <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in — Institutional Quant &amp; Derivatives Terminal">
+          <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <div class="inst-brand-fallback-text" id="instBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
+            <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk<svg style="width:13px; height:13px; vertical-align:middle; transform:translateY(-2px); margin-left:-1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg></span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
           </div>
         </a>
+        <div class="inst-terminal-tag">
+          <span class="inst-tag-pulse"></span>
+          <span class="inst-tag-text">QUANT TERMINAL</span>
+        </div>
       </div>
+
+      <!-- Center-Left: Global Search & Multi-Desk Jump Trigger (Ctrl+K or /) -->
+      <div class="inst-global-search-trigger" id="globalSearchTrigger" onclick="openGlobalSearch()" title="Global Search: Jump anywhere to Option Chain, Delivery, MTF, Futures (Ctrl+K or /)">
+        <span class="gsearch-icon">🔍</span>
+        <span class="gsearch-text">Search any Stock or Index (e.g. RELIANCE, NIFTY 50)...</span>
+        <div class="gsearch-kbd"><kbd>Ctrl</kbd><kbd>K</kbd></div>
+      </div>
+
+      <!-- Center: Live Indian Market Clock & Session Status -->
+      <div class="inst-market-clock-wrap" id="topMarketClockWrap">
+        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE / BSE Regular Trading Session (09:15 - 15:40 IST)">
+          <span class="market-dot" id="marketDot"></span>
+          <span id="marketStatusText">NSE LIVE</span>
+        </div>
+        <div class="inst-clock-pill" title="Indian Standard Time (IST)">
+          <span class="clock-icon">🕒</span>
+          <span id="instLiveClock" class="clock-digits">--:--:-- IST</span>
+        </div>
+      </div>
+
+      <!-- Right: System Health, Dot Menu, Theme Toggle -->
       <div class="inst-right-controls">
         <button id="mobileDotMenuBtn" type="button" class="inst-dot-menu-btn" onclick="openMobileDotMenu()" aria-label="Open All Navigation &amp; Desks" title="All Desks &amp; Menus">
           <svg class="dot-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -106,8 +143,11 @@
           </svg>
           <span class="dot-menu-label">Menu</span>
         </button>
-        <button id="themeToggleBtn" type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
-          <span class="theme-icon">🌓</span>
+
+        <div class="status inst-api-status" id="apiStatus" title="Broker Gateway Connection State">Connected</div>
+        <button id="themeToggleBtn" type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark / Light Theme">
+          <span id="themeToggleIcon">🌙</span>
+          <span class="theme-btn-text" id="themeToggleText">Dark</span>
         </button>
       </div>
     </div>
@@ -1209,7 +1249,7 @@
     </div>
   </main>
 
-  <script src="/page2.js?v=20261027_v1"></script>
+  
     <!-- ================================================================
          6-DOT APP LAUNCHER: ALL DESKS, MENUS & SUBMENUS MODAL
          ================================================================ -->
@@ -1345,7 +1385,7 @@
               <span class="p2-badge p2-badge-teal" style="font-size:10px;">F&amp;O</span>
             </div>
             <div class="dot-sub-grid">
-              <!-- Sub 1 -->
+              <!-- Sub 1: Future Marketwatch -->
               <a href="/futures" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'matrix')">
                 <span class="dot-sub-icon">📈</span>
                 <div class="dot-sub-text">
@@ -1353,15 +1393,31 @@
                   <div class="dot-sub-desc">Active contracts matrix, LTP, OI &amp; leaders</div>
                 </div>
               </a>
-              <!-- Sub 2 -->
-              <a href="/futures/indices" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'indices')">
+              <!-- Sub 2: Future Open Interest -->
+              <a href="/futures/open-interest" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'openInterest')">
                 <span class="dot-sub-icon">📊</span>
                 <div class="dot-sub-text">
-                  <div class="dot-sub-title">Future Index Term Structure</div>
-                  <div class="dot-sub-desc">Cash-futures basis, cost of carry &amp; curve</div>
+                  <div class="dot-sub-title">Future Open Interest <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">PRO</span></div>
+                  <div class="dot-sub-desc">Multi-panel EOD &amp; Live chart, delivery % &amp; chain</div>
                 </div>
               </a>
-              <!-- Sub 3 -->
+              <!-- Sub 3: Future Intraday Price vs OI -->
+              <a href="/futures/future-intraday" class="dot-sub-item" data-feature-flag="futures_future_intraday" onclick="return window.dotNavClick(event, 'futures', 'futureIntraday')">
+                <span class="dot-sub-icon">⚡</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future Intraday <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">LIVE</span></div>
+                  <div class="dot-sub-desc">5-Min Price vs OI divergence, VWAP &amp; Basis</div>
+                </div>
+              </a>
+              <!-- Sub 4: Future vs Open Interest -->
+              <a href="/futures/future-vs-oi" class="dot-sub-item" data-feature-flag="futures_future_vs_oi" onclick="return window.dotNavClick(event, 'futures', 'futureVsOi')">
+                <span class="dot-sub-icon">🎯</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future vs Open Interest <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">PRO</span></div>
+                  <div class="dot-sub-desc">Dual-axis divergence analysis &amp; historical replay</div>
+                </div>
+              </a>
+              <!-- Sub 5: Future Buildup -->
               <a href="/futures/buildup" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'buildup')">
                 <span class="dot-sub-icon">🔄</span>
                 <div class="dot-sub-text">
@@ -1369,7 +1425,7 @@
                   <div class="dot-sub-desc">Long/short buildup quadrants &amp; unwinding</div>
                 </div>
               </a>
-              <!-- Sub 4 -->
+              <!-- Sub 6: Future Heatmap -->
               <a href="/futures/heatmap" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'heatmap')">
                 <span class="dot-sub-icon">🗺️</span>
                 <div class="dot-sub-text">
@@ -1377,15 +1433,7 @@
                   <div class="dot-sub-desc">Sector visual heatmap &amp; momentum</div>
                 </div>
               </a>
-              <!-- Sub 5 -->
-              <a href="/futures/mwpl" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'mwpl')">
-                <span class="dot-sub-icon">🚫</span>
-                <div class="dot-sub-text">
-                  <div class="dot-sub-title">MWPL &amp; Ban Radar</div>
-                  <div class="dot-sub-desc">Market-wide limit tracker &amp; ban alerts</div>
-                </div>
-              </a>
-              <!-- Sub 6 -->
+              <!-- Sub 7: Futures Rollover Matrix -->
               <a href="/futures/rollover" class="dot-sub-item">
                 <span class="dot-sub-icon">📑</span>
                 <div class="dot-sub-text">
@@ -1561,5 +1609,119 @@
     <a class="mob-nav-item" href="/#delivery" title="Delivery"><span class="mob-nav-icon">&#128230;</span><span class="mob-nav-label">Delivery</span></a>
     <a class="mob-nav-item active" href="/blog" title="Market Insights"><span class="mob-nav-icon">&#128240;</span><span class="mob-nav-label">Insights</span></a>
   </nav>
-</body>
+    <div id="globalSearchModal" class="gsearch-modal-backdrop" style="display:none;" onclick="if(event.target===this) closeGlobalSearch();">
+      <div class="gsearch-modal-box">
+        <!-- Top Search Bar & Input -->
+        <div class="gsearch-input-wrap">
+          <span class="gsearch-input-icon">🔍</span>
+          <input type="text" id="globalSearchInput" class="gsearch-modal-input" placeholder="Search any Stock, Index, or Desk (e.g. RELIANCE, NIFTY 50, MTF)..." autocomplete="off" spellcheck="false" />
+          <button type="button" class="gsearch-clear-btn" id="globalSearchClearBtn" onclick="clearGlobalSearch()" title="Clear search" style="display:none;">&times;</button>
+          <div class="gsearch-esc-badge" onclick="closeGlobalSearch()" title="Close (Esc)"><kbd>ESC</kbd></div>
+        </div>
+
+        <!-- Quick Destination Preset Tabs -->
+        <div class="gsearch-filter-pills" id="gsearchFilterPills">
+          <button type="button" class="gsearch-pill active" data-filter="all" onclick="setGsearchFilter('all')">🌐 All Results</button>
+          <button type="button" class="gsearch-pill" data-filter="indices" onclick="setGsearchFilter('indices')">🏢 Indices</button>
+          <button type="button" class="gsearch-pill" data-filter="fno" onclick="setGsearchFilter('fno')">🔥 F&amp;O Equities</button>
+          <button type="button" class="gsearch-pill" data-filter="desks" onclick="setGsearchFilter('desks')">🧭 Platform Desks</button>
+        </div>
+
+        <!-- Results / Suggestions Scroll List -->
+        <div class="gsearch-results-list" id="globalSearchResults">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Bottom Keyboard Navigation Footer -->
+        <div class="gsearch-modal-footer">
+          <div class="gsearch-footer-shortcuts">
+            <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+            <span><kbd>Enter</kbd> Select Stock</span>
+            <span><kbd>⚡</kbd><kbd>📦</kbd><kbd>💳</kbd><kbd>📈</kbd> 1-Click Multi-Desk Jump</span>
+            <span><kbd>Esc</kbd> Close</span>
+          </div>
+          <div class="gsearch-footer-brand">TradersDesk Global Search</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         STOCK HUB CROSS-DESK DESTINATION MODAL (4 ACTION CARDS)
+         ================================================================ -->
+    <div id="globalStockHubModal" class="gsearch-hub-backdrop" style="display:none;" onclick="if(event.target===this) closeGlobalStockHub();">
+      <div class="gsearch-hub-box">
+        <div class="gsearch-hub-header">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <h2 id="gHubSymbol" style="margin:0; font-size:22px; font-weight:800; color:var(--text-primary); letter-spacing:-0.4px;">RELIANCE</h2>
+              <span id="gHubBadge" class="mta-badge mta-badge-fno">F&amp;O</span>
+              <span id="gHubSector" class="mta-badge" style="background:rgba(99,102,241,0.1); color:#6366f1; border:1px solid rgba(99,102,241,0.25);">Sector</span>
+            </div>
+            <div id="gHubName" style="font-size:12.5px; color:var(--text-muted); margin-top:3px;">Full Security Name</div>
+          </div>
+          <button type="button" class="gsearch-hub-close" onclick="closeGlobalStockHub()" aria-label="Close Hub">&times;</button>
+        </div>
+
+        <div class="gsearch-hub-metrics" id="gHubMetrics">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+          <span>🚀 Instant Multi-Desk Navigation</span>
+          <span style="font-weight:500; text-transform:none; font-size:10.5px; color:#64748b;">(Click any desk card below to jump immediately)</span>
+        </div>
+
+        <!-- 4 Big Distinct Action Destination Cards -->
+        <div class="gsearch-hub-cards-grid">
+          <!-- Card 1: Option Chain Pro -->
+          <div class="gsearch-hub-action-card opt-card" id="gHubOptCard" onclick="globalJumpToDesk('options', window._gHubActiveSymbol)">
+            <div class="ghub-card-top">
+              <span class="ghub-card-icon">⚡</span>
+              <span class="ghub-card-badge">OPTIONS PRO</span>
+            </div>
+            <div class="ghub-card-title">Option Chain Pro</div>
+            <div class="ghub-card-desc">Analyze live Black-Scholes Greeks (Delta, Theta, Gamma, Vega), PCR ratio, IV skew, strike OI &amp; open contracts.</div>
+            <button type="button" class="ghub-card-btn opt-btn">Open in Option Chain →</button>
+          </div>
+
+          <!-- Card 2: Delivery Desk -->
+          <div class="gsearch-hub-action-card deliv-card" id="gHubDelivCard" onclick="globalJumpToDesk('delivery', window._gHubActiveSymbol)">
+            <div class="ghub-card-top">
+              <span class="ghub-card-icon">📦</span>
+              <span class="ghub-card-badge">CASH DELIVERY</span>
+            </div>
+            <div class="ghub-card-title">Delivery Desk</div>
+            <div class="ghub-card-desc">Inspect security delivery absorption %, volume surge shocks (&gt;1.3x), accumulation vs distribution &amp; 40+ dates history.</div>
+            <button type="button" class="ghub-card-btn deliv-btn">Open in Delivery Desk →</button>
+          </div>
+
+          <!-- Card 3: MTF Leverage Desk -->
+          <div class="gsearch-hub-action-card mtf-card" id="gHubMtfCard" onclick="globalJumpToDesk('mtf', window._gHubActiveSymbol)">
+            <div class="ghub-card-top">
+              <span class="ghub-card-icon">💳</span>
+              <span class="ghub-card-badge">MARGIN DESK</span>
+            </div>
+            <div class="ghub-card-title">MTF Leverage Desk</div>
+            <div class="ghub-card-desc">Track Margin Trading Facility loan book, broker financed crore exposure, shares pledged &amp; daily fresh/liquidation delta.</div>
+            <button type="button" class="ghub-card-btn mtf-btn">Open in MTF Desk →</button>
+          </div>
+
+          <!-- Card 4: Futures Dashboard -->
+          <div class="gsearch-hub-action-card fut-card" id="gHubFutCard" onclick="globalJumpToDesk('futures', window._gHubActiveSymbol)">
+            <div class="ghub-card-top">
+              <span class="ghub-card-icon">📈</span>
+              <span class="ghub-card-badge">FUTURES DESK</span>
+            </div>
+            <div class="ghub-card-title">Futures Dashboard</div>
+            <div class="ghub-card-desc">Explore active contract LTP, premium/discount cash basis, cost of carry, long/short buildup quadrants &amp; MWPL ban limits.</div>
+            <button type="button" class="ghub-card-btn fut-btn">Open in Futures Matrix →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
+    <script src="/global_search.js?v=20261027_v1" defer></script>
+    <script src="/page2.js?v=20261027_v1" defer></script>
+  </body>
 </html>

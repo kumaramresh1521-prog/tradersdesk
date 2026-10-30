@@ -4653,3 +4653,178 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 });
+
+
+// ============================================================================
+// 🏛️ TRADERSDESK UNIFIED SYSTEM: FEATURE FLAGS, DYNAMIC FOOTER, LIVE CLOCK & THEME
+// ============================================================================
+
+// 1. Dynamic Feature Flags Sync (Admin Panel Control)
+window._featureFlags = window._featureFlags || {
+  futures_future_intraday: false,
+  futures_future_vs_oi: false
+};
+
+window.applyFeatureFlags = async function() {
+  try {
+    const res = await fetch('/api/feature-flags');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && data.flags) {
+      window._featureFlags = data.flags;
+      Object.keys(data.flags).forEach(flag => {
+        const isEnabled = Boolean(data.flags[flag]);
+        document.querySelectorAll(`[data-feature-flag="${flag}"]`).forEach(el => {
+          if (isEnabled) {
+            el.classList.add('feature-active');
+            el.style.removeProperty('display');
+          } else {
+            el.classList.remove('feature-active');
+            el.style.setProperty('display', 'none', 'important');
+          }
+        });
+      });
+    }
+  } catch (_) {}
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.applyFeatureFlags);
+} else {
+  window.applyFeatureFlags();
+}
+
+// 2. Dynamic 4-Column Footer Hydration (Admin Footer Builder)
+async function initDynamicFooter() {
+  const container = document.getElementById("footerFourColumnsGrid");
+  if (!container) return;
+  try {
+    const res = await fetch("/api/footer-links");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.columns) && data.columns.length === 4) {
+      const titleColors = { col1: "#38bdf8", col2: "#a78bfa", col3: "#34d399", col4: "#f59e0b" };
+      container.innerHTML = data.columns.map(col => {
+        const color = titleColors[col.id] || "var(--text-primary)";
+        return `
+          <div class="footer-link-group" data-col="${col.id}">
+            <h4 style="display:flex; align-items:center; gap:6px; color:${color}; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+              ${col.title}
+            </h4>
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+              ${(col.links || []).map(link => {
+                const targetAttr = link.target === "_blank" ? 'target="_blank" rel="noopener"' : '';
+                let clickHandler = '';
+                if (link.target === "_blank") {
+                  // external link
+                } else if (link.type === 'tab' || link.type === 'inst') {
+                  const targetStr = link.target || '';
+                  const parts = targetStr.split(':');
+                  const key = parts[0];
+                  const sub = parts[1] || '';
+                  clickHandler = `onclick="return navigateDesk('${key}', '${sub}', '${link.url}', event);"`;
+                } else if (link.url) {
+                  clickHandler = `onclick="return navigateDesk('', '', '${link.url}', event);"`;
+                }
+                return `<a href="${link.url}" ${targetAttr} ${clickHandler}>${link.label}</a>`;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  } catch (_) {}
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDynamicFooter);
+} else {
+  initDynamicFooter();
+}
+window.initDynamicFooter = initDynamicFooter;
+
+// 3. Desk Navigation Fallback for Links
+window.navigateDesk = function(targetKey, subview, explicitUrl, ev) {
+  if (ev && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button === 1)) {
+    return true;
+  }
+  if (ev && ev.preventDefault) ev.preventDefault();
+  if (explicitUrl) {
+    window.location.href = explicitUrl;
+    return false;
+  }
+  return true;
+};
+window.instNavClick = function(ev, deskKey, subview) {
+  return true;
+};
+
+// 4. Live Indian Market Clock & Session Status (09:15 - 15:40 IST)
+function updateLiveClock() {
+  const now = new Date();
+  const istOptions = { timeZone: "Asia/Kolkata", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" };
+  const clockEl = document.getElementById("instLiveClock");
+  if (clockEl) {
+    clockEl.textContent = now.toLocaleTimeString("en-GB", istOptions) + " IST";
+  }
+
+  // Market hours: Monday to Friday 09:15 - 15:40 IST
+  const istMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() + 330;
+  const day = now.getUTCDay();
+  const isWeekday = day >= 1 && day <= 5;
+  const isMarketHours = isWeekday && istMinutes >= (9 * 60 + 15) && istMinutes <= (15 * 60 + 40);
+
+  const pill = document.getElementById("topMarketStatusPill");
+  const txt = document.getElementById("marketStatusText");
+  if (pill && txt) {
+    if (isMarketHours) {
+      pill.className = "inst-market-pill open";
+      txt.textContent = "NSE LIVE";
+    } else {
+      pill.className = "inst-market-pill closed";
+      txt.textContent = "NSE CLOSED";
+    }
+  }
+}
+setInterval(updateLiveClock, 1000);
+updateLiveClock();
+
+// 5. Unified Dark / Light Theme Toggle & Auto-Restore
+window.toggleTheme = function() {
+  const current = document.documentElement.getAttribute("data-theme") || (document.body.classList.contains("theme-light") ? "light" : "dark");
+  const next = current === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  document.body.setAttribute("data-theme", next);
+  if (next === "light") {
+    document.body.classList.add("theme-light");
+  } else {
+    document.body.classList.remove("theme-light");
+  }
+  localStorage.setItem("breadth_theme", next);
+  const icon = document.getElementById("themeToggleIcon");
+  if (icon) icon.textContent = next === "dark" ? "☀️" : "🌙";
+  const txt = document.getElementById("themeToggleText");
+  if (txt) txt.textContent = next === "dark" ? "Light" : "Dark";
+
+  // Re-render active chart views on theme change
+  if (typeof renderCurrentStraddleChart === "function") renderCurrentStraddleChart();
+  if (typeof renderCurrentDecayChart === "function") renderCurrentDecayChart();
+  if (typeof renderCurrentCallVsPutChart === "function") renderCurrentCallVsPutChart();
+  if (typeof renderCurrentContributionChart === "function") renderCurrentContributionChart();
+};
+
+// Initial Theme Restore from LocalStorage
+(function initTheme() {
+  const saved = localStorage.getItem("breadth_theme") || "dark";
+  document.documentElement.setAttribute("data-theme", saved);
+  document.body.setAttribute("data-theme", saved);
+  if (saved === "light") {
+    document.body.classList.add("theme-light");
+  } else {
+    document.body.classList.remove("theme-light");
+  }
+  const icon = document.getElementById("themeToggleIcon");
+  if (icon) icon.textContent = saved === "dark" ? "☀️" : "🌙";
+  const txt = document.getElementById("themeToggleText");
+  if (txt) txt.textContent = saved === "dark" ? "Light" : "Dark";
+})();
