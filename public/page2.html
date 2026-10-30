@@ -441,7 +441,7 @@
         </div>
 
         <div class="straddle-ctrl-group">
-          <label for="straddleStrikeSelect">Strike</label>
+          <label for="straddleStrikeSelect">Strike <span class="strike-limit-hint">(ATM ± 5)</span></label>
           <select id="straddleStrikeSelect" class="page2-ctrl-select">
             <option value="atm" selected>ATM (Auto)</option>
           </select>
@@ -456,6 +456,12 @@
           <button id="straddleRefreshBtn" class="page2-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;" title="Refresh Straddle Chart">🔄 Refresh</button>
         </div>
       </div>
+    </div>
+
+    <!-- Strike Coverage Note for Straddle Desk -->
+    <div class="p2-strike-info-note" id="straddleStrikeInfoNote">
+      <span class="note-badge">📌 NOTE</span>
+      <span>Strike dropdown me <strong>ATM ke 5 strikes neeche aur 5 strikes upar (Kul 11 Strikes: ATM ± 5 Strikes)</strong> ka data available hai. Default roop se ATM selected rehta hai, lekin aap dropdown se kisi bhi strike ko chun kar uska combined CE+PE straddle decay aur synthetic future analyze kar sakte hain.</span>
     </div>
 
     <!-- Live Metrics Ribbon (FinanceDeft-style Strip) -->
@@ -629,7 +635,7 @@
           </div>
 
           <div class="straddle-ctrl-group">
-            <label for="decayStrikeSelect">Strike</label>
+            <label for="decayStrikeSelect">Strike <span class="strike-limit-hint">(ATM ± 5)</span></label>
             <select id="decayStrikeSelect" class="page2-ctrl-select">
               <option value="atm" selected>ATM (Auto)</option>
             </select>
@@ -644,6 +650,12 @@
             <button id="decayRefreshBtn" class="page2-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;" title="Refresh Premium Decay">🔄 Refresh</button>
           </div>
         </div>
+      </div>
+
+      <!-- Strike Coverage Note for Premium Decay -->
+      <div class="p2-strike-info-note" id="decayStrikeInfoNote">
+        <span class="note-badge">📌 NOTE</span>
+        <span>Strike dropdown me <strong>ATM ke 5 strikes neeche aur 5 strikes upar (Kul 11 Strikes: ATM ± 5 Strikes)</strong> ka data available hai. Default roop se ATM selected rehta hai, lekin aap dropdown se kisi bhi OTM/ITM strike ko chun kar uska live intraday premium decay aur theta erosion track kar sakte hain.</span>
       </div>
 
       <!-- Dedicated Premium Decay Metric Ribbon -->
@@ -786,7 +798,7 @@
           </div>
 
           <div class="straddle-ctrl-group">
-            <label for="cvpStrikeSelect">Strike</label>
+            <label for="cvpStrikeSelect">Strike <span class="strike-limit-hint">(ATM ± 5)</span></label>
             <select id="cvpStrikeSelect" class="page2-ctrl-select">
               <option value="atm" selected>ATM (Auto)</option>
             </select>
@@ -801,6 +813,12 @@
             <button id="cvpRefreshBtn" class="page2-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;" title="Refresh Call vs Put">🔄 Refresh</button>
           </div>
         </div>
+      </div>
+
+      <!-- Strike Coverage Note for Call vs Put -->
+      <div class="p2-strike-info-note" id="cvpStrikeInfoNote">
+        <span class="note-badge">📌 NOTE</span>
+        <span>Strike dropdown me <strong>ATM ke 5 strikes neeche aur 5 strikes upar (Kul 11 Strikes: ATM ± 5 Strikes)</strong> ka data available hai. Default roop se ATM selected rehta hai, lekin aap dropdown se kisi bhi strike ko chun kar Call (CE) vs Put (PE) premium divergence, spread curve aur institutional skew compare kar sakte hain.</span>
       </div>
 
       <!-- Dedicated Call vs Put Metric Ribbon -->
