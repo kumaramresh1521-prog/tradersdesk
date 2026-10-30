@@ -54,8 +54,8 @@ gcloud scheduler jobs create http tradersdesk-market-start \
     --time-zone="Asia/Kolkata" \
     --description="TradersDesk: Auto-wake Cloud Run at 9:00 AM IST for Market Open" \
     --uri="https://run.googleapis.com/v2/projects/${PROJECT_ID}/locations/${REGION}/services/${SERVICE_NAME}?updateMask=template.scaling.minInstanceCount" \
-    --http-method=PATCH \
-    --headers="Content-Type=application/json" \
+    --http-method=PUT \
+    --headers="Content-Type=application/json,X-HTTP-Method-Override=PATCH" \
     --message-body='{"template":{"scaling":{"minInstanceCount":1}}}' \
     --oauth-service-account-email="${SERVICE_ACCOUNT}" \
     --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
@@ -69,8 +69,8 @@ gcloud scheduler jobs create http tradersdesk-market-stop \
     --time-zone="Asia/Kolkata" \
     --description="TradersDesk: Auto-sleep Cloud Run at 3:45 PM IST for Market Close" \
     --uri="https://run.googleapis.com/v2/projects/${PROJECT_ID}/locations/${REGION}/services/${SERVICE_NAME}?updateMask=template.scaling.minInstanceCount" \
-    --http-method=PATCH \
-    --headers="Content-Type=application/json" \
+    --http-method=PUT \
+    --headers="Content-Type=application/json,X-HTTP-Method-Override=PATCH" \
     --message-body='{"template":{"scaling":{"minInstanceCount":0}}}' \
     --oauth-service-account-email="${SERVICE_ACCOUNT}" \
     --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
