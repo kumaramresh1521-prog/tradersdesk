@@ -11719,6 +11719,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 payload = self.read_body()
                 success = cms_engine.save_navigation(payload)
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if success else 500, {"ok": success, "message": "Navigation menu saved successfully" if success else "Failed saving navigation"})
 
             if parsed.path == "/api/admin/pages/save":
@@ -11726,6 +11728,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 payload = self.read_body()
                 success = cms_engine.save_page(payload)
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if success else 400, {"ok": success, "message": "Page saved successfully" if success else "Failed saving page (slug required)"})
 
             if parsed.path == "/api/admin/pages/delete":
@@ -11734,6 +11738,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 payload = self.read_body()
                 slug = payload.get("slug", "")
                 success = cms_engine.delete_page(slug)
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if success else 400, {"ok": success, "message": "Page deleted successfully" if success else "Failed deleting page"})
 
             if parsed.path == "/api/admin/blog/save":
@@ -11741,14 +11747,18 @@ class RequestHandler(BaseHTTPRequestHandler):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 payload = self.read_body()
                 success = cms_engine.save_post(payload)
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if success else 400, {"ok": success, "message": "Article saved successfully" if success else "Failed saving article"})
 
             if parsed.path == "/api/admin/blog/delete":
                 if not check_admin_request(self):
                     return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
                 payload = self.read_body()
-                post_id = payload.get("id", "")
+                post_id = payload.get("id") or payload.get("slug") or ""
                 success = cms_engine.delete_post(post_id)
+                with _SEO_HTML_CACHE_LOCK:
+                    _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if success else 400, {"ok": success, "message": "Article deleted successfully" if success else "Failed deleting article"})
 
             if parsed.path == "/api/admin/footer-links":
@@ -12069,6 +12079,19 @@ class RequestHandler(BaseHTTPRequestHandler):
             if data is None:
                 raw_html = file_path.read_text(encoding="utf-8")
                 injected_html = seo_engine.inject_seo_metadata(raw_html, req_path)
+                # Dynamically inject master navigation from cms_engine
+                try:
+                    dyn_nav_html = cms_engine.render_navigation_html(req_path)
+                    if '<nav class="inst-nav"' in injected_html:
+                        injected_html = re.sub(
+                            r'<nav class="inst-nav"[^>]*>.*?</nav>',
+                            lambda m: dyn_nav_html,
+                            injected_html,
+                            count=1,
+                            flags=re.DOTALL
+                        )
+                except Exception as nav_exc:
+                    print(f"[CMS] Dynamic navigation injection notice: {nav_exc}")
                 clean_rpath = req_path.rstrip("/")
                 if clean_rpath in ("/breadth-contribution", "/contribution"):
                     injected_html = injected_html.replace('id="p2SuiteStraddleBtn" class="page2-suite-btn active"', 'id="p2SuiteStraddleBtn" class="page2-suite-btn"')

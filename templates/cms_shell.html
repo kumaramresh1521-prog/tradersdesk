@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><!-- CMS_HEAD_TITLE --> | TradersDesk</title>
+  <meta name="description" content="<!-- CMS_META_DESC -->">
+  <!-- CMS_KEYWORDS -->
+  <meta name="robots" content="<!-- CMS_ROBOTS -->">
+  <link rel="canonical" href="<!-- CMS_CANONICAL -->">
+
+  <!-- Favicons Suite -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+  <!-- OpenGraph & Social Cards -->
+  <meta property="og:site_name" content="TradersDesk">
+  <meta property="og:title" content="<!-- CMS_HEAD_TITLE --> | TradersDesk">
+  <meta property="og:description" content="<!-- CMS_META_DESC -->">
+  <meta property="og:image" content="/og-image.png">
+  <meta property="og:type" content="<!-- CMS_OG_TYPE -->">
+  <meta property="og:url" content="<!-- CMS_CANONICAL -->">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<!-- CMS_HEAD_TITLE --> | TradersDesk">
+  <meta name="twitter:description" content="<!-- CMS_META_DESC -->">
+  <meta name="twitter:image" content="/og-image.png">
+
+  <!-- Schema.org Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FinancialService",
+    "name": "TradersDesk",
+    "url": "https://tradersdesk.in",
+    "logo": "https://tradersdesk.in/tradersdesk_header.svg",
+    "description": "Institutional Real-Time Stock Market Breadth, Option Chain Matrix & Algorithmic Derivatives Analytics Desk."
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/styles.css?v=20261027_v1">
+  <link rel="stylesheet" href="/page2.css?v=20261027_v1">
+  <script src="/security_shield.js"></script>
+
+  <style>
+    .cms-container {
+      max-width: 1080px;
+      margin: 32px auto;
+      padding: 0 20px;
+    }
+    .cms-card {
+      background: var(--p2-bg-card, #0c1220);
+      border: 1px solid var(--p2-border, rgba(255, 255, 255, 0.08));
+      border-radius: 14px;
+      padding: 36px 40px;
+      color: #cbd5e1;
+      line-height: 1.75;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    html[data-theme="light"] .cms-card {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      color: #334155;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+    .cms-h1 { font-size: 28px; font-weight: 800; color: #f8fafc; margin: 0 0 16px 0; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px; }
+    html[data-theme="light"] .cms-h1 { color: #0f172a; border-color: #e2e8f0; }
+    .cms-h2 { font-size: 20px; font-weight: 700; color: #38bdf8; margin: 28px 0 12px 0; }
+    .cms-h3 { font-size: 16px; font-weight: 700; color: #cbd5e1; margin: 20px 0 10px 0; }
+    html[data-theme="light"] .cms-h3 { color: #1e293b; }
+    .cms-p { font-size: 15px; color: #94a3b8; margin-bottom: 18px; line-height: 1.75; }
+    html[data-theme="light"] .cms-p { color: #475569; }
+    .cms-quote { border-left: 3px solid #38bdf8; background: rgba(56, 189, 248, 0.05); padding: 12px 18px; margin: 20px 0; border-radius: 0 8px 8px 0; font-style: italic; color: #38bdf8; }
+    .cms-divider { border: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 28px 0; }
+    .cms-list { padding-left: 20px; margin-bottom: 18px; }
+    .cms-list li { margin-bottom: 8px; font-size: 14.5px; color: #cbd5e1; }
+    html[data-theme="light"] .cms-list li { color: #334155; }
+    .cms-code-block { background: #030712; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 16px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #38bdf8; margin: 18px 0; }
+    .cms-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13.5px; }
+    .cms-table th { background: rgba(255, 255, 255, 0.04); text-align: left; padding: 10px 14px; border: 1px solid rgba(255, 255, 255, 0.08); color: #f8fafc; font-weight: 700; }
+    .cms-table td { padding: 10px 14px; border: 1px solid rgba(255, 255, 255, 0.08); color: #cbd5e1; }
+    .cms-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .blog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 28px; }
+    .blog-card { background: var(--p2-bg-card, #0c1220); border: 1px solid var(--p2-border, rgba(255, 255, 255, 0.08)); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s ease, border-color 0.2s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .blog-card:hover { transform: translateY(-3px); border-color: rgba(56, 189, 248, 0.5); }
+    html[data-theme="light"] .blog-card { background: #ffffff; border-color: #e2e8f0; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .blog-card-img { width: 100%; height: 190px; object-fit: cover; background: #040814; }
+    .blog-card-body { padding: 22px; display: flex; flex-direction: column; flex: 1; }
+    .blog-card-title { font-size: 17.5px; font-weight: 700; color: #f8fafc; margin: 10px 0; text-decoration: none; line-height: 1.4; }
+    html[data-theme="light"] .blog-card-title { color: #0f172a; }
+    .blog-card-title:hover { color: #38bdf8; }
+    .blog-card-excerpt { font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 18px; flex: 1; }
+    html[data-theme="light"] .blog-card-excerpt { color: #64748b; }
+    .blog-card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #64748b; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px; font-family: 'JetBrains Mono', monospace; }
+  </style>
+  <!-- CMS_CUSTOM_STYLE -->
+</head>
+<body class="page2-body">
+  <!-- CMS_DRAFT_BANNER -->
+
+  <!-- Unified Top Institutional Header -->
+  <header class="inst-header page2-header" id="instTopHeader">
+    <div class="inst-brand-bar">
+      <div class="inst-brand-left">
+        <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in — Institutional Quant &amp; Derivatives Terminal">
+          <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <div class="inst-brand-fallback-text" id="instBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
+            <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk<svg style="width:13px; height:13px; vertical-align:middle; transform:translateY(-2px); margin-left:-1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg></span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
+          </div>
+        </a>
+        <div class="inst-terminal-tag">
+          <span class="inst-tag-pulse"></span>
+          <span class="inst-tag-text">QUANT TERMINAL</span>
+        </div>
+      </div>
+
+      <!-- Center-Left: Global Search & Multi-Desk Jump Trigger (Ctrl+K or /) -->
+      <div class="inst-global-search-trigger" id="globalSearchTrigger" onclick="openGlobalSearch()" title="Global Search: Jump anywhere to Option Chain, Delivery, MTF, Futures (Ctrl+K or /)">
+        <span class="gsearch-icon">🔍</span>
+        <span class="gsearch-text">Search any Stock or Index (e.g. RELIANCE, NIFTY 50)...</span>
+        <div class="gsearch-kbd"><kbd>Ctrl</kbd><kbd>K</kbd></div>
+      </div>
+
+      <!-- Center: Live Indian Market Clock & Session Status -->
+      <div class="inst-market-clock-wrap" id="topMarketClockWrap">
+        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE / BSE Regular Trading Session (09:15 - 15:40 IST)">
+          <span class="market-dot" id="marketDot"></span>
+          <span id="marketStatusText">NSE LIVE</span>
+        </div>
+        <div class="inst-clock-pill" title="Indian Standard Time (IST)">
+          <span class="clock-icon">🕒</span>
+          <span id="instLiveClock" class="clock-digits">--:--:-- IST</span>
+        </div>
+      </div>
+
+      <!-- Right: Controls -->
+      <div class="inst-right-controls">
+        <button id="mobileDotMenuBtn" type="button" class="inst-dot-menu-btn" onclick="openMobileDotMenu()" aria-label="Open All Navigation &amp; Desks" title="All Desks &amp; Menus">
+          <svg class="dot-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="8" cy="5" r="2.2" />
+            <circle cx="16" cy="5" r="2.2" />
+            <circle cx="8" cy="12" r="2.2" />
+            <circle cx="16" cy="12" r="2.2" />
+            <circle cx="8" cy="19" r="2.2" />
+            <circle cx="16" cy="19" r="2.2" />
+          </svg>
+          <span class="dot-menu-label">Menu</span>
+        </button>
+
+        <div class="status inst-api-status" id="apiStatus">Connected</div>
+        <button id="themeToggleBtn" type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark / Light Theme">
+          <span id="themeToggleIcon">🌙</span>
+          <span class="theme-btn-text" id="themeToggleText">Dark</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Row 1: Institutional Mega-Menu Navigation -->
+    <div class="inst-nav-row">
+      <!-- CMS_NAV_HTML -->
+    </div>
+  </header>
+
+  <main class="cms-container">
+    <!-- CMS_BODY_CONTENT -->
+  </main>
+
+  <!-- Institutional Footer with Legal & Compliance Links (Strict 4-Column Layout) -->
+  <footer class="terminal-footer">
+    <div class="footer-four-columns" id="footerFourColumnsGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:24px; margin-bottom:30px;">
+      <div class="footer-link-group" data-col="col1">
+        <h4 style="display:flex; align-items:center; gap:6px; color:#38bdf8; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+          🏛️ Institutional Desks
+        </h4>
+        <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+          <a href="/breadth-contribution">Market Breadth &amp; Contribution</a>
+          <a href="/fii-dii">FII &amp; DII Smart Money</a>
+          <a href="/delivery">Cash Delivery Absorption</a>
+          <a href="/mtf">MTF Margin Trading Book</a>
+          <a href="/open-interest/nifty">Open Interest Desk</a>
+          <a href="/dashboard">Institutional Dashboard</a>
+        </div>
+      </div>
+      <div class="footer-link-group" data-col="col2">
+        <h4 style="display:flex; align-items:center; gap:6px; color:#a78bfa; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+          ⚡ Derivatives &amp; Options
+        </h4>
+        <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+          <a href="/option-chain-pro">Option Chain Pro</a>
+          <a href="/futures">Future Marketwatch Matrix</a>
+          <a href="/straddle">Straddle Analytics Engine</a>
+          <a href="/futures/buildup">Future Buildup Quadrants</a>
+          <a href="/futures/mwpl">MWPL &amp; Ban Radar</a>
+          <a href="/futures/rollover">Historical Rollover Matrix</a>
+        </div>
+      </div>
+      <div class="footer-link-group" data-col="col3">
+        <h4 style="display:flex; align-items:center; gap:6px; color:#34d399; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+          📊 Market Analytics &amp; Tools
+        </h4>
+        <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+          <a href="/breadth-contribution">Breadth &amp; Net Contribution</a>
+          <a href="/calendar_studio.html">Trading Holiday Calendar</a>
+          <a href="/chart">Interactive Quant Chart</a>
+          <a href="/premium-decay">Premium Decay Desk</a>
+          <a href="/call-vs-put-premium">Call vs Put Imbalance</a>
+          <a href="/futures/heatmap">Heatmap Radar</a>
+        </div>
+      </div>
+      <div class="footer-link-group" data-col="col4">
+        <h4 style="display:flex; align-items:center; gap:6px; color:#f59e0b; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+          ⚖️ Legal, Education &amp; Contact
+        </h4>
+        <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+          <a href="/about.html">About TradersDesk</a>
+          <a href="/contact.html">Institutional Contact</a>
+          <a href="/disclaimer.html">SEBI Regulatory Disclaimer</a>
+          <a href="/privacy.html">Privacy Policy &amp; Security</a>
+          <a href="/terms.html">Terms of Quantitative Service</a>
+          <a href="/trading-handbook">Quant Trading Handbook</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-sebi-notice">
+        <strong>SEBI Compliance Disclaimer:</strong> TradersDesk.in is a market data analytics, quantitative research, and educational platform. We are NOT registered with SEBI as an Investment Adviser or Research Analyst. The market data, indicators, heatmaps, option Greeks, and breadth metrics provided herein are strictly for analytical, quantitative study, and backtesting purposes only. They do not constitute financial advice, investment recommendations, or an offer to buy or sell securities. Trading in Equities, Derivatives (F&amp;O), and leveraged instruments involves substantial risk of capital loss. Users are solely responsible for their trading and investment decisions.
+      </div>
+      <div class="footer-copy-row">
+        <span>&copy; 2026 TradersDesk.in. All rights reserved across institutional financial datasets.</span>
+        <span>Build: Institutional Engine 4.2 &bull; High-Frequency Quant Feed</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Universal 6-Dot Mobile Drawer & Global Search Modals -->
+  <div id="mobileDotMenuModal" class="dot-menu-backdrop" style="display:none;" onclick="if(event.target===this) closeMobileDotMenu();">
+      <div class="dot-menu-sheet">
+        <!-- Header -->
+        <div class="dot-menu-header">
+          <div class="dot-menu-brand">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#38bdf8">
+              <circle cx="8" cy="5" r="2.2" />
+              <circle cx="16" cy="5" r="2.2" />
+              <circle cx="8" cy="12" r="2.2" />
+              <circle cx="16" cy="12" r="2.2" />
+              <circle cx="8" cy="19" r="2.2" />
+              <circle cx="16" cy="19" r="2.2" />
+            </svg>
+            <div class="dot-menu-header-text">
+              <div class="dot-menu-header-title">TradersDesk Directory</div>
+              <div class="dot-menu-header-subtitle">All Platform Desks &amp; Submenus</div>
+            </div>
+          </div>
+          <button type="button" class="dot-menu-close" onclick="closeMobileDotMenu()" aria-label="Close menu">&times;</button>
+        </div>
+
+        <!-- Quick Utilities Strip -->
+        <div class="dot-menu-quick-strip">
+          <button type="button" class="dot-menu-quick-btn" onclick="closeMobileDotMenu(); if(typeof openGlobalSearch==='function') openGlobalSearch();">
+            <span>🔍</span> <span>Search</span>
+          </button>
+          <button type="button" class="dot-menu-quick-btn" onclick="closeMobileDotMenu(); if(typeof loadDashboardData==='function'){loadDashboardData(true);}else{location.reload();}">
+            <span>🔄</span> <span>Refresh</span>
+          </button>
+          <button type="button" class="dot-menu-quick-btn" onclick="if(typeof toggleTheme==='function'){toggleTheme();}else if(typeof toggleP2Theme==='function'){toggleP2Theme();}">
+            <span>🌓</span> <span>Theme</span>
+          </button>
+        </div>
+
+        <!-- Scrollable Sections Container -->
+        <div class="dot-menu-content">
+
+          <!-- 1. DASHBOARD -->
+          <div class="dot-menu-section">
+            <a href="/" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'dashboard')">
+              <div class="dot-menu-item-left">
+                <span class="dot-menu-item-icon">📊</span>
+                <div>
+                  <div class="dot-menu-item-title">Dashboard Overview</div>
+                  <div class="dot-menu-item-desc">Live Market indices, Advance/Decline &amp; momentum movers</div>
+                </div>
+              </div>
+              <span class="dot-menu-arrow">→</span>
+            </a>
+          </div>
+
+          <!-- 2. FUTURES DASHBOARD WITH ALL 6 SUBMENUS -->
+          <div class="dot-menu-section" data-dot-section="futures">
+            <div class="dot-menu-section-header">
+              <span class="dot-section-icon">⚡</span>
+              <span class="dot-section-title">Futures Dashboard</span>
+              <span class="p2-badge p2-badge-teal" style="font-size:10px;">F&amp;O</span>
+            </div>
+            <div class="dot-sub-grid">
+              <!-- Sub 1: Future Marketwatch -->
+              <a href="/futures" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'matrix')">
+                <span class="dot-sub-icon">📈</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future Marketwatch</div>
+                  <div class="dot-sub-desc">Active contracts matrix, LTP, OI &amp; leaders</div>
+                </div>
+              </a>
+              <!-- Sub 2: Future Open Interest -->
+              <a href="/futures/open-interest" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'openInterest')">
+                <span class="dot-sub-icon">📊</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future Open Interest <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">PRO</span></div>
+                  <div class="dot-sub-desc">Multi-panel EOD &amp; Live chart, delivery % &amp; chain</div>
+                </div>
+              </a>
+              <!-- Sub 3: Future Intraday Price vs OI -->
+              <a href="/futures/future-intraday" class="dot-sub-item" data-feature-flag="futures_future_intraday" onclick="return window.dotNavClick(event, 'futures', 'futureIntraday')">
+                <span class="dot-sub-icon">⚡</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future Intraday <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">LIVE</span></div>
+                  <div class="dot-sub-desc">5-Min Price vs OI divergence, VWAP &amp; Basis</div>
+                </div>
+              </a>
+              <!-- Sub 4: Future vs Open Interest -->
+              <a href="/futures/future-vs-oi" class="dot-sub-item" data-feature-flag="futures_future_vs_oi" onclick="return window.dotNavClick(event, 'futures', 'futureVsOi')">
+                <span class="dot-sub-icon">🎯</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future vs Open Interest <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">PRO</span></div>
+                  <div class="dot-sub-desc">Dual-axis divergence analysis &amp; historical replay</div>
+                </div>
+              </a>
+              <!-- Sub 5: Future Buildup -->
+              <a href="/futures/buildup" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'buildup')">
+                <span class="dot-sub-icon">🔄</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future Buildup</div>
+                  <div class="dot-sub-desc">Long/short buildup quadrants &amp; unwinding</div>
+                </div>
+              </a>
+              <!-- Sub 6: Future Heatmap -->
+              <a href="/futures/heatmap" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'heatmap')">
+                <span class="dot-sub-icon">🗺️</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Future Heatmap</div>
+                  <div class="dot-sub-desc">Sector visual heatmap &amp; momentum</div>
+                </div>
+              </a>
+              <!-- Sub 7: Futures Rollover Matrix -->
+              <a href="/futures/rollover" class="dot-sub-item">
+                <span class="dot-sub-icon">📑</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Futures Rollover Matrix <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">PRO</span></div>
+                  <div class="dot-sub-desc">Historical rollover %, 3M/6M velocity</div>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- 3. OPTIONS DESK WITH SUBMENUS -->
+          <div class="dot-menu-section" data-dot-section="options">
+            <div class="dot-menu-section-header">
+              <span class="dot-section-icon">📈</span>
+              <span class="dot-section-title">Options Desk</span>
+              <span class="p2-badge p2-badge-cyan" style="font-size:10px;">GREEKS</span>
+            </div>
+            <div class="dot-sub-grid">
+              <!-- Sub 0: Technical Charts -->
+              <a href="/chart" class="dot-sub-item">
+                <span class="dot-sub-icon">📈</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Technical Charts <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">PRO</span></div>
+                  <div class="dot-sub-desc">Interactive TradingView candlesticks, indicators &amp; F&amp;O intel</div>
+                </div>
+              </a>
+              <!-- Sub 1: Open Interest Analysis -->
+              <a href="/open-interest/nifty" class="dot-sub-item">
+                <span class="dot-sub-icon">📊</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Open Interest Analysis <span class="p2-badge p2-badge-blue" style="font-size:9.5px; margin-left:3px;">OI</span></div>
+                  <div class="dot-sub-desc">Live Call vs Put distribution, PCR &amp; Max Pain</div>
+                </div>
+              </a>
+              <!-- Sub 2: Option Chain Pro -->
+              <a href="/option-chain-pro" class="dot-sub-item" onclick="return window.dotNavClick(event, 'options')">
+                <span class="dot-sub-icon">⚡</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Option Chain Pro</div>
+                  <div class="dot-sub-desc">Delta, Gamma, Theta, Vega, PCR &amp; Max Pain</div>
+                </div>
+              </a>
+              <!-- Sub 2 -->
+              <a href="/straddle" class="dot-sub-item" onclick="return window.dotNavClick(event, 'straddle')">
+                <span class="dot-sub-icon">📉</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">ATM Straddle Engine <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">LIVE</span></div>
+                  <div class="dot-sub-desc">Intraday decay curve &amp; premium dynamics</div>
+                </div>
+              </a>
+              <!-- Sub 2b: Premium Decay -->
+              <a href="/premium-decay" class="dot-sub-item" onclick="if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); if(window.activateSuite)activateSuite('premiumDecay'); return false;">
+                <span class="dot-sub-icon">🔻</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Premium Decay <span class="p2-badge p2-badge-orange" style="font-size:9.5px; margin-left:3px;">NEW</span></div>
+                  <div class="dot-sub-desc">Theta erosion &amp; IV crush intraday chart</div>
+                </div>
+              </a>
+              <!-- Sub 2c: Call vs Put Premium -->
+              <a href="/call-vs-put-premium" class="dot-sub-item" onclick="if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); if(window.activateSuite)activateSuite('callVsPut'); return false;">
+                <span class="dot-sub-icon">⚖️</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Call vs Put Premium <span class="p2-badge p2-badge-cyan" style="font-size:9.5px; margin-left:3px;">NEW</span></div>
+                  <div class="dot-sub-desc">Live CE vs PE leg comparison &amp; skew</div>
+                </div>
+              </a>
+              <!-- Sub 3 -->
+              <a href="/breadth-contribution" class="dot-sub-item" onclick="return window.dotNavClick(event, 'contribution')">
+                <span class="dot-sub-icon">⚖️</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Market Breadth &amp; Contribution</div>
+                  <div class="dot-sub-desc">Index point impact &amp; weighted distribution</div>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- 5. FII / DII DESK (WITH BOTH SUBMENUS) -->
+          <div class="dot-menu-section" data-dot-section="fiidii">
+            <div class="dot-menu-section-header">
+              <span class="dot-section-icon">🏦</span>
+              <span class="dot-section-title">FII / DII Desk</span>
+              <span class="p2-badge p2-badge-gold" style="font-size:10px;">SMART MONEY</span>
+            </div>
+            <div class="dot-sub-grid">
+              <!-- Sub 1 -->
+              <a href="/fii-dii" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'cash')">
+                <span class="dot-sub-icon">💵</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">FII / DII Cash Market</div>
+                  <div class="dot-sub-desc">Daily net buy/sell flow &amp; historical trend</div>
+                </div>
+              </a>
+              <!-- Sub 2 -->
+              <a href="/fii-dii" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'derivatives')">
+                <span class="dot-sub-icon">📊</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">FII / DII Derivatives <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">F&amp;O</span></div>
+                  <div class="dot-sub-desc">Index &amp; stock futures OI &amp; positioning</div>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- 6. DELIVERY DESK -->
+          <div class="dot-menu-section">
+            <a href="/delivery" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'delivery')">
+              <div class="dot-menu-item-left">
+                <span class="dot-menu-item-icon">📦</span>
+                <div>
+                  <div class="dot-menu-item-title">Cash Delivery Desk</div>
+                  <div class="dot-menu-item-desc">High-conviction institutional accumulation vs distribution</div>
+                </div>
+              </div>
+              <span class="dot-menu-arrow">→</span>
+            </a>
+          </div>
+
+          <!-- 7. MTF DESK -->
+          <div class="dot-menu-section">
+            <a href="/mtf" class="dot-menu-main-item" onclick="return window.dotNavClick(event, 'mtf')">
+              <div class="dot-menu-item-left">
+                <span class="dot-menu-item-icon">💳</span>
+                <div>
+                  <div class="dot-menu-item-title">MTF Margin Leverage Desk</div>
+                  <div class="dot-menu-item-desc">Margin Trading Facility loan book &amp; pledged equity exposure</div>
+                </div>
+              </div>
+              <span class="dot-menu-arrow">→</span>
+            </a>
+          </div>
+
+          <!-- 8. TOOLS & UTILITIES -->
+          <div class="dot-menu-section">
+            <div class="dot-menu-section-header">
+              <span class="dot-section-icon">🛠️</span>
+              <span class="dot-section-title">Tools &amp; Calculators</span>
+            </div>
+            <div class="dot-sub-grid">
+              <a href="/calendar-studio" class="dot-sub-item">
+                <span class="dot-sub-icon">📅</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Calendar Studio</div>
+                  <div class="dot-sub-desc">Interactive Calendar spread matrix</div>
+                </div>
+              </a>
+              <a href="/wpcr" class="dot-sub-item" onclick="return window.dotNavClick(event, 'wpcr')">
+                <span class="dot-sub-icon">🎯</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">WPCR Matrix</div>
+                  <div class="dot-sub-desc">Weighted Put-Call Ratio dynamics</div>
+                </div>
+              </a>
+              
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="dot-menu-footer">
+          <span>&copy; 2026 TradersDesk.in &bull; Institutional Quant Terminal</span>
+        </div>
+      </div>
+    </div>
+      <div id="globalSearchModal" class="gsearch-modal-backdrop" style="display:none;" onclick="if(event.target===this) closeGlobalSearch();">
+      <div class="gsearch-modal-box">
+        <!-- Top Search Bar & Input -->
+        <div class="gsearch-input-wrap">
+          <span class="gsearch-input-icon">🔍</span>
+          <input type="text" id="globalSearchInput" class="gsearch-modal-input" placeholder="Search any Stock, Index, or Desk (e.g. RELIANCE, NIFTY 50, MTF)..." autocomplete="off" spellcheck="false" />
+          <button type="button" class="gsearch-clear-btn" id="globalSearchClearBtn" onclick="clearGlobalSearch()" title="Clear search" style="display:none;">&times;</button>
+          <div class="gsearch-esc-badge" onclick="closeGlobalSearch()" title="Close (Esc)"><kbd>ESC</kbd></div>
+        </div>
+
+        <!-- Quick Destination Preset Tabs -->
+        <div class="gsearch-filter-pills" id="gsearchFilterPills">
+          <button type="button" class="gsearch-pill active" data-filter="all" onclick="setGsearchFilter('all')">🌐 All Results</button>
+          <button type="button" class="gsearch-pill" data-filter="indices" onclick="setGsearchFilter('indices')">🏢 Indices</button>
+          <button type="button" class="gsearch-pill" data-filter="fno" onclick="setGsearchFilter('fno')">🔥 F&amp;O Equities</button>
+          <button type="button" class="gsearch-pill" data-filter="desks" onclick="setGsearchFilter('desks')">🧭 Platform Desks</button>
+        </div>
+
+        <!-- Results / Suggestions Scroll List -->
+        <div class="gsearch-results-list" id="globalSearchResults">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Bottom Keyboard Navigation Footer -->
+        <div class="gsearch-modal-footer">
+          <div class="gsearch-footer-shortcuts">
+            <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+            <span><kbd>Enter</kbd> Select Stock</span>
+            <span><kbd>⚡</kbd><kbd>📦</kbd><kbd>💳</kbd><kbd>📈</kbd> 1-Click Multi-Desk Jump</span>
+            <span><kbd>Esc</kbd> Close</span>
+          </div>
+          <div class="gsearch-footer-brand">TradersDesk Global Search</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         STOCK HUB CROSS-DESK DESTINATION MODAL (4 ACTION CARDS)
+         ================================================================ -->
+    <div id="globalStockHubModal" class="gsearch-hub-backdrop" style="display:none;" onclick="if(event.target===this) closeGlobalStockHub();">
+      <div class="gsearch-hub-box">
+        <div class="gsearch-hub-header">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <h2 id="gHubSymbol" style="margin:0; font-size:22px; font-weight:800; color:var(--text-primary); letter-spacing:-0.4px;">RELIANCE</h2>
+              <span id="gHubBadge" class="mta-badge mta-badge-fno">F&amp;O</span>
+              <span id="gHubSector" class="mta-badge" style="background:rgba(99,102,241,0.1); color:#6366f1; border:1px solid rgba(99,102,241,0.25);">Sector</span>
+            </div>
+            <div id="gHubName" style="font-size:12.5px; color:var(--text-muted); margin-top:3px;">Full Security Name</div>
+          </div>
+          <button type="button" class="gsearch-hub-close" onclick="closeGlobalStockHub()" aria-label="Close Hub">&times;</button>
+        </div>
+
+        <div class="gsearch-hub-metrics" id="gHubMetrics">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div style="font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+          <span>🚀 Instant Multi-Desk Navigation</span>
+          <span style="font-weight:500; text-transform:none; font-size:10.5px; color:#64748b;">(Click any desk card below to jump immediately)</span>
+        </div>
+
+        <!-- 4 Big Distinct Action Destination Cards -->
+        <div class="gsearch-hub-cards-grid">
+          <!-- Card 1: Option Chain Pro -->
+          <div class="gsearch-hub-action-card opt-card" id="gHubOptCard" onclick="globalJumpToDesk('options', window._gHubActiveSymbol)">
+            <div class="ghub-card-top">
+              <span class="ghub-card-icon">⚡</span>
+              <span class="ghub-card-badge">OPTIONS PRO</span>
+            </div>
+            <div class="ghub-card-title">Option Chain Pro</div>
+            <div class="ghub-card-desc">Analyze live Black-Scholes Greeks (Delta, Theta, Gamma, Vega), PCR ratio, IV skew, strike OI &amp; open contracts.</div>
+            <button type="button" class="ghub-card-btn opt-btn">Open in Option Chain →</button>
+          </div>
+
+          <!-- Card 2: Delivery Desk -->
+          <div class="gsearch-hub-action-card deliv-card" id="gHubDelivCard" onclick="globalJumpToDesk('delivery', window._gHubActiveSymbol)">
+            <div class="ghub-card-top">
+              <span class="ghub-card-icon">📦</span>
+              <span class="ghub-card-badge">CASH DELIVERY</span>
+            </div>
+            <div class="ghub-card-title">Delivery Desk</div>
+            <div class="ghub-card-desc">Inspect security delivery absorption %, volume surge shocks (&gt;1.3x), accumulation vs distribution &amp; 40+ dates history.</div>
+            <button type="button" class="ghub-card-btn deliv-btn">Open in Delivery Desk →</button>
+          </div>
+
+          <!-- Card 3: MTF Leverage Desk -->
+          <div class="gsearch-hub-action-card mtf-card" id="gHubMtfCard" onclick="globalJumpToDesk('mtf', window._gHubActiveSymbol)">
+            <div class="ghub-card-top">
+              <span class="ghub-card-icon">💳</span>
+              <span class="ghub-card-badge">MARGIN DESK</span>
+            </div>
+            <div class="ghub-card-title">MTF Leverage Desk</div>
+            <div class="ghub-card-desc">Track Margin Trading Facility loan book, broker financed crore exposure, shares pledged &amp; daily fresh/liquidation delta.</div>
+            <button type="button" class="ghub-card-btn mtf-btn">Open in MTF Desk →</button>
+          </div>
+
+          <!-- Card 4: Futures Dashboard -->
+          <div class="gsearch-hub-action-card fut-card" id="gHubFutCard" onclick="globalJumpToDesk('futures', window._gHubActiveSymbol)">
+            <div class="ghub-card-top">
+              <span class="ghub-card-icon">📈</span>
+              <span class="ghub-card-badge">FUTURES DESK</span>
+            </div>
+            <div class="ghub-card-title">Futures Dashboard</div>
+            <div class="ghub-card-desc">Explore active contract LTP, premium/discount cash basis, cost of carry, long/short buildup quadrants &amp; MWPL ban limits.</div>
+            <button type="button" class="ghub-card-btn fut-btn">Open in Futures Matrix →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
+
+  <script src="/global_search.js?v=20261027_v1" defer></script>
+  <script src="/dynamic_nav.js?v=20261027_v1" defer></script>
+  <script>
+    // Live Market Clock
+    function updateLiveClock() {
+      const now = new Date();
+      const istOptions = { timeZone: "Asia/Kolkata", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" };
+      const clockEl = document.getElementById("instLiveClock");
+      if (clockEl) {
+        clockEl.textContent = now.toLocaleTimeString("en-GB", istOptions) + " IST";
+      }
+      const istMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() + 330;
+      const day = now.getUTCDay();
+      const isWeekday = day >= 1 && day <= 5;
+      const isMarketHours = isWeekday && istMinutes >= (9 * 60 + 15) && istMinutes <= (15 * 60 + 40);
+      const pill = document.getElementById("topMarketStatusPill");
+      const txt = document.getElementById("marketStatusText");
+      if (pill && txt) {
+        if (isMarketHours) {
+          pill.className = "inst-market-pill open";
+          txt.textContent = "NSE LIVE";
+        } else {
+          pill.className = "inst-market-pill closed";
+          txt.textContent = "NSE CLOSED";
+        }
+      }
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    // Theme Toggle
+    window.toggleTheme = function() {
+      const current = document.documentElement.getAttribute("data-theme") || (document.body.classList.contains("theme-light") ? "light" : "dark");
+      const next = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      document.body.setAttribute("data-theme", next);
+      if (next === "light") {
+        document.body.classList.add("theme-light");
+      } else {
+        document.body.classList.remove("theme-light");
+      }
+      localStorage.setItem("breadth_theme", next);
+      const icon = document.getElementById("themeToggleIcon");
+      if (icon) icon.textContent = next === "dark" ? "☀️" : "🌙";
+      const txt = document.getElementById("themeToggleText");
+      if (txt) txt.textContent = next === "dark" ? "Light" : "Dark";
+    };
+    (function initTheme() {
+      const saved = localStorage.getItem("breadth_theme") || "dark";
+      document.documentElement.setAttribute("data-theme", saved);
+      document.body.setAttribute("data-theme", saved);
+      if (saved === "light") {
+        document.body.classList.add("theme-light");
+      } else {
+        document.body.classList.remove("theme-light");
+      }
+      const icon = document.getElementById("themeToggleIcon");
+      if (icon) icon.textContent = saved === "dark" ? "☀️" : "🌙";
+      const txt = document.getElementById("themeToggleText");
+      if (txt) txt.textContent = saved === "dark" ? "Light" : "Dark";
+    })();
+
+    // Mobile Menu Controls
+    window.openMobileDotMenu = function() {
+      const m = document.getElementById("mobileDotMenuModal");
+      if (m) m.style.display = "flex";
+    };
+    window.closeMobileDotMenu = function() {
+      const m = document.getElementById("mobileDotMenuModal");
+      if (m) m.style.display = "none";
+    };
+
+    // Dynamic Footer Hydration
+    async function initDynamicFooter() {
+      const container = document.getElementById("footerFourColumnsGrid");
+      if (!container) return;
+      try {
+        const res = await fetch("/api/footer-links");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.columns) && data.columns.length === 4) {
+          const titleColors = { col1: "#38bdf8", col2: "#a78bfa", col3: "#34d399", col4: "#f59e0b" };
+          container.innerHTML = data.columns.map(col => {
+            const color = titleColors[col.id] || "var(--text-primary)";
+            return `
+              <div class="footer-link-group" data-col="${col.id}">
+                <h4 style="display:flex; align-items:center; gap:6px; color:${color}; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+                  ${col.title}
+                </h4>
+                <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+                  ${ (col.links || []).map(link => {
+                    const targetAttr = link.target === "_blank" ? 'target="_blank" rel="noopener"' : '';
+                    return `<a href="${link.url}" ${targetAttr}>${link.label}</a>`;
+                  }).join('') }
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (_) {}
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initDynamicFooter);
+    } else {
+      initDynamicFooter();
+    }
+  </script>
+</body>
+</html>

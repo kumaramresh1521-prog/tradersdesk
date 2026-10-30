@@ -150,7 +150,14 @@ def get_navigation() -> Dict[str, Any]:
             pass
     return {"updatedAt": datetime.utcnow().isoformat() + "Z", "items": []}
 
-def save_navigation(data: Dict[str, Any]) -> bool:
+def save_navigation(data: Any) -> bool:
+    if isinstance(data, list):
+        data = {"items": data}
+    elif isinstance(data, dict):
+        if "items" not in data and "navigation" in data and isinstance(data["navigation"], list):
+            data = {"items": data["navigation"]}
+    if not isinstance(data, dict):
+        data = {"items": []}
     data["updatedAt"] = datetime.utcnow().isoformat() + "Z"
     try:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -185,7 +192,7 @@ def render_navigation_html(current_path: str = "/") -> str:
         badge = item.get("badge", "")
         badge_color = item.get("badgeColor", "teal")
         is_highlight = item.get("highlight", False)
-        is_active = (current_path == url)
+        is_active = (current_path == url or (url != "/" and current_path.startswith(url)))
 
         btn_classes = ["inst-nav-btn"]
         if is_highlight:
@@ -233,13 +240,14 @@ def render_navigation_html(current_path: str = "/") -> str:
                 for sub in active_subs:
                     flag_attr = f' data-feature-flag="{html.escape(sub["featureFlag"])}"' if sub.get("featureFlag") else ""
                     sub_badge_html = f'<span class="p2-badge p2-badge-{sub.get("badgeColor","teal")}" style="margin-left:4px;">{html.escape(sub["badge"])}</span>' if sub.get("badge") else ""
+                    sub_desc = sub.get("subtitle") or sub.get("sub") or ""
                     out.append(f'      <a href="{html.escape(sub.get("url","#"))}" class="inst-dd-item"{flag_attr}>')
                     if sub.get("icon"):
                         out.append(f'        <span class="dd-icon">{html.escape(sub["icon"])}</span>')
                     out.append('        <div class="dd-text">')
                     out.append(f'          <span class="dd-title">{html.escape(sub.get("title",""))}{sub_badge_html}</span>')
-                    if sub.get("subtitle"):
-                        out.append(f'          <span class="dd-sub">{html.escape(sub["subtitle"])}</span>')
+                    if sub_desc:
+                        out.append(f'          <span class="dd-sub">{html.escape(sub_desc)}</span>')
                     out.append('        </div>')
                     out.append('      </a>')
                 out.append('    </div>')
@@ -277,6 +285,10 @@ def save_page(page_data: Dict[str, Any]) -> bool:
         return False
 
     page_data["slug"] = slug
+    is_draft = (page_data.get("status", "").lower() == "draft")
+    page_data["published"] = not is_draft
+    if not is_draft:
+        page_data["status"] = "published"
     page_data["updatedAt"] = datetime.utcnow().isoformat() + "Z"
 
     idx = next((i for i, p in enumerate(pages) if p.get("slug", "").strip().lower() == slug), None)
@@ -322,7 +334,11 @@ def list_posts(published_only: bool = True) -> List[Dict[str, Any]]:
             with open(POSTS_FILE, "r", encoding="utf-8") as f:
                 posts = json.load(f)
                 if published_only:
-                    return [p for p in posts if p.get("published", True) and p.get("status", "published").lower() != "draft"]
+                    return [
+                        p for p in posts 
+                        if p.get("published") is not False 
+                        and (p.get("status") or "published").lower() != "draft"
+                    ]
                 return posts
         except Exception:
             pass
@@ -341,6 +357,10 @@ def save_post(post_data: Dict[str, Any]) -> bool:
     if not slug:
         slug = re.sub(r'[^a-z0-9]+', '-', post_data.get("title", "").lower()).strip('-')
     post_data["slug"] = slug
+    is_draft = (post_data.get("status", "").lower() == "draft")
+    post_data["published"] = not is_draft
+    if not is_draft:
+        post_data["status"] = "published"
 
     if not post_data.get("publishedAt"):
         post_data["publishedAt"] = datetime.utcnow().strftime("%Y-%m-%d")
@@ -381,6 +401,8 @@ def delete_post(post_id: str) -> bool:
 # 5. SHELL TEMPLATE BUILDER FOR PAGES & BLOG
 # ==============================================================================
 
+TEMPLATE_FILE = ROOT_DIR / "templates" / "cms_shell.html"
+
 def render_cms_shell(
     title: str,
     description: str,
@@ -403,129 +425,33 @@ def render_cms_shell(
 
     custom_style_block = f"<style>{custom_css}</style>" if custom_css.strip() else ""
     keywords_tag = f'<meta name="keywords" content="{html.escape(keywords)}">' if keywords.strip() else ""
+    og_type = "article" if "/blog/" in current_path else "website"
 
-    return f"""<!DOCTYPE html>
-<html lang="en" data-theme="dark">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{html.escape(title)} | TradersDesk</title>
-  <meta name="description" content="{html.escape(description)}">
-  {keywords_tag}
-  <meta name="robots" content="{html.escape(robots)}">
-  <link rel="canonical" href="{html.escape(canon)}">
+    template = ""
+    if TEMPLATE_FILE.exists():
+        template = TEMPLATE_FILE.read_text(encoding="utf-8")
+    
+    if not template:
+        template = "<html><head><title><!-- CMS_HEAD_TITLE --></title></head><body><header><!-- CMS_NAV_HTML --></header><main><!-- CMS_BODY_CONTENT --></main></body></html>"
 
-  <!-- Favicons Suite -->
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    replacements = {
+        "<!-- CMS_HEAD_TITLE -->": html.escape(title),
+        "<!-- CMS_META_DESC -->": html.escape(description),
+        "<!-- CMS_KEYWORDS -->": keywords_tag,
+        "<!-- CMS_ROBOTS -->": html.escape(robots),
+        "<!-- CMS_CANONICAL -->": html.escape(canon),
+        "<!-- CMS_OG_TYPE -->": og_type,
+        "<!-- CMS_CUSTOM_STYLE -->": custom_style_block,
+        "<!-- CMS_DRAFT_BANNER -->": draft_banner,
+        "<!-- CMS_NAV_HTML -->": nav_html,
+        "<!-- CMS_BODY_CONTENT -->": body_content,
+    }
 
-  <!-- OpenGraph & Social Cards -->
-  <meta property="og:site_name" content="TradersDesk">
-  <meta property="og:title" content="{html.escape(title)} | TradersDesk">
-  <meta property="og:description" content="{html.escape(description)}">
-  <meta property="og:image" content="/og-image.png">
-  <meta property="og:type" content="article" if "/blog/" in current_path else "website">
-  <meta property="og:url" content="{html.escape(canon)}">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="{html.escape(title)} | TradersDesk">
-  <meta name="twitter:description" content="{html.escape(description)}">
-  <meta name="twitter:image" content="/og-image.png">
+    html_out = template
+    for placeholder, val in replacements.items():
+        html_out = html_out.replace(placeholder, val)
 
-  <!-- Schema.org Structured Data -->
-  <script type="application/ld+json">
-  {{
-    "@context": "https://schema.org",
-    "@type": "FinancialService",
-    "name": "TradersDesk",
-    "url": "https://tradersdesk.in",
-    "logo": "https://tradersdesk.in/tradersdesk_header.svg",
-    "description": "Institutional Real-Time Stock Market Breadth, Option Chain Matrix & Algorithmic Derivatives Analytics Desk."
-  }}
-  </script>
-
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="stylesheet" href="/page2.css">
-  <style>
-    .cms-container {{
-      max-width: 1040px;
-      margin: 32px auto;
-      padding: 0 20px;
-    }}
-    .cms-card {{
-      background: var(--adm-card, #0b1329);
-      border: 1px solid var(--adm-border, rgba(255, 255, 255, 0.08));
-      border-radius: 12px;
-      padding: 36px 40px;
-      color: #cbd5e1;
-      line-height: 1.7;
-    }}
-    .cms-h1 {{ font-size: 28px; font-weight: 800; color: #f8fafc; margin: 0 0 16px 0; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px; }}
-    .cms-h2 {{ font-size: 20px; font-weight: 700; color: #38bdf8; margin: 28px 0 12px 0; }}
-    .cms-h3 {{ font-size: 16px; font-weight: 700; color: #cbd5e1; margin: 20px 0 10px 0; }}
-    .cms-p {{ font-size: 14.5px; color: #94a3b8; margin-bottom: 16px; }}
-    .cms-quote {{ border-left: 3px solid #38bdf8; background: rgba(56, 189, 248, 0.05); padding: 12px 16px; margin: 20px 0; border-radius: 0 6px 6px 0; font-style: italic; color: #38bdf8; }}
-    .cms-divider {{ border: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 28px 0; }}
-    .cms-list {{ padding-left: 20px; margin-bottom: 18px; }}
-    .cms-list li {{ margin-bottom: 8px; font-size: 14px; color: #cbd5e1; }}
-    .cms-code-block {{ background: #030712; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 16px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #38bdf8; margin: 18px 0; }}
-    .cms-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13.5px; }}
-    .cms-table th {{ background: rgba(255, 255, 255, 0.04); text-align: left; padding: 10px 14px; border: 1px solid rgba(255, 255, 255, 0.08); color: #f8fafc; font-weight: 700; }}
-    .cms-table td {{ padding: 10px 14px; border: 1px solid rgba(255, 255, 255, 0.08); color: #cbd5e1; }}
-    .cms-badge {{ display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }}
-    .blog-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 24px; margin-top: 24px; }}
-    .blog-card {{ background: #0b1329; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s; }}
-    .blog-card:hover {{ transform: translateY(-3px); border-color: rgba(56, 189, 248, 0.4); }}
-    .blog-card-img {{ width: 100%; height: 180px; object-fit: cover; background: #040814; }}
-    .blog-card-body {{ padding: 20px; display: flex; flex-direction: column; flex: 1; }}
-    .blog-card-title {{ font-size: 17px; font-weight: 700; color: #f8fafc; margin: 8px 0; text-decoration: none; line-height: 1.4; }}
-    .blog-card-title:hover {{ color: #38bdf8; }}
-    .blog-card-excerpt {{ font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 16px; flex: 1; }}
-    .blog-card-meta {{ display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #64748b; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px; font-family: 'JetBrains Mono', monospace; }}
-  </style>
-  {custom_style_block}
-</head>
-<body class="page2-body theme-dark">
-  {draft_banner}
-  <header class="page2-header" style="background:rgba(11,19,41,0.92); backdrop-filter:blur(8px); border-bottom:1px solid rgba(255,255,255,0.08); padding:8px 16px; position:sticky; top:0; z-index:100;">
-    <div class="inst-nav-row" style="display:flex; align-items:center; justify-content:space-between; width:100%; max-width:1440px; margin:0 auto;">
-      <div style="display:flex; align-items:center; gap:20px;">
-        <div class="inst-brand-left" style="display:flex; align-items:center;">
-          <a href="/" class="inst-brand" aria-label="TradersDesk Home" style="display:flex; align-items:center; text-decoration:none;">
-            <img src="/tradersdesk_header.svg" alt="TradersDesk" class="inst-brand-logo inst-brand-logo-dark" height="26">
-            <img src="/tradersdesk_header_light.svg" alt="TradersDesk" class="inst-brand-logo inst-brand-logo-light" height="26">
-          </a>
-        </div>
-        {nav_html}
-      </div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <button id="themeToggleBtn" class="page2-theme-toggle-btn" type="button" onclick="document.body.classList.toggle('white-theme');">
-          <span>&#x1F319;</span> <span>Mode</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <main class="cms-container">
-    {body_content}
-  </main>
-
-  <footer style="margin-top: 60px; padding: 30px 20px; border-top: 1px solid rgba(255,255,255,0.06); text-align: center; color: #64748b; font-size: 12px;">
-    &copy; 2026 TradersDesk.in &bull; Real-Time Quantitative Analytics &bull; SEBI Compliance Notice: Educational & Research Only
-  </footer>
-
-  <!-- Mobile Bottom Navigation (visible on mobile <= 768px) -->
-  <nav class="mobile-bottom-nav" id="mobileBottomNavGlobal" aria-label="Mobile Navigation">
-    <a class="mob-nav-item" href="/" title="Dashboard"><span class="mob-nav-icon">&#9889;</span><span class="mob-nav-label">Options</span></a>
-    <a class="mob-nav-item" href="/futures" title="Futures"><span class="mob-nav-icon">&#128200;</span><span class="mob-nav-label">Futures</span></a>
-    <a class="mob-nav-item mob-nav-search-center" href="/?search=1" title="Search"><span class="mob-nav-icon">&#128269;</span><span class="mob-nav-label">Search</span></a>
-    <a class="mob-nav-item" href="/#delivery" title="Delivery"><span class="mob-nav-icon">&#128230;</span><span class="mob-nav-label">Delivery</span></a>
-    <a class="mob-nav-item" href="/blog" title="Market Insights"><span class="mob-nav-icon">&#128240;</span><span class="mob-nav-label">Insights</span></a>
-  </nav>
-</body>
-</html>"""
+    return html_out
 
 
 def render_page_view(slug: str, is_preview: bool = False) -> Optional[str]:
