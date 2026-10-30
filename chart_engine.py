@@ -14,7 +14,9 @@ import math
 import glob
 import urllib.request
 import urllib.parse
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
+
+IST = timezone(timedelta(hours=5, minutes=30))
 from typing import Dict, List, Any, Optional
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -728,7 +730,7 @@ class ChartEngine:
     def _fetch_real_intraday_bars(self, sym: str, resolution: str) -> List[Dict[str, Any]]:
         """
         Fetches 100% REAL intraday candles from Yahoo Finance exchange feed with local disk caching.
-        Completely eliminates fake/synthetic sine wave candles.
+        Accurately localized to IST (+05:30) and extended to 15:40 IST for full F&O market closing.
         """
         step = int(resolution) if resolution.isdigit() else 5
         yf_interval = "1m" if step <= 1 else ("5m" if step <= 5 else ("15m" if step <= 15 else "60m"))
@@ -761,12 +763,12 @@ class ChartEngine:
                 closes = indicators.get("close", [])
                 volumes = indicators.get("volume", [])
 
-                real_bars = []
+                raw_bars = []
                 for i in range(len(timestamps)):
                     if closes[i] is None or opens[i] is None:
                         continue
                     t_utc = timestamps[i]
-                    dt_val = datetime.fromtimestamp(t_utc + 19800)
+                    dt_val = datetime.fromtimestamp(t_utc, tz=timezone.utc).astimezone(IST)
                     time_str = dt_val.strftime("%Y-%m-%d %H:%M:%S")
 
                     o = round(float(opens[i]), 2)
@@ -775,7 +777,7 @@ class ChartEngine:
                     l = round(min(float(lows[i] or min(o, c)), o, c), 2)
                     v = int(volumes[i] or 0)
 
-                    real_bars.append({
+                    raw_bars.append({
                         "time": time_str,
                         "open": o,
                         "high": h,
@@ -784,6 +786,8 @@ class ChartEngine:
                         "volume": v,
                         "oi": 0
                     })
+
+                real_bars = self._extend_intraday_to_1540(raw_bars, step)
 
                 if real_bars:
                     try:
@@ -805,6 +809,64 @@ class ChartEngine:
                 pass
 
         return []
+
+    def _extend_intraday_to_1540(self, bars: List[Dict[str, Any]], step: int) -> List[Dict[str, Any]]:
+        """Extends intraday sessions up to 15:40:00 IST using the closing price."""
+        if not bars:
+            return bars
+        now_ist = datetime.now(timezone.utc).astimezone(IST)
+        today_str = now_ist.strftime("%Y-%m-%d")
+        now_hhmm = now_ist.strftime("%H:%M")
+
+        days_dict = {}
+        for b in bars:
+            d = b["time"][:10]
+            if d not in days_dict:
+                days_dict[d] = []
+            days_dict[d].append(b)
+
+        out = []
+        for d, d_bars in days_dict.items():
+            out.extend(d_bars)
+            is_today = (d == today_str)
+            target_cutoff = "15:40"
+            if is_today:
+                if now_hhmm < "15:30":
+                    continue
+                target_cutoff = min("15:40", now_hhmm)
+
+            last_b = d_bars[-1]
+            last_hhmm = last_b["time"][11:16]
+            last_close = last_b["close"]
+
+            if last_hhmm < target_cutoff and last_hhmm >= "15:20":
+                if step <= 1:
+                    cur_m = int(last_hhmm[3:5])
+                    end_m = int(target_cutoff[3:5]) if target_cutoff.startswith("15:") else 40
+                    for m in range(cur_m + 1, end_m + 1):
+                        out.append({
+                            "time": f"{d} 15:{m:02d}:00",
+                            "open": last_close, "high": last_close, "low": last_close, "close": last_close,
+                            "volume": 0, "oi": 0
+                        })
+                elif step <= 5:
+                    slots = ["15:30", "15:35", "15:40"]
+                    for s in slots:
+                        if s > last_hhmm and s <= target_cutoff:
+                            out.append({
+                                "time": f"{d} {s}:00",
+                                "open": last_close, "high": last_close, "low": last_close, "close": last_close,
+                                "volume": 0, "oi": 0
+                            })
+                else:
+                    if target_cutoff > last_hhmm:
+                        out.append({
+                            "time": f"{d} {target_cutoff}:00",
+                            "open": last_close, "high": last_close, "low": last_close, "close": last_close,
+                            "volume": 0, "oi": 0
+                        })
+        out.sort(key=lambda x: x["time"])
+        return out
 
     def _generate_intraday_bars(self, daily_bars: List[Dict], resolution: str) -> List[Dict]:
         step_minutes = int(resolution) if resolution.isdigit() else 5

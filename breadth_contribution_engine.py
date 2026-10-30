@@ -494,9 +494,15 @@ def compute_breadth_contribution(
         all_minutes = sorted(set(list(b_map.keys()) + list(n_map.keys())))
         if is_active_session:
             all_minutes = [t for t in all_minutes if t <= cur_cutoff_time]
-            if cur_cutoff_time not in all_minutes and "09:15" <= cur_cutoff_time <= "15:40":
-                all_minutes.append(cur_cutoff_time)
-                all_minutes = sorted(all_minutes)
+
+        if all_minutes:
+            last_m_str = all_minutes[-1]
+            if last_m_str < cur_cutoff_time and last_m_str >= "15:20":
+                start_m = int(last_m_str[3:5])
+                end_m = int(cur_cutoff_time[3:5]) if cur_cutoff_time.startswith("15:") else 40
+                for m in range(start_m + 1, end_m + 1):
+                    all_minutes.append(f"15:{m:02d}")
+                all_minutes = sorted(set(all_minutes))
 
         # Determine initial breadth & spot point for proper backfilling
         first_b_point = None

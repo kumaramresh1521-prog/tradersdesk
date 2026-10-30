@@ -1133,6 +1133,77 @@
   select, input { min-height: 36px !important; font-size: 14px !important; }
   .header-bar { flex-wrap: wrap !important; gap: 6px !important; }
 }
+
+/* Universal Bottom Navigation Dock: Hidden on Desktop (> 768px) */
+.mobile-bottom-nav,
+.mobile-bottom-dock {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 64px !important;
+  }
+  .mobile-bottom-nav,
+  .mobile-bottom-dock {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 58px !important;
+    background: rgba(10, 15, 28, 0.96) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.5) !important;
+    z-index: 99999 !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    padding: 0 4px !important;
+  }
+  html[data-theme="light"] .mobile-bottom-nav,
+  html[data-theme="light"] .mobile-bottom-dock,
+  body.white-theme .mobile-bottom-nav,
+  body.white-theme .mobile-bottom-dock {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-top-color: #cbd5e1 !important;
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08) !important;
+  }
+  .mob-nav-item {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    color: #94a3b8 !important;
+    padding: 6px 0 !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  .mob-nav-item.active {
+    color: #38bdf8 !important;
+  }
+  .mob-nav-icon {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 2px !important;
+  }
+  .mob-nav-label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.02em !important;
+  }
+  .mob-nav-search-center {
+    background: rgba(56, 189, 248, 0.15) !important;
+    border-radius: 12px !important;
+    padding: 4px 0 !important;
+    color: #38bdf8 !important;
+  }
+}
 </style>
 
 <script src="/global_search.js?v=20261029_mob" defer></script>

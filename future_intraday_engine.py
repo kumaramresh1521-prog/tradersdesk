@@ -405,6 +405,23 @@ def _fetch_yahoo_intraday_candles(yf_symbol: str, interval_str: str = "5m", rang
                         c = float(closes[i])
                         v = int(volumes[i] or 0)
                         candles.append([t_epoch, time_str, o, h, l, c, v])
+
+            # Extend completed sessions up to 15:40 IST
+            if candles:
+                last_time_str = candles[-1][1]
+                last_c = candles[-1][5]
+                last_epoch = candles[-1][0]
+                if last_time_str < "15:40" and last_time_str >= "15:25":
+                    if interval_str == "1m":
+                        cur_m = int(last_time_str[3:5])
+                        for m in range(cur_m + 1, 41):
+                            candles.append([last_epoch + (m - cur_m) * 60, f"15:{m:02d}", last_c, last_c, last_c, last_c, 0])
+                    elif interval_str == "5m":
+                        slots = ["15:30", "15:35", "15:40"]
+                        for s in slots:
+                            if s > last_time_str:
+                                candles.append([last_epoch + 300, s, last_c, last_c, last_c, last_c, 0])
+
             _YF_CANDLE_CACHE[cache_k] = {"ts": now, "candles": list(candles)}
             return candles
     except Exception:

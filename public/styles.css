@@ -22854,8 +22854,9 @@ body[data-theme="light"] .inst-dot-menu-btn:hover {
   color: #eab308 !important;
 }
 
-.mobile-bottom-nav {
-  display: none;
+.mobile-bottom-nav,
+.mobile-bottom-dock {
+  display: none !important;
 }
 
 @media (max-width: 768px) {
@@ -25130,7 +25131,8 @@ a.fut-tab-btn[data-feature-flag].feature-active {
   }
 
   /* ── 7. Universal Bottom Navigation Bar (Fixed 5-item Dock) ── */
-  .mobile-bottom-nav {
+  .mobile-bottom-nav,
+  .mobile-bottom-dock {
     display: flex !important;
     position: fixed !important;
     bottom: 0 !important;

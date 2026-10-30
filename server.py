@@ -1901,7 +1901,7 @@ def fetch_real_intraday_index_candles(index_key: str, date_value: str, interval_
             cached_obj = read_json(cache_file, {})
             c_data = cached_obj.get("data") or []
             c_age = time.time() - cached_obj.get("cached_at", 0)
-            is_incomplete_today = (is_today and not is_market_open() and len(c_data) < (360 // interval_minutes))
+            is_incomplete_today = (is_today and not is_market_open() and len(c_data) < (385 // interval_minutes))
             if c_data and c_age < cache_ttl and not is_incomplete_today:
                 return c_data
         except Exception:
@@ -1960,6 +1960,23 @@ def fetch_real_intraday_index_candles(index_key: str, date_value: str, interval_
                             raw_yf.append([ts_iso, o, h, l, c, v])
 
                 if raw_yf and len(raw_yf) >= 5:
+                    last_ts = str(raw_yf[-1][0])
+                    last_hhmm = last_ts[11:16]
+                    last_close = raw_yf[-1][4]
+                    now_hhmm = now_dt.strftime("%H:%M")
+                    target_cutoff = "15:40"
+                    if is_today:
+                        if now_hhmm < "15:30":
+                            target_cutoff = ""
+                        else:
+                            target_cutoff = min("15:40", now_hhmm)
+
+                    if target_cutoff and last_hhmm < target_cutoff and last_hhmm >= "15:20":
+                        cur_m = int(last_hhmm[3:5])
+                        end_m = int(target_cutoff[3:5]) if target_cutoff.startswith("15:") else 40
+                        for m in range(cur_m + 1, end_m + 1):
+                            raw_yf.append([f"{date_value}T15:{m:02d}:00+05:30", last_close, last_close, last_close, last_close, 0])
+
                     if interval_minutes > 1:
                         agg_candles = []
                         for k in range(0, len(raw_yf), interval_minutes):
@@ -2005,6 +2022,32 @@ def fetch_real_intraday_index_candles(index_key: str, date_value: str, interval_
             pass
 
     if candles:
+        last_dt_str = str(candles[-1][0])
+        last_hhmm = last_dt_str[11:16]
+        last_c = candles[-1][4]
+        now_hhmm = now_dt.strftime("%H:%M")
+        target_cutoff = "15:40"
+        if is_today:
+            if now_hhmm < "15:30":
+                target_cutoff = ""
+            else:
+                target_cutoff = min("15:40", now_hhmm)
+
+        if target_cutoff and last_hhmm < target_cutoff and last_hhmm >= "15:20":
+            if interval_minutes == 1:
+                cur_m = int(last_hhmm[3:5])
+                end_m = int(target_cutoff[3:5]) if target_cutoff.startswith("15:") else 40
+                for m in range(cur_m + 1, end_m + 1):
+                    candles.append([f"{date_value}T15:{m:02d}:00+05:30", last_c, last_c, last_c, last_c, 0])
+            elif interval_minutes == 5:
+                slots = ["15:30", "15:35", "15:40"]
+                for s in slots:
+                    if s > last_hhmm and s <= target_cutoff:
+                        candles.append([f"{date_value}T{s}:00+05:30", last_c, last_c, last_c, last_c, 0])
+            else:
+                if target_cutoff > last_hhmm:
+                    candles.append([f"{date_value}T{target_cutoff}:00+05:30", last_c, last_c, last_c, last_c, 0])
+
         try:
             write_json(cache_file, {"cached_at": time.time(), "data": candles})
         except Exception:

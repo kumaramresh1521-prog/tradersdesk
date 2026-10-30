@@ -1,4 +1,4 @@
 {
-  "futures_future_intraday": false,
-  "futures_future_vs_oi": false
+  "futures_future_intraday": true,
+  "futures_future_vs_oi": true
 }
