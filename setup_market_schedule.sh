@@ -9,9 +9,9 @@ echo "This script sets up Google Cloud Scheduler to automatically manage"
 echo "Cloud Run instances for maximum cost optimization:"
 echo ""
 echo "  [1] Mon-Fri at 09:00 AM IST: Sets min-instances = 1 (Always Warm for live ticks)"
-echo "  [2] Mon-Fri at 03:45 PM IST: Sets min-instances = 0 (Scales to 0 for nights/weekends)"
+echo "  [2] Mon-Fri at 04:00 PM IST: Sets min-instances = 0 (After 03:40 PM F&O Close)"
 echo ""
-echo "Estimated Cloud Savings: ~81% compared to running 24/7!"
+echo "Estimated Cloud Savings: ~80% compared to running 24/7!"
 echo "====================================================================="
 echo ""
 
@@ -61,13 +61,13 @@ gcloud scheduler jobs create http tradersdesk-market-start \
     --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
 
 echo ""
-echo "[5/5] Creating / Updating Market-Stop Job (03:45 PM IST, Mon-Fri)..."
+echo "[5/5] Creating / Updating Market-Stop Job (04:00 PM IST, Mon-Fri)..."
 gcloud scheduler jobs delete tradersdesk-market-stop --location="$REGION" --quiet >/dev/null 2>&1 || true
 gcloud scheduler jobs create http tradersdesk-market-stop \
     --location="$REGION" \
-    --schedule="45 15 * * 1-5" \
+    --schedule="0 16 * * 1-5" \
     --time-zone="Asia/Kolkata" \
-    --description="TradersDesk: Auto-sleep Cloud Run at 3:45 PM IST for Market Close" \
+    --description="TradersDesk: Auto-sleep Cloud Run at 4:00 PM IST after 3:40 PM F&O Close and EOD reconciliation" \
     --uri="https://run.googleapis.com/v2/projects/${PROJECT_ID}/locations/${REGION}/services/${SERVICE_NAME}?updateMask=template.scaling.minInstanceCount" \
     --http-method=PUT \
     --headers="Content-Type=application/json,X-HTTP-Method-Override=PATCH" \
@@ -82,6 +82,7 @@ echo ""
 echo "Active Jobs in $REGION:"
 gcloud scheduler jobs list --location="$REGION"
 echo ""
-echo "Cloud Run will now be warm between 09:00 AM and 03:45 PM IST Mon-Fri,"
-echo "and sleep automatically during nights and weekends to save ~81% cost."
+echo "Cloud Run will now be warm between 09:00 AM and 04:00 PM IST Mon-Fri"
+echo "(fully covering F&O trades up to 03:40 PM + 20 min EOD buffer),"
+echo "and sleep automatically during nights and weekends to save ~80% cost."
 echo "====================================================================="

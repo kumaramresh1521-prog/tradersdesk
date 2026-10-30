@@ -1737,7 +1737,7 @@ function payloadFromForm() {
     fastRefresh: false,
     symbols: els.symbolsInput.value,
     startTime: "09:15",
-    endTime: "15:30",
+    endTime: "15:40",
   };
   if ((dsVal === "angel" || dsVal === "broker") && els.totpInput && els.totpInput.value.trim()) {
     payload.manualTotp = els.totpInput.value.trim();
@@ -1755,7 +1755,7 @@ function niftyPayloadFromForm() {
     includeOptionChain: true,
     fastRefresh: false,
     startTime: "09:15",
-    endTime: "15:30",
+    endTime: "15:40",
   };
   if ((els.dataSource.value === "angel" || els.dataSource.value === "broker") && els.totpInput && els.totpInput.value.trim()) {
     payload.manualTotp = els.totpInput.value.trim();
@@ -13153,7 +13153,7 @@ function startLiveMarketClock() {
     const isWeekday = day >= 1 && day <= 5;
     const currentMinutes = h * 60 + m;
     // Market regular hours: 09:15 to 15:30 IST (555 to 930 mins)
-    const isMarketOpen = isWeekday && currentMinutes >= 555 && currentMinutes < 930;
+    const isMarketOpen = isWeekday && currentMinutes >= 555 && currentMinutes < 940;
 
     const elClock = document.getElementById("instLiveClock");
     if (elClock) elClock.textContent = timeStr;
@@ -13169,7 +13169,7 @@ function startLiveMarketClock() {
       if (pill) pill.className = "inst-market-pill open";
       if (statusText) statusText.textContent = "NSE LIVE";
       if (sessionBadge) sessionBadge.className = "dash-session-badge live";
-      if (sessionText) sessionText.textContent = "NSE Regular Trading Session Active (09:15 - 15:30 IST)";
+      if (sessionText) sessionText.textContent = "NSE Regular Trading Session Active (09:15 - 15:40 IST)";
     } else {
       if (pill) pill.className = "inst-market-pill closed";
       if (statusText) statusText.textContent = "MARKET CLOSED";

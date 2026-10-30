@@ -820,7 +820,7 @@ class ChartEngine:
             d_vol = int(day["volume"])
             d_oi = int(day.get("oi", 0))
 
-            total_bars = max(1, int(375 / step_minutes))
+            total_bars = max(1, int(385 / step_minutes))
             vol_per_bar = max(10, int(d_vol / total_bars))
             oi_step = (d_oi * 0.03) / total_bars
 

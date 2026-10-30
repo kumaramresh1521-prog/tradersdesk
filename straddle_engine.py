@@ -325,7 +325,7 @@ def get_time_to_expiry(
     """
     Computes annualized time-to-expiry (T) in trading-year convention (250 trading days * 375 mins = 93,750 mins).
     Decays smoothly and continuously minute-by-minute.
-    At 15:30 on expiry day, returns 0.0 (strictly zero time value remaining).
+    At 15:40 on expiry day, returns 0.0 (strictly zero time value remaining).
     """
     candle_mins = hh * 60 + mm
     market_open_mins = 9 * 60 + 15    # 555
@@ -361,8 +361,8 @@ def calc_option_leg(
     """
     Calculates exact institutional option leg price (CE or PE).
     On expiry day (target_exp_date == sess_date), time value and market skew offsets smoothly decay
-    all the way to exactly 0.00 at 15:30 PM, leaving strictly intrinsic value.
-    For ATM at 15:30, intrinsic is 0.00, meaning straddle cleanly reaches 0.00.
+    all the way to exactly 0.00 at 15:40 PM, leaving strictly intrinsic value.
+    For ATM at 15:40, intrinsic is 0.00, meaning straddle cleanly reaches 0.00.
     """
     is_call = opt_type.upper() == "CE"
     intrinsic = max(0.0, spot - strike) if is_call else max(0.0, strike - spot)
@@ -534,10 +534,10 @@ def compute_straddle_analytics(
 
     # Check live market timing bounds for today's session
     market_open_time = dt_time(9, 15)
-    market_close_time = dt_time(15, 30)
+    market_close_time = dt_time(15, 40)
     is_live_today = (not is_historical) and (session_date == today.strftime("%Y-%m-%d"))
     is_active_market_hours = is_live_today and (market_open_time <= now_dt.time() < market_close_time)
-    cur_cutoff_hhmm = now_dt.strftime("%H:%M") if is_active_market_hours else "15:30"
+    cur_cutoff_hhmm = now_dt.strftime("%H:%M") if is_active_market_hours else "15:40"
     is_pre_market = is_live_today and (now_dt.time() < market_open_time)
 
     # Check if real 1-minute candle points are present in nifty_data
@@ -698,9 +698,9 @@ def compute_straddle_analytics(
             max_minutes = 1
         elif is_active_market_hours:
             cur_min = (now_dt.hour - 9) * 60 + (now_dt.minute - 15)
-            max_minutes = max(1, min(cur_min + 1, 375))
+            max_minutes = max(1, min(cur_min + 1, 385))
         else:
-            max_minutes = 375  # 09:15 to 15:30 full day
+            max_minutes = 385  # 09:15 to 15:40 full day
 
         seed = int(hashlib.sha256(f"straddle-{sym}-{session_date}-{chosen_strike}".encode("utf-8")).hexdigest()[:12], 16)
         rng = random.Random(seed)
@@ -813,7 +813,7 @@ def compute_straddle_analytics(
             "decay_pct": decay_pct,
             "upper_breakeven": upper_be,
             "lower_breakeven": lower_be,
-            "time": latest_pt.get("time", f"{session_date}T15:30:00"),
+            "time": latest_pt.get("time", f"{session_date}T15:40:00"),
             "greeks": {
                 "delta": live_delta,
                 "gamma": live_gamma,

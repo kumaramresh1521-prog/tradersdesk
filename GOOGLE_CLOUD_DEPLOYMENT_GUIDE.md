@@ -63,13 +63,13 @@ Service URL: https://tradersdesk-xxxx-el.a.run.app
 
 ### Why 24/7 Server Was Expensive:
 - A month has 720 hours.
-- The Indian Stock Market (NSE/BSE) is open only ~137 hours per month (Mon–Fri, 9:15 AM – 3:30 PM).
+- The Indian Stock Market (NSE/BSE) is open only ~137 hours per month (Mon–Fri, 9:15 AM – 3:40 PM).
 - Running 24/7 means paying for 583 hours of idle server time (nights and weekends), resulting in high monthly bills (~₹3,500 – ₹5,000/mo).
 
 ### The Solution: Cloud Scheduler Auto-Warm & Auto-Sleep
 With Google Cloud Scheduler:
 1. **09:00 AM IST (Mon–Fri)**: Automatically sets Cloud Run `min-instances: 1` (`--no-cpu-throttling`). The server stays continuously warm, recording real market ticks, candles, and option data without missing a single minute.
-2. **03:45 PM IST (Mon–Fri)**: Automatically scales back to `min-instances: 0` (`--cpu-throttling`) after market close and EOD processing.
+2. **04:00 PM IST (after 03:40 PM F&O Close) (Mon–Fri)**: Automatically scales back to `min-instances: 0` (`--cpu-throttling`) after market close and EOD processing.
 3. **Nights & Weekends**: Zero compute instances run, costing **₹0**!
 4. **Estimated Monthly Bill**: Drops to **~₹150 – ₹250/month** (fits within Google Cloud Free Tier of 360,000 vCPU-seconds).
 

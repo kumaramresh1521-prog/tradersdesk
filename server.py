@@ -738,7 +738,7 @@ def is_market_open() -> bool:
     if not is_trading_day(now.date()):
         return False
     hm = (now.hour, now.minute)
-    return (9, 15) <= hm <= (15, 30)
+    return (9, 15) <= hm <= (15, 40)
 
 
 def parse_bool(value: str, default: bool = False) -> bool:
@@ -1915,7 +1915,7 @@ def fetch_real_intraday_index_candles(index_key: str, date_value: str, interval_
             client = get_active_client()
             if client and client.is_configured():
                 idx_inst, idx_k = resolve_index(normalized)
-                cur_end_time = now_dt.strftime("%H:%M") if (is_today and is_market_open()) else "15:30"
+                cur_end_time = now_dt.strftime("%H:%M") if (is_today and is_market_open()) else "15:40"
                 b_candles = client.candle_data(
                     idx_inst,
                     interval="ONE_MINUTE" if interval_minutes == 1 else f"{interval_minutes}_MINUTE",
@@ -2242,12 +2242,12 @@ def _compute_index_option_chain_raw(
     # Calculate time to expiry T (fraction of a year)
     expiry_dt = parse_angel_expiry(selected_expiry)
     if expiry_dt:
-        expiry_dt = datetime.combine(expiry_dt.date(), datetime.strptime("15:30", "%H:%M").time()).replace(tzinfo=INDIA_TZ)
+        expiry_dt = datetime.combine(expiry_dt.date(), datetime.strptime("15:40", "%H:%M").time()).replace(tzinfo=INDIA_TZ)
         current_time = now_ist()
         try:
             req_date = datetime.fromisoformat(date_value).date()
             if req_date < current_time.date():
-                current_time = datetime.combine(req_date, datetime.strptime("15:30", "%H:%M").time()).replace(tzinfo=INDIA_TZ)
+                current_time = datetime.combine(req_date, datetime.strptime("15:40", "%H:%M").time()).replace(tzinfo=INDIA_TZ)
         except Exception:
             pass
         diff = expiry_dt - current_time
@@ -2831,7 +2831,7 @@ def _build_breadth_internal(payload: dict) -> dict:
     fast_refresh = parse_bool(str(payload.get("fastRefresh", "")), default=False)
     allow_simulated = parse_bool(str(payload.get("allowSimulated", "")), default=False)
     start_time = payload.get("startTime") or "09:15"
-    end_time = payload.get("endTime") or "15:30"
+    end_time = payload.get("endTime") or "15:40"
     max_symbols = max(1, min(max_symbols, 500))
     fetch_from_date = warmup_start_date
 
@@ -3429,7 +3429,7 @@ def build_calendar_spread(payload: dict) -> dict:
             live_quotes = {}
 
     def calc_t(dt: datetime) -> float:
-        exp_cutoff = datetime.combine(dt.date(), datetime.strptime("15:30", "%H:%M").time()).replace(tzinfo=INDIA_TZ)
+        exp_cutoff = datetime.combine(dt.date(), datetime.strptime("15:40", "%H:%M").time()).replace(tzinfo=INDIA_TZ)
         cur_t = now_ist()
         diff = exp_cutoff - cur_t
         return max(0.001, diff.total_seconds() / (365.25 * 24.0 * 3600.0))
@@ -5115,7 +5115,7 @@ def _build_nifty_internal(payload: dict) -> dict:
     except (TypeError, ValueError):
         anchor_strike = None
     start_time = payload.get("startTime") or "09:15"
-    end_time = payload.get("endTime") or "15:30"
+    end_time = payload.get("endTime") or "15:40"
     wpcr_days = int(payload.get("wpcrDays") or 250)
     straddle_days = int(payload.get("straddleDays") or 1)
     straddle_days = max(1, min(straddle_days, 30))
@@ -5631,7 +5631,7 @@ def build_chart_desk(payload: dict) -> dict:
                 spot_inst,
                 interval=interval,
                 from_date=f"{date_val} 09:15",
-                to_date=f"{date_val} 15:30",
+                to_date=f"{date_val} 15:40",
             )
         except Exception:
             pass
@@ -5693,7 +5693,7 @@ def build_chart_desk(payload: dict) -> dict:
                     Instrument(symbol=fut_sym, trading_symbol=fut_sym, token=str(fut_inst.get("token")), exchange="NFO"),
                     interval=interval,
                     from_date=f"{date_val} 09:15",
-                    to_date=f"{date_val} 15:30"
+                    to_date=f"{date_val} 15:40"
                 )
             except Exception:
                 pass
@@ -5703,7 +5703,7 @@ def build_chart_desk(payload: dict) -> dict:
                     ce_inst,
                     interval=interval,
                     from_date=f"{date_val} 09:15",
-                    to_date=f"{date_val} 15:30"
+                    to_date=f"{date_val} 15:40"
                 )
             except Exception:
                 pass
@@ -5713,7 +5713,7 @@ def build_chart_desk(payload: dict) -> dict:
                     pe_inst,
                     interval=interval,
                     from_date=f"{date_val} 09:15",
-                    to_date=f"{date_val} 15:30"
+                    to_date=f"{date_val} 15:40"
                 )
             except Exception:
                 pass
@@ -8918,9 +8918,9 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
         now_ist_dt = now_ist()
         is_today_session = (resolved_date == now_ist_dt.strftime("%Y-%m-%d"))
         market_open_time = dt_time(9, 15)
-        market_close_time = dt_time(15, 30)
+        market_close_time = dt_time(15, 40)
         is_live_trading = is_today_session and (market_open_time <= now_ist_dt.time() < market_close_time)
-        cur_cutoff_hhmm = now_ist_dt.strftime("%H:%M") if is_live_trading else "15:30"
+        cur_cutoff_hhmm = now_ist_dt.strftime("%H:%M") if is_live_trading else "15:40"
 
         b_broker_src = "broker" if is_active_broker_configured() else "sample"
         n_broker_src = "broker" if is_active_broker_configured() else "sample"
@@ -9944,7 +9944,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             weekday = now_dt.weekday()  # 0 = Mon, 4 = Fri, 5 = Sat, 6 = Sun
             is_market_day = (weekday < 5)
             # Market hours window for auto-scale is 09:00 to 15:45 IST
-            is_warm_hours = is_market_day and ("09:00" <= current_hhmm <= "15:45")
+            is_warm_hours = is_market_day and ("09:00" <= current_hhmm <= "16:00")
             return self.send_json(200, {
                 "ok": True,
                 "projectId": "trading-509214",
@@ -9956,7 +9956,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 "currentMode": "WARM" if is_warm_hours else "SLEEP",
                 "schedule": {
                     "start": "09:00 AM IST (Mon-Fri) ➔ min-instances: 1",
-                    "stop": "03:45 PM IST (Mon-Fri) ➔ min-instances: 0"
+                    "stop": "04:00 PM IST (Mon-Fri, after 15:40 F&O close) ➔ min-instances: 0"
                 },
                 "costSavings": {
                     "standardHoursMonthly": 720,

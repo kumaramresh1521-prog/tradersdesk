@@ -3508,7 +3508,7 @@
           dateBadge.textContent = "🔴 Market Closed";
           dateBadge.className = "p2-badge p2-badge-red";
         } else {
-          dateBadge.textContent = "🟢 Live (09:15 - 15:30)";
+          dateBadge.textContent = "🟢 Live (09:15 - 15:40)";
           dateBadge.className = "p2-badge p2-badge-teal";
         }
       }

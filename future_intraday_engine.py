@@ -176,7 +176,7 @@ def get_market_session_state(target_date_str: Optional[str] = None) -> dict:
     is_weekday = (now_ist.weekday() < 5)
     hm_minutes = now_ist.hour * 60 + now_ist.minute
     open_minutes = 9 * 60 + 15       # 09:15 IST
-    close_minutes = 15 * 60 + 30     # 15:30 IST (375 minutes total)
+    close_minutes = 15 * 60 + 40     # 15:40 IST (385 minutes total)
 
     if is_requested_today and is_weekday and (open_minutes <= hm_minutes <= close_minutes):
         is_live = True
@@ -190,9 +190,9 @@ def get_market_session_state(target_date_str: Optional[str] = None) -> dict:
         market_status_text = "PRE-OPEN (Opens 09:15 IST)"
     else:
         is_live = False
-        elapsed_minutes = 375  # Full completed trading session
+        elapsed_minutes = 385  # Full completed trading session (15:40 IST)
         market_status = "CLOSED"
-        market_status_text = "CLOSED (EOD 15:30 IST)"
+        market_status_text = "CLOSED (EOD 15:40 IST)"
 
     return {
         "now_ist": now_ist,
@@ -326,7 +326,7 @@ def _fetch_angel_nfo_candles(symbol: str, interval: int = 5, date_str: Optional[
             dt = datetime.datetime.fromisoformat(ts_str)
             t_epoch = int(dt.timestamp())
             time_str = dt.strftime("%H:%M")
-            if "09:15" <= time_str <= "15:30":
+            if "09:15" <= time_str <= "15:40":
                 res.append([t_epoch, time_str, float(c[1]), float(c[2]), float(c[3]), float(c[4]), int(c[5])])
 
         if res:
@@ -398,7 +398,7 @@ def _fetch_yahoo_intraday_candles(yf_symbol: str, interval_str: str = "5m", rang
                     t_ist = datetime.datetime.fromtimestamp(t_epoch, tz=datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
                     time_str = t_ist.strftime("%H:%M")
                     # F&O Market hours: 09:15 to 15:30 IST
-                    if "09:15" <= time_str <= "15:30":
+                    if "09:15" <= time_str <= "15:40":
                         o = float(opens[i] if opens[i] is not None else closes[i])
                         h = float(highs[i] if highs[i] is not None else closes[i])
                         l = float(lows[i] if lows[i] is not None else closes[i])
@@ -500,7 +500,7 @@ def _generate_intraday_bars(
       - Exact current price, spot, and basis consistency on the latest bar
     """
     lot_size = _INDICES_META_MAP.get(symbol, {}).get("lot", 1)
-    total_session_minutes = 375  # 09:15 to 15:30 IST
+    total_session_minutes = 385  # 09:15 to 15:40 IST
     step = max(1, interval_minutes)
     total_possible_bars = total_session_minutes // step
 
