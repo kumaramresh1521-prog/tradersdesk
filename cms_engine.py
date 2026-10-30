@@ -174,6 +174,39 @@ def save_navigation(data: Any) -> bool:
         print(f"[CMS] Failed saving navigation: {exc}")
         return False
 
+DESK_ONCLICK_MAP = {
+    "/": "return window.instNavClick(event, 'dashboard')",
+    "/dashboard": "return window.instNavClick(event, 'dashboard')",
+    "/futures": "return window.instNavClick(event, 'futures', 'matrix')",
+    "/futures/marketwatch": "return window.instNavClick(event, 'futures', 'matrix')",
+    "/futures/open-interest": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'openInterest');}",
+    "/futures/future-intraday": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureIntraday');}",
+    "/futures/future-vs-oi": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureVsOi');}",
+    "/futures/buildup": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'buildup');}",
+    "/futures/heatmap": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'heatmap');}",
+    "/futures/indices": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'indices');}",
+    "/futures/mwpl": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'mwpl');}",
+    "/option-chain-pro": "if(window.instNavClick){return window.instNavClick(event, 'upstoxChain');}",
+    "/options": "if(window.instNavClick){return window.instNavClick(event, 'upstoxChain');}",
+    "/fii-dii": "return window.instNavClick(event, 'smartmoney')",
+    "/fii-dii#oi": "return window.instNavClick(event, 'smartmoney', 'oi')",
+    "/delivery": "return window.instNavClick(event, 'delivery')",
+    "/mtf": "return window.instNavClick(event, 'mtf')",
+}
+
+def get_canonical_btn_id(item_id: str, url: str) -> str:
+    u = (url or '').lower().rstrip('/')
+    i = (item_id or '').lower()
+    if i == 'nav_dashboard' or u in ('', '/'): return 'navDashboard'
+    if i == 'nav_futures' or u.startswith('/futures'): return 'navFutures'
+    if i == 'nav_options' or u.startswith('/option'): return 'navOptions'
+    if i == 'nav_charts' or u.startswith('/chart'): return 'navCharts'
+    if i == 'nav_fiidii' or u.startswith('/fii') or u.startswith('/smart'): return 'navFiiDii'
+    if i == 'nav_delivery' or u.startswith('/delivery'): return 'navDelivery'
+    if i == 'nav_mtf' or u.startswith('/mtf'): return 'navMtf'
+    if i == 'nav_blog' or u.startswith('/blog'): return 'navBlog'
+    return item_id or ''
+
 def render_navigation_html(current_path: str = "/") -> str:
     """Renders the exact institutional header navigation HTML dynamically."""
     nav_data = get_navigation()
@@ -200,10 +233,15 @@ def render_navigation_html(current_path: str = "/") -> str:
         if is_active:
             btn_classes.append("active")
 
+        canonical_id = get_canonical_btn_id(item_id, url)
+        id_attr = f' id="{canonical_id}"' if canonical_id else ""
+        onclick_code = DESK_ONCLICK_MAP.get(url, "")
+        onclick_attr = f' onclick="{onclick_code}"' if onclick_code else ""
+
         if not has_dropdown:
             out.append(f'<div class="inst-nav-item">')
             badge_html = f'<span class="p2-badge p2-badge-{badge_color}">{html.escape(badge)}</span>' if badge else ""
-            out.append(f'  <a href="{html.escape(url)}" class="{" ".join(btn_classes)}">')
+            out.append(f'  <a href="{html.escape(url)}"{id_attr} class="{" ".join(btn_classes)}"{onclick_attr}>')
             if icon:
                 out.append(f'    <span class="inst-nav-icon">{html.escape(icon)}</span>')
             out.append(f'    <span class="nav-label">{html.escape(label)}</span>')
@@ -213,7 +251,7 @@ def render_navigation_html(current_path: str = "/") -> str:
             out.append('</div>')
         else:
             out.append(f'<div class="inst-nav-item has-dropdown">')
-            out.append(f'  <a href="{html.escape(url)}" class="{" ".join(btn_classes)}">')
+            out.append(f'  <a href="{html.escape(url)}"{id_attr} class="{" ".join(btn_classes)}"{onclick_attr}>')
             if icon:
                 out.append(f'    <span class="inst-nav-icon">{html.escape(icon)}</span>')
             out.append(f'    <span class="nav-label">{html.escape(label)}</span>')
@@ -238,10 +276,13 @@ def render_navigation_html(current_path: str = "/") -> str:
                 if col.get("header"):
                     out.append(f'      <span class="inst-dropdown-header">{html.escape(col["header"])}</span>')
                 for sub in active_subs:
+                    sub_url = sub.get("url", "#")
                     flag_attr = f' data-feature-flag="{html.escape(sub["featureFlag"])}"' if sub.get("featureFlag") else ""
                     sub_badge_html = f'<span class="p2-badge p2-badge-{sub.get("badgeColor","teal")}" style="margin-left:4px;">{html.escape(sub["badge"])}</span>' if sub.get("badge") else ""
                     sub_desc = sub.get("subtitle") or sub.get("sub") or ""
-                    out.append(f'      <a href="{html.escape(sub.get("url","#"))}" class="inst-dd-item"{flag_attr}>')
+                    sub_onclick = DESK_ONCLICK_MAP.get(sub_url, "")
+                    sub_onclick_attr = f' onclick="{sub_onclick}"' if sub_onclick else ""
+                    out.append(f'      <a href="{html.escape(sub_url)}" class="inst-dd-item"{flag_attr}{sub_onclick_attr}>')
                     if sub.get("icon"):
                         out.append(f'        <span class="dd-icon">{html.escape(sub["icon"])}</span>')
                     out.append('        <div class="dd-text">')
@@ -254,6 +295,17 @@ def render_navigation_html(current_path: str = "/") -> str:
             out.append('  </div>')
             out.append('</div>')
 
+    out.append("""  <!-- Preserved hidden tabs for backward JS compatibility -->
+  <button id="navUpstoxChain" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">Option Chain Pro</button>
+  <button id="navBreadthContrib" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">Breadth Contrib</button>
+  <button id="navBreadth" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">Market Breadth</button>
+  <button id="tabBreadth" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">Breadth</button>
+  <button id="tabOptions" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">Options</button>
+  <button id="tabSmartMoney" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">Smart Money</button>
+  <button id="tabDelivery" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">Delivery</button>
+  <button id="tabMtf" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">MTF</button>
+  <button id="tabTools" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">Tools</button>
+  <button id="tabSettings" class="tab-btn inst-hidden-tab" type="button" style="display:none!important">Settings</button>""")
     out.append('</nav>')
     return "\n".join(out)
 

@@ -52,6 +52,13 @@
         if (saved) {
           this.workspace = Object.assign(this.workspace, JSON.parse(saved));
         }
+        // Purge any corrupted or hijack state that forces MTF on startup
+        if (this.workspace.activeTab === 'mtf') {
+          this.workspace.activeTab = 'dashboard';
+          try {
+            localStorage.setItem(STORAGE_KEY_WORKSPACE, JSON.stringify(this.workspace));
+          } catch (_) {}
+        }
       } catch (e) {}
     },
 
@@ -273,16 +280,17 @@
     },
 
     restoreWorkspaceState() {
-      if (this.workspace.activeTab && typeof window.switchTab === 'function') {
-        const validTabs = ['breadth', 'options', 'smartMoney', 'delivery', 'mtf', 'tools', 'news'];
-        if (validTabs.includes(this.workspace.activeTab) && this.workspace.activeTab !== 'breadth') {
-          setTimeout(() => {
-            try {
-              window.switchTab(this.workspace.activeTab);
-            } catch (e) {}
-          }, 350);
-        }
+      // 1. Sovereign Clean URL Routing Check:
+      // If user requested a specific URL path (e.g. /futures, /delivery, /option-chain-pro, /mtf, /smart-money),
+      // NEVER override or hijack the route!
+      const curPath = (window.location.pathname || "/").toLowerCase().replace(/\/$/, "") || "/";
+      if (curPath !== "" && curPath !== "/" && curPath !== "/index.html" && curPath !== "/dashboard") {
+        return;
       }
+      if (window.location.search || window.location.hash) {
+        return; // URL query/hash navigation takes precedence
+      }
+      // 2. On root "/", default is always the master market dashboard. Never force switch to MTF or other tabs.
     },
 
     renderTopbarAuth() {
@@ -452,12 +460,20 @@
         }
       });
 
-      // Synchronize tab switching
+      // Synchronize tab and institutional navigation switching
       const origSwitchTab = window.switchTab;
       if (typeof origSwitchTab === 'function') {
         window.switchTab = (tab) => {
           origSwitchTab(tab);
           AuthSync.saveWorkspace({ activeTab: tab });
+        };
+      }
+      const origInstNav = window.instNav;
+      if (typeof origInstNav === 'function') {
+        window.instNav = function(key, subview, updateHistory, shouldScroll) {
+          const res = origInstNav.apply(this, arguments);
+          AuthSync.saveWorkspace({ activeTab: key });
+          return res;
         };
       }
 

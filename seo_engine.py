@@ -1393,7 +1393,7 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
 
     target_panel = route_panel_map.get(clean_p)
     if not target_panel:
-        for pfx, pnl in (("/futures", "panelFutures"), ("/delivery", "panelDelivery"), ("/mtf", "panelMtf"), ("/option", "panelUpstoxChain"), ("/fii", "panelSmartMoney"), ("panelBreadth")):
+        for pfx, pnl in (("/futures", "panelFutures"), ("/delivery", "panelDelivery"), ("/mtf", "panelMtf"), ("/option", "panelUpstoxChain"), ("/fii", "panelSmartMoney"), ("/breadth", "panelBreadth")):
             if clean_p.startswith(pfx):
                 target_panel = pnl
                 break

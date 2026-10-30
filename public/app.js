@@ -10424,8 +10424,12 @@ if (els.optIvCanvas) {
 }
 
 // Tab navigation listeners
-els.tabBreadth.addEventListener("click", () => switchTab("breadth"));
-els.tabOptions.addEventListener("click", () => switchTab("options"));
+if (els.tabBreadth) {
+  els.tabBreadth.addEventListener("click", () => switchTab("breadth"));
+}
+if (els.tabOptions) {
+  els.tabOptions.addEventListener("click", () => switchTab("options"));
+}
 if (els.tabSmartMoney) {
   els.tabSmartMoney.addEventListener("click", () => switchTab("smartMoney"));
 }
@@ -12587,7 +12591,7 @@ const INST_NAV_MAP = {
 
 // All institutional nav buttons (primary suites + utilities + legacy aliases)
 const INST_NAV_BTN_IDS = [
-  "navDashboard", "navFutures", "navOptions", "navStraddle",
+  "navDashboard", "navFutures", "navOptions", "navCharts", "navBlog", "navStraddle",
   "navGlobalMarkets", "navToolsMenu",
   "navUpstoxChain", "navBreadthContrib", "navFiiDii", "navMtf", "navDelivery", "navBreadth", "navAnalytics"
 ];
@@ -12607,7 +12611,12 @@ const INST_NAV_ACTIVE_MAP = {
   smartmoney:    "navFiiDii",
   fiidii:        "navFiiDii",
   mtf:           "navMtf",
+  mta:           "navMtf",
   delivery:      "navDelivery",
+  deliv:         "navDelivery",
+  charts:        "navCharts",
+  chart:         "navCharts",
+  blog:          "navBlog",
   tools:         "navToolsMenu",
   settings:      "navToolsMenu",
 };
@@ -12720,10 +12729,12 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
 }
 
 window.switchDesk = function(deskKey) {
-  if (deskKey === "options") instNav("upstoxChain", null, true, true);
+  if (deskKey === "dashboard") instNav("dashboard", null, true, true);
+  else if (deskKey === "options" || deskKey === "upstoxChain") instNav("upstoxChain", null, true, true);
   else if (deskKey === "futures") instNav("futures", "matrix", true, true);
   else if (deskKey === "delivery") instNav("delivery", null, true, true);
   else if (deskKey === "mtf") instNav("mtf", null, true, true);
+  else if (deskKey === "smartmoney" || deskKey === "fiidii" || deskKey === "smartMoney") instNav("smartMoney", null, true, true);
   else if (deskKey === "search") {
     if (typeof openGlobalSearch === "function") openGlobalSearch();
     else {
