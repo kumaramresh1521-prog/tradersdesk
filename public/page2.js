@@ -238,13 +238,13 @@
   const P2_ROUTES = {
     "/straddle": {
       suite: "straddle",
-      title: "Straddle Desk - Live Options Premium Decay & Greeks | TradersDesk",
-      desc: "Real-time Options Straddle chart tracking combined CE+PE premium decay, live intraday delta-neutral curves, IV crush, and exact contract expiries."
+      title: "Straddle Desk - Live ATM Straddle Analysis & Greeks | TradersDesk",
+      desc: "Real-time Options Straddle chart tracking combined CE+PE straddle premium, live intraday delta-neutral curves, IV crush, and exact contract expiries."
     },
     "/atm-straddle": {
       suite: "straddle",
-      title: "Straddle Desk - Live Options Premium Decay & Greeks | TradersDesk",
-      desc: "Real-time Options Straddle chart tracking combined CE+PE premium decay, live intraday delta-neutral curves, IV crush, and exact contract expiries."
+      title: "Straddle Desk - Live ATM Straddle Analysis & Greeks | TradersDesk",
+      desc: "Real-time Options Straddle chart tracking combined CE+PE straddle premium, live intraday delta-neutral curves, IV crush, and exact contract expiries."
     },
     "/call-vs-put-premium": {
       suite: "callVsPut",
@@ -515,7 +515,7 @@ if (suiteKey === "callVsPut") {
     } else {
       if (decayTab) decayTab.classList.add("active");
       if (cvpTab) cvpTab.classList.remove("active");
-      if (headingEl) headingEl.textContent = `${straddleState.index} ATM Premium Decay Live Curve`;
+      if (headingEl) headingEl.textContent = `${straddleState.index} ATM Straddle Live Curve`;
       if (subHeadingEl) subHeadingEl.textContent = "Intraday 1-minute trajectory comparing combined premium erosion against spot momentum";
       straddleState.visible.straddle = true;
       straddleState.visible.call = true;

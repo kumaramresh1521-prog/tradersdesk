@@ -38,7 +38,7 @@
     { id: "smartmoney", deskKey: "smartmoney", title: "FII / DII Institutional Desk", subtitle: "FII / DII Cash Market Activity, Participant OI & Index Futures Net", icon: "🏛️", tag: "INSTITUTIONAL" },
     { id: "globalMarkets", deskKey: "globalMarkets", title: "Global Markets & Macro", subtitle: "GIFT NIFTY, Dow Jones, Nasdaq, Crude Oil, Dollar Index & World Assets", icon: "🌐", tag: "MACRO" },
     { id: "breadthContrib", deskKey: "breadthContrib", url: "/breadth-contribution", title: "Market Breadth & Contribution", subtitle: "Live Advance/Decline Breadth Ratio & Index Point Contribution", icon: "📊", tag: "LIVE" },
-    { id: "straddle", deskKey: "straddle", url: "/straddle", title: "Straddle Terminal", subtitle: "Live ATM Straddle Premium Decay Curve & Synthetic Spot Basis", icon: "📉", tag: "VOLATILITY" },
+    { id: "straddle", deskKey: "straddle", url: "/straddle", title: "Straddle Terminal", subtitle: "Live ATM Straddle Curve & Synthetic Spot Basis", icon: "📉", tag: "VOLATILITY" },
     { id: "calendar", deskKey: "calendar", url: "/calendar_studio.html", title: "NSE Trading Holiday Calendar", subtitle: "Exchange Clearing & Trading Holiday Schedule", icon: "📅", tag: "SCHEDULE" }
   ];
 

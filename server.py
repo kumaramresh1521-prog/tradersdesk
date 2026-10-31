@@ -9306,7 +9306,14 @@ def sanitize_for_json(obj):
     return obj
 
 
-def run_system_diagnostics() -> dict:
+_DIAG_CACHE: dict | None = None
+_DIAG_CACHE_TS: float = 0.0
+
+def run_system_diagnostics(force: bool = False) -> dict:
+    global _DIAG_CACHE, _DIAG_CACHE_TS
+    now = time.time()
+    if not force and _DIAG_CACHE and (now - _DIAG_CACHE_TS < 60.0):
+        return _DIAG_CACHE
     t_start = time.time()
     checks = []
 
@@ -9470,207 +9477,232 @@ def run_system_diagnostics() -> dict:
             "latencyMs": round((time.time() - t0) * 1000, 1),
         })
 
-    # 7. Angel One SmartAPI (Master Broker) - TRUE LIVE PING VERIFICATION
-    t0 = time.time()
-    try:
-        angel_cfg = angel_configured()
-        if angel_cfg:
-            try:
-                ac = AngelClient()
-                ac.ensure_session()
-                checks.append({
+    # 7-10. Broker & Cloud Live Handshakes (Parallelized to prevent blocking)
+    import concurrent.futures
+
+    def check_angel():
+        t0 = time.time()
+        try:
+            angel_cfg = angel_configured()
+            if angel_cfg:
+                try:
+                    ac = AngelClient()
+                    ac.ensure_session()
+                    return {
+                        "id": "broker",
+                        "name": "Angel One SmartAPI (Primary Broker)",
+                        "category": "Broker Feeds",
+                        "status": "PASS",
+                        "icon": "🪽",
+                        "summary": f"🟢 Live Session Active (Client: {ac.client_code})",
+                        "detail": "JWT Session verified & active for live quotes and Option Chain streaming",
+                        "latencyMs": round((time.time() - t0) * 1000, 1),
+                    }
+                except Exception as auth_err:
+                    return {
+                        "id": "broker",
+                        "name": "Angel One SmartAPI (Primary Broker)",
+                        "category": "Broker Feeds",
+                        "status": "FAIL",
+                        "icon": "🪽",
+                        "summary": "🔴 Session Auth Failed / Expired",
+                        "detail": f"Keys saved, but live login failed: {str(auth_err)[:120]}",
+                        "latencyMs": round((time.time() - t0) * 1000, 1),
+                    }
+            else:
+                return {
                     "id": "broker",
                     "name": "Angel One SmartAPI (Primary Broker)",
                     "category": "Broker Feeds",
-                    "status": "PASS",
+                    "status": "WARN",
                     "icon": "🪽",
-                    "summary": f"🟢 Live Session Active (Client: {ac.client_code})",
-                    "detail": "JWT Session verified & active for live quotes and Option Chain streaming",
+                    "summary": "🟡 Credentials Not Configured",
+                    "detail": "Configure API Key, Client Code, PIN, and TOTP Secret in Master Broker APIs tab",
                     "latencyMs": round((time.time() - t0) * 1000, 1),
-                })
-            except Exception as auth_err:
-                checks.append({
-                    "id": "broker",
-                    "name": "Angel One SmartAPI (Primary Broker)",
-                    "category": "Broker Feeds",
-                    "status": "FAIL",
-                    "icon": "🪽",
-                    "summary": "🔴 Session Auth Failed / Expired",
-                    "detail": f"Keys saved, but live login failed: {str(auth_err)[:120]}",
-                    "latencyMs": round((time.time() - t0) * 1000, 1),
-                })
-        else:
-            checks.append({
+                }
+        except Exception as e:
+            return {
                 "id": "broker",
                 "name": "Angel One SmartAPI (Primary Broker)",
                 "category": "Broker Feeds",
-                "status": "WARN",
+                "status": "FAIL",
                 "icon": "🪽",
-                "summary": "🟡 Credentials Not Configured",
-                "detail": "Configure API Key, Client Code, PIN, and TOTP Secret in Master Broker APIs tab",
+                "summary": "Broker configuration error",
+                "detail": str(e),
                 "latencyMs": round((time.time() - t0) * 1000, 1),
-            })
-    except Exception as e:
-        checks.append({
-            "id": "broker",
-            "name": "Angel One SmartAPI (Primary Broker)",
-            "category": "Broker Feeds",
-            "status": "FAIL",
-            "icon": "🪽",
-            "summary": "Broker configuration error",
-            "detail": str(e),
-            "latencyMs": round((time.time() - t0) * 1000, 1),
-        })
+            }
 
-    # 8. Supabase Cloud Sync
-    t0 = time.time()
-    try:
-        sb_cfg = supabase_engine.get_supabase_config()
-        if sb_cfg.get("isConfigured"):
-            checks.append({
-                "id": "supabase",
-                "name": "Supabase Cloud Database",
-                "category": "Cloud Infrastructure",
-                "status": "PASS",
-                "icon": "☁️",
-                "summary": "Cloud Sync Active",
-                "detail": f"Endpoint: {sb_cfg.get('url', '')[:24]}...",
-                "latencyMs": round((time.time() - t0) * 1000, 1),
-            })
-        else:
-            checks.append({
-                "id": "supabase",
-                "name": "Supabase Cloud Database",
-                "category": "Cloud Infrastructure",
-                "status": "INFO",
-                "icon": "☁️",
-                "summary": "Local Standalone Mode (Cloud Optional)",
-                "detail": "Operating with local disk storage. Cloud cross-device sync is optional.",
-                "latencyMs": round((time.time() - t0) * 1000, 1),
-            })
-    except Exception as e:
-        checks.append({
-            "id": "supabase",
-            "name": "Supabase Cloud Database",
-            "category": "Cloud Infrastructure",
-            "status": "WARN",
-            "icon": "☁️",
-            "summary": "Supabase check error",
-            "detail": str(e),
-            "latencyMs": round((time.time() - t0) * 1000, 1),
-        })
-
-    # 9. Upstox Option Chain Pro Engine - TRUE TOKEN VALIDATION
-    t0 = time.time()
-    try:
-        up_token = env("UPSTOX_ACCESS_TOKEN", "").strip()
-        up_cfg = bool(up_token and len(up_token) > 20)
-        if up_cfg:
-            up_test = upstox_engine.test_connection(up_token)
-            if up_test.get("ok"):
-                checks.append({
-                    "id": "upstox_chain",
-                    "name": "Upstox Option Chain Pro Desk",
-                    "category": "Option Analytics",
+    def check_supabase():
+        t0 = time.time()
+        try:
+            sb_cfg = supabase_engine.get_supabase_config()
+            if sb_cfg.get("isConfigured"):
+                return {
+                    "id": "supabase",
+                    "name": "Supabase Cloud Database",
+                    "category": "Cloud Infrastructure",
                     "status": "PASS",
-                    "icon": "⚡",
-                    "summary": "🟢 Upstox Live Token Verified",
-                    "detail": up_test.get("message", "Live Upstox API v2 connection active"),
+                    "icon": "☁️",
+                    "summary": "Cloud Sync Active",
+                    "detail": f"Endpoint: {sb_cfg.get('url', '')[:24]}...",
                     "latencyMs": round((time.time() - t0) * 1000, 1),
-                })
+                }
             else:
-                checks.append({
+                return {
+                    "id": "supabase",
+                    "name": "Supabase Cloud Database",
+                    "category": "Cloud Infrastructure",
+                    "status": "INFO",
+                    "icon": "☁️",
+                    "summary": "Local Standalone Mode (Cloud Optional)",
+                    "detail": "Operating with local disk storage. Cloud cross-device sync is optional.",
+                    "latencyMs": round((time.time() - t0) * 1000, 1),
+                }
+        except Exception as e:
+            return {
+                "id": "supabase",
+                "name": "Supabase Cloud Database",
+                "category": "Cloud Infrastructure",
+                "status": "WARN",
+                "icon": "☁️",
+                "summary": "Supabase check error",
+                "detail": str(e),
+                "latencyMs": round((time.time() - t0) * 1000, 1),
+            }
+
+    def check_upstox():
+        t0 = time.time()
+        try:
+            up_token = env("UPSTOX_ACCESS_TOKEN", "").strip()
+            up_cfg = bool(up_token and len(up_token) > 20)
+            if up_cfg:
+                up_test = upstox_engine.test_connection(up_token)
+                if up_test.get("ok"):
+                    return {
+                        "id": "upstox_chain",
+                        "name": "Upstox Option Chain Pro Desk",
+                        "category": "Option Analytics",
+                        "status": "PASS",
+                        "icon": "⚡",
+                        "summary": "🟢 Upstox Live Token Verified",
+                        "detail": up_test.get("message", "Live Upstox API v2 connection active"),
+                        "latencyMs": round((time.time() - t0) * 1000, 1),
+                    }
+                else:
+                    return {
+                        "id": "upstox_chain",
+                        "name": "Upstox Option Chain Pro Desk",
+                        "category": "Option Analytics",
+                        "status": "FAIL",
+                        "icon": "⚡",
+                        "summary": "🔴 Upstox Token Expired / Invalid",
+                        "detail": up_test.get("message", "Token rejected by Upstox v2 API. Please refresh token."),
+                        "latencyMs": round((time.time() - t0) * 1000, 1),
+                    }
+            else:
+                return {
                     "id": "upstox_chain",
                     "name": "Upstox Option Chain Pro Desk",
                     "category": "Option Analytics",
-                    "status": "FAIL",
+                    "status": "WARN",
                     "icon": "⚡",
-                    "summary": "🔴 Upstox Token Expired / Invalid",
-                    "detail": up_test.get("message", "Token rejected by Upstox v2 API. Please refresh token."),
+                    "summary": "🟡 Upstox Token Not Set (Using Fallback)",
+                    "detail": "No Upstox Access Token saved. Option Chain is running on fallback engine.",
                     "latencyMs": round((time.time() - t0) * 1000, 1),
-                })
-        else:
-            checks.append({
+                }
+        except Exception as e:
+            return {
                 "id": "upstox_chain",
                 "name": "Upstox Option Chain Pro Desk",
                 "category": "Option Analytics",
-                "status": "WARN",
+                "status": "FAIL",
                 "icon": "⚡",
-                "summary": "🟡 Upstox Token Not Set (Using Fallback)",
-                "detail": "No Upstox Access Token saved. Option Chain is running on fallback engine.",
+                "summary": "Upstox engine error",
+                "detail": str(e),
                 "latencyMs": round((time.time() - t0) * 1000, 1),
-            })
-    except Exception as e:
-        checks.append({
-            "id": "upstox_chain",
-            "name": "Upstox Option Chain Pro Desk",
-            "category": "Option Analytics",
-            "status": "FAIL",
-            "icon": "⚡",
-            "summary": "Upstox engine error",
-            "detail": str(e),
-            "latencyMs": round((time.time() - t0) * 1000, 1),
-        })
+            }
 
-    # 10. Futures Intelligence & Kotak Engine - TRUE KOTAK TOTP/SESSION VERIFICATION
-    t0 = time.time()
-    try:
-        kotak_tok = env("KOTAK_ACCESS_TOKEN", "").strip()
-        kotak_ckey = env("KOTAK_CONSUMER_KEY", "").strip()
-        kotak_mob = env("KOTAK_MOBILE_NO", "").strip()
-        kotak_mpin = env("KOTAK_MPIN", "").strip()
-        kotak_ucc = env("KOTAK_UCC", "").strip()
-        kotak_totp = env("KOTAK_TOTP_SECRET", "").strip()
-        kotak_cfg = bool(kotak_tok or (kotak_ckey and (kotak_mob or kotak_ucc)))
-        if kotak_cfg:
-            k_res = futures_engine.test_kotak_connection(
-                kotak_tok, kotak_ckey, kotak_mob, kotak_mpin, ucc=kotak_ucc, totp_secret=kotak_totp
-            )
-            if k_res.get("ok"):
-                checks.append({
-                    "id": "futures_desk",
-                    "name": "Kotak Neo & Futures Intelligence",
-                    "category": "Derivatives Analytics",
-                    "status": "PASS",
-                    "icon": "📈",
-                    "summary": "🟢 Kotak Neo Live Session Active",
-                    "detail": k_res.get("message", "Kotak Neo authenticated successfully"),
-                    "latencyMs": round((time.time() - t0) * 1000, 1),
-                })
+    def check_kotak():
+        t0 = time.time()
+        try:
+            kotak_tok = env("KOTAK_ACCESS_TOKEN", "").strip()
+            kotak_ckey = env("KOTAK_CONSUMER_KEY", "").strip()
+            kotak_mob = env("KOTAK_MOBILE_NO", "").strip()
+            kotak_mpin = env("KOTAK_MPIN", "").strip()
+            kotak_ucc = env("KOTAK_UCC", "").strip()
+            kotak_totp = env("KOTAK_TOTP_SECRET", "").strip()
+            kotak_cfg = bool(kotak_tok or (kotak_ckey and (kotak_mob or kotak_ucc)))
+            if kotak_cfg:
+                k_res = futures_engine.test_kotak_connection(
+                    kotak_tok, kotak_ckey, kotak_mob, kotak_mpin, ucc=kotak_ucc, totp_secret=kotak_totp
+                )
+                if k_res.get("ok"):
+                    return {
+                        "id": "futures_desk",
+                        "name": "Kotak Neo & Futures Intelligence",
+                        "category": "Derivatives Analytics",
+                        "status": "PASS",
+                        "icon": "📈",
+                        "summary": "🟢 Kotak Neo Live Connection Verified",
+                        "detail": k_res.get("message", "Kotak Neo Trade API v2 credentials authenticated"),
+                        "latencyMs": round((time.time() - t0) * 1000, 1),
+                    }
+                else:
+                    return {
+                        "id": "futures_desk",
+                        "name": "Kotak Neo & Futures Intelligence",
+                        "category": "Derivatives Analytics",
+                        "status": "FAIL",
+                        "icon": "📈",
+                        "summary": "🔴 Kotak Neo Login / Token Failed",
+                        "detail": k_res.get("message", "Kotak credentials saved, but session handshake failed."),
+                        "latencyMs": round((time.time() - t0) * 1000, 1),
+                    }
             else:
-                checks.append({
+                return {
                     "id": "futures_desk",
                     "name": "Kotak Neo & Futures Intelligence",
                     "category": "Derivatives Analytics",
-                    "status": "FAIL",
+                    "status": "WARN",
                     "icon": "📈",
-                    "summary": "🔴 Kotak Neo Login / Token Failed",
-                    "detail": k_res.get("message", "Kotak credentials saved, but session handshake failed."),
+                    "summary": "🟡 Kotak Keys Not Configured (NSE Bhavcopy Active)",
+                    "detail": "Kotak Neo credentials not configured. Futures desk using NSE Bhavcopy + Angel fallback.",
                     "latencyMs": round((time.time() - t0) * 1000, 1),
-                })
-        else:
-            checks.append({
+                }
+        except Exception as e:
+            return {
                 "id": "futures_desk",
                 "name": "Kotak Neo & Futures Intelligence",
                 "category": "Derivatives Analytics",
-                "status": "WARN",
+                "status": "FAIL",
                 "icon": "📈",
-                "summary": "🟡 Kotak Keys Not Configured (NSE Bhavcopy Active)",
-                "detail": "Kotak Neo credentials not configured. Futures desk using NSE Bhavcopy + Angel fallback.",
+                "summary": "Futures engine error",
+                "detail": str(e),
                 "latencyMs": round((time.time() - t0) * 1000, 1),
-            })
-    except Exception as e:
-        checks.append({
-            "id": "futures_desk",
-            "name": "Kotak Neo & Futures Intelligence",
-            "category": "Derivatives Analytics",
-            "status": "FAIL",
-            "icon": "📈",
-            "summary": "Futures engine error",
-            "detail": str(e),
-            "latencyMs": round((time.time() - t0) * 1000, 1),
-        })
+            }
 
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        f_angel = executor.submit(check_angel)
+        f_supabase = executor.submit(check_supabase)
+        f_upstox = executor.submit(check_upstox)
+        f_kotak = executor.submit(check_kotak)
+        
+        try:
+            checks.append(f_angel.result(timeout=4.0))
+        except Exception:
+            checks.append({"id": "broker", "name": "Angel One SmartAPI (Primary Broker)", "category": "Broker Feeds", "status": "WARN", "icon": "🪽", "summary": "Audit Timeout", "detail": "Check timed out", "latencyMs": 4000.0})
+        try:
+            checks.append(f_supabase.result(timeout=4.0))
+        except Exception:
+            checks.append({"id": "supabase", "name": "Supabase Cloud Database", "category": "Cloud Infrastructure", "status": "INFO", "icon": "☁️", "summary": "Local Standalone Mode", "detail": "Supabase timed out", "latencyMs": 4000.0})
+        try:
+            checks.append(f_upstox.result(timeout=4.0))
+        except Exception:
+            checks.append({"id": "upstox_chain", "name": "Upstox Option Chain Pro Desk", "category": "Option Analytics", "status": "WARN", "icon": "⚡", "summary": "Audit Timeout", "detail": "Check timed out", "latencyMs": 4000.0})
+        try:
+            checks.append(f_kotak.result(timeout=4.0))
+        except Exception:
+            checks.append({"id": "futures_desk", "name": "Kotak Neo & Futures Intelligence", "category": "Derivatives Analytics", "status": "WARN", "icon": "📈", "summary": "Audit Timeout", "detail": "Check timed out", "latencyMs": 4000.0})
 
     total_latency = round((time.time() - t_start) * 1000, 1)
     pass_count = sum(1 for c in checks if c["status"] == "PASS")
@@ -9679,7 +9711,7 @@ def run_system_diagnostics() -> dict:
 
     overall_status = "HEALTHY" if fail_count == 0 and warn_count <= 2 else ("DEGRADED" if fail_count == 0 else "CRITICAL")
 
-    return {
+    result = {
         "ok": True,
         "timestamp": now_ist().strftime("%d-%b-%Y %H:%M:%S IST"),
         "overallStatus": overall_status,
@@ -9691,6 +9723,9 @@ def run_system_diagnostics() -> dict:
         "totalLatencyMs": total_latency,
         "checks": checks,
     }
+    _DIAG_CACHE = result
+    _DIAG_CACHE_TS = time.time()
+    return result
 
 
 _STRADDLE_TOOL_LOCK = threading.Lock()

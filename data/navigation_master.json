@@ -172,12 +172,12 @@
           ]
         },
         {
-          "header": "📉 Premium Decay & Strategies",
+          "header": "📉 Straddle & Options Analysis",
           "items": [
             {
               "id": "sub_opt_straddle",
               "title": "ATM Straddle",
-              "subtitle": "Live combined CE+PE premium decay & synthetic curve",
+              "subtitle": "Live combined CE+PE straddle & synthetic curve",
               "url": "/straddle",
               "icon": "📉",
               "badge": "",
@@ -185,19 +185,9 @@
               "active": true
             },
             {
-              "id": "sub_opt_decay",
-              "title": "Premium Decay",
-              "subtitle": "Intraday theta erosion, IV crush & leg breakdown chart",
-              "url": "/premium-decay",
-              "icon": "🔻",
-              "badge": "NEW",
-              "badgeColor": "orange",
-              "active": true
-            },
-            {
               "id": "sub_opt_call_put",
               "title": "Call vs Put Premium",
-              "subtitle": "Live CE vs PE comparison, decay skew & imbalance",
+              "subtitle": "Live CE vs PE comparison, strike skew & pricing imbalance",
               "url": "/call-vs-put-premium",
               "icon": "⚔️",
               "badge": "NEW",

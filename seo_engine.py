@@ -38,17 +38,17 @@ try:
 except Exception:
     supabase_engine = None
 def load_deleted_routes() -> set[str]:
-    """Loads deleted routes from Supabase or disk to prevent resurrection."""
+    """Loads deleted routes from disk or Supabase to prevent resurrection."""
+    if DELETED_ROUTES_FILE.exists():
+        try:
+            return set(json.loads(DELETED_ROUTES_FILE.read_text(encoding="utf-8")))
+        except Exception:
+            pass
     if supabase_engine:
         try:
             cloud_del = supabase_engine.load_app_config_from_supabase("deleted_seo_routes")
             if isinstance(cloud_del, list):
                 return set(cloud_del)
-        except Exception:
-            pass
-    if DELETED_ROUTES_FILE.exists():
-        try:
-            return set(json.loads(DELETED_ROUTES_FILE.read_text(encoding="utf-8")))
         except Exception:
             pass
     return set()
@@ -442,8 +442,22 @@ def _detect_category(path: str) -> str:
     return "tools"
 
 def load_seo_config() -> dict:
-    """Loads global SEO configuration from Supabase cloud database or persistent disk."""
-    # 1. Supabase Cloud Database (Primary source of truth across deploys)
+    """Loads global SEO configuration from persistent disk or Supabase cloud database."""
+    # 1. Local Persistent File (Fast 0-latency source)
+    for cfg_path in (SEO_CONFIG_FILE, ROOT_SEO_CONFIG):
+        if cfg_path.exists():
+            try:
+                data = json.loads(cfg_path.read_text(encoding="utf-8"))
+                if isinstance(data, dict) and data.get("site_title"):
+                    merged = DEFAULT_SEO_CONFIG.copy()
+                    merged.update(data)
+                    if not merged.get("google_analytics_id"):
+                        merged["google_analytics_id"] = "G-Y0MDT0BZD8"
+                    return merged
+            except Exception:
+                pass
+
+    # 2. Supabase Cloud Database fallback (if disk is not initialized)
     if supabase_engine:
         try:
             cloud_cfg = supabase_engine.load_app_config_from_supabase("seo_config")
@@ -452,7 +466,6 @@ def load_seo_config() -> dict:
                 merged.update(cloud_cfg)
                 if not merged.get("google_analytics_id"):
                     merged["google_analytics_id"] = "G-Y0MDT0BZD8"
-                # Mirror to disk
                 try:
                     DATA_DIR.mkdir(parents=True, exist_ok=True)
                     SEO_CONFIG_FILE.write_text(json.dumps(merged, indent=2), encoding="utf-8")
@@ -462,19 +475,6 @@ def load_seo_config() -> dict:
                 return merged
         except Exception:
             pass
-
-    # 2. Local Persistent File
-    for cfg_path in (SEO_CONFIG_FILE, ROOT_SEO_CONFIG):
-        if cfg_path.exists():
-            try:
-                data = json.loads(cfg_path.read_text(encoding="utf-8"))
-                merged = DEFAULT_SEO_CONFIG.copy()
-                merged.update(data)
-                if not merged.get("google_analytics_id"):
-                    merged["google_analytics_id"] = "G-Y0MDT0BZD8"
-                return merged
-            except Exception:
-                pass
 
     return DEFAULT_SEO_CONFIG.copy()
 
@@ -518,13 +518,26 @@ def apply_seo_to_index_html(config: dict) -> bool:
         return False
 
 def load_all_seo_routes() -> dict[str, dict]:
-    """Loads all SEO route configurations from Supabase cloud or persistent disk, respecting deleted routes."""
+    """Loads all SEO route configurations from persistent disk or Supabase cloud, respecting deleted routes."""
     deleted = load_deleted_routes()
     routes: dict[str, dict] = {}
 
-    # 1. Attempt Supabase Cloud Database first (survives all redeployments)
-    cloud_loaded = False
-    if supabase_engine:
+    # 1. Local Persistent File first (Fast 0-latency source)
+    for rf in (SEO_ROUTES_FILE, ROOT_SEO_ROUTES):
+        if rf.exists():
+            try:
+                disk_data = json.loads(rf.read_text(encoding="utf-8"))
+                if isinstance(disk_data, dict) and len(disk_data) > 0:
+                    for k, v in disk_data.items():
+                        clean_k = ("/" + k.strip("/")).lower() if k != "/" else "/"
+                        if clean_k not in deleted:
+                            routes[clean_k] = v
+                    break
+            except Exception:
+                pass
+
+    # 2. Supabase Cloud Database fallback (if disk is not initialized)
+    if not routes and supabase_engine:
         try:
             cloud_routes = supabase_engine.load_app_config_from_supabase("seo_routes")
             if isinstance(cloud_routes, dict) and len(cloud_routes) > 0:
@@ -532,24 +545,8 @@ def load_all_seo_routes() -> dict[str, dict]:
                     clean_k = ("/" + k.strip("/")).lower() if k != "/" else "/"
                     if clean_k not in deleted:
                         routes[clean_k] = v
-                cloud_loaded = True
         except Exception as e:
             print(f"[SEO Engine] Supabase cloud route fetch note: {e}")
-
-    # 2. If not loaded from cloud, load from disk
-    if not cloud_loaded:
-        for rf in (SEO_ROUTES_FILE, ROOT_SEO_ROUTES):
-            if rf.exists():
-                try:
-                    disk_data = json.loads(rf.read_text(encoding="utf-8"))
-                    if isinstance(disk_data, dict) and len(disk_data) > 0:
-                        for k, v in disk_data.items():
-                            clean_k = ("/" + k.strip("/")).lower() if k != "/" else "/"
-                            if clean_k not in deleted:
-                                routes[clean_k] = v
-                        break
-                except Exception:
-                    pass
 
     # 3. Base initialization if still empty
     if not routes:
@@ -567,8 +564,8 @@ def load_all_seo_routes() -> dict[str, dict]:
                 "og_desc": meta.get("desc", ""),
                 "robots": "index, follow",
                 "category": _detect_category(clean_p),
-                "priority": "1.0" if clean_p == "/" else ("0.9" if clean_p in ("/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/mtf", "/straddle", "/premium-decay", "/call-vs-put-premium") else "0.8"),
-                "changefreq": "always" if clean_p in ("/", "/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/straddle", "/premium-decay", "/call-vs-put-premium") else "daily",
+                "priority": "1.0" if clean_p == "/" else ("0.9" if clean_p in ("/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/mtf", "/straddle", "/call-vs-put-premium") else "0.8"),
+                "changefreq": "always" if clean_p in ("/", "/futures", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/straddle", "/call-vs-put-premium") else "daily",
                 "custom": False,
                 "last_updated": time.strftime("%Y-%m-%d %H:%M:%S IST")
             }

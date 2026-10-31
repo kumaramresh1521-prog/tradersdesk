@@ -12490,13 +12490,13 @@ const ROUTE_CONFIG = {
   },
   "/straddle": {
     desk: "straddle",
-    title: "Straddle Desk - Live Options Premium Decay & Greeks | TradersDesk",
-    desc: "Real-time Options Straddle chart tracking combined CE+PE premium decay, live intraday delta-neutral curves, IV crush, and synthetic futures."
+    title: "Straddle Desk - Live ATM Straddle Analysis & Greeks | TradersDesk",
+    desc: "Real-time Options Straddle chart tracking combined CE+PE straddle premium, live intraday delta-neutral curves, IV crush, and synthetic futures."
   },
   "/atm-straddle": {
     desk: "straddle",
-    title: "Straddle Desk - Live Options Premium Decay & Greeks | TradersDesk",
-    desc: "Real-time Options Straddle chart tracking combined CE+PE premium decay, live intraday delta-neutral curves, IV crush, and synthetic futures."
+    title: "Straddle Desk - Live ATM Straddle Analysis & Greeks | TradersDesk",
+    desc: "Real-time Options Straddle chart tracking combined CE+PE straddle premium, live intraday delta-neutral curves, IV crush, and synthetic futures."
   }
 };
 
