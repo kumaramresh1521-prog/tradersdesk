@@ -6967,6 +6967,12 @@ def compute_major_indices_delivery(stocks: dict[str, dict], baseline_sessions: l
     return indices_summary
 
 def fetch_delivery_bhav_by_date(target_dt: date) -> tuple[pathlib.Path | None, date]:
+    if target_dt.weekday() >= 5:
+        return None, target_dt
+    from chart_engine import NSE_FIXED_HOLIDAYS, NSE_CALENDAR_HOLIDAYS
+    if (target_dt.month, target_dt.day) in NSE_FIXED_HOLIDAYS or target_dt.isoformat() in NSE_CALENDAR_HOLIDAYS:
+        return None, target_dt
+
     date_str = target_dt.strftime("%d%m%Y")
     cache_file = DELIVERY_CACHE_DIR / f"sec_bhavdata_full_{date_str}.csv"
     if cache_file.exists() and cache_file.stat().st_size > 1000:
@@ -6991,9 +6997,6 @@ def fetch_delivery_bhav_by_date(target_dt: date) -> tuple[pathlib.Path | None, d
         except Exception:
             pass
 
-    cached_files = sorted(DELIVERY_CACHE_DIR.glob("sec_bhavdata_full_*.csv"))
-    if cached_files:
-        return cached_files[-1], target_dt
     return None, target_dt
 
 _INDEX_DELIVERY_CACHE = {}
@@ -7215,6 +7218,7 @@ def build_delivery_analytics(payload: dict) -> dict:
 
     session_map = []
     seen_dates = set()
+    from chart_engine import NSE_FIXED_HOLIDAYS, NSE_CALENDAR_HOLIDAYS
     for directory in (DELIVERY_CACHE_DIR, ROOT / "data", ROOT / "data" / "delivery"):
         if not directory.exists():
             continue
@@ -7222,6 +7226,10 @@ def build_delivery_analytics(payload: dict) -> dict:
             raw_d = f.name.replace("sec_bhavdata_full_", "").replace(".csv", "")
             try:
                 s_dt = datetime.strptime(raw_d, "%d%m%Y").date()
+                if s_dt.weekday() >= 5:
+                    continue
+                if (s_dt.month, s_dt.day) in NSE_FIXED_HOLIDAYS or s_dt.isoformat() in NSE_CALENDAR_HOLIDAYS:
+                    continue
                 if s_dt not in seen_dates:
                     seen_dates.add(s_dt)
                     session_map.append((s_dt, f))
