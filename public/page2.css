@@ -45,6 +45,12 @@
 /* ==========================================================================
    WHITE MODE / LIGHT THEME TOKENS
    ========================================================================== */
+:root[data-theme="light"],
+html[data-theme="light"],
+body.theme-light,
+body.light-theme,
+body.white-theme,
+body[data-theme="light"],
 body.page2-body.theme-light {
   --p2-bg: #f8fafc;
   --p2-bg-surface: #ffffff;
@@ -3956,4 +3962,273 @@ html[data-theme="light"] .p2-strike-info-note .note-badge {
 body.white-theme .strike-limit-hint,
 html[data-theme="light"] .strike-limit-hint {
   color: #0284c7;
+}
+
+
+/* ==========================================================================
+   DAY MODE (WHITE THEME) COMPREHENSIVE COMPONENT OVERRIDES
+   ========================================================================== */
+html[data-theme="light"] body.page2-body,
+body.page2-body.theme-light,
+body.page2-body.light-theme,
+body.page2-body.white-theme {
+  background-color: var(--p2-bg) !important;
+  color: var(--p2-text-main) !important;
+}
+
+/* Header & Navigation */
+html[data-theme="light"] .page2-header,
+body.theme-light .page2-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme="light"] .page2-back-btn,
+body.theme-light .page2-back-btn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .page2-back-btn:hover,
+body.theme-light .page2-back-btn:hover {
+  border-color: #0284c7 !important;
+  color: #0284c7 !important;
+}
+
+html[data-theme="light"] .page2-suite-tabs,
+body.theme-light .page2-suite-tabs {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html[data-theme="light"] .page2-suite-btn,
+body.theme-light .page2-suite-btn {
+  color: #475569 !important;
+}
+
+html[data-theme="light"] .page2-suite-btn:hover,
+body.theme-light .page2-suite-btn:hover {
+  color: #0f172a !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+html[data-theme="light"] .page2-suite-btn.active,
+body.theme-light .page2-suite-btn.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25) !important;
+}
+
+html[data-theme="light"] .page2-spot-badge,
+body.theme-light .page2-spot-badge {
+  background: #f0f9ff !important;
+  border: 1px solid #0284c7 !important;
+  color: #0284c7 !important;
+}
+
+html[data-theme="light"] .page2-ctrl-select,
+body.theme-light .page2-ctrl-select {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .page2-ctrl-select option,
+body.theme-light .page2-ctrl-select option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .page2-refresh-btn,
+body.theme-light .page2-refresh-btn,
+html[data-theme="light"] .page2-theme-toggle-btn,
+body.theme-light .page2-theme-toggle-btn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .page2-refresh-btn:hover,
+body.theme-light .page2-refresh-btn:hover,
+html[data-theme="light"] .page2-theme-toggle-btn:hover,
+body.theme-light .page2-theme-toggle-btn:hover {
+  border-color: #0284c7 !important;
+  color: #0284c7 !important;
+}
+
+/* Toolbars & Titles */
+html[data-theme="light"] .straddle-toolbar,
+body.theme-light .straddle-toolbar,
+html[data-theme="light"] .page2-tool-header,
+body.theme-light .page2-tool-header {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme="light"] .straddle-title-wrap h2,
+body.theme-light .straddle-title-wrap h2,
+html[data-theme="light"] .page2-tool-title-wrap h2,
+body.theme-light .page2-tool-title-wrap h2 {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .straddle-title-wrap p,
+body.theme-light .straddle-title-wrap p,
+html[data-theme="light"] .page2-tool-title-wrap p,
+body.theme-light .page2-tool-title-wrap p,
+html[data-theme="light"] .straddle-ctrl-group label,
+body.theme-light .straddle-ctrl-group label {
+  color: #64748b !important;
+}
+
+/* Cards & Metric Strips */
+html[data-theme="light"] .p2-card,
+body.theme-light .p2-card,
+html[data-theme="light"] .p2-metric-box,
+body.theme-light .p2-metric-box,
+html[data-theme="light"] .st-metric-card,
+body.theme-light .st-metric-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+html[data-theme="light"] .st-metric-card.highlight,
+body.theme-light .st-metric-card.highlight {
+  border-color: #0284c7 !important;
+  background: linear-gradient(145deg, #ffffff 0%, #f0f9ff 100%) !important;
+}
+
+html[data-theme="light"] .p2-card-header,
+body.theme-light .p2-card-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme="light"] .p2-card-title,
+body.theme-light .p2-card-title {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .p2-card-subtitle,
+body.theme-light .p2-card-subtitle,
+html[data-theme="light"] .st-lbl,
+body.theme-light .st-lbl,
+html[data-theme="light"] .p2-metric-label,
+body.theme-light .p2-metric-label,
+html[data-theme="light"] .st-sub,
+body.theme-light .st-sub {
+  color: #64748b !important;
+}
+
+html[data-theme="light"] .st-val,
+body.theme-light .st-val,
+html[data-theme="light"] .p2-metric-val,
+body.theme-light .p2-metric-val {
+  color: #0f172a !important;
+}
+
+/* Exchange & Mode Switcher Buttons */
+html[data-theme="light"] .nt-exch-btn,
+body.theme-light .nt-exch-btn,
+html[data-theme="light"] .fii-period-btn,
+body.theme-light .fii-period-btn,
+html[data-theme="light"] .fii-view-btn,
+body.theme-light .fii-view-btn,
+html[data-theme="light"] .st-legend-btn,
+body.theme-light .st-legend-btn,
+html[data-theme="light"] .st-view-btn,
+body.theme-light .st-view-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .nt-exch-btn.active,
+body.theme-light .nt-exch-btn.active,
+html[data-theme="light"] .fii-period-btn.active,
+body.theme-light .fii-period-btn.active,
+html[data-theme="light"] .fii-view-btn.active,
+body.theme-light .fii-view-btn.active,
+html[data-theme="light"] .st-legend-btn.active,
+body.theme-light .st-legend-btn.active,
+html[data-theme="light"] .st-view-btn.active,
+body.theme-light .st-view-btn.active {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+/* Range Bar & Legend */
+html[data-theme="light"] .straddle-range-bar,
+body.theme-light .straddle-range-bar {
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme="light"] .range-lbl,
+body.theme-light .range-lbl {
+  color: #64748b !important;
+}
+
+/* Tables */
+html[data-theme="light"] .p2-table,
+body.theme-light .p2-table {
+  background: #ffffff !important;
+}
+
+html[data-theme="light"] .p2-table th,
+body.theme-light .p2-table th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+html[data-theme="light"] .p2-table td,
+body.theme-light .p2-table td {
+  color: #1e293b !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+html[data-theme="light"] .p2-table tbody tr:hover,
+body.theme-light .p2-table tbody tr:hover {
+  background: #f1f5f9 !important;
+}
+
+/* Badges & Notes */
+html[data-theme="light"] .p2-strike-info-note,
+body.theme-light .p2-strike-info-note {
+  background: #f0fdf4 !important;
+  border: 1px solid #bbf7d0 !important;
+  color: #166534 !important;
+}
+
+html[data-theme="light"] .p2-badge-teal,
+body.theme-light .p2-badge-teal {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
+}
+
+html[data-theme="light"] .p2-badge-green,
+body.theme-light .p2-badge-green {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+html[data-theme="light"] .p2-badge-red,
+body.theme-light .p2-badge-red {
+  background: #ffe4e6 !important;
+  color: #be123c !important;
+  border: 1px solid #fecdd3 !important;
+}
+
+/* FII Crosshair Tooltip */
+html[data-theme="light"] .fii-crosshair-tooltip,
+body.theme-light .fii-crosshair-tooltip {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
 }

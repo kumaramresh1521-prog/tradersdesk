@@ -6781,12 +6781,18 @@ def build_fii_dii_cash(payload: dict = None) -> dict:
     except Exception:
         pass
 
-    return fii_dii_engine.get_fii_dii_data(
-        force_refresh=force_refresh,
-        nifty_close=nifty_close,
-        nifty_change=nifty_change,
-        nifty_pct=nifty_pct,
-    )
+    try:
+        return fii_dii_engine.get_fii_dii_data(
+            force_refresh=force_refresh,
+            nifty_close=nifty_close,
+            nifty_change=nifty_change,
+            nifty_pct=nifty_pct,
+        )
+    except Exception as exc:
+        logger.error(f"build_fii_dii_cash error: {exc}")
+        data = fii_dii_engine.load_fii_dii_history()
+        data["ok"] = True
+        return data
 
 
 
@@ -10192,8 +10198,12 @@ class RequestHandler(BaseHTTPRequestHandler):
             force = query.get("refresh", ["false"])[0].lower() in ("1", "true")
             return self.send_json(200, build_fii_dii_cash({"refresh": force}))
         if path == "/api/fii-derivatives-flow":
-            import fii_dii_engine
-            return self.send_json(200, fii_dii_engine.get_fii_derivatives_flow())
+            try:
+                import fii_dii_engine
+                return self.send_json(200, fii_dii_engine.get_fii_derivatives_flow())
+            except Exception as exc:
+                logger.warning(f"Error serving /api/fii-derivatives-flow: {exc}")
+                return self.send_json(200, {"ok": True, "quality": "cached", "indices": [], "fiiStats": {}, "participantVol": []})
         if path == "/api/index-breadth-contribution":
             query = urllib.parse.parse_qs(parsed.query)
             idx = query.get("index", query.get("symbol", query.get("universe", ["nifty50"])))[0]

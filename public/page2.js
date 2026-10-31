@@ -42,7 +42,11 @@
   const charts = {};
 
   function isLight() {
-    return document.body.classList.contains("theme-light");
+    return document.documentElement.getAttribute("data-theme") === "light" ||
+           document.body.getAttribute("data-theme") === "light" ||
+           document.body.classList.contains("theme-light") ||
+           document.body.classList.contains("light-theme") ||
+           document.body.classList.contains("white-theme");
   }
 
   function getThemeColors() {
@@ -65,44 +69,75 @@
   // THEME MANAGEMENT (Night Mode / White Mode)
   // ========================================================================
   function initTheme() {
-    const saved = localStorage.getItem("p2_theme") || "dark";
-    if (saved === "light") {
-      applyTheme(true);
-    } else {
-      applyTheme(false);
-    }
+    const urlParams = new URLSearchParams(window.location.search);
+    const hash = (window.location.hash || "").replace("#", "").toLowerCase();
+    const urlTheme = urlParams.get("theme") || (hash === "light" ? "light" : (hash === "dark" ? "dark" : null));
+    const saved = urlTheme || localStorage.getItem("breadth_theme") || localStorage.getItem("theme") || localStorage.getItem("p2_theme") || "dark";
+    applyTheme(saved === "light");
 
     const btn = document.getElementById("p2ThemeToggleBtn");
     if (btn) {
-      btn.addEventListener("click", () => {
-        const next = !isLight();
-        applyTheme(next);
-        localStorage.setItem("p2_theme", next ? "light" : "dark");
-        // Re-render active view to refresh canvas colors
-        refreshActiveView();
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.toggleTheme();
+      });
+    }
+
+    const topBtn = document.getElementById("themeToggleBtn");
+    if (topBtn) {
+      topBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.toggleTheme();
       });
     }
   }
 
   function applyTheme(light) {
     isLightMode = light;
+    const themeStr = light ? "light" : "dark";
+
+    document.documentElement.setAttribute("data-theme", themeStr);
+    document.body.setAttribute("data-theme", themeStr);
+
     if (light) {
       document.body.classList.add("theme-light");
-      const icon = document.getElementById("p2ThemeIcon");
-      const lbl = document.getElementById("p2ThemeLabel");
-      if (icon) icon.textContent = "☀️";
-      if (lbl) lbl.textContent = "White Mode";
+      document.body.classList.add("light-theme");
+      document.body.classList.add("white-theme");
     } else {
       document.body.classList.remove("theme-light");
-      const icon = document.getElementById("p2ThemeIcon");
-      const lbl = document.getElementById("p2ThemeLabel");
-      if (icon) icon.textContent = "🌙";
-      if (lbl) lbl.textContent = "Night Mode";
+      document.body.classList.remove("light-theme");
+      document.body.classList.remove("white-theme");
     }
+
+    const icon = document.getElementById("p2ThemeIcon");
+    const lbl = document.getElementById("p2ThemeLabel");
+    if (icon) icon.textContent = light ? "☀️" : "🌙";
+    if (lbl) lbl.textContent = light ? "White Mode" : "Night Mode";
+
+    const topIcon = document.getElementById("themeToggleIcon");
+    const topText = document.getElementById("themeToggleText");
+    if (topIcon) topIcon.textContent = light ? "☀️" : "🌙";
+    if (topText) topText.textContent = light ? "Light" : "Dark";
+
+    const darkLogos = document.querySelectorAll(".inst-brand-logo-dark");
+    const lightLogos = document.querySelectorAll(".inst-brand-logo-light");
+    darkLogos.forEach(el => el.style.setProperty("display", light ? "none" : "block", "important"));
+    lightLogos.forEach(el => el.style.setProperty("display", light ? "block" : "none", "important"));
+
+    localStorage.setItem("p2_theme", themeStr);
+    localStorage.setItem("breadth_theme", themeStr);
+    localStorage.setItem("theme", themeStr);
+
     if (window.AuthService && window.AuthService.syncState) {
-      window.AuthService.syncState({ theme: light ? "light" : "dark" });
+      window.AuthService.syncState({ theme: themeStr });
     }
   }
+
+  window.toggleTheme = function() {
+    const next = !isLight();
+    applyTheme(next);
+    refreshActiveView();
+  };
 
   function initMobileNavigation() {
   const nav = document.getElementById("mainInstNav") || document.querySelector(".inst-nav");
@@ -347,6 +382,12 @@
         } else {
           loadCallVsPutTool(false);
         }
+      } else if (suiteKey === "fiidii") {
+        if (fiiDiiData) {
+          renderFiiDiiView();
+        } else {
+          loadFiiDiiSuite(false);
+        }
       }
     }, 60);
 
@@ -364,10 +405,7 @@
     if (straddleBtn) straddleBtn.addEventListener("click", () => activateSuite("straddle", true));
     if (decayBtn) decayBtn.addEventListener("click", () => activateSuite("premiumDecay", true));
     if (cvpBtn) cvpBtn.addEventListener("click", () => activateSuite("callVsPut", true));
-    if (fiiBtn) fiiBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      window.location.href = "/fii-dii/cash";
-    });
+    if (fiiBtn) fiiBtn.addEventListener("click", () => activateSuite("fiidii", true));
     if (contribBtn) contribBtn.addEventListener("click", () => activateSuite("contribution", true));
   }
 

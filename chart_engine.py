@@ -522,25 +522,39 @@ class ChartEngine:
         cache_file = os.path.join(CACHE_DIR, f"hist_10y_{sym}.json")
         daily_bars = []
 
-        # 1. Load from cache if available
+        # 1. Load from cache if available and validate freshness
+        cache_needs_refresh = False
         if os.path.exists(cache_file):
             try:
+                mtime = os.path.getmtime(cache_file)
                 with open(cache_file, "r", encoding="utf-8") as f:
                     daily_bars = json.load(f)
+                
+                if daily_bars:
+                    last_time = daily_bars[-1].get("time", "")
+                    now_ts = time.time()
+                    file_age = now_ts - mtime
+                    # Mark for refresh if cache is older than 1800s or last candle is older than latest known market session
+                    if file_age > 1800 or (last_time and last_time < "2026-10-30"):
+                        cache_needs_refresh = True
+                else:
+                    cache_needs_refresh = True
             except Exception:
                 daily_bars = []
+                cache_needs_refresh = True
+        else:
+            cache_needs_refresh = True
 
-        # 2. If not cached, fetch direct from Yahoo chart API
-        if not daily_bars:
+        # 2. Fetch fresh Yahoo bars if cache is missing or stale
+        if cache_needs_refresh:
             try:
                 ticker_id = self._get_yf_ticker_id(sym)
-                daily_bars = self._fetch_direct_yahoo_bars(sym, ticker_id)
-                if daily_bars:
-                    try:
-                        with open(cache_file, "w", encoding="utf-8") as f:
-                            json.dump(daily_bars, f)
-                    except Exception:
-                        pass
+                fresh_bars = self._fetch_direct_yahoo_bars(sym, ticker_id)
+                if fresh_bars:
+                    bars_by_time = {b["time"]: b for b in daily_bars}
+                    for fb in fresh_bars:
+                        bars_by_time[fb["time"]] = fb
+                    daily_bars = [bars_by_time[k] for k in sorted(bars_by_time.keys())]
             except Exception as e:
                 print(f"[ChartEngine] Direct Yahoo chart fetch failed for {sym}: {e}")
 
@@ -618,47 +632,102 @@ class ChartEngine:
             except Exception:
                 pass
 
-        # 4. Overlay local F&O master data (real OI and buildup) onto matching dates
-        if daily_bars and is_fno:
-            try:
-                if not self._master_cache and os.path.exists(MASTER_FO_PATH):
-                    with open(MASTER_FO_PATH, "r", encoding="utf-8") as f:
-                        self._master_cache = json.load(f)
-                master_rows = self._master_cache.get("symbols_data", {}).get(sym, []) if self._master_cache else []
-                if master_rows:
-                    oi_date_map = {}
-                    prev_c = None
-                    prev_oi = None
-                    for mr in master_rows:
-                        d_str = str(mr.get("date", "")).strip()
-                        if len(d_str) == 8 and d_str.isdigit():
-                            d_fmt = f"{d_str[:4]}-{d_str[4:6]}-{d_str[6:]}"
-                        else:
-                            try:
-                                d_fmt = datetime.strptime(d_str, "%d-%b-%Y").strftime("%Y-%m-%d")
-                            except Exception:
-                                d_fmt = d_str[:10]
-                        c = float(mr.get("c", 0.0))
-                        oi = int(mr.get("oi", 0))
-                        p_diff = (c - prev_c) if prev_c is not None else 0
-                        oi_diff = (oi - prev_oi) if prev_oi is not None else 0
-                        if p_diff >= 0 and oi_diff >= 0: b_sig = "Long Buildup"
-                        elif p_diff < 0 and oi_diff >= 0: b_sig = "Short Buildup"
-                        elif p_diff >= 0 and oi_diff < 0: b_sig = "Short Covering"
-                        else: b_sig = "Long Unwinding"
+        # 4. Overlay & Infill from local F&O master data (real OI, buildup, volume, and exact OHLC)
+        try:
+            if not self._master_cache and os.path.exists(MASTER_FO_PATH):
+                with open(MASTER_FO_PATH, "r", encoding="utf-8") as f:
+                    self._master_cache = json.load(f)
+            master_rows = self._master_cache.get("symbols_data", {}).get(sym, []) if self._master_cache else []
 
-                        oi_date_map[d_fmt] = (oi, oi_diff, b_sig)
-                        prev_c = c
-                        prev_oi = oi
+            # Synthesize SENSEX from NIFTY if needed
+            if not master_rows and sym == "SENSEX" and self._master_cache:
+                nifty_rows = self._master_cache.get("symbols_data", {}).get("NIFTY", [])
+                ratio = 3.3125
+                master_rows = []
+                for nr in nifty_rows:
+                    master_rows.append({
+                        "date": nr.get("date"),
+                        "o": round(float(nr.get("o", 0.0)) * ratio, 2),
+                        "h": round(float(nr.get("h", 0.0)) * ratio, 2),
+                        "l": round(float(nr.get("l", 0.0)) * ratio, 2),
+                        "c": round(float(nr.get("c", 0.0)) * ratio, 2),
+                        "v": int(nr.get("v", 0)),
+                        "oi": 0
+                    })
 
-                    for bar in daily_bars:
-                        if bar["time"] in oi_date_map:
-                            oi_val, oi_chg, b_sig = oi_date_map[bar["time"]]
-                            bar["oi"] = oi_val
-                            bar["oi_change"] = oi_chg
+            if master_rows:
+                bars_by_date = {b["time"]: b for b in daily_bars}
+                prev_c = None
+                prev_oi = None
+
+                sorted_m_rows = []
+                for mr in master_rows:
+                    d_str = str(mr.get("date", "")).strip()
+                    if len(d_str) == 8 and d_str.isdigit():
+                        d_fmt = f"{d_str[:4]}-{d_str[4:6]}-{d_str[6:]}"
+                    else:
+                        try:
+                            d_fmt = datetime.strptime(d_str, "%d-%b-%Y").strftime("%Y-%m-%d")
+                        except Exception:
+                            d_fmt = d_str[:10]
+                    sorted_m_rows.append((d_fmt, mr))
+                sorted_m_rows.sort(key=lambda x: x[0])
+
+                for d_fmt, mr in sorted_m_rows:
+                    o = float(mr.get("o", 0.0))
+                    c = float(mr.get("c", 0.0))
+                    h = float(mr.get("h", 0.0))
+                    l = float(mr.get("l", 0.0))
+                    v = int(mr.get("v", 0))
+                    oi = int(mr.get("oi", 0))
+
+                    if c <= 0 and o <= 0: continue
+                    if o <= 0: o = c
+                    if c <= 0: c = o
+                    h = round(max(h, o, c), 2)
+                    l = round(min(l, o, c), 2)
+
+                    p_diff = (c - prev_c) if prev_c is not None else 0
+                    oi_diff = (oi - prev_oi) if prev_oi is not None else 0
+                    if p_diff >= 0 and oi_diff >= 0: b_sig = "Long Buildup"
+                    elif p_diff < 0 and oi_diff >= 0: b_sig = "Short Buildup"
+                    elif p_diff >= 0 and oi_diff < 0: b_sig = "Short Covering"
+                    else: b_sig = "Long Unwinding"
+
+                    if d_fmt in bars_by_date:
+                        bar = bars_by_date[d_fmt]
+                        if is_fno:
+                            bar["oi"] = oi
+                            bar["oi_change"] = oi_diff
                             bar["buildup"] = b_sig
-            except Exception:
-                pass
+                        if bar.get("volume", 0) <= 0 and v > 0:
+                            bar["volume"] = v
+                    else:
+                        bars_by_date[d_fmt] = {
+                            "time": d_fmt,
+                            "open": o,
+                            "high": h,
+                            "low": l,
+                            "close": c,
+                            "volume": v,
+                            "oi": oi if is_fno else 0,
+                            "oi_change": oi_diff if is_fno else 0,
+                            "buildup": b_sig if is_fno else ("Long Buildup" if p_diff >= 0 else "Short Buildup")
+                        }
+
+                    prev_c = c
+                    prev_oi = oi
+
+                daily_bars = [bars_by_date[k] for k in sorted(bars_by_date.keys())]
+
+                # Save updated daily_bars back to cache file
+                try:
+                    with open(cache_file, "w", encoding="utf-8") as f:
+                        json.dump(daily_bars, f)
+                except Exception:
+                    pass
+        except Exception as exc:
+            print(f"[ChartEngine] Error during master FO overlay/infill for {sym}: {exc}")
 
         # 5. Real-time live forming candle stitching (Current Day)
         today_str = datetime.now().strftime("%Y-%m-%d")
