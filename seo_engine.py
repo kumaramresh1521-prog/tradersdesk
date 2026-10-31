@@ -311,12 +311,6 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
         "keywords": "options straddle, atm straddle chart, straddle decay, iv crush, delta neutral, combined premium, synthetic futures",
         "canonical": "https://tradersdesk.in/straddle",
     },
-    "/premium-decay": {
-        "title": "Premium Decay - Live Options CE+PE Erosion Chart & IV Crush | TradersDesk",
-        "desc": "Track live intraday options premium decay (theta erosion) for Nifty, BankNifty & more. Visual decay curve, IV crush timeline, and combined CE+PE straddle breakdown.",
-        "keywords": "premium decay, options premium decay, straddle decay chart, theta erosion, iv crush live, ce pe premium decay, tradersdesk",
-        "canonical": "https://tradersdesk.in/premium-decay",
-    },
     "/call-vs-put-premium": {
         "title": "Call vs Put Premium - Live CE vs PE Comparison & Decay Skew | TradersDesk",
         "desc": "Real-time comparison of Call (CE) vs Put (PE) option leg premiums. Track intraday decay spread, volatility skew, and premium imbalance across strikes and expiries.",
@@ -1066,9 +1060,6 @@ def get_dynamic_meta_for_path(path: str, snapshot: dict) -> dict:
     elif clean_p.startswith("/fii") or clean_p.startswith("/smart-money"):
         base_meta["title"] = "FII DII Smart Money Flow | Participant Derivatives Positioning | TradersDesk"
         base_meta["desc"] = f"Real-time institutional cash market buying/selling, participant derivatives open interest, and historical flow charts on NSE ({date_str})."
-    elif clean_p.startswith("/premium-decay"):
-        base_meta["title"] = "Premium Decay - Live Options CE+PE Erosion Chart & IV Crush | TradersDesk"
-        base_meta["desc"] = f"Track live intraday options premium decay (theta erosion) for Nifty & BankNifty. Visual decay curve, IV crush timeline, and straddle breakdown ({date_str})."
     elif clean_p.startswith("/call-vs-put-premium") or clean_p.startswith("/call-vs-put"):
         base_meta["title"] = "Call vs Put Premium - Live CE vs PE Comparison & Decay Skew | TradersDesk"
         base_meta["desc"] = f"Real-time comparison of Call (CE) vs Put (PE) option leg premiums. Intraday decay spread, volatility skew, and premium imbalance ({date_str})."

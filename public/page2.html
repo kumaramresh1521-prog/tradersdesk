@@ -294,14 +294,6 @@
                     <span class="dd-sub">Live combined CE+PE premium decay &amp; synthetic curve</span>
                   </div>
                 </a>
-                <!-- Submenu 5: Premium Decay -->
-                <a href="/premium-decay" class="inst-dd-item" style="text-decoration:none; color:inherit;">
-                  <span class="dd-icon">🔻</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Premium Decay <span class="p2-badge p2-badge-orange" style="margin-left:4px;">NEW</span></span>
-                    <span class="dd-sub">Intraday theta erosion, IV crush &amp; leg breakdown chart</span>
-                  </div>
-                </a>
                 <!-- Submenu 6: Call vs Put Premium -->
                 <a href="/call-vs-put-premium" class="inst-dd-item" style="text-decoration:none; color:inherit;">
                   <span class="dd-icon">⚔️</span>
@@ -399,9 +391,6 @@
         <div class="page2-suite-tabs" id="p2SuiteTabsWrap">
           <button id="p2SuiteStraddleBtn" class="page2-suite-btn active" type="button">
             <span>📉</span> <span>STRADDLE</span>
-          </button>
-          <button id="p2SuitePremiumDecayBtn" class="page2-suite-btn" type="button">
-            <span>🔻</span> <span>PREMIUM DECAY</span>
           </button>
           <button id="p2SuiteCallVsPutBtn" class="page2-suite-btn" type="button">
             <span>⚖️</span> <span>CALL vs PUT</span>
@@ -613,164 +602,6 @@
     </div>
     </div> <!-- /p2ViewStraddle -->
 
-  </main>
-
-  <!-- ====================================================================
-       SECTION 2: OPTIONS PREMIUM DECAY DESK (DEDICATED)
-       ==================================================================== -->
-  <main id="p2SectionPremiumDecay" class="page2-main-content" style="display:none;">
-    <div id="p2ViewPremiumDecay" class="gm-view-container" style="display:block;">
-
-      <!-- Premium Decay Toolbar -->
-      <div class="straddle-toolbar">
-        <div class="straddle-title-wrap">
-          <h2>🔻 LIVE OPTIONS PREMIUM DECAY</h2>
-          <p>Real-Time Intraday Theta Erosion Velocity, Time-Value Burn &amp; Theoretical vs Realized Decay</p>
-        </div>
-
-        <div class="straddle-controls-wrap">
-          <div class="nt-exchange-selector" style="margin-right:4px;">
-            <button id="decayModeLiveBtn" class="nt-exch-btn active" type="button">🔴 Live Today</button>
-            <button id="decayModeHistBtn" class="nt-exch-btn" type="button">📅 Back Date</button>
-          </div>
-
-          <div class="straddle-ctrl-group">
-            <label for="decayCategorySelect">Category</label>
-            <select id="decayCategorySelect" class="page2-ctrl-select">
-              <option value="Equity" selected>Equity</option>
-              <option value="MCX">MCX</option>
-              <option value="Crypto">Crypto</option>
-            </select>
-          </div>
-
-          <div class="straddle-ctrl-group">
-            <label for="decayIndexSelect">Index / Asset</label>
-            <select id="decayIndexSelect" class="page2-ctrl-select">
-              <option value="NIFTY" selected>NIFTY</option>
-              <option value="BANKNIFTY">BANKNIFTY</option>
-              <option value="FINNIFTY">FINNIFTY</option>
-              <option value="MIDCPNIFTY">MIDCAPNIFTY</option>
-              <option value="SENSEX">SENSEX</option>
-              <option value="BANKEX">BANKEX</option>
-            </select>
-          </div>
-
-          <div id="decayDateGroup" class="straddle-ctrl-group" style="display:none;">
-            <label for="decayDateSelect">Date</label>
-            <select id="decayDateSelect" class="page2-ctrl-select" style="min-width:140px;">
-              <option value="">Loading dates...</option>
-            </select>
-            <input type="date" id="decayDateInput" class="page2-ctrl-select" style="padding:4px 8px;" title="Pick specific calendar date">
-          </div>
-
-          <div class="straddle-ctrl-group">
-            <label for="decayExpirySelect">Expiry</label>
-            <select id="decayExpirySelect" class="page2-ctrl-select">
-              <option value="">Current Expiry</option>
-            </select>
-          </div>
-
-          <div class="straddle-ctrl-group">
-            <label for="decayStrikeSelect">Strike</label>
-            <select id="decayStrikeSelect" class="page2-ctrl-select">
-              <option value="atm" selected>ATM (Auto)</option>
-            </select>
-          </div>
-
-          <div class="straddle-live-badge-group">
-            <label id="decayLiveToggleWrap" class="straddle-live-toggle" title="Auto-refresh chart every 30 seconds">
-              <input type="checkbox" id="decayAutoRefresh" checked>
-              <span class="straddle-live-dot">●</span>
-              <span id="decayLiveText">Live 30s</span>
-            </label>
-            <button id="decayRefreshBtn" class="page2-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; cursor:pointer;" title="Refresh Premium Decay">🔄 Refresh</button>
-          </div>
-        </div>
-      </div>
-
-
-
-      <!-- Dedicated Premium Decay Metric Ribbon -->
-      <section class="straddle-metric-strip" id="decayMetricStrip">
-        <div class="st-metric-card">
-          <span class="st-lbl">Open Straddle</span>
-          <span class="st-val text-green" id="decayOpenPriceVal">₹--</span>
-          <span class="st-sub">09:15 AM Baseline</span>
-        </div>
-        <div class="st-metric-card highlight">
-          <span class="st-lbl">Current Straddle LTP</span>
-          <span class="st-val text-cyan" id="decayCurrentVal">₹--</span>
-          <span class="st-sub">Live Premium</span>
-        </div>
-        <div class="st-metric-card">
-          <span class="st-lbl">Total Premium Eroded</span>
-          <span class="st-val text-red" id="decayPointsVal">-₹0.00</span>
-          <span class="st-sub" id="decayPctVal">0.00% Decayed</span>
-        </div>
-        <div class="st-metric-card">
-          <span class="st-lbl">Decay Burn Pace</span>
-          <span class="st-val text-amber" id="decayVelocityVal">0.0 pts/hr</span>
-          <span class="st-sub" id="decayThetaSub">Theta: -₹0.0/day</span>
-        </div>
-      </section>
-
-      <!-- Main Dedicated Premium Decay Chart -->
-      <div class="p2-card straddle-chart-card">
-        <div class="p2-card-header">
-          <div class="straddle-chart-title-left">
-            <span class="p2-card-title" id="decayChartHeading">NIFTY ATM Premium Decay &amp; Theta Trajectory</span>
-            <div class="p2-card-subtitle">Tick-by-tick cumulative decay points (₹) against theoretical Black-Scholes theta baseline</div>
-          </div>
-
-          <div class="straddle-chart-legend" id="decayChartLegend">
-            <label class="st-legend-btn active" data-series="actual_premium" id="decayLegBtnActual" title="Actual Straddle Premium Curve">
-              <span class="st-dot dot-rose"></span>
-              <span>Straddle Premium (₹)</span>
-            </label>
-            <label class="st-legend-btn active" data-series="theta_baseline" id="decayLegBtnTheta" title="Theoretical Black-Scholes Theta Decay">
-              <span class="st-dot dot-gold"></span>
-              <span>Theoretical Theta Baseline</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="straddle-canvas-container" style="position:relative; width:100%; height:450px;">
-          <canvas style="width:100%;max-width:100%;display:block;" id="chartPremiumDecay"></canvas>
-          <div id="decayTooltip" class="straddle-interactive-tooltip" style="display:none;"></div>
-        </div>
-
-        </div>
-      </div>
-
-      <!-- Dedicated Premium Decay Data Table -->
-      <div class="p2-card">
-        <div class="p2-card-header">
-          <div>
-            <span class="p2-card-title">Intraday Premium Decay Timeline</span>
-            <div class="p2-card-subtitle">Tick-by-tick points eroded, relative percentages, and leg-wise decay contribution</div>
-          </div>
-          <button id="decayExportCsvBtn" class="nt-btn-secondary" type="button">📥 Export CSV / Excel</button>
-        </div>
-
-        <div class="p2-table-container">
-          <table class="p2-table" id="tableDecayHistory">
-            <thead>
-              <tr>
-                <th>Time (IST)</th>
-                <th class="text-right">Straddle Price (₹)</th>
-                <th class="text-right">Points Eroded (₹)</th>
-                <th class="text-right">Decay % from Open</th>
-                <th class="text-right">CE Decay (₹)</th>
-                <th class="text-right">PE Decay (₹)</th>
-                <th class="text-right">Decay Velocity (pts/hr)</th>
-                <th class="text-center">Decay Signal</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </div> <!-- /p2ViewPremiumDecay -->
   </main>
 
 
@@ -1595,14 +1426,6 @@
                 <div class="dot-sub-text">
                   <div class="dot-sub-title">ATM Straddle Engine <span class="p2-badge p2-badge-teal" style="font-size:9.5px; margin-left:3px;">LIVE</span></div>
                   <div class="dot-sub-desc">Intraday decay curve &amp; premium dynamics</div>
-                </div>
-              </a>
-              <!-- Sub 2b: Premium Decay -->
-              <a href="/premium-decay" class="dot-sub-item" onclick="if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); if(window.activateSuite)activateSuite('premiumDecay'); return false;">
-                <span class="dot-sub-icon">🔻</span>
-                <div class="dot-sub-text">
-                  <div class="dot-sub-title">Premium Decay <span class="p2-badge p2-badge-orange" style="font-size:9.5px; margin-left:3px;">NEW</span></div>
-                  <div class="dot-sub-desc">Theta erosion &amp; IV crush intraday chart</div>
                 </div>
               </a>
               <!-- Sub 2c: Call vs Put Premium -->

@@ -169,7 +169,6 @@ def get_default_footer_links() -> dict:
                     {"label": "Futures Sector Heatmap", "url": "/futures/heatmap", "type": "inst", "target": "futures:heatmap"},
                     {"label": "Future Marketwatch Matrix", "url": "/futures", "type": "inst", "target": "futures:matrix"},
                     {"label": "Straddle Analytics Engine", "url": "/straddle", "type": "link", "target": "_self"},
-                    {"label": "Options Premium Decay", "url": "/premium-decay", "type": "link", "target": "_self"},
                     {"label": "Call vs Put Premium", "url": "/call-vs-put-premium", "type": "link", "target": "_self"},
                     {"label": "Future Buildup Quadrants", "url": "/futures/buildup", "type": "inst", "target": "futures:buildup"},
                     {"label": "MWPL & Ban Radar", "url": "/futures/mwpl", "type": "inst", "target": "futures:mwpl"},
@@ -10975,7 +10974,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/page2.html",
             "/atm-straddle",
             "/straddle",
-            "/premium-decay",
             "/call-vs-put-premium",
             "/call-vs-put",
             "/breadth-contribution",
@@ -11039,7 +11037,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/global": "/open-interest/nifty",
             "/global-markets": "/open-interest/nifty",
             "/atm-straddle": "/straddle",
-            "/options/premium-decay": "/premium-decay",
+            "/premium-decay": "/straddle",
+            "/options/premium-decay": "/straddle",
             "/options/straddle": "/straddle",
             "/options/call-vs-put": "/call-vs-put-premium",
             "/options/call-vs-put-premium": "/call-vs-put-premium",
@@ -12097,11 +12096,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                     injected_html = injected_html.replace('id="p2SuiteContributionBtn" class="page2-suite-btn"', 'id="p2SuiteContributionBtn" class="page2-suite-btn active"')
                     injected_html = injected_html.replace('id="p2SectionStraddle" class="page2-main-content"', 'id="p2SectionStraddle" class="page2-main-content" style="display:none;"')
                     injected_html = injected_html.replace('id="p2SectionBreadthContribution" class="page2-main-content" style="display:none;"', 'id="p2SectionBreadthContribution" class="page2-main-content"')
-                elif clean_rpath == "/premium-decay":
-                    injected_html = injected_html.replace('id="p2SuiteStraddleBtn" class="page2-suite-btn active"', 'id="p2SuiteStraddleBtn" class="page2-suite-btn"')
-                    injected_html = injected_html.replace('id="p2SuitePremiumDecayBtn" class="page2-suite-btn"', 'id="p2SuitePremiumDecayBtn" class="page2-suite-btn active"')
-                    injected_html = injected_html.replace('id="p2SectionStraddle" class="page2-main-content"', 'id="p2SectionStraddle" class="page2-main-content" style="display:none;"')
-                    injected_html = injected_html.replace('id="p2SectionPremiumDecay" class="page2-main-content" style="display:none;"', 'id="p2SectionPremiumDecay" class="page2-main-content"')
+
                 elif clean_rpath in ("/call-vs-put-premium", "/call-vs-put"):
                     injected_html = injected_html.replace('id="p2SuiteStraddleBtn" class="page2-suite-btn active"', 'id="p2SuiteStraddleBtn" class="page2-suite-btn"')
                     injected_html = injected_html.replace('id="p2SuiteCallVsPutBtn" class="page2-suite-btn"', 'id="p2SuiteCallVsPutBtn" class="page2-suite-btn active"')

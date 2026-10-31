@@ -3,7 +3,7 @@
   "columns": [
     {
       "id": "col1",
-      "title": "\ud83c\udfdb\ufe0f Institutional Desks",
+      "title": "🏛️ Institutional Desks",
       "links": [
         {
           "label": "Breadth & Contribution",
@@ -45,7 +45,7 @@
     },
     {
       "id": "col2",
-      "title": "\u26a1 Derivatives & Options",
+      "title": "⚡ Derivatives & Options",
       "links": [
         {
           "label": "Upstox Option Chain Pro",
@@ -78,12 +78,6 @@
           "target": "_self"
         },
         {
-          "label": "Options Premium Decay",
-          "url": "/premium-decay",
-          "type": "link",
-          "target": "_self"
-        },
-        {
           "label": "Call vs Put Premium",
           "url": "/call-vs-put-premium",
           "type": "link",
@@ -111,7 +105,7 @@
     },
     {
       "id": "col3",
-      "title": "\ud83d\udcca Market Analytics & Tools",
+      "title": "📊 Market Analytics & Tools",
       "links": [
         {
           "label": "Breadth & Net Contribution",
@@ -153,7 +147,7 @@
     },
     {
       "id": "col4",
-      "title": "\ud83d\udee1\ufe0f Regulatory & Compliance",
+      "title": "🛡️ Regulatory & Compliance",
       "links": [
         {
           "label": "SEBI Regulatory Disclaimer",
@@ -186,7 +180,7 @@
           "target": "_self"
         },
         {
-          "label": "NSE Official Regulatory Archive \u2197",
+          "label": "NSE Official Regulatory Archive ↗",
           "url": "https://www.nseindia.com",
           "type": "link",
           "target": "_blank"

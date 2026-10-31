@@ -212,7 +212,6 @@
     setupSuiteSwitching();
     setupGlobalControls();
     setupStraddleControls();
-    setupPremiumDecayControls();
     setupCallVsPutControls();
     if (typeof setupPage2OpstraPcrControls === "function") setupPage2OpstraPcrControls();
     setupFiiDiiControls();
@@ -228,8 +227,6 @@
       activateSuite("contribution", false);
     } else if (currentPath === "/fii-dii-cash" || tabParam === "fiidii" || hash === "fiidii") {
       activateSuite("fiidii", false);
-    } else if (currentPath === "/premium-decay" || tabParam === "premium-decay" || tabParam === "decay" || hash === "premium-decay") {
-      activateSuite("premiumDecay", false);
     } else if (currentPath === "/call-vs-put-premium" || currentPath === "/call-vs-put" || tabParam === "call-vs-put" || tabParam === "callvsput" || hash === "call-vs-put") {
       activateSuite("callVsPut", false);
     } else {
@@ -248,11 +245,6 @@
       suite: "straddle",
       title: "Straddle Desk - Live Options Premium Decay & Greeks | TradersDesk",
       desc: "Real-time Options Straddle chart tracking combined CE+PE premium decay, live intraday delta-neutral curves, IV crush, and exact contract expiries."
-    },
-    "/premium-decay": {
-      suite: "premiumDecay",
-      title: "Premium Decay - Live Options CE+PE Erosion Chart & IV Crush | TradersDesk",
-      desc: "Track live intraday options premium decay (theta erosion) for Nifty & BankNifty. Visual decay curve, IV crush timeline, and straddle leg breakdown."
     },
     "/call-vs-put-premium": {
       suite: "callVsPut",
@@ -283,9 +275,7 @@
 
   function syncP2Url(suiteKey, pushHistory = true) {
     let targetUrl = "/straddle";
-    if (suiteKey === "premiumDecay") {
-      targetUrl = "/premium-decay";
-    } else if (suiteKey === "callVsPut") {
+if (suiteKey === "callVsPut") {
       targetUrl = "/call-vs-put-premium";
     } else if (suiteKey === "fiidii") {
       targetUrl = "/fii-dii-cash";
@@ -328,19 +318,16 @@
     if (suiteKey === "tools") suiteKey = "straddle";
     currentSuite = suiteKey;
     const straddleBtn = document.getElementById("p2SuiteStraddleBtn") || document.getElementById("p2SuiteToolsBtn");
-    const decayBtn = document.getElementById("p2SuitePremiumDecayBtn");
     const cvpBtn = document.getElementById("p2SuiteCallVsPutBtn");
     const fiiBtn = document.getElementById("p2SuiteFiiDiiBtn");
     const contribBtn = document.getElementById("p2SuiteContributionBtn");
 
     const straddleSection = document.getElementById("p2SectionStraddle") || document.getElementById("p2SectionTools");
-    const decaySection = document.getElementById("p2SectionPremiumDecay");
     const cvpSection = document.getElementById("p2SectionCallVsPut");
     const fiiSection = document.getElementById("p2SectionFiiDii");
     const contribSection = document.getElementById("p2SectionBreadthContribution");
 
     if (straddleBtn) straddleBtn.classList.toggle("active", suiteKey === "straddle");
-    if (decayBtn) decayBtn.classList.toggle("active", suiteKey === "premiumDecay");
     if (cvpBtn) cvpBtn.classList.toggle("active", suiteKey === "callVsPut");
     if (fiiBtn) fiiBtn.classList.toggle("active", suiteKey === "fiidii");
     if (contribBtn) contribBtn.classList.toggle("active", suiteKey === "contribution");
@@ -354,9 +341,7 @@
       } else if (suiteKey === "fiidii") {
         activeLabel.textContent = "FII / DII CASH FLOW";
         activeIcon.textContent = "🏛️";
-      } else if (suiteKey === "premiumDecay") {
-        activeLabel.textContent = "PREMIUM DECAY DESK";
-        activeIcon.textContent = "🔻";
+
       } else if (suiteKey === "callVsPut") {
         activeLabel.textContent = "CALL vs PUT PREMIUM DESK";
         activeIcon.textContent = "⚖️";
@@ -367,7 +352,6 @@
     }
 
     if (straddleSection) straddleSection.style.display = (suiteKey === "straddle") ? "block" : "none";
-    if (decaySection) decaySection.style.display = (suiteKey === "premiumDecay") ? "block" : "none";
     if (cvpSection) cvpSection.style.display = (suiteKey === "callVsPut") ? "block" : "none";
     if (fiiSection) fiiSection.style.display = (suiteKey === "fiidii") ? "block" : "none";
     if (contribSection) contribSection.style.display = (suiteKey === "contribution") ? "block" : "none";
@@ -391,12 +375,7 @@
         } else {
           loadStraddleTool(false);
         }
-      } else if (suiteKey === "premiumDecay") {
-        if (decayState.data) {
-          renderPremiumDecayChart(decayState.data);
-        } else {
-          loadPremiumDecayTool(false);
-        }
+
       } else if (suiteKey === "callVsPut") {
         if (cvpState.data) {
           renderCallVsPutChart(cvpState.data);
@@ -418,13 +397,11 @@
 
   function setupSuiteSwitching() {
     const straddleBtn = document.getElementById("p2SuiteStraddleBtn") || document.getElementById("p2SuiteToolsBtn");
-    const decayBtn = document.getElementById("p2SuitePremiumDecayBtn");
     const cvpBtn = document.getElementById("p2SuiteCallVsPutBtn");
     const fiiBtn = document.getElementById("p2SuiteFiiDiiBtn");
     const contribBtn = document.getElementById("p2SuiteContributionBtn");
 
     if (straddleBtn) straddleBtn.addEventListener("click", () => activateSuite("straddle", true));
-    if (decayBtn) decayBtn.addEventListener("click", () => activateSuite("premiumDecay", true));
     if (cvpBtn) cvpBtn.addEventListener("click", () => activateSuite("callVsPut", true));
     if (fiiBtn) fiiBtn.addEventListener("click", () => activateSuite("fiidii", true));
     if (contribBtn) contribBtn.addEventListener("click", () => activateSuite("contribution", true));
@@ -454,8 +431,7 @@
   function refreshActiveView() {
     if (currentSuite === "straddle" || currentSuite === "tools") {
       loadStraddleTool();
-    } else if (currentSuite === "premiumDecay") {
-      loadPremiumDecayTool();
+
     } else if (currentSuite === "callVsPut") {
       loadCallVsPutTool();
     } else if (currentSuite === "fiidii") {
@@ -468,8 +444,7 @@
   function loadCurrentSuite() {
     if (currentSuite === "straddle" || currentSuite === "tools") {
       loadStraddleTool();
-    } else if (currentSuite === "premiumDecay") {
-      loadPremiumDecayTool();
+
     } else if (currentSuite === "callVsPut") {
       loadCallVsPutTool();
     } else if (currentSuite === "fiidii") {
@@ -2350,501 +2325,7 @@
     setupContribCanvasEvents();
   }
 
-  
-  // ========================================================================
-  // 🔻 DEDICATED OPTIONS PREMIUM DECAY DESK CONTROLLER
-  // ========================================================================
-  const decayState = {
-    mode: "live",
-    date: "",
-    category: "Equity",
-    index: "NIFTY",
-    expiry: "",
-    strike: "atm",
-    autoRefresh: true,
-    data: null,
-    timer: null,
-    visible: {
-      actual_premium: true,
-      theta_baseline: true
-    },
-    hoveredIndex: -1
-  };
 
-  function setupPremiumDecayControls() {
-    const liveBtn = document.getElementById("decayModeLiveBtn");
-    const histBtn = document.getElementById("decayModeHistBtn");
-    const dateGrp = document.getElementById("decayDateGroup");
-    const dateSel = document.getElementById("decayDateSelect");
-    const dateInp = document.getElementById("decayDateInput");
-
-    const catSel = document.getElementById("decayCategorySelect");
-    const idxSel = document.getElementById("decayIndexSelect");
-    const expSel = document.getElementById("decayExpirySelect");
-    const stkSel = document.getElementById("decayStrikeSelect");
-    const autoRef = document.getElementById("decayAutoRefresh");
-    const refBtn = document.getElementById("decayRefreshBtn");
-    const csvBtn = document.getElementById("decayExportCsvBtn");
-
-    if (liveBtn && histBtn) {
-      liveBtn.addEventListener("click", () => {
-        decayState.mode = "live";
-        liveBtn.classList.add("active");
-        histBtn.classList.remove("active");
-        if (dateGrp) dateGrp.style.display = "none";
-        loadPremiumDecayTool();
-      });
-      histBtn.addEventListener("click", () => {
-        decayState.mode = "historical";
-        histBtn.classList.add("active");
-        liveBtn.classList.remove("active");
-        if (dateGrp) dateGrp.style.display = "flex";
-        loadPremiumDecayTool();
-      });
-    }
-
-    if (catSel) catSel.addEventListener("change", () => { decayState.category = catSel.value; loadPremiumDecayTool(); });
-    if (idxSel) idxSel.addEventListener("change", () => { decayState.index = idxSel.value; loadPremiumDecayTool(); });
-    if (expSel) expSel.addEventListener("change", () => { decayState.expiry = expSel.value; loadPremiumDecayTool(); });
-    if (stkSel) stkSel.addEventListener("change", () => { decayState.strike = stkSel.value; loadPremiumDecayTool(); });
-    if (dateSel) dateSel.addEventListener("change", () => { decayState.date = dateSel.value; loadPremiumDecayTool(); });
-    if (dateInp) dateInp.addEventListener("change", () => { decayState.date = dateInp.value; loadPremiumDecayTool(); });
-
-    if (autoRef) {
-      autoRef.addEventListener("change", () => {
-        decayState.autoRefresh = autoRef.checked;
-        const liveText = document.getElementById("decayLiveText");
-        if (liveText) liveText.textContent = decayState.autoRefresh ? "Live 30s" : "Paused";
-        if (decayState.autoRefresh) startDecayAutoRefresh();
-        else stopDecayAutoRefresh();
-      });
-    }
-
-    if (refBtn) refBtn.addEventListener("click", () => loadPremiumDecayTool());
-
-    // Legend toggles
-    document.querySelectorAll("#decayChartLegend .st-legend-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const s = btn.getAttribute("data-series");
-        if (s && decayState.visible.hasOwnProperty(s)) {
-          decayState.visible[s] = !decayState.visible[s];
-          btn.classList.toggle("active", decayState.visible[s]);
-          btn.classList.toggle("inactive", !decayState.visible[s]);
-          if (decayState.data) renderPremiumDecayChart(decayState.data);
-        }
-      });
-    });
-
-    if (csvBtn) {
-      csvBtn.addEventListener("click", () => {
-        if (!decayState.data || !decayState.data.points) return;
-        exportTableToCsv("tableDecayHistory", `${decayState.index}_premium_decay_${decayState.date || "live"}.csv`);
-      });
-    }
-
-    setupDecayCanvasInteractions();
-    startDecayAutoRefresh();
-  }
-
-  function startDecayAutoRefresh() {
-    stopDecayAutoRefresh();
-    if (!decayState.autoRefresh) return;
-    decayState.timer = setInterval(() => {
-      if (currentSuite === "premiumDecay") loadPremiumDecayTool(true);
-    }, 30000);
-  }
-
-  function stopDecayAutoRefresh() {
-    if (decayState.timer) { clearInterval(decayState.timer); decayState.timer = null; }
-  }
-
-  async function loadPremiumDecayTool(isSilent = false) {
-    const refBtn = document.getElementById("decayRefreshBtn");
-    if (refBtn && !isSilent) {
-      refBtn.textContent = "⏳ Refreshing...";
-      refBtn.disabled = true;
-    }
-
-    try {
-      const q = new URLSearchParams({
-        index: decayState.index || "NIFTY",
-        category: decayState.category || "Equity",
-        expiry: decayState.expiry || "",
-        strike: decayState.strike || "atm",
-        date: decayState.mode === "historical" ? (decayState.date || "") : ""
-      });
-
-      const res = await fetch(`/api/tools/straddle-chart?${q.toString()}`);
-      const data = await res.json();
-
-      if (!data || !data.ok) {
-        decayState.data = null;
-        renderPremiumDecayChart({ points: [] });
-        return;
-      }
-
-      decayState.data = data;
-
-      // Populate expiries & strikes if empty
-      syncDropdownOptions("decayExpirySelect", data.available_expiries || [], data.expiry);
-      syncStrikeDropdown("decayStrikeSelect", data.available_strikes || [], data.selected_strike, data.atm_strike, data.strikes_data, "decay");
-
-      // Metrics Ribbon
-      const points = data.points || [];
-      const latest = data.latest || {};
-      const openP = (points[0] && points[0].price) ? points[0].price : latest.open_straddle || latest.straddle_price || 100;
-      const currP = latest.straddle_price || 0;
-      const decayPts = Math.max(0, openP - currP);
-      const decayPct = openP > 0 ? (decayPts / openP * 100) : 0;
-      const greeks = latest.greeks || {};
-
-      const openPriceVal = document.getElementById("decayOpenPriceVal");
-      const currentVal = document.getElementById("decayCurrentVal");
-      if (openPriceVal) openPriceVal.textContent = `₹${openP.toFixed(2)}`;
-      if (currentVal) currentVal.textContent = `₹${currP.toFixed(2)}`;
-
-      const pointsVal = document.getElementById("decayPointsVal");
-      const pctVal = document.getElementById("decayPctVal");
-      const velVal = document.getElementById("decayVelocityVal");
-      const thetaRatioVal = document.getElementById("decayThetaRatioVal");
-      const thetaSub = document.getElementById("decayThetaSub");
-      const remainingVal = document.getElementById("decayRemainingVal");
-      const openPriceSub = document.getElementById("decayOpenPriceSub");
-      const eodEstVal = document.getElementById("decayEodEstVal");
-
-      if (pointsVal) pointsVal.textContent = `-₹${decayPts.toFixed(2)}`;
-      if (pctVal) pctVal.textContent = `-${decayPct.toFixed(2)}%`;
-
-      const elapsedHours = Math.max(0.5, (points.length / 60));
-      const vel = (decayPts / elapsedHours).toFixed(1);
-      if (velVal) velVal.textContent = `${vel} pts/hr`;
-
-      const modelTheta = Math.abs(greeks.theta || 35.0);
-      const thetaRatio = modelTheta > 0 ? (decayPts / (modelTheta * (elapsedHours / 6.25))).toFixed(2) : "1.00";
-      if (thetaRatioVal) thetaRatioVal.textContent = `${thetaRatio}x Model`;
-      if (thetaSub) thetaSub.textContent = `Theta: -₹${modelTheta.toFixed(1)}/day`;
-
-      const remainingPct = Math.max(0, 100 - decayPct).toFixed(1);
-      if (remainingVal) remainingVal.textContent = `${remainingPct}%`;
-      if (openPriceSub) openPriceSub.textContent = `Open Straddle: ₹${openP.toFixed(2)}`;
-
-      const projEod = Math.max(10, currP - (vel * Math.max(0, 6.25 - elapsedHours))).toFixed(1);
-      if (eodEstVal) eodEstVal.textContent = `₹${projEod} Est`;
-
-      // Session Phases
-      const pMorning = document.getElementById("decayPhaseMorning");
-      const pMidday = document.getElementById("decayPhaseMidday");
-      const pAfternoon = document.getElementById("decayPhaseAfternoon");
-      const pEod = document.getElementById("decayPhaseEod");
-
-      const morningPts = Math.min(decayPts, decayPts * 0.45).toFixed(1);
-      const middayPts = (decayPts * 0.25).toFixed(1);
-      const afternoonPts = (decayPts * 0.20).toFixed(1);
-      const eodPts = (decayPts * 0.10).toFixed(1);
-
-      if (pMorning) pMorning.textContent = `-₹${morningPts}`;
-      if (pMidday) pMidday.textContent = `-₹${middayPts}`;
-      if (pAfternoon) pAfternoon.textContent = `-₹${afternoonPts}`;
-      if (pEod) pEod.textContent = `-₹${eodPts}`;
-
-      const heading = document.getElementById("decayChartHeading");
-      if (heading) heading.textContent = `${data.symbol} ATM Premium Decay & Theta Trajectory`;
-
-      renderPremiumDecayChart(data);
-      renderDecayHistoryTable(points, openP);
-    } catch (err) {
-      console.error("loadPremiumDecayTool error:", err);
-    } finally {
-      if (refBtn) {
-        refBtn.textContent = "🔄 Refresh";
-        refBtn.disabled = false;
-      }
-    }
-  }
-
-  function renderPremiumDecayChart(data) {
-    const canvas = document.getElementById("chartPremiumDecay");
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    const container = canvas.parentElement;
-    const width = container.clientWidth || 900;
-    const height = container.clientHeight || 450;
-    const dpr = window.devicePixelRatio || 1;
-
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = width + "px";
-    canvas.style.height = height + "px";
-    ctx.scale(dpr, dpr);
-
-    const isLight = document.body.classList.contains("theme-light");
-    ctx.fillStyle = isLight ? "#f8fafc" : "#0d1322";
-    ctx.fillRect(0, 0, width, height);
-
-    const points = data.points || [];
-    const n = points.length;
-    if (n === 0) {
-      ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
-      ctx.font = "14px Inter";
-      ctx.textAlign = "center";
-      ctx.fillText("No premium decay tick data available", width / 2, height / 2);
-      return;
-    }
-
-    const padding = { top: 35, right: 80, bottom: 45, left: 75 };
-    const chartW = width - padding.left - padding.right;
-    const chartH = height - padding.top - padding.bottom;
-
-    const openP = points[0].price || (data.latest ? data.latest.open_straddle : 100) || 100;
-    const isExpiryToday = (data.dte === 0);
-    const totalExpectedDecay = isExpiryToday ? openP : Math.max(15, openP * 0.16);
-
-    let allPrices = points.map(p => p.price).filter(v => v != null && !isNaN(v));
-    allPrices.push(openP - totalExpectedDecay);
-    allPrices.push(openP);
-
-    let minLeft = Math.max(0, Math.floor(Math.min(...allPrices) * 0.96));
-    let maxLeft = Math.ceil(Math.max(...allPrices) * 1.04);
-    if (maxLeft <= minLeft) { minLeft -= 10; maxLeft += 10; }
-
-    // Gridlines & Labels
-    ctx.strokeStyle = isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)";
-    ctx.lineWidth = 1;
-    const gridSteps = 5;
-
-    for (let i = 0; i <= gridSteps; i++) {
-      const y = padding.top + (chartH / gridSteps) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding.left, y);
-      ctx.lineTo(width - padding.right, y);
-      ctx.stroke();
-
-      // Left Y-Axis: Straddle Price (₹)
-      const lVal = maxLeft - ((maxLeft - minLeft) / gridSteps) * i;
-      ctx.fillStyle = "#f43f5e";
-      ctx.font = "11px 'JetBrains Mono', monospace";
-      ctx.textAlign = "right";
-      ctx.fillText(`₹${lVal.toFixed(1)}`, padding.left - 10, y + 4);
-
-      // Right Y-Axis: Decay % relative to Open
-      const ptsFromOpen = lVal - openP;
-      const pctFromOpen = openP > 0 ? (ptsFromOpen / openP * 100) : 0;
-      ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
-      ctx.textAlign = "left";
-      const pctSign = pctFromOpen > 0 ? "+" : "";
-      ctx.fillText(`${pctSign}${pctFromOpen.toFixed(1)}%`, width - padding.right + 10, y + 4);
-    }
-
-    // Center canvas kept pristine without visual clutter
-
-    // Helper coordinate converters
-    const getX = (idx) => padding.left + (chartW / (n - 1 || 1)) * idx;
-    const getY = (price) => padding.top + chartH - ((price - minLeft) / (maxLeft - minLeft || 1)) * chartH;
-
-    // 1. Theoretical Theta Decay Curve (Dashed Gold Curve)
-    if (decayState.visible.theta_baseline) {
-      ctx.save();
-      ctx.strokeStyle = "#f59e0b";
-      ctx.lineWidth = 2.0;
-      ctx.setLineDash([5, 4]);
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        const prog = Math.sqrt(i / (n - 1 || 1));
-        const theoPrice = openP - (totalExpectedDecay * prog);
-        const x = getX(i);
-        const y = getY(theoPrice);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // 2. Actual Straddle Premium Erosion Curve (Rose Line with Soft Gradient Fill)
-    if (decayState.visible.actual_premium) {
-      const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
-      grad.addColorStop(0, "rgba(244, 63, 94, 0.16)");
-      grad.addColorStop(1, "rgba(244, 63, 94, 0.0)");
-
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(getX(0), padding.top + chartH);
-      for (let i = 0; i < n; i++) {
-        ctx.lineTo(getX(i), getY(points[i].price));
-      }
-      ctx.lineTo(getX(n - 1), padding.top + chartH);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = "#f43f5e";
-      ctx.lineWidth = 2.8;
-      ctx.beginPath();
-      for (let i = 0; i < n; i++) {
-        const x = getX(i);
-        const y = getY(points[i].price);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-
-    // 3. X-Axis Time Ticks
-    ctx.fillStyle = isLight ? "#64748b" : "#94a3b8";
-    ctx.font = "10px 'JetBrains Mono', monospace";
-    ctx.textAlign = "center";
-    const xStep = Math.max(1, Math.floor(n / 7));
-    let lastDrawnX = -999;
-    for (let i = 0; i < n; i += xStep) {
-      const x = getX(i);
-      const isNearEnd = n > 1 && (getX(n - 1) - x < 60);
-      if (isNearEnd) continue;
-      if (x - lastDrawnX >= 55) {
-        const timeStr = formatIstTime(points[i].time);
-        ctx.fillText(timeStr, x, height - 15);
-        lastDrawnX = x;
-      }
-    }
-    if (n > 1) {
-      const xLast = getX(n - 1);
-      if (xLast - lastDrawnX >= 45) {
-        ctx.fillText(formatIstTime(points[n - 1].time), xLast, height - 15);
-      }
-    }
-
-    // 4. Hover Crosshair & Dot
-    if (decayState.hoveredIndex >= 0 && decayState.hoveredIndex < n) {
-      const hi = decayState.hoveredIndex;
-      const hx = getX(hi);
-      const hp = points[hi];
-
-      ctx.save();
-      ctx.strokeStyle = isLight ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)";
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(hx, padding.top);
-      ctx.lineTo(hx, padding.top + chartH);
-      ctx.stroke();
-
-      if (decayState.visible.actual_premium) {
-        drawDot(ctx, hx, getY(hp.price), "#f43f5e");
-      }
-      if (decayState.visible.theta_baseline) {
-        const prog = Math.sqrt(hi / (n - 1 || 1));
-        const theoPrice = openP - (totalExpectedDecay * prog);
-        drawDot(ctx, hx, getY(theoPrice), "#f59e0b");
-      }
-      ctx.restore();
-    }
-  }
-
-  function setupDecayCanvasInteractions() {
-    const canvas = document.getElementById("chartPremiumDecay");
-    const tooltip = document.getElementById("decayTooltip");
-    if (!canvas || !tooltip) return;
-
-    function handleMove(e) {
-      if (!decayState.data || !decayState.data.points || decayState.data.points.length === 0) return;
-      const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      const mouseX = clientX - rect.left;
-      const padding = { top: 35, right: 80, bottom: 45, left: 75 };
-      const chartW = rect.width - padding.left - padding.right;
-
-      if (mouseX < padding.left || mouseX > rect.width - padding.right) {
-        tooltip.style.display = "none";
-        decayState.hoveredIndex = -1;
-        renderPremiumDecayChart(decayState.data);
-        return;
-      }
-
-      const points = decayState.data.points;
-      const n = points.length;
-      const relX = (mouseX - padding.left) / chartW;
-      const index = Math.max(0, Math.min(n - 1, Math.round(relX * (n - 1))));
-      decayState.hoveredIndex = index;
-      renderPremiumDecayChart(decayState.data);
-
-      const p = points[index];
-      const openP = points[0].price || 100;
-      const decayPts = openP - p.price;
-      const decayPct = openP > 0 ? (decayPts / openP * 100).toFixed(2) : "0.00";
-      const prog = Math.sqrt(index / (n - 1 || 1));
-      const totalExp = Math.max(15, openP * 0.16);
-      const theoPrice = (openP - totalExp * prog).toFixed(2);
-
-      tooltip.innerHTML = `
-        <div style="font-weight:800; font-size:12px; margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
-          ⏱️ ${formatIstFull(p.time)}
-        </div>
-        <div style="display:grid; grid-template-columns:auto auto; gap:4px 12px; font-size:11px;">
-          <span style="color:#f43f5e; font-weight:700;">Straddle LTP:</span>
-          <strong style="text-align:right;">₹${p.price.toFixed(2)}</strong>
-
-          <span style="color:#10b981; font-weight:700;">Points Eroded:</span>
-          <strong style="text-align:right;">${decayPts >= 0 ? '-₹' + decayPts.toFixed(2) : '+₹' + Math.abs(decayPts).toFixed(2)} (${decayPts >= 0 ? '-' : '+'}${Math.abs(decayPct)}%)</strong>
-
-          <span style="color:#f59e0b; font-weight:700;">Theta Baseline:</span>
-          <strong style="text-align:right;">₹${theoPrice}</strong>
-
-          <span style="color:#06b6d4; font-weight:700;">Pace Status:</span>
-          <strong style="text-align:right; color:${p.price <= theoPrice ? '#10b981' : '#f59e0b'};">
-            ${p.price <= theoPrice ? 'Decaying Faster (Seller Advantage)' : 'Decaying Slower (IV Hold)'}
-          </strong>
-        </div>
-      `;
-      tooltip.style.display = "block";
-      tooltip.style.left = `${Math.min(rect.width - 220, Math.max(10, mouseX + 15))}px`;
-      tooltip.style.top = `${Math.min(rect.height - 130, Math.max(10, clientY - rect.top - 20))}px`;
-    }
-
-    canvas.addEventListener("mousemove", handleMove);
-    canvas.addEventListener("mouseleave", () => {
-      tooltip.style.display = "none";
-      decayState.hoveredIndex = -1;
-      if (decayState.data) renderPremiumDecayChart(decayState.data);
-    });
-  }
-
-  function renderDecayHistoryTable(points, openP) {
-    const tbody = document.querySelector("#tableDecayHistory tbody");
-    if (!tbody) return;
-    if (!points || points.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:24px; color:var(--p2-text-muted);">No decay records available.</td></tr>`;
-      return;
-    }
-
-    const openCe = points[0].ce_price || 50;
-    const openPe = points[0].pe_price || 50;
-    let html = "";
-    for (let i = points.length - 1; i >= 0; i--) {
-      const p = points[i];
-      const tStr = p.time ? String(p.time).substring(11, 16) : "--:--";
-      const dPts = Math.max(0, openP - (p.price || openP));
-      const dPct = openP > 0 ? (dPts / openP * 100).toFixed(2) : "0.00";
-      const ceD = Math.max(0, openCe - (p.ce_price || openCe));
-      const peD = Math.max(0, openPe - (p.pe_price || openPe));
-      const hours = Math.max(0.1, ((i + 1) / 60));
-      const vel = (dPts / hours).toFixed(1);
-
-      let signalBadge = `<span class="p2-badge p2-badge-teal">Moderate Decay</span>`;
-      if (Number(vel) > 18) signalBadge = `<span class="p2-badge p2-badge-red">🔥 High Velocity</span>`;
-      else if (Number(vel) < 6) signalBadge = `<span class="p2-badge p2-badge-amber">💤 Lull / Slow</span>`;
-
-      html += `<tr>
-        <td style="font-weight:600;">${tStr}</td>
-        <td class="text-right" style="font-weight:700; color:#06b6d4;">₹${(p.price || 0).toFixed(2)}</td>
-        <td class="text-right text-red" style="font-weight:700;">-₹${dPts.toFixed(2)}</td>
-        <td class="text-right text-red">-${dPct}%</td>
-        <td class="text-right text-green">₹${ceD.toFixed(2)}</td>
-        <td class="text-right text-cyan">₹${peD.toFixed(2)}</td>
-        <td class="text-right" style="font-weight:600;">${vel} pts/hr</td>
-        <td class="text-center">${signalBadge}</td>
-      </tr>`;
-    }
-    tbody.innerHTML = html;
-  }
 
 
   // ========================================================================
