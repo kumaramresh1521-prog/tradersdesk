@@ -5229,16 +5229,16 @@
           if (d.ok) {
             document.getElementById('adminLockOverlay').style.display = 'none';
             document.getElementById('adminLayout').style.display = 'flex';
-            loadTelemetry();
-            loadDiagnostics();
-            loadMasterBrokers();
-            loadSeoConfig();
-            loadAdminFeatureFlags();
-            loadNavBuilderData();
-            loadCmsBlogList();
-            loadCmsPagesList();
-            fetchAdminLogs();
-            toggleLogsAutoRefresh();
+            try { loadTelemetry(); } catch(e) { console.warn('telemetry err:', e); }
+            try { loadDiagnostics(); } catch(e) { console.warn('diag err:', e); }
+            try { loadMasterBrokers(); } catch(e) { console.warn('brokers err:', e); }
+            try { loadSeoConfig(); } catch(e) { console.warn('seo err:', e); }
+            try { loadAdminFeatureFlags(); } catch(e) { console.warn('flags err:', e); }
+            try { loadNavBuilderData(); } catch(e) { console.warn('nav err:', e); }
+            try { loadCmsBlogList(); } catch(e) { console.warn('blog err:', e); }
+            try { loadCmsPagesList(); } catch(e) { console.warn('pages err:', e); }
+            try { fetchAdminLogs(); } catch(e) { console.warn('logs err:', e); }
+            try { toggleLogsAutoRefresh(); } catch(e) { console.warn('auto-refresh err:', e); }
           } else {
             // Clear invalid key
             sessionStorage.removeItem('bl_admin_secret');
