@@ -1258,8 +1258,8 @@
       m50: false,
       bb: false,
       sr: true,
-      rsi: true,
-      iv: true,
+      rsi: false,
+      iv: false,
       dv: true,
       pcr: true
     },
@@ -1360,6 +1360,8 @@
           h: Number(s.h || 0),
           l: Number(s.l || 0),
           c: Number(s.c || 0),
+          fut_c: s.fut_c !== undefined ? Number(s.fut_c) : null,
+          basis: s.basis !== undefined ? Number(s.basis) : null,
           v: Number(s.v || 0),
           oi: Number(s.oi || 0),
           iv: s.iv !== null && s.iv !== undefined ? Number(s.iv) : 15.0,
@@ -1381,7 +1383,15 @@
       oiState.maxPain = data.maxPain || (data.optionChain && data.optionChain.maxPain) || 0;
       oiState.chainPcr = data.pcr || (data.optionChain && data.optionChain.pcr) || 1.0;
 
-      oiState.visibleCount = Math.min(oiState.visibleCount || 9999, sessions.length);
+      if (!oiState.visibleCount) {
+        oiState.visibleCount = (window.innerWidth < 768) ? Math.min(22, sessions.length) : Math.min(9999, sessions.length);
+        if (window.innerWidth < 768) {
+          document.querySelectorAll('#futOiRangeBar button').forEach(b => {
+            b.classList.toggle('on', b.getAttribute('data-n') === '22');
+          });
+        }
+      }
+      oiState.visibleCount = Math.min(oiState.visibleCount, sessions.length);
       oiState.visibleStart = Math.max(0, sessions.length - oiState.visibleCount);
 
       const ttlEl = document.getElementById('futOiTitle');
@@ -1469,8 +1479,11 @@
       return;
     }
 
-    const dpr = window.devicePixelRatio || 1;
-    const isStock = oiState.symbolMeta.k === 'Stock';
+    const parentBox = cv.parentElement;
+    const W = parentBox ? parentBox.clientWidth : (cv.clientWidth || 800);
+    const isMobile = W < 640 || window.innerWidth < 640;
+    const dpr = Math.max(2, window.devicePixelRatio || 1);
+
     const exPanels = [
       oiState.indicators.rsi,
       oiState.indicators.dv,
@@ -1478,27 +1491,40 @@
       oiState.indicators.pcr
     ].filter(Boolean).length;
 
-    const baseH = 430 + exPanels * 90;
+    const baseH = isMobile ? (390 + exPanels * 70) : (440 + exPanels * 85);
     cv.style.height = baseH + 'px';
-    const W = cv.clientWidth || 800;
-    const H = cv.clientHeight || baseH;
-    cv.width = W * dpr;
-    cv.height = H * dpr;
+    const H = baseH;
+
+    cv.width = Math.round(W * dpr);
+    cv.height = Math.round(H * dpr);
     cx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const PL = 60, PR = 65, PT = 8;
-    const wt = [
-      5.0, // 0: Price Candles/Line
-      1.2, // 1: Volume
-      1.5, // 2: OI Bars
-      oiState.indicators.rsi ? 1.3 : 0, // 3: RSI
-      oiState.indicators.dv ? 1.3 : 0, // 4: Delivery %
-      oiState.indicators.iv ? 1.3 : 0, // 5: IV
-      oiState.indicators.pcr ? 1.3 : 0 // 6: PCR
+    const PL = isMobile ? 8 : 55;
+    const PR = isMobile ? 52 : 65;
+    const PT = 10;
+    const PB = 22;
+
+    const wt = isMobile ? [
+      5.8, // 0: Price Candles
+      1.4, // 1: Volume
+      1.8, // 2: OI Bars
+      oiState.indicators.rsi ? 1.2 : 0,
+      oiState.indicators.dv ? 1.2 : 0,
+      oiState.indicators.iv ? 1.2 : 0,
+      oiState.indicators.pcr ? 1.2 : 0
+    ] : [
+      5.0, // 0: Price Candles
+      1.3, // 1: Volume
+      1.6, // 2: OI Bars
+      oiState.indicators.rsi ? 1.3 : 0,
+      oiState.indicators.dv ? 1.3 : 0,
+      oiState.indicators.iv ? 1.3 : 0,
+      oiState.indicators.pcr ? 1.3 : 0
     ];
+
     const tw = wt.reduce((a, b) => a + b, 0);
     const f = wt.map(x => x / tw);
-    const availableH = H - PT - 24 - 12 - wt.filter(Boolean).length * 4;
+    const availableH = H - PT - PB - wt.filter(Boolean).length * 4;
     let currY = PT;
     const PN = f.map(x => {
       const r = [currY, currY + x * availableH];
@@ -1514,13 +1540,11 @@
     const X = i => x0 + bw * (i + 0.5);
 
     cx.clearRect(0, 0, W, H);
-    cx.font = '11px system-ui, -apple-system, sans-serif';
+    cx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
-    const grCol = getOiColor('--gr');
-    const muCol = getOiColor('--mu');
-    const txCol = getOiColor('--tx');
-    const bgCol = getOiColor('--bg');
-    const cardCol = getOiColor('--card');
+    const muCol = '#64748b';
+    const txCol = '#e2e8f0';
+    const cardCol = '#0b1329';
 
     let mn = Math.min(...vis.map(d => d.l));
     let mx = Math.max(...vis.map(d => d.h));
@@ -1530,7 +1554,7 @@
         if (d.bl) mn = Math.min(mn, d.bl);
       });
     }
-    const pd = Math.max(1, (mx - mn) * 0.05);
+    const pd = Math.max(1, (mx - mn) * 0.06);
     mn -= pd;
     mx += pd;
 
@@ -1544,44 +1568,71 @@
     };
     const yp = v => Y(v, PN[0], mn, mx);
 
-    // Grid lines and price axis labels
-    cx.strokeStyle = grCol;
+    // Horizontal Price Grid Lines & Labels
+    cx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    cx.lineWidth = 1;
     cx.fillStyle = muCol;
-    cx.textAlign = 'right';
+
     for (let k = 0; k <= 4; k++) {
       const v = mn + ((mx - mn) * k) / 4;
-      const y = yp(v);
+      const y = Math.round(yp(v)) + 0.5;
       cx.beginPath();
+      cx.setLineDash([3, 4]);
       cx.moveTo(x0, y);
       cx.lineTo(x1, y);
       cx.stroke();
-      cx.fillText(fmtNum(v, (v < 100 ? 2 : (v < 1000 ? 1 : 0))), x0 - 6, y + 4);
+      cx.setLineDash([]);
+
+      const lbl = fmtNum(v, (v < 100 ? 2 : (v < 1000 ? 1 : 0)));
+      if (isMobile) {
+        // On mobile, draw price ticks on RIGHT axis
+        cx.textAlign = 'left';
+        cx.fillText(lbl, x1 + 4, y + 3.5);
+      } else {
+        // On desktop, draw price ticks on LEFT axis
+        cx.textAlign = 'right';
+        cx.fillText(lbl, x0 - 6, y + 3.5);
+      }
     }
 
-    // Volume axis labels (right)
-    cx.textAlign = 'left';
-    [0, 1].forEach(frac => {
-      const val = vm * frac;
-      const valStr = val >= 1e7 ? (val / 1e7).toFixed(1) + 'Cr' : (val / 1e6).toFixed(1) + 'M';
-      cx.fillText(valStr, x1 + 6, Y(val, PN[1], 0, vm) + 4);
+    // Secondary panel boundary lines
+    PN.forEach((r, idx) => {
+      if (idx === 0) return;
+      if (r[1] - r[0] < 8) return;
+      cx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+      cx.beginPath();
+      cx.moveTo(x0, Math.round(r[0]) + 0.5);
+      cx.lineTo(x1, Math.round(r[0]) + 0.5);
+      cx.stroke();
     });
 
-    // OI axis labels (right)
-    [0, 0.5, 1].forEach(frac => {
-      const val = omx * frac;
-      const valStr = val >= 1e7 ? (val / 1e7).toFixed(1) + 'Cr' : (val / 1e6).toFixed(0) + 'M';
-      cx.fillText(valStr, x1 + 6, Y(val, PN[2], 0, omx) + 4);
-    });
+    // On Desktop only: Draw right-axis Volume and OI tick labels
+    if (!isMobile) {
+      cx.textAlign = 'left';
+      [0, 1].forEach(frac => {
+        const val = vm * frac;
+        const valStr = val >= 1e7 ? (val / 1e7).toFixed(1) + 'Cr' : (val / 1e6).toFixed(1) + 'M';
+        cx.fillText(valStr, x1 + 6, Math.round(Y(val, PN[1], 0, vm)) + 4);
+      });
+      [0, 0.5, 1].forEach(frac => {
+        const val = omx * frac;
+        const valStr = val >= 1e7 ? (val / 1e7).toFixed(1) + 'Cr' : (val / 1e6).toFixed(0) + 'M';
+        cx.fillText(valStr, x1 + 6, Math.round(Y(val, PN[2], 0, omx)) + 4);
+      });
+    }
 
-    // Date X-axis labels
+    // X-Axis Dates
     cx.textAlign = 'center';
+    cx.fillStyle = muCol;
+    cx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const maxLabels = isMobile ? (W < 360 ? 3 : 4) : 8;
+    const stStep = Math.max(1, Math.round(m / maxLabels));
     let lk = -1;
-    const stStep = Math.max(1, Math.round(m / 8));
     vis.forEach((d, i) => {
       const k = Math.floor(i / stStep);
       if (k !== lk) {
         lk = k;
-        cx.fillText(formatOiDateShort(d.dt), X(i), H - 6);
+        cx.fillText(formatOiDateShort(d.dt), Math.round(X(i)), H - 6);
       }
     });
 
@@ -1589,10 +1640,10 @@
     if (oiState.indicators.sr) {
       const srLines = getOiSupportResistance(vis, vis[vis.length - 1].c);
       srLines.forEach(l => {
-        const y = yp(l.p);
+        const y = Math.round(yp(l.p)) + 0.5;
         if (y < PN[0][0] || y > PN[0][1]) return;
-        cx.strokeStyle = l.r ? '#ef4444' : '#10b981';
-        cx.setLineDash([6, 4]);
+        cx.strokeStyle = l.r ? 'rgba(239, 68, 68, 0.85)' : 'rgba(16, 185, 129, 0.85)';
+        cx.setLineDash([5, 4]);
         cx.beginPath();
         cx.moveTo(x0, y);
         cx.lineTo(x1, y);
@@ -1600,7 +1651,7 @@
         cx.setLineDash([]);
         cx.fillStyle = l.r ? '#ef4444' : '#10b981';
         cx.textAlign = 'left';
-        cx.fillText((l.r ? 'R ' : 'S ') + fmtNum(l.p, 0), x0 + 4, y - 3);
+        cx.fillText((l.r ? 'R ' : 'S ') + fmtNum(l.p, 0), x0 + 6, y - 3);
       });
     }
 
@@ -1613,10 +1664,10 @@
         if (d[key] === null || d[key] === undefined) return;
         const y = yp(d[key]);
         if (!hasStarted) {
-          cx.moveTo(X(i), y);
+          cx.moveTo(Math.round(X(i)) + 0.5, y);
           hasStarted = true;
         } else {
-          cx.lineTo(X(i), y);
+          cx.lineTo(Math.round(X(i)) + 0.5, y);
         }
       });
       cx.stroke();
@@ -1648,29 +1699,33 @@
       drawLineSeries('bl', '#6366f1', 1);
     }
 
-    // Main Price Candles / Line
-    const bd = Math.max(1, bw * 0.7);
+    // Professional Candlestick Bodies & Wicks
+    const bd = Math.max(2, Math.round(bw * 0.72));
     if (oiState.indicators.line) {
       drawLineSeries('c', '#38bdf8', 2);
     }
 
     vis.forEach((d, i) => {
-      const x = X(i);
+      const x = Math.round(X(i));
       const isUp = d.c >= d.o;
-      const candleCol = isUp ? '#10b981' : '#ef4444';
+      const candleCol = isUp ? '#10b981' : '#f43f5e';
 
       cx.globalAlpha = oiState.hiddenCategories[d.cat] ? 0.15 : 1;
       if (!oiState.indicators.line) {
+        // 1px Center Wick
         cx.strokeStyle = candleCol;
-        cx.fillStyle = candleCol;
+        cx.lineWidth = 1;
         cx.beginPath();
-        cx.moveTo(x, yp(d.h));
-        cx.lineTo(x, yp(d.l));
+        cx.moveTo(x + 0.5, Math.round(yp(d.h)));
+        cx.lineTo(x + 0.5, Math.round(yp(d.l)));
         cx.stroke();
 
-        const topY = yp(Math.max(d.o, d.c));
-        const botY = yp(Math.min(d.o, d.c));
-        cx.fillRect(x - bd / 2, topY, bd, Math.max(1, botY - topY));
+        // Candle Body
+        const topY = Math.round(yp(Math.max(d.o, d.c)));
+        const botY = Math.round(yp(Math.min(d.o, d.c)));
+        const bH = Math.max(2, botY - topY);
+        cx.fillStyle = candleCol;
+        cx.fillRect(Math.round(x - bd / 2), topY, bd, bH);
       }
 
       if (oiState.hiddenCategories[d.cat]) {
@@ -1678,27 +1733,57 @@
         return;
       }
 
-      // Volume Bar
-      cx.globalAlpha = 0.75;
-      cx.fillStyle = '#6366f1';
-      const vy = Y(d.v, PN[1], 0, vm);
-      cx.fillRect(x - bd / 2, vy, bd, PN[1][1] - vy);
+      // Volume Bar (Up/Down color matched)
+      const volCol = isUp ? 'rgba(16, 185, 129, 0.55)' : 'rgba(244, 63, 94, 0.55)';
+      cx.fillStyle = volCol;
+      const vy = Math.round(Y(d.v, PN[1], 0, vm));
+      cx.fillRect(Math.round(x - bd / 2), vy, bd, PN[1][1] - vy);
 
-      // OI Bar
+      // Institutional OI Buildup Bar
       cx.fillStyle = OI_COLORS[d.cat] || '#38bdf8';
-      const oiy = Y(d.oi, PN[2], omn, omx);
-      cx.fillRect(x - bd / 2, oiy, bd, PN[2][1] - oiy);
+      const oiy = Math.round(Y(d.oi, PN[2], omn, omx));
+      cx.fillRect(Math.round(x - bd / 2), oiy, bd, PN[2][1] - oiy);
       cx.globalAlpha = 1;
     });
 
     if (oiState.indicators.m20) drawLineSeries('m20', '#f59e0b', 1.5);
     if (oiState.indicators.m50) drawLineSeries('m50', '#ec4899', 1.5);
 
+    // Active Price Badge on Right Axis (TradingView Style)
+    const b = vis[vis.length - 1];
+    const prevB = vis.length > 1 ? vis[vis.length - 2] : b;
+    const isUpDay = b.c >= prevB.c;
+    const curPillCol = isUpDay ? '#10b981' : '#f43f5e';
+    const curY = Math.round(yp(b.c));
+
+    cx.strokeStyle = curPillCol;
+    cx.setLineDash([3, 3]);
+    cx.beginPath();
+    cx.moveTo(x0, curY + 0.5);
+    cx.lineTo(x1, curY + 0.5);
+    cx.stroke();
+    cx.setLineDash([]);
+
+    const curPxText = fmtNum(b.c, (b.c < 100 ? 2 : 1));
+    cx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const pillW = cx.measureText(curPxText).width + 8;
+    cx.fillStyle = curPillCol;
+    cx.beginPath();
+    if (cx.roundRect) {
+      cx.roundRect(x1 + 2, curY - 9, pillW, 18, 3);
+    } else {
+      cx.rect(x1 + 2, curY - 9, pillW, 18);
+    }
+    cx.fill();
+    cx.fillStyle = '#ffffff';
+    cx.textAlign = 'center';
+    cx.fillText(curPxText, x1 + 2 + pillW / 2, curY + 3.5);
+
     // RSI Sub-panel
     if (oiState.indicators.rsi && PN[3]) {
       const r = PN[3];
       const ry = v => Y(v, r, 0, 100);
-      cx.strokeStyle = grCol;
+      cx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       [30, 70].forEach(v => {
         cx.setLineDash([3, 3]);
         cx.beginPath();
@@ -1706,9 +1791,11 @@
         cx.lineTo(x1, ry(v));
         cx.stroke();
         cx.setLineDash([]);
-        cx.fillStyle = muCol;
-        cx.textAlign = 'left';
-        cx.fillText(v, x1 + 6, ry(v) + 4);
+        if (!isMobile) {
+          cx.fillStyle = muCol;
+          cx.textAlign = 'left';
+          cx.fillText(v, x1 + 6, ry(v) + 4);
+        }
       });
 
       cx.strokeStyle = '#38bdf8';
@@ -1733,17 +1820,19 @@
       const r = PN[panelIdx];
       if (!r || r[1] - r[0] < 8) return;
       const yy = v => Y(v, r, lo, hi);
-      cx.strokeStyle = grCol;
+      cx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       cx.fillStyle = muCol;
       cx.textAlign = 'left';
 
-      [lo, (lo + hi) / 2, hi].forEach(v => {
-        cx.beginPath();
-        cx.moveTo(x0, yy(v));
-        cx.lineTo(x1, yy(v));
-        cx.stroke();
-        cx.fillText(v.toFixed(v % 1 ? 1 : 0), x1 + 6, yy(v) + 4);
-      });
+      if (!isMobile) {
+        [lo, (lo + hi) / 2, hi].forEach(v => {
+          cx.beginPath();
+          cx.moveTo(x0, yy(v));
+          cx.lineTo(x1, yy(v));
+          cx.stroke();
+          cx.fillText(v.toFixed(v % 1 ? 1 : 0), x1 + 6, yy(v) + 4);
+        });
+      }
 
       if (refVal !== null && refVal !== undefined) {
         cx.setLineDash([4, 3]);
@@ -1784,7 +1873,6 @@
       }
     };
 
-    const b = vis[vis.length - 1];
     const validDvs = vis.map(d => d.dv).filter(v => v !== null && v !== undefined && !isNaN(v));
     const adv = validDvs.length ? (validDvs.reduce((t, v) => t + v, 0) / validDvs.length) : 50;
     const apc = vis.length ? (vis.reduce((t, d) => t + (d.pcr || 1.0), 0) / vis.length) : 1.0;
@@ -1805,38 +1893,40 @@
       drawSubPanel(6, 'pcr', pcrMin, pcrMax + (pcrMin === pcrMax ? 0.2 : 0), '#38bdf8', false, 1.0);
     }
 
+    // Panel Header Badges
+    const latestCatNames = ['Long Buildup', 'Short Buildup', 'Short Covering', 'Long Unwinding'];
     const panelHeaders = [
-      [0, `${oiState.symbolMeta.s} · Futures Price (${oiState.indicators.line ? 'Line' : 'Candlestick'}) + Overlays`],
-      [1, 'Futures Volume'],
-      [2, 'Open Interest (Bar color = Institutional Buildup Flow)'],
-      [3, 'RSI (14) · Momentum'],
-      [4, `Delivery % · Cash Delivery Ratio (Benchmark: ${fmtNum(adv, 1)}% Avg)`],
-      [5, `ATM Implied Volatility (IV %) · Latest ${fmtNum(b.iv, 1)}%`],
-      [6, `Put-Call Ratio (PCR) · Latest ${fmtNum(b.pcr, 2)} (Avg: ${fmtNum(apc, 2)}, 1.0 = Balanced)`]
+      [0, isMobile ? `${oiState.symbolMeta.s} · Price` : `${oiState.symbolMeta.s} · Futures Price (${oiState.indicators.line ? 'Line' : 'Candles'}) + Overlays`],
+      [1, `Vol · ${b.v >= 1e7 ? (b.v / 1e7).toFixed(1) + 'Cr' : (b.v / 1e6).toFixed(1) + 'M'}`],
+      [2, `OI · ${b.oi >= 1e7 ? (b.oi / 1e7).toFixed(1) + 'Cr' : (b.oi / 1e6).toFixed(1) + 'M'} (${latestCatNames[b.cat] || 'Neutral'})`],
+      [3, isMobile ? 'RSI' : 'RSI (14) · Momentum'],
+      [4, isMobile ? `Delivery · ${b.dv !== null && b.dv !== undefined ? fmtNum(b.dv, 1) + '%' : 'Pending'}` : `Delivery % · Cash Delivery Ratio (${fmtNum(adv, 1)}% Avg)`],
+      [5, isMobile ? `ATM IV · ${fmtNum(b.iv, 1)}%` : `ATM Implied Volatility (IV %) · Latest ${fmtNum(b.iv, 1)}%`],
+      [6, isMobile ? `PCR · ${fmtNum(b.pcr, 2)}` : `Put-Call Ratio (PCR) · Latest ${fmtNum(b.pcr, 2)}`]
     ];
 
     panelHeaders.forEach(([idx, title]) => {
       const r = PN[idx];
       if (!r || r[1] - r[0] < 8) return;
-      cx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+      cx.font = isMobile ? 'bold 9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       const textW = cx.measureText(title).width;
-      cx.globalAlpha = 0.88;
+      cx.globalAlpha = 0.9;
       cx.fillStyle = cardCol;
-      cx.fillRect(x0 + 2, r[0] + 2, textW + 12, 18);
+      cx.fillRect(x0 + 2, r[0] + 2, textW + 8, isMobile ? 14 : 18);
       cx.globalAlpha = 1;
       cx.fillStyle = txCol;
       cx.textAlign = 'left';
-      cx.fillText(title, x0 + 8, r[0] + 15);
-      cx.font = '11px system-ui, -apple-system, sans-serif';
+      cx.fillText(title, x0 + 6, r[0] + (isMobile ? 12 : 15));
     });
 
+    // Crosshair and Floating HUD Pill
     if (oiState.hoverX >= 0 && oiState.hoverX < m) {
       const x = X(oiState.hoverX);
-      cx.strokeStyle = muCol;
-      cx.setLineDash([4, 4]);
+      cx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      cx.setLineDash([3, 3]);
       cx.beginPath();
       cx.moveTo(x, PT);
-      cx.lineTo(x, H - 22);
+      cx.lineTo(x, H - PB);
       cx.stroke();
 
       if (oiState.hoverY >= PN[0][0] && oiState.hoverY <= PN[0][1]) {
@@ -1844,38 +1934,77 @@
         cx.moveTo(x0, oiState.hoverY);
         cx.lineTo(x1, oiState.hoverY);
         cx.stroke();
-        cx.setLineDash([]);
-
-        const crossPrice = mn + ((PN[0][1] - oiState.hoverY) / (PN[0][1] - PN[0][0])) * (mx - mn);
-        cx.fillStyle = txCol;
-        cx.fillRect(x1 + 1, oiState.hoverY - 8, PR - 2, 16);
-        cx.fillStyle = bgCol;
-        cx.textAlign = 'left';
-        cx.fillText(fmtNum(crossPrice, 1), x1 + 5, oiState.hoverY + 4);
       }
       cx.setLineDash([]);
+
+      // Floating Crosshair HUD Pill on Mobile & Desktop
+      const hBar = vis[oiState.hoverX];
+      const hPrev = oiState.hoverX > 0 ? vis[oiState.hoverX - 1] : hBar;
+      const hChg = hBar.c - hPrev.c;
+      const hChgPct = hPrev.c ? (hChg / hPrev.c) * 100 : 0;
+      const hPos = hChg >= 0;
+      const hCat = latestCatNames[hBar.cat] || 'Neutral';
+      const hCatCol = OI_COLORS[hBar.cat] || '#38bdf8';
+
+      const hudStr = `${formatOiDateShort(hBar.dt)}  C: ₹${fmtNum(hBar.c, 1)} (${hPos ? '+' : ''}${fmtNum(hChgPct, 1)}%)  OI: ${hBar.oi >= 1e7 ? (hBar.oi/1e7).toFixed(1)+'Cr' : (hBar.oi/1e6).toFixed(1)+'M'} (${hCat})  Vol: ${hBar.v >= 1e7 ? (hBar.v/1e7).toFixed(1)+'Cr' : (hBar.v/1e6).toFixed(1)+'M'}`;
+      
+      cx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      const hudW = Math.min(W - 16, cx.measureText(hudStr).width + 16);
+      cx.fillStyle = 'rgba(7, 16, 38, 0.92)';
+      cx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+      cx.lineWidth = 1;
+      cx.beginPath();
+      if (cx.roundRect) {
+        cx.roundRect(x0 + 4, PT + 2, hudW, 20, 4);
+      } else {
+        cx.rect(x0 + 4, PT + 2, hudW, 20);
+      }
+      cx.fill();
+      cx.stroke();
+
+      cx.fillStyle = '#ffffff';
+      cx.textAlign = 'left';
+      cx.fillText(hudStr, x0 + 10, PT + 15);
     }
 
     renderFutureOiPanels(vis);
   }
-
   function renderFutureOiPanels(vis) {
     if (!vis || !vis.length) return;
     const a = vis[0];
     const b = vis[vis.length - 1];
-    const chg = b.c - a.c;
-    const chgPct = a.c ? (chg / a.c) * 100 : 0;
-    const isPos = chg >= 0;
+    const prev = vis.length > 1 ? vis[vis.length - 2] : b;
+    const dayChg = b.c - prev.c;
+    const dayChgPct = prev.c ? (dayChg / prev.c) * 100 : 0;
+    const isPos = dayChg >= 0;
 
     const rngEl = document.getElementById('futOiDateRange');
-    if (rngEl) rngEl.textContent = `${formatOiDate(a.dt)} – ${formatOiDate(b.dt)} · ${vis.length} sessions`;
+    if (rngEl) {
+      const periodChg = b.c - vis[0].c;
+      const periodChgPct = vis[0].c ? (periodChg / vis[0].c) * 100 : 0;
+      const periodSign = periodChg >= 0 ? '+' : '';
+      rngEl.textContent = `${formatOiDate(vis[0].dt)} - ${formatOiDate(b.dt)} • ${vis.length} sessions (Period: ${periodSign}${fmtNum(periodChgPct, 1)}%)`;
+    }
 
     const ltpEl = document.getElementById('futOiLtp');
-    if (ltpEl) ltpEl.textContent = `₹${fmtNum(b.c, (b.c < 100 ? 2 : (b.c < 1000 ? 1 : 0)))}`;
+    if (ltpEl) {
+      ltpEl.textContent = `₹${fmtNum(b.c, (b.c < 100 ? 2 : (b.c < 1000 ? 1 : 0)))}`;
+    }
+    const basisEl = document.getElementById('futOiBasisRow');
+    if (basisEl) {
+      if (b.fut_c && Math.abs(b.fut_c - b.c) > 0.05) {
+        const diff = b.fut_c - b.c;
+        const bSign = diff >= 0 ? '+' : '';
+        const bColor = diff >= 0 ? '#10b981' : '#f43f5e';
+        basisEl.innerHTML = `<span>Near Futures: <b>₹${fmtNum(b.fut_c, (b.fut_c < 100 ? 2 : (b.fut_c < 1000 ? 1 : 0)))}</b></span> · <span>Basis: <b style="color:${bColor}">${bSign}${fmtNum(diff, 1)} (${diff >= 0 ? 'Premium' : 'Discount'})</b></span>`;
+      } else {
+        basisEl.innerHTML = '';
+      }
+    }
 
     const chgEl = document.getElementById('futOiChg');
     if (chgEl) {
-      chgEl.textContent = `${isPos ? '▲ +' : '▼ '}${fmtNum(chg, 2)} (${isPos ? '+' : ''}${fmtNum(chgPct, 2)}%)`;
+      chgEl.textContent = `${isPos ? '▲ +' : '▼ '}${fmtNum(dayChg, 2)} (${isPos ? '+' : ''}${fmtNum(dayChgPct, 2)}%)`;
       chgEl.style.color = isPos ? '#10b981' : '#ef4444';
     }
 
@@ -2135,7 +2264,7 @@
     tip.innerHTML = `
       <div style="font-weight:700; color:#38bdf8; margin-bottom:3px;">${formatOiDate(d.dt)}</div>
       <div>O ₹${fmtNum(d.o, 1)} &bull; H ₹${fmtNum(d.h, 1)}</div>
-      <div>L ₹${fmtNum(d.l, 1)} &bull; C ₹${fmtNum(d.c, 1)} <span style="color:${cg >= 0 ? '#10b981' : '#ef4444'}; font-weight:700;">(${cg >= 0 ? '+' : ''}${fmtNum(cg, 2)}%)</span></div>
+      <div>L ₹${fmtNum(d.l, 1)} &bull; C ₹${fmtNum(d.c, 1)}${d.fut_c ? ` <span style="color:#94a3b8; font-size:10.5px;">(Fut: ₹${fmtNum(d.fut_c, 1)})</span>` : ''} <span style="color:${cg >= 0 ? '#10b981' : '#ef4444'}; font-weight:700;">(${cg >= 0 ? '+' : ''}${fmtNum(cg, 2)}%)</span></div>
       <div>Vol: ${volStr} &bull; OI: ${oiStr}</div>
       <div>IV: ${fmtNum(d.iv, 1)}% &bull; PCR: ${fmtNum(d.pcr, 2)}${delivStr}</div>
       <div style="margin-top:4px; font-weight:700; color:${OI_COLORS[d.cat]};">● ${OI_NAMES[d.cat]}</div>
@@ -2203,8 +2332,28 @@
     if (oiState.initializedEvents) return;
     oiState.initializedEvents = true;
 
+    // Mobile initial defaults: Turn off stacked dv and pcr for clean view
+    if (window.innerWidth < 768) {
+      oiState.indicators.dv = false;
+      oiState.indicators.pcr = false;
+      const bDv = document.querySelector('#futOiIndicatorBar button[data-k="dv"]');
+      const bPcr = document.querySelector('#futOiIndicatorBar button[data-k="pcr"]');
+      if (bDv) bDv.classList.remove('on');
+      if (bPcr) bPcr.classList.remove('on');
+    }
+
     const cv = document.getElementById('futOiCanvas');
     const tip = document.getElementById('futOiTip');
+
+    // ResizeObserver: Guaranteed canvas redrawing on container resize
+    if (cv && cv.parentElement && typeof ResizeObserver !== 'undefined' && !oiState._resizeObs) {
+      oiState._resizeObs = new ResizeObserver(() => {
+        if (state.activeSubTab === 'openInterest') {
+          drawFutureOiCanvas();
+        }
+      });
+      oiState._resizeObs.observe(cv.parentElement);
+    }
 
     if (cv) {
       cv.addEventListener('pointerdown', e => {
@@ -2221,8 +2370,9 @@
         const r = cv.getBoundingClientRect();
         oiState.hoverY = e.clientY - r.top;
 
-        const PL = 60, PR = 65;
-        const W = cv.clientWidth || 800;
+        const isMob = (cv.parentElement?.clientWidth || cv.clientWidth || window.innerWidth) < 640;
+        const PL = isMob ? 8 : 55, PR = isMob ? 52 : 65;
+        const W = cv.parentElement ? cv.parentElement.clientWidth : (cv.clientWidth || 800);
         const bw = (W - PL - PR) / (oiState.visibleCount || 1);
 
         if (oiState.drag) {

@@ -281,11 +281,11 @@ def _load_bhavcopy_eod_data(force: bool = False):
         }
         return _BHAV_SESSIONS_CACHE
 
-    # 3. If no cache existed or forced, parse CSVs (for force, at least the latest CSV)
-    if force and csv_files:
-        files_to_parse = [csv_files[-1]]
+    # 3. If no cache existed or forced, parse CSVs
+    if force or not dates_found:
+        files_to_parse = csv_files
     else:
-        files_to_parse = csv_files if not dates_found else new_csvs
+        files_to_parse = new_csvs
 
     for idx, path in enumerate(files_to_parse):
         dt_str = path.stem.replace("BhavCopy_NSE_FO_", "")
@@ -311,6 +311,7 @@ def _load_bhavcopy_eod_data(force: bool = False):
                             c = float(r.get("ClsPric") or r.get("LastPric") or r.get("SttlmPric") or 0.0)
                             if c <= 0:
                                 continue
+                            undrlyg = float(r.get("UndrlygPric") or 0.0)
                             o = float(r.get("OpnPric") or c)
                             h = float(r.get("HghPric") or max(o, c))
                             l = float(r.get("LwPric") or min(o, c))
@@ -324,7 +325,8 @@ def _load_bhavcopy_eod_data(force: bool = False):
                                 day_fut[sym] = []
                             day_fut[sym].append({
                                 "xpry": xpry,
-                                "o": o, "h": h, "l": l, "c": c, "v": v_shares, "v_contracts": v_contracts, "oi": oi,
+                                "o": o, "h": h, "l": l, "c": c, "undrlyg": undrlyg,
+                                "v": v_shares, "v_contracts": v_contracts, "oi": oi,
                                 "isIndex": (tp in ("IDF", "FUTIDX")), "lot": lot
                             })
                         except Exception:
@@ -392,6 +394,11 @@ def _load_bhavcopy_eod_data(force: bool = False):
                 tot_oi = sum(c["oi"] for c in contracts)
                 tot_vol = sum(c["v"] for c in contracts)
 
+                undrlyg_candidates = [c.get("undrlyg", 0.0) for c in contracts if c.get("undrlyg", 0.0) > 0]
+                official_close = undrlyg_candidates[0] if undrlyg_candidates else near["c"]
+                final_c = official_close if official_close > 0 else near["c"]
+                ratio = (final_c / near["c"]) if near["c"] > 0 else 1.0
+
                 if sym not in symbols_data:
                     symbols_data[sym] = []
 
@@ -399,10 +406,12 @@ def _load_bhavcopy_eod_data(force: bool = False):
                 symbols_data[sym] = [x for x in symbols_data[sym] if x["date"] != dt_str]
                 symbols_data[sym].append({
                     "date": dt_str,
-                    "o": near["o"],
-                    "h": near["h"],
-                    "l": near["l"],
-                    "c": near["c"],
+                    "o": round(near["o"] * ratio, 2),
+                    "h": round(near["h"] * ratio, 2),
+                    "l": round(near["l"] * ratio, 2),
+                    "c": round(final_c, 2),
+                    "fut_c": round(near["c"], 2),
+                    "basis": round(near["c"] - final_c, 2),
                     "v": tot_vol,
                     "oi": tot_oi,
                     "isIndex": near["isIndex"],
@@ -484,7 +493,8 @@ def get_all_futures_symbols() -> List[dict]:
 
         is_idx = cfg.get("kind") == "Index" or m_rec.get("isIndex", False) or s in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50", "SENSEX", "BANKEX")
         name = cfg.get("name") or m_rec.get("name") or s
-        ltp = m_rec.get("futPrice") or m_rec.get("ltp") or cfg.get("base") or 1000.0
+        latest_c = (symbols_data.get(s) or [{}])[-1].get("c")
+        ltp = latest_c or m_rec.get("ltp") or m_rec.get("futPrice") or cfg.get("base") or 1000.0
         chg_pct = m_rec.get("priceChangePct") or m_rec.get("changePct") or 0.0
         step = cfg.get("step") or (100 if ltp > 10000 else (50 if ltp > 3000 else (20 if ltp > 1000 else (10 if ltp > 400 else 5))))
 
@@ -551,6 +561,20 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
     else:
         timeline_sessions = list(raw_bhav_sessions)
 
+    # Align with authentic Cash OHLC bars from local cache if available (instant 40ms)
+    cash_map = {}
+    try:
+        hist_file = ROOT / "data" / "cache" / f"hist_10y_{sym}.json"
+        if not hist_file.exists():
+            hist_file = CACHE_DIR / f"hist_10y_{sym}.json"
+        if hist_file.exists():
+            with open(hist_file, "r", encoding="utf-8") as f:
+                c_bars = json.load(f)
+                if c_bars and isinstance(c_bars, list):
+                    cash_map = {b["time"].replace("-", ""): b for b in c_bars if isinstance(b, dict) and "time" in b}
+    except Exception:
+        cash_map = {}
+
     # Convert all sessions to uniform dicts
     cleaned_sessions = []
     from chart_engine import NSE_FIXED_HOLIDAYS, NSE_CALENDAR_HOLIDAYS
@@ -568,6 +592,14 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
         o = float(s_item.get("o", c))
         h = float(s_item.get("h", max(o, c)))
         l = float(s_item.get("l", min(o, c)))
+        cb = cash_map.get(dt_str)
+        if cb:
+            c = float(cb.get("close") or c)
+            o = float(cb.get("open") or o)
+            h = float(cb.get("high") or max(o, c))
+            l = float(cb.get("low") or min(o, c))
+        fut_c = float(s_item.get("fut_c") or round(c, 2))
+        basis = float(s_item.get("basis") or round(fut_c - c, 2))
         v = int(s_item.get("v", 0))
         oi = int(s_item.get("oi", 0))
 
@@ -608,6 +640,8 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
             "h": round(h, 2),
             "l": round(l, 2),
             "c": round(c, 2),
+            "fut_c": round(fut_c, 2),
+            "basis": round(basis, 2),
             "v": v,
             "oi": oi,
             "iv": round(iv, 2),
@@ -660,7 +694,7 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
                     "deliv_qty": live_deliv_qty,
                     "pcr": round(float(m_rec.get("pcr") or 1.0), 2),
                 })
-            elif is_trading_day and market_started and cleaned_sessions and cleaned_sessions[-1]["date"] == today_str:
+            elif is_trading_active and cleaned_sessions and cleaned_sessions[-1]["date"] == today_str:
                 # Update today's bar with live tick
                 cleaned_sessions[-1]["c"] = round(float(m_rec.get("futPrice") or m_rec.get("ltp")), 2)
                 cleaned_sessions[-1]["h"] = round(max(cleaned_sessions[-1]["h"], cleaned_sessions[-1]["c"]), 2)

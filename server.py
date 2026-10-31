@@ -96,10 +96,13 @@ def get_admin_secret() -> str:
 
 
 def _admin_client_identity(handler) -> str:
-    # Cloudflare provides this header at the edge. Fall back to the peer address
-    # for local development and direct deployments.
-    forwarded = handler.headers.get("CF-Connecting-IP", "").strip()
-    return forwarded or str(handler.client_address[0] if handler.client_address else "unknown")
+    cf_ip = handler.headers.get("CF-Connecting-IP", "").strip()
+    if cf_ip:
+        return cf_ip
+    xff = handler.headers.get("X-Forwarded-For", "").strip()
+    if xff:
+        return xff.split(",")[0].strip()
+    return str(handler.client_address[0] if handler.client_address else "unknown")
 
 
 def admin_auth_is_rate_limited(handler) -> bool:
@@ -10694,11 +10697,14 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         # Admin Protected GET Endpoints
         if path == "/api/admin/verify":
+            is_valid = check_admin_request(self)
+            if is_valid:
+                record_admin_auth_result(self, True)
+                return self.send_json(200, {"ok": True})
             if admin_auth_is_rate_limited(self):
                 return self.send_json(429, {"ok": False, "message": "Too many admin authentication attempts. Try again later."})
-            is_valid = check_admin_request(self)
-            record_admin_auth_result(self, is_valid)
-            return self.send_json(200 if is_valid else 401, {"ok": is_valid})
+            record_admin_auth_result(self, False)
+            return self.send_json(401, {"ok": False})
 
         if path == "/api/admin/broker-config":
             if not check_admin_request(self):
@@ -11828,14 +11834,17 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, run_system_diagnostics())
 
             if parsed.path == "/api/admin/verify":
-                if admin_auth_is_rate_limited(self):
-                    return self.send_json(429, {"ok": False, "message": "Too many admin authentication attempts. Try again later."})
                 payload = self.read_body()
                 key = str(payload.get("adminKey", "")).strip().strip('"').strip("'")
                 secret = get_admin_secret()
                 is_valid = bool(key and secret and hmac.compare_digest(key, secret))
-                record_admin_auth_result(self, is_valid)
-                return self.send_json(200 if is_valid else 401, {"ok": is_valid, "message": "Admin authenticated" if is_valid else "Invalid Admin Key"})
+                if is_valid:
+                    record_admin_auth_result(self, True)
+                    return self.send_json(200, {"ok": True, "message": "Admin authenticated"})
+                if admin_auth_is_rate_limited(self):
+                    return self.send_json(429, {"ok": False, "message": "Too many failed admin authentication attempts. Please wait 15 minutes."})
+                record_admin_auth_result(self, False)
+                return self.send_json(401, {"ok": False, "message": "Invalid Admin PIN. Access denied."})
 
             if parsed.path == "/api/admin/broker-config":
                 if not check_admin_request(self):

@@ -417,7 +417,7 @@
                   <span class="dd-icon">⚔️</span>
                   <div class="dd-text">
                     <span class="dd-title">Call vs Put Premium <span class="p2-badge p2-badge-cyan" style="margin-left:4px;">NEW</span></span>
-                    <span class="dd-sub">Live CE vs PE comparison, decay skew &amp; imbalance</span>
+                    <span class="dd-sub">Live CE vs PE leg comparison, spread &amp; premium skew</span>
                   </div>
                 </a>
               </div>
@@ -1556,9 +1556,12 @@
                     <h2 class="fut-oi-ttl" id="futOiTitle">NIFTY · Futures Analytics &amp; OI Buildup</h2>
                   </div>
                   <div class="fut-oi-sub" id="futOiDateRange">Loading multi-session EOD data...</div>
-                  <div style="display:flex; align-items:baseline; margin-top:4px;">
-                    <span class="fut-oi-px" id="futOiLtp">--</span>
-                    <span class="fut-oi-chg" id="futOiChg">--</span>
+                  <div class="fut-oi-price-block">
+                    <div class="fut-oi-price-row">
+                      <span class="fut-oi-px" id="futOiLtp">--</span>
+                      <span class="fut-oi-chg" id="futOiChg">--</span>
+                    </div>
+                    <div class="fut-oi-basis-row" id="futOiBasisRow"></div>
                   </div>
                 </div>
                 <div class="fut-oi-bar" id="futOiRangeBar">
@@ -1587,10 +1590,10 @@
                 <button type="button" class="fut-oi-b" data-k="m50">MA50</button>
                 <button type="button" class="fut-oi-b" data-k="bb">Bollinger</button>
                 <button type="button" class="fut-oi-b on" data-k="sr">Support/Resistance</button>
-                <button type="button" class="fut-oi-b on" data-k="rsi">RSI</button>
-                <button type="button" class="fut-oi-b on" data-k="iv">IV</button>
-                <button type="button" class="fut-oi-b on" data-k="dv">Delivery %</button>
-                <button type="button" class="fut-oi-b on" data-k="pcr">PCR</button>
+                <button type="button" class="fut-oi-b" data-k="rsi">RSI</button>
+                <button type="button" class="fut-oi-b" data-k="iv">IV</button>
+                <button type="button" class="fut-oi-b" data-k="dv">Delivery %</button>
+                <button type="button" class="fut-oi-b" data-k="pcr">PCR</button>
                 <span class="sep"></span>
                 <label class="fut-oi-b" style="cursor:pointer">
                   📁 Load CSV
@@ -1659,7 +1662,7 @@
                 </div>
               </div>
 
-              <div style="margin-top:12px; font-size:11px; color:#64748b; font-style:italic;">
+              <div class="fut-oi-disclaimer" style="margin-top:12px; font-size:11px; color:#64748b; font-style:italic;">
                 * Official EOD sessions synced from NSE Derivatives Bhavcopy archives after market close (15:35+ IST). Intraday candle reflects live broker tick. For external custom backtests, use "📁 Load CSV".
               </div>
             </div>
