@@ -8306,28 +8306,9 @@ function switchTab(tab) {
     return p;
   };
 
-  if (tab === "breadth") {
-    isOptionsTabActive = false;
-    showPanel("panelBreadth", "tabBreadth");
-    setTimeout(() => {
-      try { if (typeof resizeCanvas === "function") resizeCanvas(); } catch(e){}
-      try { if (typeof resizeNiftyCanvas === "function") resizeNiftyCanvas(); } catch(e){}
-      try { if (typeof resizeNiftyAdCanvas === "function") resizeNiftyAdCanvas(); } catch(e){}
-      try { if (typeof resizeAdCanvases === "function") resizeAdCanvases(); } catch(e){}
-      if (latestData && latestData.timeline) {
-        drawChart(latestData.timeline);
-      } else if (!isLoading) {
-        runBreadth({ fastRefresh: true });
-      }
-      if (niftyData && niftyData.points) {
-        drawNiftyChart(niftyData.points);
-      }
-    }, 60);
-    try {
-      if (!autoRefreshTimer && els.autoRefresh && els.autoRefresh.checked) {
-        scheduleAutoRefresh();
-      }
-    } catch(e){}
+  if (tab === "breadth" || tab === "market-breadth" || tab === "breadthContrib" || tab === "contribution") {
+    window.location.href = "/breadth-contribution";
+    return;
   } else if (tab === "futures") {
     isOptionsTabActive = false;
     showPanel("panelFutures", "navFutures");
@@ -10285,15 +10266,15 @@ function applyDataSourceDefaults(source) {
   }
 }
 
-// Event Listeners
-els.runButton.addEventListener("click", () => runBreadth({ fastRefresh: false }));
-els.refreshButton.addEventListener("click", () => runBreadth({ fastRefresh: true }));
-els.dataSource.addEventListener("change", () => applyDataSourceDefaults(els.dataSource.value));
-els.universeSelect.addEventListener("change", applyUniverseDefaults);
-els.chartMode.addEventListener("change", () => hideTooltip());
-els.indexSelect.addEventListener("change", () => loadNifty({ fastRefresh: true }));
-els.autoRefresh.addEventListener("change", scheduleAutoRefresh);
-els.refreshInterval.addEventListener("change", scheduleAutoRefresh);
+// Event Listeners (Safeguarded against purged panel elements)
+if (els.runButton) els.runButton.addEventListener("click", () => runBreadth({ fastRefresh: false }));
+if (els.refreshButton) els.refreshButton.addEventListener("click", () => runBreadth({ fastRefresh: true }));
+if (els.dataSource) els.dataSource.addEventListener("change", () => applyDataSourceDefaults(els.dataSource.value));
+if (els.universeSelect) els.universeSelect.addEventListener("change", applyUniverseDefaults);
+if (els.chartMode) els.chartMode.addEventListener("change", () => hideTooltip());
+if (els.indexSelect) els.indexSelect.addEventListener("change", () => loadNifty({ fastRefresh: true }));
+if (els.autoRefresh) els.autoRefresh.addEventListener("change", scheduleAutoRefresh);
+if (els.refreshInterval) els.refreshInterval.addEventListener("change", scheduleAutoRefresh);
 
 // P&F Settings Popover Toggle & Sync
 const btnToggleBreadthSettings = document.getElementById("btnToggleBreadthSettings");
@@ -10339,19 +10320,23 @@ if (breadthSettingsPopover) {
 if (els.boxPercent) els.boxPercent.addEventListener("input", updateBreadthSettingsBadge);
 if (els.reversalBoxes) els.reversalBoxes.addEventListener("input", updateBreadthSettingsBadge);
 
-els.canvas.addEventListener("mousemove", (event) => updateHoverFromClientX(event.clientX));
-els.canvas.addEventListener("mouseleave", () => {
-  if (!latestData) return;
-  hideTooltip();
-  drawChart(latestData.timeline);
-});
+if (els.canvas) {
+  els.canvas.addEventListener("mousemove", (event) => updateHoverFromClientX(event.clientX));
+  els.canvas.addEventListener("mouseleave", () => {
+    if (!latestData) return;
+    hideTooltip();
+    drawChart(latestData.timeline);
+  });
+}
 
-els.niftyCanvas.addEventListener("mousemove", (event) => updateNiftyHoverFromClientX(event.clientX));
-els.niftyCanvas.addEventListener("mouseleave", () => {
-  if (!niftyData) return;
-  hideNiftyTooltip();
-  drawNiftyChart(niftyData.points || []);
-});
+if (els.niftyCanvas) {
+  els.niftyCanvas.addEventListener("mousemove", (event) => updateNiftyHoverFromClientX(event.clientX));
+  els.niftyCanvas.addEventListener("mouseleave", () => {
+    if (!niftyData) return;
+    hideNiftyTooltip();
+    drawNiftyChart(niftyData.points || []);
+  });
+}
 
 if (els.adCanvas) {
   els.adCanvas.addEventListener("mousemove", (event) => updateAdHoverFromClientX(event.clientX));
@@ -10834,9 +10819,11 @@ if (els.smHistoryCanvas) {
 }
 
 // Date range toggle
-els.dateRangeToggle.addEventListener("change", () => {
-  els.endDateLabel.style.display = els.dateRangeToggle.checked ? "flex" : "none";
-});
+if (els.dateRangeToggle) {
+  els.dateRangeToggle.addEventListener("change", () => {
+    if (els.endDateLabel) els.endDateLabel.style.display = els.dateRangeToggle.checked ? "flex" : "none";
+  });
+}
 
 // Options subtabs listeners
 if (els.subtabIndexOverview) {
@@ -12626,7 +12613,7 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
     window.location.href = "/straddle";
     return;
   }
-  if (key === "breadthContrib" || key === "contribution") {
+  if (key === "breadth" || key === "market-breadth" || key === "pnf" || key === "breadthContrib" || key === "contribution") {
     window.location.href = "/breadth-contribution";
     return;
   }
@@ -12951,22 +12938,29 @@ async function loadDashboardData(force = false) {
           }
         }).catch(e => console.warn("Dashboard indices error:", e)),
 
-      // 2. Real Market Breadth Bullish %
-      fetch("/api/breadth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: dateVal, fastRefresh: !force })
-      }).then(r => r.ok ? r.json() : null)
+      // 2. Real Market Breadth & Points Contribution Desk
+      fetch(`/api/index-breadth-contribution?index=NIFTY%2050&forceRefresh=${force ? "true" : "false"}`)
+        .then(r => r.ok ? r.json() : null)
         .then(data => {
-          if (data && data.summary) {
+          if (data) {
             const kpi = document.getElementById("dashKpiBreadth");
-            if (kpi && data.summary.latestBreadth !== undefined) {
-              const bVal = Number(data.summary.latestBreadth);
+            const sub = document.getElementById("dashKpiBreadthSub");
+            const summary = data.summary || {};
+            const netPts = summary.netPoints !== undefined ? Number(summary.netPoints) : null;
+            if (kpi && netPts !== null && !isNaN(netPts)) {
+              const sign = netPts > 0 ? "+" : (netPts < 0 ? "-" : "");
+              kpi.textContent = `${sign}${Math.abs(netPts).toFixed(1)} pts`;
+              kpi.style.color = netPts >= 0 ? "#10b981" : "#ef4444";
+            } else if (kpi && data.breadthSummary?.latestBreadth !== undefined) {
+              const bVal = Number(data.breadthSummary.latestBreadth);
               kpi.textContent = bVal.toFixed(1) + "%";
               kpi.style.color = bVal >= 50 ? "#10b981" : "#ef4444";
             }
+            if (sub && summary.supportingCount !== undefined && summary.draggingCount !== undefined) {
+              sub.textContent = `${summary.supportingCount} Adv vs ${summary.draggingCount} Dec →`;
+            }
           }
-        }).catch(e => console.warn("Dashboard breadth error:", e)),
+        }).catch(e => console.warn("Dashboard breadth-contribution error:", e)),
 
       // 3. Real Smart Money FII Cash Net
       fetch("/api/smart-money", {
@@ -13094,6 +13088,10 @@ function initInstNavState() {
   // 1. Direct path routing via clean SEO URLs
   if (ROUTE_CONFIG[currentPath]) {
     const route = ROUTE_CONFIG[currentPath];
+    if (route.redirect) {
+      window.location.replace(route.redirect);
+      return;
+    }
     instNav(route.desk, route.subview, false);
     updateSeoMetadata(route.title, route.desc, currentPath);
 

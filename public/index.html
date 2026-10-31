@@ -143,6 +143,10 @@
         document.addEventListener("DOMContentLoaded", function() {
           try {
             var rawPath = (window.location.pathname || "/").toLowerCase().replace(/\/$/, "") || "/";
+            if (rawPath === "/breadth" || rawPath === "/market-breadth" || rawPath.indexOf("/breadth") === 0 || rawPath.indexOf("/market-breadth") === 0) {
+              window.location.replace("/breadth-contribution");
+              return;
+            }
             var routeMap = {
               "/": "panelDashboard",
               "/dashboard": "panelDashboard",
@@ -154,8 +158,7 @@
               "/smart-money": "panelSmartMoney",
               "/smartmoney": "panelSmartMoney",
               "/delivery": "panelDelivery",
-              "/mtf": "panelMtf",
-              "/breadth": "panelDashboard"
+              "/mtf": "panelMtf"
             };
             var targetPanelId = routeMap[rawPath];
             if (!targetPanelId) {
@@ -164,7 +167,6 @@
               else if (rawPath.indexOf("/mtf") === 0) targetPanelId = "panelMtf";
               else if (rawPath.indexOf("/option") === 0) targetPanelId = "panelUpstoxChain";
               else if (rawPath.indexOf("/fii") === 0 || rawPath.indexOf("/smart") === 0) targetPanelId = "panelSmartMoney";
-              else if (rawPath.indexOf("/breadth") === 0) { window.location.replace("/breadth-contribution"); return; }
               else targetPanelId = "panelDashboard";
             }
             var allPanels = document.querySelectorAll(".tab-panel");
@@ -633,15 +635,15 @@
         </div>
 
         <div class="inst-kpi-row" id="dashKpiRow">
-          <!-- Market Breadth (PnF) -->
-          <div class="inst-kpi-card kpi-card-breadth" onclick="instNav('breadth')" title="Market Breadth &amp; Point and Figure (PnF) Column Matrices (/market-breadth)">
+          <!-- Market Breadth & Contribution -->
+          <a href="/breadth-contribution" class="inst-kpi-card kpi-card-breadth" style="text-decoration:none; color:inherit; cursor:pointer;" title="Market Breadth &amp; Stock Points Contribution Desk (/breadth-contribution)">
             <div class="kpi-card-header">
-              <div class="inst-kpi-icon">📉</div>
-              <div class="inst-kpi-label">Market Breadth (PnF)</div>
+              <div class="inst-kpi-icon">📊</div>
+              <div class="inst-kpi-label">Breadth &amp; Contribution</div>
             </div>
             <div class="inst-kpi-val" id="dashKpiBreadth">--</div>
-            <div class="inst-kpi-sub">PnF Matrices &amp; Bullish % →</div>
-          </div>
+            <div class="inst-kpi-sub" id="dashKpiBreadthSub">Stock Points Contribution →</div>
+          </a>
 
           <!-- India VIX -->
           <div class="inst-kpi-card kpi-card-vix" onclick="instNav('options')" title="India Volatility Index — Market Sentiment &amp; Risk Regime">
@@ -702,24 +704,23 @@
         </div>
 
         <div class="inst-dash-grid">
-          <!-- Module 1: Market Breadth (PnF) Desk -->
-          <div class="inst-dash-module inst-dm--emerald" onclick="instNav('breadth')" style="cursor:pointer;" title="Market Breadth &amp; Point and Figure (PnF) Column Matrices (/market-breadth)">
+          <!-- Module 1: Market Breadth & Contribution Desk -->
+          <div class="inst-dash-module inst-dm--emerald" onclick="window.location.href='/breadth-contribution'" style="cursor:pointer;" title="Market Breadth &amp; Stock Points Contribution Desk (/breadth-contribution)">
             <div class="inst-dm-header">
               <div class="inst-dm-icon-wrap">
-                <span class="inst-dm-icon">📉</span>
+                <span class="inst-dm-icon">📊</span>
               </div>
               <div class="inst-dm-title-box">
-                <span class="inst-dm-title">Market Breadth (PnF)</span>
-                <span class="inst-dm-desc-tag">Point &amp; Figure Column Matrices</span>
+                <span class="inst-dm-title">Breadth &amp; Contribution</span>
+                <span class="inst-dm-desc-tag">Stock Point Attribution &amp; A/D</span>
               </div>
               <span class="inst-dm-badge inst-dm-badge--green">LIVE</span>
             </div>
             <div class="inst-dm-body">
-              <p>Institutional Point &amp; Figure (PnF) Column Matrices, Bullish % distribution, Advance/Decline breadth momentum, and sector-wide health.</p>
+              <p>Real-time index points attribution, positive and negative stock movers impact on Nifty 50, advance/decline breadth momentum, and sector-wide health.</p>
             </div>
             <div class="inst-dm-footer" style="display:flex; justify-content:space-between; align-items:center;">
-              <span class="inst-dm-go">Launch PnF Breadth (/market-breadth) →</span>
-              <a href="/breadth-contribution" onclick="event.stopPropagation();" style="font-size:11px; color:var(--text-muted); text-decoration:underline;" title="Open Stock Points Contribution Desk">Points Desk ↗</a>
+              <span class="inst-dm-go">Launch Breadth &amp; Contribution Desk (/breadth-contribution) →</span>
             </div>
           </div>
 
@@ -898,320 +899,6 @@
 
       </div><!-- /panelDashboard -->
 
-
-      <!-- ================================================================
-           Panel 1: Market Breadth
-           ================================================================ -->
-      <div id="panelBreadth" class="tab-panel">
-        <!-- Compact Control Band -->
-        <section class="control-band" aria-label="Controls">
-          <div class="ctrl-group">
-            <label>
-              <span>Date</span>
-              <input id="dateInput" type="date">
-            </label>
-            <label id="endDateLabel" style="display:none">
-              <span>End Date</span>
-              <input id="endDateInput" type="date">
-            </label>
-            <label class="check-label">
-              <input id="dateRangeToggle" type="checkbox">
-              <span>Range</span>
-            </label>
-          </div>
-
-          <div class="ctrl-group">
-            <label>
-              <span>Universe</span>
-              <select id="universeSelect">
-                <option value="nifty50">Nifty 50</option>
-                <option value="sensex">BSE Sensex</option>
-                <option value="banknifty">Bank Nifty</option>
-                <option value="finnifty">FinNifty</option>
-                <option value="midcpnifty">Midcap Select</option>
-                <option value="niftyit">Nifty IT</option>
-                <option value="niftyauto">Nifty Auto</option>
-                <option value="niftypharma">Nifty Pharma</option>
-                <option value="niftymetal">Nifty Metal</option>
-                <option value="niftyfmcg">Nifty FMCG</option>
-                <option value="niftyenergy">Nifty Energy</option>
-                <option value="niftymidcap100">Nifty Midcap 100</option>
-                <option value="niftynext50">Nifty Next 50</option>
-                <option value="nifty500">Nifty 500</option>
-              </select>
-            </label>
-            <label>
-              <span>Interval</span>
-              <select id="intervalInput">
-                <option value="ONE_MINUTE">1m</option>
-                <option value="THREE_MINUTE">3m</option>
-                <option value="FIVE_MINUTE">5m</option>
-                <option value="TEN_MINUTE">10m</option>
-                <option value="FIFTEEN_MINUTE">15m</option>
-                <option value="THIRTY_MINUTE">30m</option>
-                <option value="ONE_DAY">Day</option>
-              </select>
-            </label>
-          </div>
-
-          <!-- Compact P&F Settings Trigger & Popover (Documented in docs/market_breadth_settings.md) -->
-          <div class="ctrl-group breadth-settings-trigger-group" style="position:relative;">
-            <button id="btnToggleBreadthSettings" type="button" class="breadth-settings-btn" title="Point &amp; Figure Calculation Settings" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--bg-input, #0f172a); border:1px solid var(--border-default, #334155); border-radius:6px; color:var(--text-primary, #f8fafc); font-size:12px; font-weight:600; cursor:pointer;">
-              <span>⚙️</span> <span>P&amp;F Settings</span> <span id="breadthSettingsBadge" class="settings-pill" style="font-size:10px; background:rgba(56,189,248,0.15); color:#38bdf8; padding:2px 6px; border-radius:4px; margin-left:2px;">0.15% × 3</span>
-            </button>
-
-            <!-- Collapsible Clean Settings Popover Modal -->
-            <div id="breadthSettingsPopover" class="breadth-settings-popover" style="display:none; position:absolute; top:calc(100% + 8px); left:0; z-index:999; width:340px; padding:16px; background:#0b1329; border:1px solid #1e293b; border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,0.5); backdrop-filter:blur(8px);">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.08);">
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span style="font-size:14px;">⚙️</span>
-                  <span style="font-size:12.5px; font-weight:700; color:#f8fafc;">Point &amp; Figure Parameters</span>
-                </div>
-                <button type="button" id="btnCloseBreadthSettings" style="background:transparent; border:none; color:#94a3b8; font-size:16px; cursor:pointer; line-height:1;">&times;</button>
-              </div>
-
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
-                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
-                  <span>Graph Mode</span>
-                  <select id="chartMode" class="mini-select" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
-                    <option value="carry">Carry prev</option>
-                    <option value="previous_current">Prev + curr</option>
-                    <option value="current">Current only</option>
-                  </select>
-                </label>
-
-                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
-                  <span>P&amp;F Basis</span>
-                  <select id="pnfBasis" class="mini-select" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
-                    <option value="hl">High/Low</option>
-                    <option value="close">Close</option>
-                  </select>
-                </label>
-
-                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
-                  <span>Box %</span>
-                  <input id="boxPercent" type="number" min="0.05" max="5" step="0.05" value="0.15" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
-                </label>
-
-                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
-                  <span>Reversal Boxes</span>
-                  <input id="reversalBoxes" type="number" min="1" max="5" step="1" value="3" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
-                </label>
-
-                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
-                  <span>Warmup Sessions</span>
-                  <input id="warmupSessions" type="number" min="0" max="20" step="1" value="5" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
-                </label>
-
-                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8;">
-                  <span>Max Symbols Limit</span>
-                  <input id="maxSymbols" type="number" min="1" max="500" step="1" value="50" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
-                </label>
-              </div>
-
-              <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:#94a3b8; margin-bottom:12px;">
-                <span>Overlay Index</span>
-                <select id="indexSelect" class="mini-select" style="width:100%; padding:4px 6px; background:#040814; border:1px solid #334155; color:#f8fafc; border-radius:4px;">
-                  <option value="nifty50">Nifty 50</option>
-                  <option value="sensex">BSE Sensex</option>
-                  <option value="banknifty">Bank Nifty</option>
-                  <option value="finnifty">FinNifty</option>
-                  <option value="midcpnifty">Midcap Select</option>
-                  <option value="niftyit">Nifty IT</option>
-                  <option value="niftyauto">Nifty Auto</option>
-                  <option value="niftypharma">Nifty Pharma</option>
-                  <option value="niftymetal">Nifty Metal</option>
-                  <option value="niftyfmcg">Nifty FMCG</option>
-                  <option value="niftyenergy">Nifty Energy</option>
-                  <option value="niftymidcap100">Nifty Midcap 100</option>
-                  <option value="niftynext50">Nifty Next 50</option>
-                  <option value="nifty500">Nifty 500</option>
-                </select>
-              </label>
-
-              <div style="font-size:10.5px; color:#64748b; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span>Docs in <code>docs/</code></span>
-                <button type="button" id="btnApplyBreadthSettings" style="background:#2563eb; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">Apply &amp; Run</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Top-Fitted Auto Refresh (Pre-Ticked & Active) -->
-          <div class="ctrl-group auto-refresh-ctrl-group">
-            <div class="auto-refresh-wrap">
-              <label class="check-label" title="Live Auto Refresh Active">
-                <input id="autoRefresh" type="checkbox" checked>
-                <span>Auto Refresh</span>
-              </label>
-              <select id="refreshInterval" class="mini-select" title="Refresh Interval">
-                <option value="30">30s</option>
-                <option value="60" selected>60s</option>
-                <option value="120">2m</option>
-              </select>
-              <span class="refresh-state" id="refreshState">Auto 60s</span>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button id="runButton" type="button">⚡ Run Breadth</button>
-            <button id="refreshButton" class="secondary" type="button" title="Refresh Now">🔄</button>
-          </div>
-
-          <!-- Hidden elements for internal JS state compatibility -->
-          <div style="display:none!important" aria-hidden="true">
-            <select id="dataSource">
-              <option value="broker" selected>Active Broker (Live)</option>
-              <option value="bhavcopy">Exchange Bhavcopy</option>
-              <option value="sample">Sample Simulation</option>
-            </select>
-            <label id="totpLabel">
-              <input id="totpInput" type="text" value="">
-              <small id="totpTimer"></small>
-            </label>
-            <textarea id="symbolsInput"></textarea>
-          </div>
-        </section>
-
-        <!-- Compact KPI Metric Strip -->
-        <section class="metrics" aria-label="Summary">
-          <article class="metric">
-            <span>Latest Breadth</span>
-            <strong id="latestBreadth">--</strong>
-          </article>
-          <article class="metric">
-            <span>Open Breadth</span>
-            <strong id="openBreadth">--</strong>
-          </article>
-          <article class="metric">
-            <span>Net Change</span>
-            <strong id="breadthChange">--</strong>
-          </article>
-          <article class="metric">
-            <span>X / O Ratio</span>
-            <strong id="xoCount">--</strong>
-          </article>
-          <article class="metric">
-            <span>Loaded Scrips</span>
-            <strong id="loadedCount">--</strong>
-          </article>
-          <article class="metric">
-            <span>Index Spot</span>
-            <strong id="niftySpot">--</strong>
-          </article>
-          <article class="metric">
-            <span>Spot Change</span>
-            <strong id="niftyChange">--</strong>
-          </article>
-        </section>
-
-        <!-- Breadth Desk Scoped Messages & Live Notice Banner -->
-        <section class="message-panel" id="messagePanel" aria-live="polite"></section>
-
-        <!-- Sector Breadth Performance Matrix (Collapsible - Collapsed by default) -->
-        <section class="sector-heatmap-section" id="sectorHeatmapSection">
-          <div class="sector-header-wrap" id="sectorHeatmapHeader" onclick="window.toggleSectorHeatmap && window.toggleSectorHeatmap(event)" style="cursor:pointer; user-select:none; margin-bottom:0; border-bottom:none; padding-bottom:0;" title="Click to Expand / Collapse Sector Performance Matrix">
-            <div class="sector-header-title-row">
-              <div class="sector-title-group">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span id="secHeatmapToggleIcon" style="font-size:11px; color:#f59e0b; display:inline-block; transition:transform 0.2s ease;">▶</span>
-                  <h3 style="margin:0;">🔥 Sector Performance Matrix</h3>
-                  <span id="secHeatmapBadge" style="font-size:9.5px; background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); padding:2px 7px; border-radius:4px; font-weight:700;">CLICK TO EXPAND</span>
-                </div>
-                <div class="sector-meta-badges" id="heatmapMeta"></div>
-              </div>
-              <div class="sector-controls" onclick="event.stopPropagation();" id="sectorControlsWrap" style="display:none;">
-                <div class="sector-btn-group" role="group" aria-label="Sort Sectors">
-                  <button type="button" class="sec-ctrl-btn active" data-sort="bullish" id="secSortBullish" title="Sort by highest advance %">Bullish</button>
-                  <button type="button" class="sec-ctrl-btn" data-sort="bearish" id="secSortBearish" title="Sort by lowest advance %">Bearish</button>
-                  <button type="button" class="sec-ctrl-btn" data-sort="alpha" id="secSortAlpha" title="Sort alphabetically">A–Z</button>
-                  <button type="button" class="sec-ctrl-btn" data-sort="stocks" id="secSortStocks" title="Sort by scrip weight">Weight</button>
-                </div>
-                <div class="sector-filter-group">
-                  <select id="secFilterSelect" class="sec-filter-select" aria-label="Filter sectors">
-                    <option value="all">All Sectors</option>
-                    <option value="bullish">Bullish (&ge;50%)</option>
-                    <option value="bearish">Bearish (&lt;50%)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="sector-heatmap-grid" id="sectorHeatmap" style="display:none; margin-top:12px;"></div>
-        </section>
-
-        <!-- Primary Charts Grid: Index Spot & Nifty 50 Advance / Decline Tracker (Net Spread) -->
-        <section class="paired-charts">
-          <section class="chart-section">
-            <div class="chart-header">
-              <div>
-                <h2 id="niftyChartTitle">Index Spot Chart</h2>
-                <p id="niftyChartMeta">Ready</p>
-              </div>
-              <div class="legend">
-                <span><i class="line breadth"></i>Close</span>
-              </div>
-            </div>
-            <div class="canvas-wrap">
-              <canvas style="width:100%;max-width:100%;" id="niftyCanvas" height="340"></canvas>
-              <div class="chart-tooltip" id="niftyTooltip"></div>
-            </div>
-          </section>
-
-          <section class="chart-section">
-            <div class="chart-header">
-              <div>
-                <h2 id="niftyAdChartTitle">Nifty 50 Advance / Decline Tracker</h2>
-                <p id="niftyAdChartMeta">Ready</p>
-              </div>
-              <div class="legend">
-                <span><i class="line net-line"></i>Net Spread</span>
-              </div>
-            </div>
-            <div class="canvas-wrap">
-              <canvas style="width:100%;max-width:100%;" id="niftyAdCanvas" height="340"></canvas>
-              <div class="chart-tooltip" id="niftyAdTooltip"></div>
-            </div>
-          </section>
-        </section>
-
-        <!-- Secondary Charts Grid: Breadth Curve & Market Advance / Decline Ratio -->
-        <section class="paired-charts">
-          <section class="chart-section">
-            <div class="chart-header">
-              <div>
-                <h2 id="chartTitle">Intraday Breadth Curve</h2>
-                <p id="chartMeta">Ready</p>
-              </div>
-              <div class="legend">
-                <span><i class="line breadth"></i>Breadth %</span>
-                <span><i class="line average"></i>20 SMA</span>
-                <span><i class="dash"></i>25/50/75</span>
-              </div>
-            </div>
-            <div class="canvas-wrap">
-              <canvas style="width:100%;max-width:100%;" id="breadthCanvas" height="340"></canvas>
-              <div class="chart-tooltip" id="chartTooltip"></div>
-            </div>
-          </section>
-
-          <section class="chart-section">
-            <div class="chart-header">
-              <div>
-                <h2 id="adChartTitle">Market Advance / Decline Ratio</h2>
-                <p id="adChartMeta">Ready</p>
-              </div>
-              <div class="legend">
-                <span><i class="line advance-line"></i>Advance</span>
-                <span><i class="line decline-line"></i>Decline</span>
-              </div>
-            </div>
-            <div class="canvas-wrap">
-              <canvas style="width:100%;max-width:100%;" id="adCanvas" height="340"></canvas>
-              <div class="chart-tooltip" id="adTooltip"></div>
-            </div>
-          </section>
-        </section>
-      </div>
 
       <!-- ================================================================
            ⚡ Institutional Futures Intelligence Desk (Kotak Neo Derivatives Engine)
@@ -6327,9 +6014,12 @@
     <script src="/dynamic_nav.js?v=20261027_v1" defer></script>
     <script src="/auth_sync.js?v=20261027_v1" defer></script>
       <!-- Persistent Hidden Tab Compatibility Anchors (immune to nav replacement) -->
-    <div id="instCompatTabsContainer" style="display:none!important">
+    <div id="instCompatTabsContainer" style="display:none!important" aria-hidden="true">
       <button id="permTabBreadth" class="tab-btn inst-hidden-tab" type="button"></button>
       <button id="permTabOptions" class="tab-btn inst-hidden-tab" type="button"></button>
+      <input id="dateInput" type="hidden">
+      <input id="dataSource" type="hidden" value="default">
+      <select id="universeSelect" style="display:none;"><option value="nifty50">Nifty 50</option></select>
     </div>
   </body>
 </html>
