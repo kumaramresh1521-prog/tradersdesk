@@ -1,7 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('breadth_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+        if (t === 'light') {
+          document.documentElement.classList.add('theme-light');
+        } else {
+          document.documentElement.classList.remove('theme-light');
+        }
+      } catch(e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><!-- CMS_HEAD_TITLE --> | TradersDesk</title>
   <meta name="description" content="<!-- CMS_META_DESC -->">
@@ -103,7 +116,7 @@
   <!-- CMS_DRAFT_BANNER -->
 
   <!-- Unified Top Institutional Header -->
-  <header class="inst-header page2-header" id="instTopHeader">
+  <header class="inst-header" id="instHeader">
     <div class="inst-brand-bar">
       <div class="inst-brand-left">
         <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in — Institutional Quant &amp; Derivatives Terminal">
@@ -160,10 +173,8 @@
       </div>
     </div>
 
-    <!-- Row 1: Institutional Mega-Menu Navigation -->
-    <div class="inst-nav-row">
-      <!-- CMS_NAV_HTML -->
-    </div>
+    <!-- Row 2: Institutional Mega-Menu Navigation -->
+    <!-- CMS_NAV_HTML -->
   </header>
 
   <main class="cms-container">
@@ -663,7 +674,7 @@
       if (txt) txt.textContent = next === "dark" ? "Light" : "Dark";
     };
     (function initTheme() {
-      const saved = localStorage.getItem("breadth_theme") || "dark";
+      const saved = localStorage.getItem("breadth_theme") || "light";
       document.documentElement.setAttribute("data-theme", saved);
       document.body.setAttribute("data-theme", saved);
       if (saved === "light") {

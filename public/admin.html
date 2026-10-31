@@ -2816,6 +2816,538 @@
       </main>
     </div>
 
+    <!-- =========================================================================
+         MODAL DIALOGS (SEO, CMS, BLOG, SUBMENUS)
+         ========================================================================= -->
+    <!-- Modal: Route SEO & SERP Editor -->
+    <div id="modalRouteSeo" class="adm-modal-overlay">
+      <div class="adm-modal-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--adm-border); padding-bottom:14px;">
+          <div>
+            <h3 id="modalRouteSeoTitle" style="margin:0; font-size:17px; font-weight:800; color:#fff;">Edit Page SEO</h3>
+            <span id="modalRouteSeoSub" style="font-size:12px; color:#94a3b8; font-family:'JetBrains Mono', monospace;">/futures</span>
+          </div>
+          <button type="button" onclick="closeRouteSeoModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
+        </div>
+
+        <form id="formRouteSeo" onsubmit="event.preventDefault(); saveRouteSeo();">
+          <input type="hidden" id="editRouteIsCustom" value="false" />
+          
+          <div style="display:grid; grid-template-columns: 2fr 1fr; gap:14px;">
+            <div class="adm-form-group">
+              <label>Page URL / Route Path <span style="color:#ef4444;">*</span></label>
+              <input type="text" id="editRoutePath" class="adm-input" placeholder="e.g. /my-new-screener" required />
+            </div>
+            <div class="adm-form-group">
+              <label>Category</label>
+              <select id="editRouteCategory" class="adm-input" style="cursor:pointer;">
+                <option value="dashboard">Dashboard</option>
+                <option value="futures">Futures</option>
+                <option value="options">Options</option>
+                <option value="mtf">MTF</option>
+                <option value="delivery">Delivery</option>
+                <option value="breadth">Breadth</option>
+                <option value="global">Global</option>
+                <option value="smart-money">Smart Money</option>
+                <option value="tools">Tools</option>
+                <option value="legal">Legal/Static</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Page Title with Live Character Counter -->
+          <div class="adm-form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label>Page Title Tag (&lt;title&gt;) <span style="color:#ef4444;">*</span></label>
+              <span id="titleCharCount" style="font-size:11px; font-weight:700; color:#34d399;">0 / 60</span>
+            </div>
+            <input type="text" id="editRouteTitle" class="adm-input" placeholder="Page Title (Keep under 60 chars for best Google display)" required oninput="updateSerpPreview()" />
+          </div>
+
+          <!-- Meta Description with Live Character Counter -->
+          <div class="adm-form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label>Meta Description (Google SERP Snippet) <span style="color:#ef4444;">*</span></label>
+              <span id="descCharCount" style="font-size:11px; font-weight:700; color:#34d399;">0 / 160</span>
+            </div>
+            <textarea id="editRouteDesc" class="adm-textarea" placeholder="Compelling 150-160 character snippet describing this page..." required oninput="updateSerpPreview()" style="min-height:70px;"></textarea>
+          </div>
+
+          <!-- Live Google SERP Snippet Simulator -->
+          <div class="adm-form-group">
+            <label style="color:#60a5fa; display:flex; align-items:center; gap:6px;">
+              <span>🌐 Live Google SERP Snippet Simulator</span>
+              <span style="font-size:10px; font-weight:normal; color:#94a3b8;">(How this URL appears in Google Search results)</span>
+            </label>
+            <div class="serp-preview-card">
+              <div class="serp-url-line">
+                <span style="display:inline-block; width:16px; height:16px; border-radius:50%; background:#3b82f6; text-align:center; font-size:10px; line-height:16px; color:#fff; font-weight:bold;">T</span>
+                <span id="serpBreadcrumb">tradersdesk.in › futures › buildup</span>
+              </div>
+              <a href="javascript:void(0)" class="serp-title-line" id="serpTitle">Page Title | TradersDesk</a>
+              <div class="serp-desc-line" id="serpDesc">Meta description snippet appears here for the searcher...</div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
+            <div class="adm-form-group">
+              <label>Target Keywords (comma separated)</label>
+              <input type="text" id="editRouteKeywords" class="adm-input" placeholder="e.g. nifty, futures, options" />
+            </div>
+            <div class="adm-form-group">
+              <label>Canonical URL</label>
+              <input type="text" id="editRouteCanonical" class="adm-input" placeholder="https://tradersdesk.in/..." />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
+            <div class="adm-form-group">
+              <label>OpenGraph Title (og:title)</label>
+              <input type="text" id="editRouteOgTitle" class="adm-input" placeholder="Defaults to Title Tag" />
+            </div>
+            <div class="adm-form-group">
+              <label>OpenGraph Description (og:desc)</label>
+              <input type="text" id="editRouteOgDesc" class="adm-input" placeholder="Defaults to Meta Description" />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px;">
+            <div class="adm-form-group">
+              <label>Robots Directive</label>
+              <select id="editRouteRobots" class="adm-input" style="cursor:pointer;">
+                <option value="index, follow">index, follow (Indexed)</option>
+                <option value="noindex, follow">noindex, follow (Hidden)</option>
+                <option value="noindex, nofollow">noindex, nofollow (Blocked)</option>
+              </select>
+            </div>
+            <div class="adm-form-group">
+              <label>Sitemap Priority</label>
+              <select id="editRoutePriority" class="adm-input" style="cursor:pointer;">
+                <option value="1.0">1.0 (Highest - Homepage)</option>
+                <option value="0.9">0.9 (Very High - Core Desks)</option>
+                <option value="0.8">0.8 (Standard - Sub Tools)</option>
+                <option value="0.7">0.7 (Medium)</option>
+                <option value="0.5">0.5 (Low - Legal / Terms)</option>
+              </select>
+            </div>
+            <div class="adm-form-group">
+              <label>Change Frequency</label>
+              <select id="editRouteFreq" class="adm-input" style="cursor:pointer;">
+                <option value="always">always (Live Real-Time)</option>
+                <option value="hourly">hourly</option>
+                <option value="daily">daily</option>
+                <option value="weekly">weekly</option>
+                <option value="monthly">monthly</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid var(--adm-border); padding-top:16px;">
+            <button type="button" id="btnDeleteCustomRoute" class="btn-adm-danger" style="display:none;" onclick="deleteCurrentRoute()">🗑️ Delete URL</button>
+            <div style="display:flex; gap:10px; margin-left:auto;">
+              <button type="button" class="seo-pill-btn" onclick="closeRouteSeoModal()">Cancel</button>
+              <button type="submit" class="btn-adm-primary" style="background:#10b981;">💾 Save Page SEO</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Googlebot Live SEO & Crawler Inspector -->
+    <div id="modalSeoInspect" class="adm-modal-overlay">
+      <div class="adm-modal-box" style="max-width:760px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--adm-border); padding-bottom:14px;">
+          <div>
+            <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;">👁️ Googlebot Live SEO &amp; Crawler Inspector</h3>
+            <span style="font-size:12px; color:#94a3b8;">Simulates exact server-rendered dynamic HTML served to Googlebot, Bingbot &amp; social crawlers</span>
+          </div>
+          <button type="button" onclick="closeSeoInspectModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-bottom:16px;">
+          <input type="text" id="inspectPathInput" class="adm-input" placeholder="e.g. /futures/buildup or /fii-dii or /option-chain-pro" style="flex:1; font-family:'JetBrains Mono',monospace;" />
+          <button type="button" class="btn-adm-primary" onclick="runSeoInspect()" style="padding:8px 18px;">🔍 Inspect Route</button>
+        </div>
+
+        <div id="seoInspectContent" style="max-height:60vh; overflow-y:auto; padding-right:6px;"></div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:20px; border-top:1px solid var(--adm-border); padding-top:16px;">
+          <button type="button" class="seo-pill-btn" onclick="closeSeoInspectModal()">Close Preview</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Dynamic Page Editor (WordPress-Grade Studio) -->
+    <div id="modalCmsPage" class="adm-modal-overlay">
+      <div class="adm-modal-box" style="max-width:1040px; width:95%; max-height:92vh; display:flex; flex-direction:column;">
+        <!-- Modal Top Bar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--adm-border); padding-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:20px;">📄</span>
+            <div>
+              <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalPageTitleText">Dynamic Page Studio</h3>
+              <span style="font-size:11.5px; color:#94a3b8;" id="pageSlugLivePreview">https://tradersdesk.in/your-slug</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span id="pageStatusPill" class="p2-badge p2-badge-amber">DRAFT</span>
+            <button type="button" onclick="closeCmsPageModal()" style="background:none; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+          </div>
+        </div>
+
+        <!-- WordPress-Style Studio Tabs -->
+        <div style="display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px; margin-bottom:14px;">
+          <button type="button" id="tabBtnPageEditor" class="seo-pill-btn active" style="font-weight:700;" onclick="switchPageModalTab('editor')">✍️ Content &amp; Split Preview</button>
+          <button type="button" id="tabBtnPageSeo" class="seo-pill-btn" style="font-weight:700;" onclick="switchPageModalTab('seo')">🔍 Google Search SEO (Yoast/RankMath)</button>
+          <button type="button" id="tabBtnPageSettings" class="seo-pill-btn" style="font-weight:700;" onclick="switchPageModalTab('settings')">⚙️ Settings &amp; Custom Code</button>
+        </div>
+
+        <form id="cmsPageForm" style="display:flex; flex-direction:column; flex:1; overflow-y:auto;" onsubmit="event.preventDefault();">
+          <input type="hidden" id="cmsPageId" />
+
+          <!-- TAB 1: CONTENT & SPLIT PREVIEW -->
+          <div id="pageTabContent" class="modal-subtab-pane">
+            <div style="display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:12px;">
+              <div class="adm-form-group">
+                <label>Page Title</label>
+                <input type="text" id="cmsPageTitle" class="adm-input" placeholder="e.g. Institutional Trading Handbook" required oninput="autoSlugPage(this.value); updatePageSerpPreview();" />
+              </div>
+              <div class="adm-form-group">
+                <label>URL Slug (Direct: /slug or /p/slug)</label>
+                <input type="text" id="cmsPageSlug" class="adm-input" placeholder="e.g. trading-handbook" required oninput="updatePageSerpPreview();" />
+              </div>
+            </div>
+
+            <!-- Formatting Toolbar -->
+            <div class="cms-toolbar" style="display:flex; flex-wrap:wrap; gap:4px; padding:6px 10px; background:#080e21; border:1px solid var(--adm-border); border-bottom:none; border-radius:8px 8px 0 0;">
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '**', '**', 'bold text')" title="Bold"><strong>B</strong></button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '*', '*', 'italic text')" title="Italic"><em>I</em></button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '# ', '', 'Heading 1')" title="Heading 1">H1</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '## ', '', 'Heading 2')" title="Heading 2">H2</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '### ', '', 'Heading 3')" title="Heading 3">H3</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '> ', '', 'Blockquote note...')" title="Quote">“</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '```python\n', '\n```', '# code here')" title="Code">&lt;&gt;</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '- ', '', 'Bullet item')" title="Bullet List">• List</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '1. ', '', 'Numbered item')" title="Numbered List">1. List</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '[', '](https://example.com)', 'Link Text')" title="Insert Link">🔗 Link</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '![', '](https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80)', 'Alt Text')" title="Insert Image">🖼️ Image</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '| Metric | Value | Benchmark |\n|---|---|---|\n| Advances | 1,420 | 1,200 |\n', '', '')" title="Insert Table">📊 Table</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '> [!NOTE]\n> Institutional trading desk directive.\n', '', '')" title="Insert Callout">⚡ Callout</button>
+            </div>
+
+            <!-- Split Editor -->
+            <div class="cms-editor-split" style="margin-top:0;">
+              <div class="cms-editor-pane">
+                <textarea id="cmsPageContent" class="cms-editor-textarea" style="border-radius:0 0 8px 8px;" placeholder="# Heading&#10;&#10;Write your institutional page content here in Markdown or raw HTML..." oninput="renderCmsPagePreview()"></textarea>
+              </div>
+              <div class="cms-editor-pane">
+                <div id="cmsPagePreview" class="cms-preview-pane"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: GOOGLE SEARCH SEO & SOCIAL SNIPPET -->
+          <div id="pageTabSeo" class="modal-subtab-pane" style="display:none;">
+            <p style="font-size:12.5px; color:#94a3b8; margin:0 0 14px 0;">Preview and configure how this page appears on Google Search and social media sharing cards.</p>
+
+            <!-- Google Search Result Snippet Box -->
+            <div style="background:#202124; border:1px solid #3c4043; border-radius:10px; padding:18px; margin-bottom:20px; font-family:arial,sans-serif;">
+              <div style="font-size:12px; color:#bdc1c6; display:flex; align-items:center; gap:6px; margin-bottom:5px;">
+                <img src="/favicon.svg" width="16" height="16" style="border-radius:50%;" />
+                <span>tradersdesk.in › <span id="pageSerpSlugPreview">trading-handbook</span></span>
+              </div>
+              <div id="pageSerpTitlePreview" style="color:#8ab4f8; font-size:18px; font-weight:400; line-height:1.3; margin-bottom:5px; cursor:pointer;">
+                Institutional Trading Handbook | TradersDesk.in
+              </div>
+              <div id="pageSerpDescPreview" style="color:#bdc1c6; font-size:13px; line-height:1.45;">
+                Comprehensive guide to institutional market breadth analytics, option chain Greeks, and algorithmic volatility trading.
+              </div>
+            </div>
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between;">
+                <label>Google Search Meta Title (50-60 characters recommended)</label>
+                <span id="pageTitleCharCount" style="font-size:11px; color:#94a3b8;">0 / 60</span>
+              </div>
+              <input type="text" id="cmsPageMetaTitle" class="adm-input" placeholder="e.g. Institutional Trading Handbook | TradersDesk" oninput="updatePageSerpPreview()" />
+            </div>
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between;">
+                <label>Google Search Meta Description (120-160 characters recommended)</label>
+                <span id="pageDescCharCount" style="font-size:11px; color:#94a3b8;">0 / 160</span>
+              </div>
+              <textarea id="cmsPageMetaDesc" class="adm-input" style="height:70px; resize:none;" placeholder="Brief summary displayed under the link in Google Search results..." oninput="updatePageSerpPreview()"></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:14px;">
+              <div class="adm-form-group">
+                <label>Focus Keywords &amp; Tags</label>
+                <input type="text" id="cmsPageKeywords" class="adm-input" placeholder="e.g. market breadth, option chain, nse trading" />
+              </div>
+              <div class="adm-form-group">
+                <label>Robots Indexing</label>
+                <select id="cmsPageRobots" class="adm-input">
+                  <option value="index, follow">Index, Follow (Recommended - Google Crawls &amp; Ranks)</option>
+                  <option value="noindex, nofollow">NoIndex, NoFollow (Private Document)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <label>Social Sharing Image URL (OpenGraph / Twitter Card)</label>
+              <input type="text" id="cmsPageOgImage" class="adm-input" placeholder="https://tradersdesk.in/og-image.png or unsplash URL" />
+            </div>
+          </div>
+
+          <!-- TAB 3: SETTINGS & CODE -->
+          <div id="pageTabSettings" class="modal-subtab-pane" style="display:none;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+              <div class="adm-form-group">
+                <label>Format</label>
+                <select id="cmsPageFormat" class="adm-input" onchange="renderCmsPagePreview()">
+                  <option value="markdown">Markdown (.md - Recommended)</option>
+                  <option value="html">Raw HTML</option>
+                </select>
+              </div>
+              <div class="adm-form-group">
+                <label>Author / Desk</label>
+                <input type="text" id="cmsPageAuthor" class="adm-input" value="TradersDesk Institutional Desk" />
+              </div>
+            </div>
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <label>Custom Page CSS (Optional)</label>
+              <textarea id="cmsPageCustomCss" class="adm-input" style="height:80px; font-family:monospace; font-size:12px; resize:none;" placeholder="/* Extra custom styles for this page */"></textarea>
+            </div>
+          </div>
+
+          <!-- Footer Actions with Save Draft vs Publish -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-top:1px solid var(--adm-border); padding-top:14px;">
+            <button type="button" class="btn-adm-danger" id="btnDeleteCmsPage" style="display:none;" onclick="deleteCmsPage()">🗑️ Delete Page</button>
+            <div style="display:flex; gap:10px; margin-left:auto;">
+              <button type="button" class="seo-pill-btn" onclick="closeCmsPageModal()">Cancel</button>
+              <button type="button" class="btn-adm-primary" style="background:#475569;" onclick="saveCmsPage(false)">📝 Save Draft</button>
+              <button type="button" class="btn-adm-primary" style="background:#10b981;" onclick="saveCmsPage(true)">🚀 Publish Page</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Blog Article Editor (WordPress-Grade Studio) -->
+    <div id="modalCmsBlog" class="adm-modal-overlay">
+      <div class="adm-modal-box" style="max-width:1040px; width:95%; max-height:92vh; display:flex; flex-direction:column;">
+        <!-- Modal Top Bar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--adm-border); padding-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:20px;">✍️</span>
+            <div>
+              <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalBlogTitleText">Research Article Studio</h3>
+              <span style="font-size:11.5px; color:#94a3b8;" id="blogSlugLivePreview">https://tradersdesk.in/blog/your-slug</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span id="blogStatusPill" class="p2-badge p2-badge-amber">DRAFT</span>
+            <button type="button" onclick="closeCmsBlogModal()" style="background:none; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+          </div>
+        </div>
+
+        <!-- WordPress-Style Studio Tabs -->
+        <div style="display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px; margin-bottom:14px;">
+          <button type="button" id="tabBtnBlogEditor" class="seo-pill-btn active" style="font-weight:700;" onclick="switchBlogModalTab('editor')">✍️ Article Content &amp; Split Preview</button>
+          <button type="button" id="tabBtnBlogSeo" class="seo-pill-btn" style="font-weight:700;" onclick="switchBlogModalTab('seo')">🔍 Google Search SEO (Yoast/RankMath)</button>
+          <button type="button" id="tabBtnBlogSettings" class="seo-pill-btn" style="font-weight:700;" onclick="switchBlogModalTab('settings')">⚙️ Taxonomy, Author &amp; Media</button>
+        </div>
+
+        <form id="cmsBlogForm" style="display:flex; flex-direction:column; flex:1; overflow-y:auto;" onsubmit="event.preventDefault();">
+          <input type="hidden" id="cmsBlogId" />
+
+          <!-- TAB 1: ARTICLE CONTENT & SPLIT PREVIEW -->
+          <div id="blogTabContent" class="modal-subtab-pane">
+            <div style="display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:12px;">
+              <div class="adm-form-group">
+                <label>Article Title</label>
+                <input type="text" id="cmsBlogTitle" class="adm-input" placeholder="e.g. Mastering Nifty Straddle Decay Dynamics" required oninput="autoSlugBlog(this.value); updateBlogSerpPreview();" />
+              </div>
+              <div class="adm-form-group">
+                <label>URL Slug (/blog/slug)</label>
+                <input type="text" id="cmsBlogSlug" class="adm-input" placeholder="e.g. mastering-nifty-straddle-decay" required oninput="updateBlogSerpPreview();" />
+              </div>
+            </div>
+
+            <!-- Formatting Toolbar -->
+            <div class="cms-toolbar" style="display:flex; flex-wrap:wrap; gap:4px; padding:6px 10px; background:#080e21; border:1px solid var(--adm-border); border-bottom:none; border-radius:8px 8px 0 0;">
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '**', '**', 'bold text')" title="Bold"><strong>B</strong></button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '*', '*', 'italic text')" title="Italic"><em>I</em></button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '# ', '', 'Article Heading')" title="Heading 1">H1</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '## ', '', 'Section Heading')" title="Heading 2">H2</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '### ', '', 'Subsection')" title="Heading 3">H3</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '> ', '', 'Key trading takeaway...')" title="Quote">“</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '```python\n', '\n```', '# quantitative logic')" title="Code">&lt;&gt;</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '- ', '', 'Bullet point')" title="Bullet List">• List</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '1. ', '', 'Numbered point')" title="Numbered List">1. List</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '[', '](https://tradersdesk.in/open_interest.html)', 'Option Chain Pro')" title="Insert Link">🔗 Link</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '![', '](https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80)', 'Market Chart')" title="Insert Image">🖼️ Image</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '| Strike | Call OI | Put OI |\n|---|---|---|\n| 22600 | 85.2L | 110.4L |\n', '', '')" title="Insert Table">📊 Table</button>
+              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '> [!IMPORTANT]\n> High dealer gamma threshold reached.\n', '', '')" title="Insert Callout">⚡ Callout</button>
+            </div>
+
+            <!-- Split Editor -->
+            <div class="cms-editor-split" style="margin-top:0;">
+              <div class="cms-editor-pane">
+                <textarea id="cmsBlogContent" class="cms-editor-textarea" style="border-radius:0 0 8px 8px;" placeholder="# Article Title&#10;&#10;Write your quantitative research analysis here in Markdown..." oninput="renderCmsBlogPreview()"></textarea>
+              </div>
+              <div class="cms-editor-pane">
+                <div id="cmsBlogPreview" class="cms-preview-pane"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: GOOGLE SEARCH SEO & SOCIAL SNIPPET -->
+          <div id="blogTabSeo" class="modal-subtab-pane" style="display:none;">
+            <p style="font-size:12.5px; color:#94a3b8; margin:0 0 14px 0;">Live snippet simulation of how this article will rank on Google Search.</p>
+
+            <!-- Google Search Snippet Box -->
+            <div style="background:#202124; border:1px solid #3c4043; border-radius:10px; padding:18px; margin-bottom:20px; font-family:arial,sans-serif;">
+              <div style="font-size:12px; color:#bdc1c6; display:flex; align-items:center; gap:6px; margin-bottom:5px;">
+                <img src="/favicon.svg" width="16" height="16" style="border-radius:50%;" />
+                <span>tradersdesk.in › blog › <span id="blogSerpSlugPreview">mastering-nifty-straddle-decay</span></span>
+              </div>
+              <div id="blogSerpTitlePreview" style="color:#8ab4f8; font-size:18px; font-weight:400; line-height:1.3; margin-bottom:5px; cursor:pointer;">
+                Mastering Nifty Straddle Decay Dynamics | TradersDesk.in
+              </div>
+              <div id="blogSerpDescPreview" style="color:#bdc1c6; font-size:13px; line-height:1.45;">
+                In-depth quantitative research on intraday straddle decay, dealer gamma hedging, and theta acceleration curves during weekly NSE index expiries.
+              </div>
+            </div>
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between;">
+                <label>Google Search Meta Title (50-60 characters)</label>
+                <span id="blogTitleCharCount" style="font-size:11px; color:#94a3b8;">0 / 60</span>
+              </div>
+              <input type="text" id="cmsBlogMetaTitle" class="adm-input" placeholder="e.g. Mastering Nifty Straddle Decay | Quantitative Research" oninput="updateBlogSerpPreview()" />
+            </div>
+
+            <div class="adm-form-group" style="margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between;">
+                <label>Article Excerpt &amp; Search Description (120-160 characters)</label>
+                <span id="blogDescCharCount" style="font-size:11px; color:#94a3b8;">0 / 160</span>
+              </div>
+              <textarea id="cmsBlogExcerpt" class="adm-input" style="height:70px; resize:none;" placeholder="1-2 sentence hook displayed on the blog card and in Google Search snippets..." oninput="updateBlogSerpPreview()" required></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:14px;">
+              <div class="adm-form-group">
+                <label>Focus Keywords &amp; Tags</label>
+                <input type="text" id="cmsBlogKeywords" class="adm-input" placeholder="e.g. straddle decay, theta, gamma squeeze, options" />
+              </div>
+              <div class="adm-form-group">
+                <label>Canonical URL</label>
+                <input type="text" id="cmsBlogCanonical" class="adm-input" placeholder="https://tradersdesk.in/blog/slug (auto)" />
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: TAXONOMY, AUTHOR & MEDIA -->
+          <div id="blogTabSettings" class="modal-subtab-pane" style="display:none;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
+              <div class="adm-form-group">
+                <label>Category</label>
+                <select id="cmsBlogCategory" class="adm-input">
+                  <option value="Options Strategy">Options Strategy</option>
+                  <option value="Market Breadth">Market Breadth</option>
+                  <option value="F&O Insights">F&O Insights</option>
+                  <option value="Technical Analysis">Technical Analysis</option>
+                  <option value="Market Education">Market Education</option>
+                  <option value="Institutional Research">Institutional Research</option>
+                </select>
+              </div>
+              <div class="adm-form-group">
+                <label>Author</label>
+                <input type="text" id="cmsBlogAuthor" class="adm-input" value="TradersDesk Quantitative Research" />
+              </div>
+              <div class="adm-form-group">
+                <label>Read Time</label>
+                <input type="text" id="cmsBlogReadTime" class="adm-input" value="5 min read" />
+              </div>
+            </div>
+
+            <div class="adm-form-group" style="margin-bottom:16px;">
+              <label>Featured Cover Image URL</label>
+              <input type="text" id="cmsBlogCover" class="adm-input" placeholder="https://images.unsplash.com/..." oninput="updateBlogCoverThumbnail(this.value)" />
+              <div id="blogCoverThumbWrap" style="margin-top:10px; display:none;">
+                <img id="blogCoverThumb" src="" style="max-height:140px; border-radius:8px; border:1px solid var(--adm-border);" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Actions with Save Draft vs Publish -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-top:1px solid var(--adm-border); padding-top:14px;">
+            <button type="button" class="btn-adm-danger" id="btnDeleteCmsBlog" style="display:none;" onclick="deleteCmsBlog()">🗑️ Delete Article</button>
+            <div style="display:flex; gap:10px; margin-left:auto;">
+              <button type="button" class="seo-pill-btn" onclick="closeCmsBlogModal()">Cancel</button>
+              <button type="button" class="btn-adm-primary" style="background:#475569;" onclick="saveCmsBlog(false)">📝 Save Draft</button>
+              <button type="button" class="btn-adm-primary" style="background:#10b981;" onclick="saveCmsBlog(true)">🚀 Publish Article</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Add Submenu Item -->
+    <div id="modalAddSubmenu" class="adm-modal-overlay">
+      <div class="adm-modal-box" style="max-width:540px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--adm-border); padding-bottom:12px;">
+          <h3 style="margin:0; font-size:16px; font-weight:800; color:#fff;" id="subModalHeading">➕ Add Dropdown Submenu Item</h3>
+          <button type="button" onclick="closeAddSubmenuModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">&times;</button>
+        </div>
+        <input type="hidden" id="subModalMenuIdx" />
+        <input type="hidden" id="subModalColIdx" />
+        <input type="hidden" id="subModalSubIdx" />
+        <div class="adm-form-group" style="margin-bottom:12px;">
+          <label>Submenu Title</label>
+          <input type="text" id="subModalTitle" class="adm-input" placeholder="e.g. Option Chain Live Matrix" required />
+        </div>
+        <div class="adm-form-group" style="margin-bottom:12px;">
+          <label>Subtitle / Description</label>
+          <input type="text" id="subModalSub" class="adm-input" placeholder="e.g. Real-time Greeks, PCR and OI shifts" />
+        </div>
+        <div class="adm-form-group" style="margin-bottom:12px;">
+          <label>URL / Destination Link</label>
+          <input type="text" id="subModalUrl" class="adm-input" placeholder="e.g. /open_interest.html or /trading-handbook" required />
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:18px;">
+          <div class="adm-form-group">
+            <label>Icon</label>
+            <input type="text" id="subModalIcon" class="adm-input" value="⚡" />
+          </div>
+          <div class="adm-form-group">
+            <label>Badge</label>
+            <input type="text" id="subModalBadge" class="adm-input" placeholder="HOT, LIVE, NEW" />
+          </div>
+          <div class="adm-form-group">
+            <label>Badge Color</label>
+            <select id="subModalBadgeColor" class="adm-input">
+              <option value="teal">Teal (Green)</option>
+              <option value="blue">Blue</option>
+              <option value="amber">Amber</option>
+              <option value="rose">Rose (Red)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="seo-pill-btn" onclick="closeAddSubmenuModal()">Cancel</button>
+          <button type="button" class="btn-adm-primary" onclick="confirmAddSubmenuItem()">Add Submenu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         UNIFIED CONSOLE JAVASCRIPT LOGIC
+         ========================================================================= -->
     <script>
       // Admin credentials persistence (sessionStorage + localStorage fallback)
       let adminSecretKey = sessionStorage.getItem('bl_admin_secret') || localStorage.getItem('bl_admin_secret') || '';
@@ -2867,6 +3399,10 @@
             loadDiagnostics();
             loadMasterBrokers();
             loadSeoConfig();
+            loadAdminFeatureFlags();
+            loadNavBuilderData();
+            loadCmsBlogList();
+            loadCmsPagesList();
           } else {
             errEl.textContent = 'Invalid Admin Key! Access denied.';
             errEl.style.display = 'block';
@@ -2963,7 +3499,16 @@
         }
       }
 
-      function switchAdminTab(tabName) {
+      function switchAdminTab(rawTab) {
+        let tabName = (rawTab || 'telemetry').toLowerCase();
+        if (tabName === 'menu' || tabName === 'menus' || tabName === 'submenu' || tabName === 'submenus' || tabName === 'nav') {
+          tabName = 'navigation';
+        } else if (tabName === 'article' || tabName === 'articles' || tabName === 'post' || tabName === 'posts') {
+          tabName = 'blog';
+        } else if (tabName === 'page' || tabName === 'custom-pages') {
+          tabName = 'pages';
+        }
+
         document.querySelectorAll('.admin-nav-item').forEach(el => {
           el.classList.toggle('active', el.getAttribute('data-tab') === tabName);
         });
@@ -4666,6 +5211,10 @@
             loadDiagnostics();
             loadMasterBrokers();
             loadSeoConfig();
+            loadAdminFeatureFlags();
+            loadNavBuilderData();
+            loadCmsBlogList();
+            loadCmsPagesList();
             fetchAdminLogs();
             toggleLogsAutoRefresh();
           } else {
@@ -4676,536 +5225,8 @@
           }
         }).catch(() => {});
       }
-    </script>
-    <!-- Modal: Route SEO & SERP Editor -->
-    <div id="modalRouteSeo" class="adm-modal-overlay">
-      <div class="adm-modal-box">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--adm-border); padding-bottom:14px;">
-          <div>
-            <h3 id="modalRouteSeoTitle" style="margin:0; font-size:17px; font-weight:800; color:#fff;">Edit Page SEO</h3>
-            <span id="modalRouteSeoSub" style="font-size:12px; color:#94a3b8; font-family:'JetBrains Mono', monospace;">/futures</span>
-          </div>
-          <button type="button" onclick="closeRouteSeoModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
-        </div>
 
-        <form id="formRouteSeo" onsubmit="event.preventDefault(); saveRouteSeo();">
-          <input type="hidden" id="editRouteIsCustom" value="false" />
-          
-          <div style="display:grid; grid-template-columns: 2fr 1fr; gap:14px;">
-            <div class="adm-form-group">
-              <label>Page URL / Route Path <span style="color:#ef4444;">*</span></label>
-              <input type="text" id="editRoutePath" class="adm-input" placeholder="e.g. /my-new-screener" required />
-            </div>
-            <div class="adm-form-group">
-              <label>Category</label>
-              <select id="editRouteCategory" class="adm-input" style="cursor:pointer;">
-                <option value="dashboard">Dashboard</option>
-                <option value="futures">Futures</option>
-                <option value="options">Options</option>
-                <option value="mtf">MTF</option>
-                <option value="delivery">Delivery</option>
-                <option value="breadth">Breadth</option>
-                <option value="global">Global</option>
-                <option value="smart-money">Smart Money</option>
-                <option value="tools">Tools</option>
-                <option value="legal">Legal/Static</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Page Title with Live Character Counter -->
-          <div class="adm-form-group">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <label>Page Title Tag (&lt;title&gt;) <span style="color:#ef4444;">*</span></label>
-              <span id="titleCharCount" style="font-size:11px; font-weight:700; color:#34d399;">0 / 60</span>
-            </div>
-            <input type="text" id="editRouteTitle" class="adm-input" placeholder="Page Title (Keep under 60 chars for best Google display)" required oninput="updateSerpPreview()" />
-          </div>
-
-          <!-- Meta Description with Live Character Counter -->
-          <div class="adm-form-group">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <label>Meta Description (Google SERP Snippet) <span style="color:#ef4444;">*</span></label>
-              <span id="descCharCount" style="font-size:11px; font-weight:700; color:#34d399;">0 / 160</span>
-            </div>
-            <textarea id="editRouteDesc" class="adm-textarea" placeholder="Compelling 150-160 character snippet describing this page..." required oninput="updateSerpPreview()" style="min-height:70px;"></textarea>
-          </div>
-
-          <!-- Live Google SERP Snippet Simulator -->
-          <div class="adm-form-group">
-            <label style="color:#60a5fa; display:flex; align-items:center; gap:6px;">
-              <span>🌐 Live Google SERP Snippet Simulator</span>
-              <span style="font-size:10px; font-weight:normal; color:#94a3b8;">(How this URL appears in Google Search results)</span>
-            </label>
-            <div class="serp-preview-card">
-              <div class="serp-url-line">
-                <span style="display:inline-block; width:16px; height:16px; border-radius:50%; background:#3b82f6; text-align:center; font-size:10px; line-height:16px; color:#fff; font-weight:bold;">T</span>
-                <span id="serpBreadcrumb">tradersdesk.in › futures › buildup</span>
-              </div>
-              <a href="javascript:void(0)" class="serp-title-line" id="serpTitle">Page Title | TradersDesk</a>
-              <div class="serp-desc-line" id="serpDesc">Meta description snippet appears here for the searcher...</div>
-            </div>
-          </div>
-
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
-            <div class="adm-form-group">
-              <label>Target Keywords (comma separated)</label>
-              <input type="text" id="editRouteKeywords" class="adm-input" placeholder="e.g. nifty, futures, options" />
-            </div>
-            <div class="adm-form-group">
-              <label>Canonical URL</label>
-              <input type="text" id="editRouteCanonical" class="adm-input" placeholder="https://tradersdesk.in/..." />
-            </div>
-          </div>
-
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
-            <div class="adm-form-group">
-              <label>OpenGraph Title (og:title)</label>
-              <input type="text" id="editRouteOgTitle" class="adm-input" placeholder="Defaults to Title Tag" />
-            </div>
-            <div class="adm-form-group">
-              <label>OpenGraph Description (og:desc)</label>
-              <input type="text" id="editRouteOgDesc" class="adm-input" placeholder="Defaults to Meta Description" />
-            </div>
-          </div>
-
-          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px;">
-            <div class="adm-form-group">
-              <label>Robots Directive</label>
-              <select id="editRouteRobots" class="adm-input" style="cursor:pointer;">
-                <option value="index, follow">index, follow (Indexed)</option>
-                <option value="noindex, follow">noindex, follow (Hidden)</option>
-                <option value="noindex, nofollow">noindex, nofollow (Blocked)</option>
-              </select>
-            </div>
-            <div class="adm-form-group">
-              <label>Sitemap Priority</label>
-              <select id="editRoutePriority" class="adm-input" style="cursor:pointer;">
-                <option value="1.0">1.0 (Highest - Homepage)</option>
-                <option value="0.9">0.9 (Very High - Core Desks)</option>
-                <option value="0.8">0.8 (Standard - Sub Tools)</option>
-                <option value="0.7">0.7 (Medium)</option>
-                <option value="0.5">0.5 (Low - Legal / Terms)</option>
-              </select>
-            </div>
-            <div class="adm-form-group">
-              <label>Change Frequency</label>
-              <select id="editRouteFreq" class="adm-input" style="cursor:pointer;">
-                <option value="always">always (Live Real-Time)</option>
-                <option value="hourly">hourly</option>
-                <option value="daily">daily</option>
-                <option value="weekly">weekly</option>
-                <option value="monthly">monthly</option>
-              </select>
-            </div>
-          </div>
-
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid var(--adm-border); padding-top:16px;">
-            <button type="button" id="btnDeleteCustomRoute" class="btn-adm-danger" style="display:none;" onclick="deleteCurrentRoute()">🗑️ Delete URL</button>
-            <div style="display:flex; gap:10px; margin-left:auto;">
-              <button type="button" class="seo-pill-btn" onclick="closeRouteSeoModal()">Cancel</button>
-              <button type="submit" class="btn-adm-primary" style="background:#10b981;">💾 Save Page SEO</button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal: Googlebot Live SEO & Crawler Inspector -->
-    <div id="modalSeoInspect" class="adm-modal-overlay">
-      <div class="adm-modal-box" style="max-width:760px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid var(--adm-border); padding-bottom:14px;">
-          <div>
-            <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;">👁️ Googlebot Live SEO &amp; Crawler Inspector</h3>
-            <span style="font-size:12px; color:#94a3b8;">Simulates exact server-rendered dynamic HTML served to Googlebot, Bingbot &amp; social crawlers</span>
-          </div>
-          <button type="button" onclick="closeSeoInspectModal()" style="background:none; border:none; color:#94a3b8; font-size:22px; cursor:pointer;">&times;</button>
-        </div>
-
-        <div style="display:flex; gap:10px; margin-bottom:16px;">
-          <input type="text" id="inspectPathInput" class="adm-input" placeholder="e.g. /futures/buildup or /fii-dii or /option-chain-pro" style="flex:1; font-family:'JetBrains Mono',monospace;" />
-          <button type="button" class="btn-adm-primary" onclick="runSeoInspect()" style="padding:8px 18px;">🔍 Inspect Route</button>
-        </div>
-
-        <div id="seoInspectContent" style="max-height:60vh; overflow-y:auto; padding-right:6px;"></div>
-
-        <div style="display:flex; justify-content:flex-end; margin-top:20px; border-top:1px solid var(--adm-border); padding-top:16px;">
-          <button type="button" class="seo-pill-btn" onclick="closeSeoInspectModal()">Close Preview</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal: Dynamic Page Editor (WordPress-Grade Studio) -->
-    <div id="modalCmsPage" class="adm-modal-overlay">
-      <div class="adm-modal-box" style="max-width:1040px; width:95%; max-height:92vh; display:flex; flex-direction:column;">
-        <!-- Modal Top Bar -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--adm-border); padding-bottom:12px;">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:20px;">📄</span>
-            <div>
-              <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalPageTitleText">Dynamic Page Studio</h3>
-              <span style="font-size:11.5px; color:#94a3b8;" id="pageSlugLivePreview">https://tradersdesk.in/your-slug</span>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span id="pageStatusPill" class="p2-badge p2-badge-amber">DRAFT</span>
-            <button type="button" onclick="closeCmsPageModal()" style="background:none; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
-          </div>
-        </div>
-
-        <!-- WordPress-Style Studio Tabs -->
-        <div style="display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px; margin-bottom:14px;">
-          <button type="button" id="tabBtnPageEditor" class="seo-pill-btn active" style="font-weight:700;" onclick="switchPageModalTab('editor')">✍️ Content &amp; Split Preview</button>
-          <button type="button" id="tabBtnPageSeo" class="seo-pill-btn" style="font-weight:700;" onclick="switchPageModalTab('seo')">🔍 Google Search SEO (Yoast/RankMath)</button>
-          <button type="button" id="tabBtnPageSettings" class="seo-pill-btn" style="font-weight:700;" onclick="switchPageModalTab('settings')">⚙️ Settings &amp; Custom Code</button>
-        </div>
-
-        <form id="cmsPageForm" style="display:flex; flex-direction:column; flex:1; overflow-y:auto;" onsubmit="event.preventDefault();">
-          <input type="hidden" id="cmsPageId" />
-
-          <!-- TAB 1: CONTENT & SPLIT PREVIEW -->
-          <div id="pageTabContent" class="modal-subtab-pane">
-            <div style="display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:12px;">
-              <div class="adm-form-group">
-                <label>Page Title</label>
-                <input type="text" id="cmsPageTitle" class="adm-input" placeholder="e.g. Institutional Trading Handbook" required oninput="autoSlugPage(this.value); updatePageSerpPreview();" />
-              </div>
-              <div class="adm-form-group">
-                <label>URL Slug (Direct: /slug or /p/slug)</label>
-                <input type="text" id="cmsPageSlug" class="adm-input" placeholder="e.g. trading-handbook" required oninput="updatePageSerpPreview();" />
-              </div>
-            </div>
-
-            <!-- Formatting Toolbar -->
-            <div class="cms-toolbar" style="display:flex; flex-wrap:wrap; gap:4px; padding:6px 10px; background:#080e21; border:1px solid var(--adm-border); border-bottom:none; border-radius:8px 8px 0 0;">
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '**', '**', 'bold text')" title="Bold"><strong>B</strong></button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '*', '*', 'italic text')" title="Italic"><em>I</em></button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '# ', '', 'Heading 1')" title="Heading 1">H1</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '## ', '', 'Heading 2')" title="Heading 2">H2</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '### ', '', 'Heading 3')" title="Heading 3">H3</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '> ', '', 'Blockquote note...')" title="Quote">“</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '```python\n', '\n```', '# code here')" title="Code">&lt;&gt;</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '- ', '', 'Bullet item')" title="Bullet List">• List</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '1. ', '', 'Numbered item')" title="Numbered List">1. List</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '[', '](https://example.com)', 'Link Text')" title="Insert Link">🔗 Link</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '![', '](https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80)', 'Alt Text')" title="Insert Image">🖼️ Image</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '| Metric | Value | Benchmark |\n|---|---|---|\n| Advances | 1,420 | 1,200 |\n', '', '')" title="Insert Table">📊 Table</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '> [!NOTE]\n> Institutional trading desk directive.\n', '', '')" title="Insert Callout">⚡ Callout</button>
-            </div>
-
-            <!-- Split Editor -->
-            <div class="cms-editor-split" style="margin-top:0;">
-              <div class="cms-editor-pane">
-                <textarea id="cmsPageContent" class="cms-editor-textarea" style="border-radius:0 0 8px 8px;" placeholder="# Heading&#10;&#10;Write your institutional page content here in Markdown or raw HTML..." oninput="renderCmsPagePreview()"></textarea>
-              </div>
-              <div class="cms-editor-pane">
-                <div id="cmsPagePreview" class="cms-preview-pane"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 2: GOOGLE SEARCH SEO & SOCIAL SNIPPET -->
-          <div id="pageTabSeo" class="modal-subtab-pane" style="display:none;">
-            <p style="font-size:12.5px; color:#94a3b8; margin:0 0 14px 0;">Preview and configure how this page appears on Google Search and social media sharing cards.</p>
-
-            <!-- Google Search Result Snippet Box -->
-            <div style="background:#202124; border:1px solid #3c4043; border-radius:10px; padding:18px; margin-bottom:20px; font-family:arial,sans-serif;">
-              <div style="font-size:12px; color:#bdc1c6; display:flex; align-items:center; gap:6px; margin-bottom:5px;">
-                <img src="/favicon.svg" width="16" height="16" style="border-radius:50%;" />
-                <span>tradersdesk.in › <span id="pageSerpSlugPreview">trading-handbook</span></span>
-              </div>
-              <div id="pageSerpTitlePreview" style="color:#8ab4f8; font-size:18px; font-weight:400; line-height:1.3; margin-bottom:5px; cursor:pointer;">
-                Institutional Trading Handbook | TradersDesk.in
-              </div>
-              <div id="pageSerpDescPreview" style="color:#bdc1c6; font-size:13px; line-height:1.45;">
-                Comprehensive guide to institutional market breadth analytics, option chain Greeks, and algorithmic volatility trading.
-              </div>
-            </div>
-
-            <div class="adm-form-group" style="margin-bottom:14px;">
-              <div style="display:flex; justify-content:space-between;">
-                <label>Google Search Meta Title (50-60 characters recommended)</label>
-                <span id="pageTitleCharCount" style="font-size:11px; color:#94a3b8;">0 / 60</span>
-              </div>
-              <input type="text" id="cmsPageMetaTitle" class="adm-input" placeholder="e.g. Institutional Trading Handbook | TradersDesk" oninput="updatePageSerpPreview()" />
-            </div>
-
-            <div class="adm-form-group" style="margin-bottom:14px;">
-              <div style="display:flex; justify-content:space-between;">
-                <label>Google Search Meta Description (120-160 characters recommended)</label>
-                <span id="pageDescCharCount" style="font-size:11px; color:#94a3b8;">0 / 160</span>
-              </div>
-              <textarea id="cmsPageMetaDesc" class="adm-input" style="height:70px; resize:none;" placeholder="Brief summary displayed under the link in Google Search results..." oninput="updatePageSerpPreview()"></textarea>
-            </div>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:14px;">
-              <div class="adm-form-group">
-                <label>Focus Keywords &amp; Tags</label>
-                <input type="text" id="cmsPageKeywords" class="adm-input" placeholder="e.g. market breadth, option chain, nse trading" />
-              </div>
-              <div class="adm-form-group">
-                <label>Robots Indexing</label>
-                <select id="cmsPageRobots" class="adm-input">
-                  <option value="index, follow">Index, Follow (Recommended - Google Crawls &amp; Ranks)</option>
-                  <option value="noindex, nofollow">NoIndex, NoFollow (Private Document)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="adm-form-group" style="margin-bottom:14px;">
-              <label>Social Sharing Image URL (OpenGraph / Twitter Card)</label>
-              <input type="text" id="cmsPageOgImage" class="adm-input" placeholder="https://tradersdesk.in/og-image.png or unsplash URL" />
-            </div>
-          </div>
-
-          <!-- TAB 3: SETTINGS & CODE -->
-          <div id="pageTabSettings" class="modal-subtab-pane" style="display:none;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
-              <div class="adm-form-group">
-                <label>Format</label>
-                <select id="cmsPageFormat" class="adm-input" onchange="renderCmsPagePreview()">
-                  <option value="markdown">Markdown (.md - Recommended)</option>
-                  <option value="html">Raw HTML</option>
-                </select>
-              </div>
-              <div class="adm-form-group">
-                <label>Author / Desk</label>
-                <input type="text" id="cmsPageAuthor" class="adm-input" value="TradersDesk Institutional Desk" />
-              </div>
-            </div>
-
-            <div class="adm-form-group" style="margin-bottom:14px;">
-              <label>Custom Page CSS (Optional)</label>
-              <textarea id="cmsPageCustomCss" class="adm-input" style="height:80px; font-family:monospace; font-size:12px; resize:none;" placeholder="/* Extra custom styles for this page */"></textarea>
-            </div>
-          </div>
-
-          <!-- Footer Actions with Save Draft vs Publish -->
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-top:1px solid var(--adm-border); padding-top:14px;">
-            <button type="button" class="btn-adm-danger" id="btnDeleteCmsPage" style="display:none;" onclick="deleteCmsPage()">🗑️ Delete Page</button>
-            <div style="display:flex; gap:10px; margin-left:auto;">
-              <button type="button" class="seo-pill-btn" onclick="closeCmsPageModal()">Cancel</button>
-              <button type="button" class="btn-adm-primary" style="background:#475569;" onclick="saveCmsPage(false)">📝 Save Draft</button>
-              <button type="button" class="btn-adm-primary" style="background:#10b981;" onclick="saveCmsPage(true)">🚀 Publish Page</button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal: Blog Article Editor (WordPress-Grade Studio) -->
-    <div id="modalCmsBlog" class="adm-modal-overlay">
-      <div class="adm-modal-box" style="max-width:1040px; width:95%; max-height:92vh; display:flex; flex-direction:column;">
-        <!-- Modal Top Bar -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--adm-border); padding-bottom:12px;">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:20px;">✍️</span>
-            <div>
-              <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalBlogTitleText">Research Article Studio</h3>
-              <span style="font-size:11.5px; color:#94a3b8;" id="blogSlugLivePreview">https://tradersdesk.in/blog/your-slug</span>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span id="blogStatusPill" class="p2-badge p2-badge-amber">DRAFT</span>
-            <button type="button" onclick="closeCmsBlogModal()" style="background:none; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
-          </div>
-        </div>
-
-        <!-- WordPress-Style Studio Tabs -->
-        <div style="display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px; margin-bottom:14px;">
-          <button type="button" id="tabBtnBlogEditor" class="seo-pill-btn active" style="font-weight:700;" onclick="switchBlogModalTab('editor')">✍️ Article Content &amp; Split Preview</button>
-          <button type="button" id="tabBtnBlogSeo" class="seo-pill-btn" style="font-weight:700;" onclick="switchBlogModalTab('seo')">🔍 Google Search SEO (Yoast/RankMath)</button>
-          <button type="button" id="tabBtnBlogSettings" class="seo-pill-btn" style="font-weight:700;" onclick="switchBlogModalTab('settings')">⚙️ Taxonomy, Author &amp; Media</button>
-        </div>
-
-        <form id="cmsBlogForm" style="display:flex; flex-direction:column; flex:1; overflow-y:auto;" onsubmit="event.preventDefault();">
-          <input type="hidden" id="cmsBlogId" />
-
-          <!-- TAB 1: ARTICLE CONTENT & SPLIT PREVIEW -->
-          <div id="blogTabContent" class="modal-subtab-pane">
-            <div style="display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:12px;">
-              <div class="adm-form-group">
-                <label>Article Title</label>
-                <input type="text" id="cmsBlogTitle" class="adm-input" placeholder="e.g. Mastering Nifty Straddle Decay Dynamics" required oninput="autoSlugBlog(this.value); updateBlogSerpPreview();" />
-              </div>
-              <div class="adm-form-group">
-                <label>URL Slug (/blog/slug)</label>
-                <input type="text" id="cmsBlogSlug" class="adm-input" placeholder="e.g. mastering-nifty-straddle-decay" required oninput="updateBlogSerpPreview();" />
-              </div>
-            </div>
-
-            <!-- Formatting Toolbar -->
-            <div class="cms-toolbar" style="display:flex; flex-wrap:wrap; gap:4px; padding:6px 10px; background:#080e21; border:1px solid var(--adm-border); border-bottom:none; border-radius:8px 8px 0 0;">
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '**', '**', 'bold text')" title="Bold"><strong>B</strong></button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '*', '*', 'italic text')" title="Italic"><em>I</em></button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '# ', '', 'Article Heading')" title="Heading 1">H1</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '## ', '', 'Section Heading')" title="Heading 2">H2</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '### ', '', 'Subsection')" title="Heading 3">H3</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '> ', '', 'Key trading takeaway...')" title="Quote">“</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '```python\n', '\n```', '# quantitative logic')" title="Code">&lt;&gt;</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '- ', '', 'Bullet point')" title="Bullet List">• List</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '1. ', '', 'Numbered point')" title="Numbered List">1. List</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '[', '](https://tradersdesk.in/open_interest.html)', 'Option Chain Pro')" title="Insert Link">🔗 Link</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '![', '](https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80)', 'Market Chart')" title="Insert Image">🖼️ Image</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '| Strike | Call OI | Put OI |\n|---|---|---|\n| 22600 | 85.2L | 110.4L |\n', '', '')" title="Insert Table">📊 Table</button>
-              <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '> [!IMPORTANT]\n> High dealer gamma threshold reached.\n', '', '')" title="Insert Callout">⚡ Callout</button>
-            </div>
-
-            <!-- Split Editor -->
-            <div class="cms-editor-split" style="margin-top:0;">
-              <div class="cms-editor-pane">
-                <textarea id="cmsBlogContent" class="cms-editor-textarea" style="border-radius:0 0 8px 8px;" placeholder="# Article Title&#10;&#10;Write your quantitative research analysis here in Markdown..." oninput="renderCmsBlogPreview()"></textarea>
-              </div>
-              <div class="cms-editor-pane">
-                <div id="cmsBlogPreview" class="cms-preview-pane"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 2: GOOGLE SEARCH SEO & SOCIAL SNIPPET -->
-          <div id="blogTabSeo" class="modal-subtab-pane" style="display:none;">
-            <p style="font-size:12.5px; color:#94a3b8; margin:0 0 14px 0;">Live snippet simulation of how this article will rank on Google Search.</p>
-
-            <!-- Google Search Snippet Box -->
-            <div style="background:#202124; border:1px solid #3c4043; border-radius:10px; padding:18px; margin-bottom:20px; font-family:arial,sans-serif;">
-              <div style="font-size:12px; color:#bdc1c6; display:flex; align-items:center; gap:6px; margin-bottom:5px;">
-                <img src="/favicon.svg" width="16" height="16" style="border-radius:50%;" />
-                <span>tradersdesk.in › blog › <span id="blogSerpSlugPreview">mastering-nifty-straddle-decay</span></span>
-              </div>
-              <div id="blogSerpTitlePreview" style="color:#8ab4f8; font-size:18px; font-weight:400; line-height:1.3; margin-bottom:5px; cursor:pointer;">
-                Mastering Nifty Straddle Decay Dynamics | TradersDesk.in
-              </div>
-              <div id="blogSerpDescPreview" style="color:#bdc1c6; font-size:13px; line-height:1.45;">
-                In-depth quantitative research on intraday straddle decay, dealer gamma hedging, and theta acceleration curves during weekly NSE index expiries.
-              </div>
-            </div>
-
-            <div class="adm-form-group" style="margin-bottom:14px;">
-              <div style="display:flex; justify-content:space-between;">
-                <label>Google Search Meta Title (50-60 characters)</label>
-                <span id="blogTitleCharCount" style="font-size:11px; color:#94a3b8;">0 / 60</span>
-              </div>
-              <input type="text" id="cmsBlogMetaTitle" class="adm-input" placeholder="e.g. Mastering Nifty Straddle Decay | Quantitative Research" oninput="updateBlogSerpPreview()" />
-            </div>
-
-            <div class="adm-form-group" style="margin-bottom:14px;">
-              <div style="display:flex; justify-content:space-between;">
-                <label>Article Excerpt &amp; Search Description (120-160 characters)</label>
-                <span id="blogDescCharCount" style="font-size:11px; color:#94a3b8;">0 / 160</span>
-              </div>
-              <textarea id="cmsBlogExcerpt" class="adm-input" style="height:70px; resize:none;" placeholder="1-2 sentence hook displayed on the blog card and in Google Search snippets..." oninput="updateBlogSerpPreview()" required></textarea>
-            </div>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:14px;">
-              <div class="adm-form-group">
-                <label>Focus Keywords &amp; Tags</label>
-                <input type="text" id="cmsBlogKeywords" class="adm-input" placeholder="e.g. straddle decay, theta, gamma squeeze, options" />
-              </div>
-              <div class="adm-form-group">
-                <label>Canonical URL</label>
-                <input type="text" id="cmsBlogCanonical" class="adm-input" placeholder="https://tradersdesk.in/blog/slug (auto)" />
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 3: TAXONOMY, AUTHOR & MEDIA -->
-          <div id="blogTabSettings" class="modal-subtab-pane" style="display:none;">
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
-              <div class="adm-form-group">
-                <label>Category</label>
-                <select id="cmsBlogCategory" class="adm-input">
-                  <option value="Options Strategy">Options Strategy</option>
-                  <option value="Market Breadth">Market Breadth</option>
-                  <option value="F&O Insights">F&O Insights</option>
-                  <option value="Technical Analysis">Technical Analysis</option>
-                  <option value="Market Education">Market Education</option>
-                  <option value="Institutional Research">Institutional Research</option>
-                </select>
-              </div>
-              <div class="adm-form-group">
-                <label>Author</label>
-                <input type="text" id="cmsBlogAuthor" class="adm-input" value="TradersDesk Quantitative Research" />
-              </div>
-              <div class="adm-form-group">
-                <label>Read Time</label>
-                <input type="text" id="cmsBlogReadTime" class="adm-input" value="5 min read" />
-              </div>
-            </div>
-
-            <div class="adm-form-group" style="margin-bottom:16px;">
-              <label>Featured Cover Image URL</label>
-              <input type="text" id="cmsBlogCover" class="adm-input" placeholder="https://images.unsplash.com/..." oninput="updateBlogCoverThumbnail(this.value)" />
-              <div id="blogCoverThumbWrap" style="margin-top:10px; display:none;">
-                <img id="blogCoverThumb" src="" style="max-height:140px; border-radius:8px; border:1px solid var(--adm-border);" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer Actions with Save Draft vs Publish -->
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-top:1px solid var(--adm-border); padding-top:14px;">
-            <button type="button" class="btn-adm-danger" id="btnDeleteCmsBlog" style="display:none;" onclick="deleteCmsBlog()">🗑️ Delete Article</button>
-            <div style="display:flex; gap:10px; margin-left:auto;">
-              <button type="button" class="seo-pill-btn" onclick="closeCmsBlogModal()">Cancel</button>
-              <button type="button" class="btn-adm-primary" style="background:#475569;" onclick="saveCmsBlog(false)">📝 Save Draft</button>
-              <button type="button" class="btn-adm-primary" style="background:#10b981;" onclick="saveCmsBlog(true)">🚀 Publish Article</button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal: Add Submenu Item -->
-    <div id="modalAddSubmenu" class="adm-modal-overlay">
-      <div class="adm-modal-box" style="max-width:540px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--adm-border); padding-bottom:12px;">
-          <h3 style="margin:0; font-size:16px; font-weight:800; color:#fff;" id="subModalHeading">➕ Add Dropdown Submenu Item</h3>
-          <button type="button" onclick="closeAddSubmenuModal()" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">&times;</button>
-        </div>
-        <input type="hidden" id="subModalMenuIdx" />
-        <input type="hidden" id="subModalColIdx" />
-        <input type="hidden" id="subModalSubIdx" />
-        <div class="adm-form-group" style="margin-bottom:12px;">
-          <label>Submenu Title</label>
-          <input type="text" id="subModalTitle" class="adm-input" placeholder="e.g. Option Chain Live Matrix" required />
-        </div>
-        <div class="adm-form-group" style="margin-bottom:12px;">
-          <label>Subtitle / Description</label>
-          <input type="text" id="subModalSub" class="adm-input" placeholder="e.g. Real-time Greeks, PCR and OI shifts" />
-        </div>
-        <div class="adm-form-group" style="margin-bottom:12px;">
-          <label>URL / Destination Link</label>
-          <input type="text" id="subModalUrl" class="adm-input" placeholder="e.g. /open_interest.html or /trading-handbook" required />
-        </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:18px;">
-          <div class="adm-form-group">
-            <label>Icon</label>
-            <input type="text" id="subModalIcon" class="adm-input" value="⚡" />
-          </div>
-          <div class="adm-form-group">
-            <label>Badge</label>
-            <input type="text" id="subModalBadge" class="adm-input" placeholder="HOT, LIVE, NEW" />
-          </div>
-          <div class="adm-form-group">
-            <label>Badge Color</label>
-            <select id="subModalBadgeColor" class="adm-input">
-              <option value="teal">Teal (Green)</option>
-              <option value="blue">Blue</option>
-              <option value="amber">Amber</option>
-              <option value="rose">Rose (Red)</option>
-            </select>
-          </div>
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="seo-pill-btn" onclick="closeAddSubmenuModal()">Cancel</button>
-          <button type="button" class="btn-adm-primary" onclick="confirmAddSubmenuItem()">Add Submenu</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- JAVASCRIPT LOGIC FOR NAVIGATION, CMS PAGES, BLOG & CLOUD OPS -->
-    <script>
-      // =========================================================================
+// =========================================================================
       // 1. SIMPLE CLIENT-SIDE MARKDOWN PARSER FOR REAL-TIME SPLIT PREVIEWS
       // =========================================================================
       
