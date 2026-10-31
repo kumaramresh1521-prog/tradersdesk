@@ -12118,22 +12118,25 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if cached and (now - cached["ts"] < 60.0):
                     data = cached["data"]
 
+            is_admin_page = req_path.rstrip("/") in ("/admin", "/admin.html")
+
             if data is None:
                 raw_html = file_path.read_text(encoding="utf-8")
                 injected_html = seo_engine.inject_seo_metadata(raw_html, req_path)
-                # Dynamically inject master navigation from cms_engine
-                try:
-                    dyn_nav_html = cms_engine.render_navigation_html(req_path)
-                    if '<nav class="inst-nav"' in injected_html:
-                        injected_html = re.sub(
-                            r'<nav class="inst-nav"[^>]*>.*?</nav>',
-                            lambda m: dyn_nav_html,
-                            injected_html,
-                            count=1,
-                            flags=re.DOTALL
-                        )
-                except Exception as nav_exc:
-                    print(f"[CMS] Dynamic navigation injection notice: {nav_exc}")
+                # Dynamically inject master navigation from cms_engine (only for public consumer pages, never admin console)
+                if not is_admin_page:
+                    try:
+                        dyn_nav_html = cms_engine.render_navigation_html(req_path)
+                        if '<nav class="inst-nav"' in injected_html:
+                            injected_html = re.sub(
+                                r'<nav class="inst-nav"[^>]*>.*?</nav>',
+                                lambda m: dyn_nav_html,
+                                injected_html,
+                                count=1,
+                                flags=re.DOTALL
+                            )
+                    except Exception as nav_exc:
+                        print(f"[CMS] Dynamic navigation injection notice: {nav_exc}")
                 clean_rpath = req_path.rstrip("/")
                 if clean_rpath in ("/breadth-contribution", "/contribution"):
                     injected_html = injected_html.replace('id="p2SuiteStraddleBtn" class="page2-suite-btn active"', 'id="p2SuiteStraddleBtn" class="page2-suite-btn"')

@@ -1395,11 +1395,11 @@
         <form id="adminLockForm" onsubmit="event.preventDefault(); verifyAdminKey();">
           <div class="lock-input-group">
             <span class="input-lock-ico">🔒</span>
-            <input type="password" id="adminSecretInput" class="lock-input" placeholder="Enter Admin Secret PIN..." autofocus autocomplete="current-password" />
+            <input type="password" id="adminSecretInput" class="lock-input" placeholder="Enter Admin Secret PIN..." autofocus autocomplete="current-password" onkeydown="if(event.key==='Enter'){event.preventDefault(); verifyAdminKey();}" />
             <button type="button" class="btn-toggle-pin-mask" onclick="togglePinVisibility()" title="Toggle visibility">👁️</button>
           </div>
           <div id="lockErrorMsg" class="lock-error-alert" style="display:none;"></div>
-          <button type="submit" class="btn-unlock" id="btnUnlockAdmin">
+          <button type="submit" class="btn-unlock" id="btnUnlockAdmin" onclick="event.preventDefault(); verifyAdminKey();">
             <span>Unlock Admin Console</span>
             <span style="font-size:16px;">➔</span>
           </button>
@@ -5784,7 +5784,7 @@
         const wrap = document.getElementById('navLivePreviewWrap');
         if (!wrap) return;
 
-        let navHtml = '<nav class="inst-nav" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
+        let navHtml = '<div class="inst-nav-preview" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
         (_navMasterData.items || []).forEach(item => {
           if (!item.active && item.active !== undefined) return;
           const badgeHtml = item.badge ? `<span class="p2-badge p2-badge-${item.badgeColor || 'teal'}">${escapeHtml(item.badge)}</span>` : '';
@@ -5799,7 +5799,7 @@
             </div>
           `;
         });
-        navHtml += '</nav>';
+        navHtml += '</div>';
         wrap.innerHTML = navHtml;
       }
 
