@@ -58,6 +58,31 @@ TICKER_MAP = {
     "SENSEX": "%5EBSESN"
 }
 
+NSE_FIXED_HOLIDAYS = {(1, 26), (5, 1), (8, 15), (10, 2), (12, 25)}
+NSE_CALENDAR_HOLIDAYS = {
+    "2026-01-26", "2026-02-15", "2026-03-03", "2026-03-20", "2026-03-26",
+    "2026-04-03", "2026-04-14", "2026-05-01", "2026-05-31", "2026-08-15",
+    "2026-09-15", "2026-10-02", "2026-10-20", "2026-11-10", "2026-11-24", "2026-12-25",
+}
+
+def is_nse_trading_session_active_now() -> bool:
+    """
+    Returns True ONLY if today is a regular weekday trading day (Mon-Fri) and current IST time is
+    within or after regular market hours (09:15 to 15:40 IST), and not an exchange holiday.
+    On weekends (Saturday & Sunday) and market holidays, returns False.
+    """
+    now = datetime.now(IST)
+    if now.weekday() >= 5:  # Saturday=5, Sunday=6
+        return False
+    d = now.date()
+    if (d.month, d.day) in NSE_FIXED_HOLIDAYS or d.isoformat() in NSE_CALENDAR_HOLIDAYS:
+        return False
+    hm = (now.hour, now.minute)
+    if hm < (9, 15):
+        return False
+    return True
+
+
 class ChartEngine:
     def __init__(self):
         self._cached_symbols = None
@@ -207,56 +232,60 @@ class ChartEngine:
             "live_timestamp": int(now_ts)
         }
 
-        # 1. Fetch real-time market quote from server feed
+        market_session_active = is_nse_trading_session_active_now()
+        quote["is_live"] = market_session_active
+
+        # 1. Fetch real-time market quote from server feed ONLY during active NSE trading sessions
         live_found = False
         try:
-            import server
-            if is_idx:
-                idx_map = {
-                    "NIFTY": "nifty50",
-                    "BANKNIFTY": "banknifty",
-                    "FINNIFTY": "finnifty",
-                    "MIDCPNIFTY": "midcpnifty",
-                    "SENSEX": "sensex"
-                }
-                idx_key = idx_map.get(sym, "nifty50")
-                idx_quotes = server.get_live_market_index_quotes()
-                if idx_key in idx_quotes:
-                    iq = idx_quotes[idx_key]
-                    s_spot = float(iq.get("spot") or 0.0)
-                    s_prev = float(iq.get("prevClose") or s_spot)
-                    s_chg = float(iq.get("change") or round(s_spot - s_prev, 2))
-                    s_pct = float(iq.get("percentChange") or (round((s_chg / s_prev * 100), 2) if s_prev else 0.0))
-                    if s_spot > 0:
-                        quote.update({
-                            "ltp": s_spot,
-                            "change": s_chg,
-                            "change_pct": s_pct,
-                            "open": s_spot,
-                            "high": s_spot,
-                            "low": s_spot,
-                            "prev_close": s_prev,
-                        })
-                        live_found = True
-            else:
-                stock_quotes = server.get_live_constituent_quotes([sym])
-                if sym in stock_quotes:
-                    sq = stock_quotes[sym]
-                    s_ltp = float(sq.get("ltp") or 0.0)
-                    s_prev = float(sq.get("prevClose") or s_ltp)
-                    s_chg = float(sq.get("change") or round(s_ltp - s_prev, 2))
-                    s_pct = float(sq.get("changePct") or (round((s_chg / s_prev * 100), 2) if s_prev else 0.0))
-                    if s_ltp > 0:
-                        quote.update({
-                            "ltp": s_ltp,
-                            "change": s_chg,
-                            "change_pct": s_pct,
-                            "open": s_ltp,
-                            "high": s_ltp,
-                            "low": s_ltp,
-                            "prev_close": s_prev,
-                        })
-                        live_found = True
+            if market_session_active:
+                import server
+                if is_idx:
+                    idx_map = {
+                        "NIFTY": "nifty50",
+                        "BANKNIFTY": "banknifty",
+                        "FINNIFTY": "finnifty",
+                        "MIDCPNIFTY": "midcpnifty",
+                        "SENSEX": "sensex"
+                    }
+                    idx_key = idx_map.get(sym, "nifty50")
+                    idx_quotes = server.get_live_market_index_quotes()
+                    if idx_key in idx_quotes:
+                        iq = idx_quotes[idx_key]
+                        s_spot = float(iq.get("spot") or 0.0)
+                        s_prev = float(iq.get("prevClose") or s_spot)
+                        s_chg = float(iq.get("change") or round(s_spot - s_prev, 2))
+                        s_pct = float(iq.get("percentChange") or (round((s_chg / s_prev * 100), 2) if s_prev else 0.0))
+                        if s_spot > 0:
+                            quote.update({
+                                "ltp": s_spot,
+                                "change": s_chg,
+                                "change_pct": s_pct,
+                                "open": s_spot,
+                                "high": s_spot,
+                                "low": s_spot,
+                                "prev_close": s_prev,
+                            })
+                            live_found = True
+                else:
+                    stock_quotes = server.get_live_constituent_quotes([sym])
+                    if sym in stock_quotes:
+                        sq = stock_quotes[sym]
+                        s_ltp = float(sq.get("ltp") or 0.0)
+                        s_prev = float(sq.get("prevClose") or s_ltp)
+                        s_chg = float(sq.get("change") or round(s_ltp - s_prev, 2))
+                        s_pct = float(sq.get("changePct") or (round((s_chg / s_prev * 100), 2) if s_prev else 0.0))
+                        if s_ltp > 0:
+                            quote.update({
+                                "ltp": s_ltp,
+                                "change": s_chg,
+                                "change_pct": s_pct,
+                                "open": s_ltp,
+                                "high": s_ltp,
+                                "low": s_ltp,
+                                "prev_close": s_prev,
+                            })
+                            live_found = True
         except Exception:
             pass
 
@@ -277,7 +306,7 @@ class ChartEngine:
                     chg = round(c - prev_c, 2)
                     chg_pct = round((chg / prev_c * 100), 2) if prev_c else 0.0
 
-                    if not live_found:
+                    if not live_found or not market_session_active:
                         quote.update({
                             "ltp": c,
                             "change": chg,
@@ -326,7 +355,7 @@ class ChartEngine:
                                 if turnover_lacs > 0:
                                     quote["turnover_cr"] = round(turnover_lacs / 100.0, 2)
 
-                                if not live_found and quote["ltp"] == 0.0:
+                                if (not live_found or not market_session_active) and (quote["ltp"] == 0.0 or not is_fno):
                                     c = float(row_clean.get("CLOSE_PRICE") or 0.0)
                                     o = float(row_clean.get("OPEN_PRICE") or c)
                                     h = float(row_clean.get("HIGH_PRICE") or c)
@@ -384,17 +413,20 @@ class ChartEngine:
             except Exception:
                 pass
 
-        # Attach forming candle
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        quote["live_bar"] = {
-            "time": today_str,
-            "open": quote["open"] if quote["open"] > 0 else quote["ltp"],
-            "high": quote["high"] if quote["high"] > 0 else quote["ltp"],
-            "low": quote["low"] if quote["low"] > 0 else quote["ltp"],
-            "close": quote["ltp"],
-            "volume": quote["volume"],
-            "oi": quote["future_oi"] if is_fno else 0
-        }
+        # Attach forming candle ONLY if active market session has started today
+        if is_nse_trading_session_active_now():
+            today_str = datetime.now(IST).strftime("%Y-%m-%d")
+            quote["live_bar"] = {
+                "time": today_str,
+                "open": quote["open"] if quote["open"] > 0 else quote["ltp"],
+                "high": quote["high"] if quote["high"] > 0 else quote["ltp"],
+                "low": quote["low"] if quote["low"] > 0 else quote["ltp"],
+                "close": quote["ltp"],
+                "volume": quote["volume"],
+                "oi": quote["future_oi"] if is_fno else 0
+            }
+        else:
+            quote["live_bar"] = None
 
         self._quote_cache[sym] = (quote, now_ts)
         return quote
@@ -730,35 +762,44 @@ class ChartEngine:
             print(f"[ChartEngine] Error during master FO overlay/infill for {sym}: {exc}")
 
         # 5. Real-time live forming candle stitching (Current Day)
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        live_quote = self.get_symbol_quote(sym)
-        if live_quote.get("ltp", 0.0) > 0:
-            ltp = float(live_quote["ltp"])
-            o = float(live_quote.get("open") or ltp)
-            h = float(live_quote.get("high") or max(o, ltp))
-            l = float(live_quote.get("low") or min(o, ltp))
-            v = int(live_quote.get("volume") or 0)
-            oi = int(live_quote.get("future_oi") or 0)
+        # CRITICAL: A forming daily bar must ONLY be stitched during or after trading hours on an active trading day!
+        # On weekends (Saturday/Sunday) and holidays, market is closed and no candle exists for today.
+        now_dt = datetime.now(IST)
+        today_str = now_dt.strftime("%Y-%m-%d")
 
-            h = round(max(h, o, ltp), 2)
-            l = round(min(l, o, ltp), 2)
+        if is_nse_trading_session_active_now():
+            live_quote = self.get_symbol_quote(sym)
+            if live_quote.get("ltp", 0.0) > 0 and live_quote.get("volume", 0) > 0:
+                ltp = float(live_quote["ltp"])
+                o = float(live_quote.get("open") or ltp)
+                h = float(live_quote.get("high") or max(o, ltp))
+                l = float(live_quote.get("low") or min(o, ltp))
+                v = int(live_quote.get("volume") or 0)
+                oi = int(live_quote.get("future_oi") or 0)
 
-            live_bar = {
-                "time": today_str,
-                "open": o,
-                "high": h,
-                "low": l,
-                "close": ltp,
-                "volume": v,
-                "oi": oi,
-                "oi_change": live_quote.get("oi_change", 0),
-                "buildup": live_quote.get("buildup", "Neutral")
-            }
+                h = round(max(h, o, ltp), 2)
+                l = round(min(l, o, ltp), 2)
 
-            if daily_bars and daily_bars[-1]["time"] == today_str:
-                daily_bars[-1] = live_bar
-            else:
-                daily_bars.append(live_bar)
+                live_bar = {
+                    "time": today_str,
+                    "open": o,
+                    "high": h,
+                    "low": l,
+                    "close": ltp,
+                    "volume": v,
+                    "oi": oi,
+                    "oi_change": live_quote.get("oi_change", 0),
+                    "buildup": live_quote.get("buildup", "Neutral")
+                }
+
+                if daily_bars and daily_bars[-1]["time"] == today_str:
+                    daily_bars[-1] = live_bar
+                else:
+                    daily_bars.append(live_bar)
+        else:
+            # Market is closed today (Weekend / Holiday / Pre-market):
+            # Ensure no dummy/forming bar for today is present in daily_bars!
+            daily_bars = [b for b in daily_bars if b.get("time") != today_str]
 
         # 6. Deduplicate & sort daily bars
         if daily_bars:
@@ -766,6 +807,24 @@ class ChartEngine:
             for bar in daily_bars:
                 bars_dict[bar["time"]] = bar
             daily_bars = [bars_dict[k] for k in sorted(bars_dict.keys())]
+
+            # Recalculate oi_change & buildup for absolute mathematical accuracy on sorted bars
+            prev_c = None
+            prev_oi = None
+            for b in daily_bars:
+                c = float(b.get("close", 0.0))
+                oi = int(b.get("oi", 0))
+                p_diff = (c - prev_c) if prev_c is not None else 0
+                oi_diff = (oi - prev_oi) if prev_oi is not None else 0
+                if is_fno and oi > 0:
+                    if p_diff >= 0 and oi_diff >= 0: b_sig = "Long Buildup"
+                    elif p_diff < 0 and oi_diff >= 0: b_sig = "Short Buildup"
+                    elif p_diff >= 0 and oi_diff < 0: b_sig = "Short Covering"
+                    else: b_sig = "Long Unwinding"
+                    b["oi_change"] = oi_diff
+                    b["buildup"] = b_sig
+                prev_c = c
+                prev_oi = oi
 
         # Resolution handling: Intraday vs Daily (Prefer 100% REAL exchange candles)
         if res_str in ("1", "3", "5", "15", "30", "60"):

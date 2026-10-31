@@ -1890,7 +1890,7 @@
       renderProChart();
     };
 
-    // Live Clock
+    // Live Clock & Market Session State
     function updateLiveClock() {
       const now = new Date();
       const istOptions = { timeZone: "Asia/Kolkata", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" };
@@ -1898,6 +1898,32 @@
       if (clockEl) {
         clockEl.textContent = now.toLocaleTimeString("en-GB", istOptions) + " IST";
       }
+
+      // Check IST Day & Time
+      try {
+        const istStr = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+        const istDate = new Date(istStr);
+        const day = istDate.getDay(); // 0 = Sun, 6 = Sat
+        const hours = istDate.getHours();
+        const minutes = istDate.getMinutes();
+        const timeVal = hours * 100 + minutes;
+        const isWeekend = (day === 0 || day === 6);
+        const isMarketHours = !isWeekend && (timeVal >= 915 && timeVal <= 1540);
+
+        const pill = document.getElementById("topMarketStatusPill");
+        const statusText = document.getElementById("marketStatusText");
+        const livePulse = document.getElementById("livePulseText");
+
+        if (isMarketHours) {
+          if (pill) pill.className = "inst-market-pill open";
+          if (statusText) statusText.textContent = "NSE LIVE";
+          if (livePulse) livePulse.innerHTML = "🟢 LIVE FEED • Real-time forming candle active";
+        } else {
+          if (pill) pill.className = "inst-market-pill closed";
+          if (statusText) statusText.textContent = isWeekend ? "NSE CLOSED (WEEKEND)" : "NSE CLOSED";
+          if (livePulse) livePulse.innerHTML = isWeekend ? "🔴 MARKET CLOSED • Weekend (Next session: Monday 09:15 IST)" : "🔴 MARKET CLOSED (Trading ended at 15:30 IST)";
+        }
+      } catch (e) {}
     }
     setInterval(updateLiveClock, 1000);
     updateLiveClock();

@@ -10750,7 +10750,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             if not check_admin_request(self):
                 return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
             all_r = seo_engine.load_all_seo_routes()
-            route_list = sorted(all_r.values(), key=lambda x: (0 if x["path"] == "/" else 1, x["path"]))
+            route_list = sorted(all_r.values(), key=lambda x: (0 if x.get("path") == "/" else 1, x.get("path", "")))
             categories = sorted(list(set(r.get("category", "tools") for r in route_list)))
             return self.send_json(200, {
                 "ok": True,
