@@ -129,10 +129,18 @@ def _get_delivery_for_symbol_date(symbol: str, date_str: str) -> Optional[dict]:
         clean_sym = sym.replace(" 50", "").replace("-50", "").replace("BANK NIFTY", "BANKNIFTY").replace(" ", "")
         s_data = deliv_master.get(clean_sym)
 
+    clean_d = date_str.replace("-", "")
     if not s_data:
+        # Benchmark and Sectoral Indices composite delivery
+        if sym in ("NIFTY", "NIFTY50", "NIFTY 50", "BANKNIFTY", "BANK NIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX") or "NIFTY" in sym:
+            if clean_d in _DELIVERY_INDEX_COMPOSITE:
+                return {
+                    "dv": _DELIVERY_INDEX_COMPOSITE[clean_d],
+                    "deliv_qty": None,
+                    "volume": None
+                }
         return None
 
-    clean_d = date_str.replace("-", "")
     if clean_d in s_data:
         return s_data[clean_d]
     if date_str in s_data:
@@ -151,6 +159,11 @@ def _get_symbol_average_delivery(symbol: str) -> float:
         vals = [v.get("dv") for v in s_data.values() if v.get("dv") is not None]
         if vals:
             return round(sum(vals) / len(vals), 1)
+    if sym in ("NIFTY", "NIFTY50", "NIFTY 50", "BANKNIFTY", "BANK NIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX") or "NIFTY" in sym:
+        if _DELIVERY_INDEX_COMPOSITE:
+            vals = [v for v in _DELIVERY_INDEX_COMPOSITE.values() if v is not None]
+            if vals:
+                return round(sum(vals) / len(vals), 1)
     return 48.0
 
 def _get_latest_symbol_delivery(symbol: str) -> Optional[dict]:
@@ -164,6 +177,14 @@ def _get_latest_symbol_delivery(symbol: str) -> Optional[dict]:
         sorted_dates = sorted(s_data.keys())
         if sorted_dates:
             return s_data[sorted_dates[-1]]
+    if sym in ("NIFTY", "NIFTY50", "NIFTY 50", "BANKNIFTY", "BANK NIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX") or "NIFTY" in sym:
+        if _DELIVERY_INDEX_COMPOSITE:
+            last_d = sorted(_DELIVERY_INDEX_COMPOSITE.keys())[-1]
+            return {
+                "dv": _DELIVERY_INDEX_COMPOSITE[last_d],
+                "deliv_qty": None,
+                "volume": None
+            }
     return None
 
 # Standard F&O Universe Definition with Strike Steps & Characteristics
@@ -572,7 +593,7 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
         deliv_rec = _get_delivery_for_symbol_date(sym, dt_str)
         if deliv_rec and "dv" in deliv_rec and deliv_rec["dv"] is not None:
             dv = round(float(deliv_rec["dv"]), 1)
-            deliv_qty = int(deliv_rec.get("deliv_qty", 0))
+            deliv_qty = int(deliv_rec["deliv_qty"]) if deliv_rec.get("deliv_qty") is not None else None
         else:
             dv = None
             deliv_qty = None
@@ -603,10 +624,10 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
         if m_rec and m_rec.get("futPrice", 0) > 0:
             now_dt = datetime.now()
             today_str = now_dt.strftime("%Y%m%d")
-            is_trading_day = now_dt.weekday() < 5
-            market_started = (now_dt.hour > 9 or (now_dt.hour == 9 and now_dt.minute >= 15))
+            from chart_engine import is_nse_trading_session_active_now
+            is_trading_active = is_nse_trading_session_active_now()
 
-            if is_trading_day and market_started and cleaned_sessions and cleaned_sessions[-1]["date"] != today_str:
+            if is_trading_active and cleaned_sessions and cleaned_sessions[-1]["date"] != today_str:
                 live_c = float(m_rec.get("futPrice") or m_rec.get("ltp"))
                 live_h = float(m_rec.get("dayHigh") or live_c)
                 live_l = float(m_rec.get("dayLow") or live_c)

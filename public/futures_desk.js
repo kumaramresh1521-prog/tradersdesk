@@ -1924,7 +1924,7 @@
           const lastEod = oiState.allBars.slice().reverse().find(d => d.dv !== null && d.dv !== undefined);
           const lastEodDv = lastEod ? lastEod.dv : adv;
           return (b.dv !== null && b.dv !== undefined)
-            ? `${fmtNum(adv, 1)}% (${fmtNum(b.dv, 1)}% today)`
+            ? `${fmtNum(adv, 1)}% (${fmtNum(b.dv, 1)}% EOD)`
             : `${fmtNum(adv, 1)}% (${fmtNum(lastEodDv, 1)}% EOD)`;
         })()],
         ['Max Pain Strike', `₹${fmtNum(oiState.maxPain, 0)}`]
