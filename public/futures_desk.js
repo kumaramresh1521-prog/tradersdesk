@@ -1542,9 +1542,11 @@
     cx.clearRect(0, 0, W, H);
     cx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
-    const muCol = '#64748b';
-    const txCol = '#e2e8f0';
-    const cardCol = '#0b1329';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || document.body.getAttribute('data-theme') === 'dark';
+    const isLight = !isDark;
+    const muCol = isLight ? '#475569' : '#64748b';
+    const txCol = isLight ? '#0f172a' : '#e2e8f0';
+    const cardCol = isLight ? '#ffffff' : '#0b1329';
 
     let mn = Math.min(...vis.map(d => d.l));
     let mx = Math.max(...vis.map(d => d.h));
@@ -1919,25 +1921,9 @@
       cx.fillText(title, x0 + 6, r[0] + (isMobile ? 12 : 15));
     });
 
-    // Crosshair and Floating HUD Pill
+    // Subtle, Elegant Crosshair, Column Highlight, and Floating HUD Pill
     if (oiState.hoverX >= 0 && oiState.hoverX < m) {
       const x = X(oiState.hoverX);
-      cx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-      cx.setLineDash([3, 3]);
-      cx.beginPath();
-      cx.moveTo(x, PT);
-      cx.lineTo(x, H - PB);
-      cx.stroke();
-
-      if (oiState.hoverY >= PN[0][0] && oiState.hoverY <= PN[0][1]) {
-        cx.beginPath();
-        cx.moveTo(x0, oiState.hoverY);
-        cx.lineTo(x1, oiState.hoverY);
-        cx.stroke();
-      }
-      cx.setLineDash([]);
-
-      // Floating Crosshair HUD Pill on Mobile & Desktop
       const hBar = vis[oiState.hoverX];
       const hPrev = oiState.hoverX > 0 ? vis[oiState.hoverX - 1] : hBar;
       const hChg = hBar.c - hPrev.c;
@@ -1946,12 +1932,81 @@
       const hCat = latestCatNames[hBar.cat] || 'Neutral';
       const hCatCol = OI_COLORS[hBar.cat] || '#38bdf8';
 
-      const hudStr = `${formatOiDateShort(hBar.dt)}  C: ₹${fmtNum(hBar.c, 1)} (${hPos ? '+' : ''}${fmtNum(hChgPct, 1)}%)  OI: ${hBar.oi >= 1e7 ? (hBar.oi/1e7).toFixed(1)+'Cr' : (hBar.oi/1e6).toFixed(1)+'M'} (${hCat})  Vol: ${hBar.v >= 1e7 ? (hBar.v/1e7).toFixed(1)+'Cr' : (hBar.v/1e6).toFixed(1)+'M'}`;
-      
+      // 1. Soft Subtle Candle Highlight Column
+      const colW = Math.max(bd + 6, bw);
+      cx.fillStyle = isLight ? 'rgba(2, 132, 199, 0.08)' : 'rgba(56, 189, 248, 0.12)';
+      cx.fillRect(Math.round(x - colW / 2), PT, colW, H - PT - PB);
+
+      // 2. Subtle Vertical Crosshair Line (Visible in both themes, TradingView Style)
+      const chLineCol = isLight ? 'rgba(71, 85, 105, 0.65)' : 'rgba(148, 163, 184, 0.65)';
+      cx.strokeStyle = chLineCol;
+      cx.lineWidth = 1;
+      cx.setLineDash([3, 3]);
+      cx.beginPath();
+      cx.moveTo(Math.round(x) + 0.5, PT);
+      cx.lineTo(Math.round(x) + 0.5, H - PB);
+      cx.stroke();
+
+      // 3. Subtle Horizontal Price Crosshair Line (aligned with candle close price if in price panel)
+      const hPriceY = Math.round((oiState.hoverY >= PN[0][0] && oiState.hoverY <= PN[0][1]) ? oiState.hoverY : yp(hBar.c));
+      cx.beginPath();
+      cx.moveTo(x0, hPriceY + 0.5);
+      cx.lineTo(x1, hPriceY + 0.5);
+      cx.stroke();
+      cx.setLineDash([]);
+
+      // 4. Highlighted Price Pill on Axis
+      const hPxText = fmtNum(hBar.c, (hBar.c < 100 ? 2 : 1));
       cx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      const hPillW = cx.measureText(hPxText).width + 8;
+      const hPillCol = hPos ? '#10b981' : '#f43f5e';
+      cx.fillStyle = hPillCol;
+      cx.beginPath();
+      if (isMobile) {
+        if (cx.roundRect) {
+          cx.roundRect(x1 + 2, hPriceY - 8, hPillW, 16, 3);
+        } else {
+          cx.rect(x1 + 2, hPriceY - 8, hPillW, 16);
+        }
+        cx.fill();
+        cx.fillStyle = '#ffffff';
+        cx.textAlign = 'center';
+        cx.fillText(hPxText, x1 + 2 + hPillW / 2, hPriceY + 3.5);
+      } else {
+        if (cx.roundRect) {
+          cx.roundRect(x0 - hPillW - 3, hPriceY - 8, hPillW, 16, 3);
+        } else {
+          cx.rect(x0 - hPillW - 3, hPriceY - 8, hPillW, 16);
+        }
+        cx.fill();
+        cx.fillStyle = '#ffffff';
+        cx.textAlign = 'center';
+        cx.fillText(hPxText, x0 - hPillW / 2 - 3, hPriceY + 3.5);
+      }
+
+      // 5. Date Pill on Bottom X-Axis
+      const hDtText = formatOiDateShort(hBar.dt);
+      cx.font = 'bold 9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      const hDtW = cx.measureText(hDtText).width + 8;
+      cx.fillStyle = isLight ? '#0f172a' : '#1e293b';
+      cx.beginPath();
+      const dtBoxX = Math.max(x0, Math.min(x1 - hDtW, Math.round(x - hDtW / 2)));
+      if (cx.roundRect) {
+        cx.roundRect(dtBoxX, H - PB + 1, hDtW, 16, 3);
+      } else {
+        cx.rect(dtBoxX, H - PB + 1, hDtW, 16);
+      }
+      cx.fill();
+      cx.fillStyle = '#ffffff';
+      cx.textAlign = 'center';
+      cx.fillText(hDtText, dtBoxX + hDtW / 2, H - PB + 12);
+
+      // 6. Floating Crosshair HUD Pill on Mobile & Desktop
+      const hudStr = `${formatOiDateShort(hBar.dt)}  C: ₹${fmtNum(hBar.c, 1)} (${hPos ? '+' : ''}${fmtNum(hChgPct, 1)}%)  OI: ${hBar.oi >= 1e7 ? (hBar.oi/1e7).toFixed(1)+'Cr' : (hBar.oi/1e6).toFixed(1)+'M'} (${hCat})  Vol: ${hBar.v >= 1e7 ? (hBar.v/1e7).toFixed(1)+'Cr' : (hBar.v/1e6).toFixed(1)+'M'}`;
+      cx.font = isMobile ? 'bold 8.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       const hudW = Math.min(W - 16, cx.measureText(hudStr).width + 16);
-      cx.fillStyle = 'rgba(7, 16, 38, 0.92)';
-      cx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+      cx.fillStyle = isLight ? 'rgba(15, 23, 42, 0.94)' : 'rgba(7, 16, 38, 0.94)';
+      cx.strokeStyle = isLight ? 'rgba(2, 132, 199, 0.5)' : 'rgba(56, 189, 248, 0.5)';
       cx.lineWidth = 1;
       cx.beginPath();
       if (cx.roundRect) {
@@ -1972,8 +2027,9 @@
   function renderFutureOiPanels(vis) {
     if (!vis || !vis.length) return;
     const a = vis[0];
-    const b = vis[vis.length - 1];
-    const prev = vis.length > 1 ? vis[vis.length - 2] : b;
+    const b = (oiState.hoverX >= 0 && oiState.hoverX < vis.length) ? vis[oiState.hoverX] : vis[vis.length - 1];
+    const hoverIdx = (oiState.hoverX >= 0 && oiState.hoverX < vis.length) ? oiState.hoverX : (vis.length - 1);
+    const prev = hoverIdx > 0 ? vis[hoverIdx - 1] : b;
     const dayChg = b.c - prev.c;
     const dayChgPct = prev.c ? (dayChg / prev.c) * 100 : 0;
     const isPos = dayChg >= 0;
@@ -2238,6 +2294,12 @@
     const cv = document.getElementById('futOiCanvas');
     if (!tip || !cv || !oiState.allBars || !oiState.allBars.length) return;
 
+    const isMob = (cv.parentElement?.clientWidth || cv.clientWidth || window.innerWidth) < 640;
+    if (isMob) {
+      tip.style.display = 'none';
+      return;
+    }
+
     const vis = oiState.allBars.slice(oiState.visibleStart, oiState.visibleStart + oiState.visibleCount);
     const d = vis[i];
     if (!d) return;
@@ -2357,49 +2419,79 @@
 
     if (cv) {
       cv.addEventListener('pointerdown', e => {
-        oiState.drag = { x: e.clientX, vs: oiState.visibleStart };
-        cv.setPointerCapture(e.pointerId);
-      });
+        oiState.drag = { startX: e.clientX, lastX: e.clientX, vs: oiState.visibleStart, isDrag: false };
+        try { cv.setPointerCapture(e.pointerId); } catch(_) {}
 
-      cv.addEventListener('pointerup', () => {
-        oiState.drag = null;
+        const r = cv.getBoundingClientRect();
+        const isMob = (cv.parentElement?.clientWidth || cv.clientWidth || window.innerWidth) < 640;
+        const PL = isMob ? 8 : 55, PR = isMob ? 52 : 65;
+        const W = cv.parentElement ? cv.parentElement.clientWidth : (cv.clientWidth || 800);
+        const bw = (W - PL - PR) / (oiState.visibleCount || 1);
+        const i = Math.floor((e.clientX - r.left - PL) / bw);
+
+        if (i >= 0 && i < oiState.visibleCount) {
+          // If already hovering on the exact same candle on mobile, tap toggles it off
+          if (isMob && oiState.hoverX === i) {
+            oiState.hoverX = -1;
+            oiState.hoverY = -1;
+            drawFutureOiCanvas();
+            return;
+          }
+          oiState.hoverX = i;
+          oiState.hoverY = e.clientY - r.top;
+          drawFutureOiCanvas();
+          showFutureOiTip(e, i);
+        }
       });
 
       cv.addEventListener('pointermove', e => {
         if (!oiState.allBars || !oiState.allBars.length) return;
         const r = cv.getBoundingClientRect();
-        oiState.hoverY = e.clientY - r.top;
-
         const isMob = (cv.parentElement?.clientWidth || cv.clientWidth || window.innerWidth) < 640;
         const PL = isMob ? 8 : 55, PR = isMob ? 52 : 65;
         const W = cv.parentElement ? cv.parentElement.clientWidth : (cv.clientWidth || 800);
         const bw = (W - PL - PR) / (oiState.visibleCount || 1);
 
         if (oiState.drag) {
-          const deltaBars = Math.round((e.clientX - oiState.drag.x) / bw);
-          oiState.visibleStart = Math.max(0, Math.min(oiState.allBars.length - oiState.visibleCount, oiState.drag.vs - deltaBars));
-          oiState.hoverX = -1;
-          if (tip) tip.style.display = 'none';
-          drawFutureOiCanvas();
-          return;
+          const moveX = e.clientX - oiState.drag.startX;
+          if (Math.abs(moveX) > (isMob ? 35 : 12)) {
+            oiState.drag.isDrag = true;
+          }
+          if (oiState.drag.isDrag) {
+            const deltaBars = Math.round(moveX / bw);
+            oiState.visibleStart = Math.max(0, Math.min(oiState.allBars.length - oiState.visibleCount, oiState.drag.vs - deltaBars));
+            oiState.hoverX = -1;
+            if (tip) tip.style.display = 'none';
+            drawFutureOiCanvas();
+            return;
+          }
         }
 
         const i = Math.floor((e.clientX - r.left - PL) / bw);
         if (i < 0 || i >= oiState.visibleCount) {
-          oiState.hoverX = -1;
-          if (tip) tip.style.display = 'none';
-          drawFutureOiCanvas();
           return;
         }
-        oiState.hoverX = i;
-        drawFutureOiCanvas();
-        showFutureOiTip(e, i);
+        if (oiState.hoverX !== i || Math.abs((oiState.hoverY || 0) - (e.clientY - r.top)) > 4) {
+          oiState.hoverX = i;
+          oiState.hoverY = e.clientY - r.top;
+          drawFutureOiCanvas();
+          showFutureOiTip(e, i);
+        }
+      });
+
+      cv.addEventListener('pointerup', e => {
+        oiState.drag = null;
+        try { cv.releasePointerCapture(e.pointerId); } catch(_) {}
       });
 
       cv.addEventListener('pointerleave', () => {
-        oiState.hoverX = -1;
-        if (tip) tip.style.display = 'none';
-        drawFutureOiCanvas();
+        const isMob = (cv.parentElement?.clientWidth || cv.clientWidth || window.innerWidth) < 640;
+        if (!isMob) {
+          oiState.hoverX = -1;
+          oiState.hoverY = -1;
+          if (tip) tip.style.display = 'none';
+          drawFutureOiCanvas();
+        }
       });
 
       cv.addEventListener('wheel', e => {
