@@ -9736,31 +9736,31 @@ def get_straddle_chart_response(params: dict) -> dict:
             except Exception as exc:
                 logger.warning("Upstox chain fetch for straddle %s failed: %s", upstox_ikey, exc)
 
-        if market_live and is_active_broker_configured():
-            try:
-                nifty_data = build_nifty({
-                    "date": effective_dt,
-                    "index": idx_key,
-                    "expiry": exp or (upstox_chain.get("expiry") if upstox_chain else "auto"),
-                    "includeOptionChain": False,
-                    "fastRefresh": True,
-                    "dataSource": "broker",
-                })
-            except Exception:
-                nifty_data = None
+        try:
+            nifty_data = build_nifty({
+                "date": effective_dt,
+                "index": idx_key,
+                "expiry": exp or (upstox_chain.get("expiry") if upstox_chain else "auto"),
+                "includeOptionChain": True,
+                "strikeRange": 12,
+                "fastRefresh": True,
+                "dataSource": "broker",
+            })
+        except Exception as exc:
+            logger.warning("build_nifty fetch for straddle %s failed: %s", idx_key, exc)
+            nifty_data = None
 
         live_spot = None
-        if not is_historical:
-            if upstox_chain and upstox_chain.get("spotPrice"):
-                live_spot = float(upstox_chain["spotPrice"])
-            elif nifty_data and nifty_data.get("index"):
-                live_spot = nifty_data.get("index", {}).get("spot")
-            if not live_spot:
-                try:
-                    live_quotes = get_live_market_index_quotes()
-                    live_spot = (live_quotes.get(idx_key) or {}).get("spot") or None
-                except Exception:
-                    live_spot = None
+        if upstox_chain and upstox_chain.get("spotPrice"):
+            live_spot = float(upstox_chain["spotPrice"])
+        elif nifty_data and nifty_data.get("index"):
+            live_spot = nifty_data.get("index", {}).get("spot")
+        if not live_spot:
+            try:
+                live_quotes = get_live_market_index_quotes()
+                live_spot = (live_quotes.get(idx_key) or {}).get("spot") or None
+            except Exception:
+                live_spot = None
 
         # If nifty_data candles are unavailable from live broker, supply realistic 1m index candles
         if not nifty_data or not nifty_data.get("points"):
@@ -9779,35 +9779,16 @@ def get_straddle_chart_response(params: dict) -> dict:
                             "close": c[4],
                             "volume": c[5] if len(c) > 5 else 0
                         })
-                    nifty_data = {
-                        "ok": True,
-                        "points": pts,
-                        "index": {"spot": pts[-1]["close"]}
-                    }
+                    if not nifty_data:
+                        nifty_data = {}
+                    nifty_data["ok"] = True
+                    nifty_data["points"] = pts
+                    if not nifty_data.get("index"):
+                        nifty_data["index"] = {"spot": pts[-1]["close"]}
                     if not live_spot:
                         live_spot = pts[-1]["close"]
             except Exception as e:
                 pass
-        if not is_historical:
-            if upstox_chain and upstox_chain.get("spotPrice"):
-                live_spot = float(upstox_chain["spotPrice"])
-            elif nifty_data and nifty_data.get("index"):
-                live_spot = nifty_data.get("index", {}).get("spot")
-            if not live_spot:
-                try:
-                    live_quotes = get_live_market_index_quotes()
-                    live_spot = (live_quotes.get(idx_key) or {}).get("spot") or None
-                except Exception:
-                    live_spot = None
-        else:
-            if nifty_data and nifty_data.get("index"):
-                live_spot = nifty_data.get("index", {}).get("spot")
-            if not live_spot:
-                try:
-                    live_quotes = get_live_market_index_quotes()
-                    live_spot = (live_quotes.get(idx_key) or {}).get("spot") or None
-                except Exception:
-                    live_spot = None
 
         res = straddle_engine.compute_straddle_analytics(
             idx,

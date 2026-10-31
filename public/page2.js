@@ -10,15 +10,36 @@
     }).join("");
   }
 
-  function syncStrikeDropdown(selectId, strikes, chosenStrike, atmStrike) {
+  function syncStrikeDropdown(selectId, strikes, chosenStrike, atmStrike, strikesData, deskType) {
     const sel = document.getElementById(selectId);
     if (!sel) return;
-    let html = `<option value="atm" ${!chosenStrike || chosenStrike === 'atm' ? 'selected' : ''}>ATM (${atmStrike || "Auto"})</option>`;
+    const curVal = sel.value || (chosenStrike ? String(chosenStrike) : "atm");
+    let atmExtra = "";
+    if (strikesData && atmStrike && strikesData[String(atmStrike)]) {
+      const ad = strikesData[String(atmStrike)];
+      if (deskType === "cvp") {
+        atmExtra = ` • CE ₹${Number(ad.ce_price).toFixed(1)} | PE ₹${Number(ad.pe_price).toFixed(1)}`;
+      } else {
+        atmExtra = ` • ₹${Number(ad.straddle_price).toFixed(2)}`;
+      }
+    }
+    const isAtmSelected = !chosenStrike || chosenStrike === "atm" || curVal === "atm";
+    let html = `<option value="atm" ${isAtmSelected ? 'selected' : ''}>ATM (${atmStrike || "Auto"})${atmExtra}</option>`;
     if (strikes && strikes.length > 0) {
       strikes.forEach(stk => {
-        const isSel = (String(stk) === String(chosenStrike)) ? "selected" : "";
-        const tag = (stk === atmStrike) ? " (ATM)" : "";
-        html += `<option value="${stk}" ${isSel}>${stk}${tag}</option>`;
+        const isSel = (!isAtmSelected && (String(stk) === String(chosenStrike) || String(stk) === curVal)) ? "selected" : "";
+        const diff = stk - (atmStrike || stk);
+        const tag = diff === 0 ? "ATM" : (diff > 0 ? `+${diff}` : `${diff}`);
+        let extra = "";
+        if (strikesData && strikesData[String(stk)]) {
+          const sd = strikesData[String(stk)];
+          if (deskType === "cvp") {
+            extra = ` • CE ₹${Number(sd.ce_price).toFixed(1)} | PE ₹${Number(sd.pe_price).toFixed(1)}`;
+          } else {
+            extra = ` • ₹${Number(sd.straddle_price).toFixed(2)}`;
+          }
+        }
+        html += `<option value="${stk}" ${isSel}>Strike ${Number(stk).toLocaleString("en-IN")} (${tag})${extra}</option>`;
       });
     }
     sel.innerHTML = html;
@@ -773,17 +794,26 @@
     straddleState.index = idxSel.value || "NIFTY";
   }
 
-  function populateStrikeOptions(strikes, selectedStrike, atmStrike) {
+  function populateStrikeOptions(strikes, selectedStrike, atmStrike, strikesData) {
     const stkSel = document.getElementById("straddleStrikeSelect");
     if (!stkSel) return;
     const curVal = straddleState.strike || stkSel.value || "atm";
-    let html = `<option value="atm" ${curVal === "atm" ? "selected" : ""}>ATM (${Number(atmStrike || 0).toLocaleString("en-IN")})</option>`;
+    let atmExtra = "";
+    if (strikesData && atmStrike && strikesData[String(atmStrike)]) {
+      atmExtra = ` • ₹${Number(strikesData[String(atmStrike)].straddle_price).toFixed(2)}`;
+    }
+    const isAtmSelected = curVal === "atm" || !selectedStrike || selectedStrike === "atm";
+    let html = `<option value="atm" ${isAtmSelected ? "selected" : ""}>ATM (${Number(atmStrike || 0).toLocaleString("en-IN")})${atmExtra}</option>`;
     if (Array.isArray(strikes)) {
       strikes.forEach(stk => {
-        const isSel = (curVal !== "atm" && (curVal === String(stk) || selectedStrike === stk));
+        const isSel = (!isAtmSelected && (curVal === String(stk) || selectedStrike === stk));
         const diff = stk - (atmStrike || stk);
         const tag = diff === 0 ? "ATM" : (diff > 0 ? `+${diff}` : `${diff}`);
-        html += `<option value="${stk}" ${isSel ? "selected" : ""}>Strike ${Number(stk).toLocaleString("en-IN")} (${tag})</option>`;
+        let extra = "";
+        if (strikesData && strikesData[String(stk)]) {
+          extra = ` • ₹${Number(strikesData[String(stk)].straddle_price).toFixed(2)}`;
+        }
+        html += `<option value="${stk}" ${isSel ? "selected" : ""}>Strike ${Number(stk).toLocaleString("en-IN")} (${tag})${extra}</option>`;
       });
     }
     stkSel.innerHTML = html;
@@ -919,7 +949,7 @@
 
       // Populate dynamic strike selector around ATM
       if (data.available_strikes && data.available_strikes.length > 0) {
-        populateStrikeOptions(data.available_strikes, data.selected_strike, data.atm_strike);
+        populateStrikeOptions(data.available_strikes, data.selected_strike, data.atm_strike, data.strikes_data);
       }
 
       // 1. Update Metrics Strip
@@ -2457,7 +2487,7 @@
 
       // Populate expiries & strikes if empty
       syncDropdownOptions("decayExpirySelect", data.available_expiries || [], data.expiry);
-      syncStrikeDropdown("decayStrikeSelect", data.available_strikes || [], data.selected_strike, data.atm_strike);
+      syncStrikeDropdown("decayStrikeSelect", data.available_strikes || [], data.selected_strike, data.atm_strike, data.strikes_data, "decay");
 
       // Metrics Ribbon
       const points = data.points || [];
@@ -2954,7 +2984,7 @@
       cvpState.data = data;
 
       syncDropdownOptions("cvpExpirySelect", data.available_expiries || [], data.expiry);
-      syncStrikeDropdown("cvpStrikeSelect", data.available_strikes || [], data.selected_strike, data.atm_strike);
+      syncStrikeDropdown("cvpStrikeSelect", data.available_strikes || [], data.selected_strike, data.atm_strike, data.strikes_data, "cvp");
 
       const points = data.points || [];
       const latest = data.latest || {};

@@ -481,7 +481,7 @@
         </div>
 
         <div class="straddle-ctrl-group">
-          <label for="straddleStrikeSelect">Strike <span class="strike-limit-hint">(ATM ± 5)</span></label>
+          <label for="straddleStrikeSelect">Strike</label>
           <select id="straddleStrikeSelect" class="page2-ctrl-select">
             <option value="atm" selected>ATM (Auto)</option>
           </select>
@@ -498,11 +498,7 @@
       </div>
     </div>
 
-    <!-- Strike Coverage Note for Straddle Desk -->
-    <div class="p2-strike-info-note" id="straddleStrikeInfoNote">
-      <span class="note-badge">📌 NOTE</span>
-      <span>The Strike dropdown covers <strong>11 strikes around ATM (ATM ± 5 Strikes)</strong>. ATM is selected by default; you can select any strike from the dropdown to analyze its combined CE+PE straddle decay curve and synthetic future dynamics.</span>
-    </div>
+
 
     <!-- Live Metrics Ribbon (FinanceDeft-style Strip) -->
     <section class="straddle-metric-strip" id="straddleMetricStrip">
@@ -675,7 +671,7 @@
           </div>
 
           <div class="straddle-ctrl-group">
-            <label for="decayStrikeSelect">Strike <span class="strike-limit-hint">(ATM ± 5)</span></label>
+            <label for="decayStrikeSelect">Strike</label>
             <select id="decayStrikeSelect" class="page2-ctrl-select">
               <option value="atm" selected>ATM (Auto)</option>
             </select>
@@ -692,11 +688,7 @@
         </div>
       </div>
 
-      <!-- Strike Coverage Note for Premium Decay -->
-      <div class="p2-strike-info-note" id="decayStrikeInfoNote">
-        <span class="note-badge">📌 NOTE</span>
-        <span>The Strike dropdown covers <strong>11 strikes around ATM (ATM ± 5 Strikes)</strong>. ATM is selected by default; you can select any ITM/OTM strike from the dropdown to track its live intraday premium decay and theta erosion trajectory.</span>
-      </div>
+
 
       <!-- Dedicated Premium Decay Metric Ribbon -->
       <section class="straddle-metric-strip" id="decayMetricStrip">
@@ -838,7 +830,7 @@
           </div>
 
           <div class="straddle-ctrl-group">
-            <label for="cvpStrikeSelect">Strike <span class="strike-limit-hint">(ATM ± 5)</span></label>
+            <label for="cvpStrikeSelect">Strike</label>
             <select id="cvpStrikeSelect" class="page2-ctrl-select">
               <option value="atm" selected>ATM (Auto)</option>
             </select>
@@ -855,11 +847,7 @@
         </div>
       </div>
 
-      <!-- Strike Coverage Note for Call vs Put -->
-      <div class="p2-strike-info-note" id="cvpStrikeInfoNote">
-        <span class="note-badge">📌 NOTE</span>
-        <span>The Strike dropdown covers <strong>11 strikes around ATM (ATM ± 5 Strikes)</strong>. ATM is selected by default; you can select any strike from the dropdown to compare Call (CE) vs Put (PE) premium divergence, spread curve, and institutional skew.</span>
-      </div>
+
 
       <!-- Dedicated Call vs Put Metric Ribbon -->
       <section class="straddle-metric-strip" id="cvpMetricStrip">

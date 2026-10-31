@@ -486,7 +486,7 @@ def compute_straddle_analytics(
 
     available_strikes = [atm_strike + (i * step) for i in range(-5, 6)]
 
-    # 4. Extract Real Live Option Legs (CE & PE) from Upstox or Angel Chain
+    # 4. Extract Real Exchange Option Legs (CE & PE) across ATM ± 5 strikes corridor
     live_ce_ltp = 0.0
     live_pe_ltp = 0.0
     live_iv = meta["base_atm_iv"]
@@ -496,41 +496,119 @@ def compute_straddle_analytics(
     live_vega = 0.0
     has_live_legs = False
 
-    # Check Upstox Chain (only for current live market session)
-    if not is_historical and upstox_chain and upstox_chain.get("data"):
-        for r in upstox_chain["data"]:
-            r_stk = float(r.get("strike_price") or 0.0)
-            if abs(r_stk - chosen_strike) < 0.1:
-                ce = r.get("call_options") or {}
-                pe = r.get("put_options") or {}
-                ce_md = ce.get("market_data") or {}
-                pe_md = pe.get("market_data") or {}
-                live_ce_ltp = float(ce_md.get("ltp") or 0.0)
-                live_pe_ltp = float(pe_md.get("ltp") or 0.0)
-                c_iv = float(ce_md.get("iv") or 0.0)
-                p_iv = float(pe_md.get("iv") or 0.0)
-                if c_iv > 0 or p_iv > 0:
-                    live_iv = (c_iv + p_iv) / 2.0 if (c_iv > 0 and p_iv > 0) else (c_iv or p_iv)
-                cg = ce.get("option_greeks") or {}
-                pg = pe.get("option_greeks") or {}
-                live_delta = round(float(cg.get("delta") or 0.0) + float(pg.get("delta") or 0.0), 4)
-                live_gamma = round(float(cg.get("gamma") or 0.0) + float(pg.get("gamma") or 0.0), 6)
-                live_theta = round(float(cg.get("theta") or 0.0) + float(pg.get("theta") or 0.0), 2)
-                live_vega = round(float(cg.get("vega") or 0.0) + float(pg.get("vega") or 0.0), 2)
-                has_live_legs = (live_ce_ltp > 0 or live_pe_ltp > 0)
-                break
+    strikes_data: Dict[str, Any] = {}
+    chain_rows = []
 
-    # Check Angel One / nifty_data Chain
-    if not is_historical and not has_live_legs and nifty_data and nifty_data.get("optionChain"):
+    # 4a. Gather all option chain rows from Upstox or Angel / nifty_data
+    if upstox_chain and upstox_chain.get("data"):
+        for r in upstox_chain["data"]:
+            stk = float(r.get("strike_price") or 0.0)
+            ce = (r.get("call_options") or {}).get("market_data") or {}
+            pe = (r.get("put_options") or {}).get("market_data") or {}
+            cg = (r.get("call_options") or {}).get("option_greeks") or {}
+            pg = (r.get("put_options") or {}).get("option_greeks") or {}
+            chain_rows.append({
+                "strike": stk,
+                "ce_ltp": float(ce.get("ltp") or 0.0),
+                "pe_ltp": float(pe.get("ltp") or 0.0),
+                "ce_open": float(ce.get("open_price") or ce.get("ltp") or 0.0),
+                "pe_open": float(pe.get("open_price") or pe.get("ltp") or 0.0),
+                "ce_chg": float(ce.get("price_change") or 0.0),
+                "pe_chg": float(pe.get("price_change") or 0.0),
+                "ce_iv": float(ce.get("iv") or 0.0),
+                "pe_iv": float(pe.get("iv") or 0.0),
+                "cg_delta": float(cg.get("delta") or 0.0),
+                "pg_delta": float(pg.get("delta") or 0.0),
+                "cg_gamma": float(cg.get("gamma") or 0.0),
+                "pg_gamma": float(pg.get("gamma") or 0.0),
+                "cg_theta": float(cg.get("theta") or 0.0),
+                "pg_theta": float(pg.get("theta") or 0.0),
+                "cg_vega": float(cg.get("vega") or 0.0),
+                "pg_vega": float(pg.get("vega") or 0.0),
+            })
+    elif nifty_data and nifty_data.get("optionChain"):
         for r in nifty_data["optionChain"]:
-            r_stk = float(r.get("strike") or 0.0)
-            if abs(r_stk - chosen_strike) < 0.1:
-                c_info = r.get("call") or {}
-                p_info = r.get("put") or {}
-                live_ce_ltp = float(c_info.get("ltp") or 0.0)
-                live_pe_ltp = float(p_info.get("ltp") or 0.0)
-                has_live_legs = (live_ce_ltp > 0 or live_pe_ltp > 0)
-                break
+            stk = float(r.get("strike") or 0.0)
+            c = r.get("call") or {}
+            p = r.get("put") or {}
+            chain_rows.append({
+                "strike": stk,
+                "ce_ltp": float(c.get("ltp") or 0.0),
+                "pe_ltp": float(p.get("ltp") or 0.0),
+                "ce_open": float(c.get("open") or c.get("ltp") or 0.0),
+                "pe_open": float(p.get("open") or p.get("ltp") or 0.0),
+                "ce_chg": float(c.get("change") or 0.0),
+                "pe_chg": float(p.get("change") or 0.0),
+                "ce_iv": float(c.get("iv") or 0.0),
+                "pe_iv": float(p.get("iv") or 0.0),
+                "cg_delta": float(c.get("delta") or 0.0),
+                "pg_delta": float(p.get("delta") or 0.0),
+                "cg_gamma": float(c.get("gamma") or 0.0),
+                "pg_gamma": float(p.get("gamma") or 0.0),
+                "cg_theta": float(c.get("theta") or 0.0),
+                "pg_theta": float(p.get("theta") or 0.0),
+                "cg_vega": float(c.get("vega") or 0.0),
+                "pg_vega": float(p.get("vega") or 0.0),
+            })
+
+    # 4b. Map real exchange pricing across the entire ATM ± 5 strikes corridor
+    for stk in available_strikes:
+        matched = next((row for row in chain_rows if abs(row["strike"] - stk) < 0.1), None)
+        if matched and (matched["ce_ltp"] > 0 or matched["pe_ltp"] > 0):
+            ce_p = matched["ce_ltp"]
+            pe_p = matched["pe_ltp"]
+            st_p = round(ce_p + pe_p, 2)
+            c_iv = matched["ce_iv"]
+            p_iv = matched["pe_iv"]
+            iv_val = (c_iv + p_iv) / 2.0 if (c_iv > 0 and p_iv > 0) else (c_iv or p_iv or live_iv)
+            strikes_data[str(stk)] = {
+                "strike": stk,
+                "ce_price": ce_p,
+                "pe_price": pe_p,
+                "straddle_price": st_p,
+                "ce_open": matched["ce_open"],
+                "pe_open": matched["pe_open"],
+                "ce_change": matched["ce_chg"],
+                "pe_change": matched["pe_chg"],
+                "iv": round(iv_val, 2),
+                "delta": round(matched["cg_delta"] + matched["pg_delta"], 4),
+                "gamma": round(matched["cg_gamma"] + matched["pg_gamma"], 6),
+                "theta": round(matched["cg_theta"] + matched["pg_theta"], 2),
+                "vega": round(matched["cg_vega"] + matched["pg_vega"], 2),
+            }
+        else:
+            # Fallback if strike is outside chain range
+            bs_c = calc_option_leg("CE", spot_val, stk, sess_d, target_exp_d, 15, 30, 0.07, live_iv / 100.0)
+            bs_p = calc_option_leg("PE", spot_val, stk, sess_d, target_exp_d, 15, 30, 0.07, live_iv / 100.0)
+            strikes_data[str(stk)] = {
+                "strike": stk,
+                "ce_price": bs_c,
+                "pe_price": bs_p,
+                "straddle_price": round(bs_c + bs_p, 2),
+                "ce_open": bs_c,
+                "pe_open": bs_p,
+                "ce_change": 0.0,
+                "pe_change": 0.0,
+                "iv": round(live_iv, 2),
+                "delta": 0.0,
+                "gamma": 0.0,
+                "theta": 0.0,
+                "vega": 0.0,
+            }
+
+    # 4c. Assign real legs for chosen_strike
+    if str(chosen_strike) in strikes_data:
+        sd = strikes_data[str(chosen_strike)]
+        live_ce_ltp = sd["ce_price"]
+        live_pe_ltp = sd["pe_price"]
+        if sd["iv"] > 0:
+            live_iv = sd["iv"]
+        if sd["delta"] != 0.0 or sd["gamma"] != 0.0:
+            live_delta = sd["delta"]
+            live_gamma = sd["gamma"]
+            live_theta = sd["theta"]
+            live_vega = sd["vega"]
+        has_live_legs = (live_ce_ltp > 0 or live_pe_ltp > 0)
 
     # Check live market timing bounds for today's session
     market_open_time = dt_time(9, 15)
@@ -573,7 +651,7 @@ def compute_straddle_analytics(
     T_latest = get_time_to_expiry(sess_d, target_exp_d, latest_h, latest_m)
     r_rate = 0.07
 
-    if has_live_legs and not is_historical:
+    if has_live_legs:
         live_straddle_price = round(live_ce_ltp + live_pe_ltp, 2)
         live_synth_future = round(chosen_strike + live_ce_ltp - live_pe_ltp, 2)
         # Calibrate implied volatility at exact latest candle time T_latest (zero cliff guaranteed!)
@@ -597,7 +675,7 @@ def compute_straddle_analytics(
 
     # Synthetic future smooth basis drift across the day
     theo_latest_synth = chosen_strike + theo_latest_ce - theo_latest_pe
-    synth_drift = (live_synth_future - theo_latest_synth) if (has_live_legs and not is_historical) else 0.0
+    synth_drift = (live_synth_future - theo_latest_synth) if has_live_legs else 0.0
 
     # Greeks calculation fallback if broker feed returns zero
     if live_delta == 0.0 and live_gamma == 0.0:
@@ -683,7 +761,7 @@ def compute_straddle_analytics(
             })
 
         # Sanity reconfirmation of final point to exact live quotes
-        if points and has_live_legs and not is_historical:
+        if points and has_live_legs:
             points[-1]["price"] = live_straddle_price
             points[-1]["ce_price"] = live_ce_ltp
             points[-1]["pe_price"] = live_pe_ltp
@@ -691,6 +769,17 @@ def compute_straddle_analytics(
             points[-1]["synthetic_future"] = live_synth_future
             all_prices[-1] = live_straddle_price
             all_spots[-1] = spot_val
+
+        # Sanity reconfirmation of first point to real market open if available
+        if points and str(chosen_strike) in strikes_data:
+            c_op = strikes_data[str(chosen_strike)].get("ce_open") or 0.0
+            p_op = strikes_data[str(chosen_strike)].get("pe_open") or 0.0
+            if c_op > 0 and p_op > 0:
+                open_st = round(c_op + p_op, 2)
+                points[0]["price"] = open_st
+                points[0]["ce_price"] = c_op
+                points[0]["pe_price"] = p_op
+                all_prices[0] = open_st
 
     else:
         # Authentic 1-minute financial market trajectory synthesis via zero-pinned Brownian Bridge
@@ -763,7 +852,7 @@ def compute_straddle_analytics(
             })
 
         # Anchor final point to live market price smoothly
-        if points and has_live_legs and not is_historical:
+        if points and has_live_legs:
             points[-1]["price"] = live_straddle_price
             points[-1]["ce_price"] = live_ce_ltp
             points[-1]["pe_price"] = live_pe_ltp
@@ -771,6 +860,17 @@ def compute_straddle_analytics(
             points[-1]["synthetic_future"] = live_synth_future
             all_prices[-1] = live_straddle_price
             all_spots[-1] = spot_val
+
+        # Anchor first point to real market open if available
+        if points and str(chosen_strike) in strikes_data:
+            c_op = strikes_data[str(chosen_strike)].get("ce_open") or 0.0
+            p_op = strikes_data[str(chosen_strike)].get("pe_open") or 0.0
+            if c_op > 0 and p_op > 0:
+                open_st = round(c_op + p_op, 2)
+                points[0]["price"] = open_st
+                points[0]["ce_price"] = c_op
+                points[0]["pe_price"] = p_op
+                all_prices[0] = open_st
 
     first_pt = points[0] if points else {}
     latest_pt = points[-1] if points else {}
@@ -796,6 +896,7 @@ def compute_straddle_analytics(
         "dte": dte,
         "available_expiries": valid_expiries,
         "available_strikes": available_strikes,
+        "strikes_data": strikes_data,
         "selected_strike": chosen_strike,
         "atm_strike": atm_strike,
         "latest": {
