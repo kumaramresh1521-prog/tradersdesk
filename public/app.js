@@ -27861,7 +27861,10 @@ async function renderClientAdSlots() {
   }
   const cfg = window._adsConfig;
   if (!cfg || !cfg.enabled) {
-    document.querySelectorAll('.ad-slot-wrapper').forEach(el => { el.style.display = 'none'; });
+    document.querySelectorAll('.ad-slot-wrapper').forEach(el => {
+      el.style.display = 'none';
+      el.innerHTML = '';
+    });
     return;
   }
 

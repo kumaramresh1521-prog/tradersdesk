@@ -1,22 +1,22 @@
 {
-  "enabled": true,
+  "enabled": false,
   "adsense_client_id": "",
-  "test_mode": true,
+  "test_mode": false,
   "auto_ads": false,
   "slots": {
     "dashboard_top": {
-      "enabled": true,
+      "enabled": false,
       "label": "Dashboard Top Leaderboard",
       "description": "728x90 leaderboard banner at top of Dashboard",
       "format": "horizontal",
       "slot_id": "",
       "custom_html": "",
-      "banner_image": "/ad-banners/ad_dashboard_top_1793546530.png",
-      "banner_link": "https://example.com/promo",
+      "banner_image": "",
+      "banner_link": "",
       "banner_alt": "Market Analytics Banner"
     },
     "dashboard_native": {
-      "enabled": true,
+      "enabled": false,
       "label": "Dashboard Content Native Banner",
       "description": "Responsive native display banner between dashboard cards",
       "format": "responsive",
@@ -27,7 +27,7 @@
       "banner_alt": "Trading Insights Banner"
     },
     "blog_top": {
-      "enabled": true,
+      "enabled": false,
       "label": "Blog Article Top Leaderboard",
       "description": "728x90 or fluid banner above article content",
       "format": "horizontal",
@@ -38,7 +38,7 @@
       "banner_alt": "Educational Blog Sponsor"
     },
     "blog_mid": {
-      "enabled": true,
+      "enabled": false,
       "label": "Blog In-Article Mid Banner",
       "description": "300x250 medium rectangle or in-feed banner inside article",
       "format": "square",
@@ -49,7 +49,7 @@
       "banner_alt": "Trading Strategy Feature"
     },
     "blog_bottom": {
-      "enabled": true,
+      "enabled": false,
       "label": "Blog Article Footer Banner",
       "description": "Responsive display banner at end of blog post",
       "format": "responsive",
@@ -60,7 +60,7 @@
       "banner_alt": "Market Tools Promotion"
     },
     "footer_banner": {
-      "enabled": true,
+      "enabled": false,
       "label": "Sitewide Footer / Bottom Banner",
       "description": "728x90 or fluid banner placed above site footer",
       "format": "horizontal",
@@ -68,8 +68,8 @@
       "custom_html": "",
       "banner_image": "",
       "banner_link": "",
-      "banner_alt": "Quant Platform Ad"
+      "banner_alt": "Platform Ad"
     }
   },
-  "updated_at": "2026-11-01 20:52:10 IST"
+  "updated_at": "2026-11-01 21:30:00 IST"
 }

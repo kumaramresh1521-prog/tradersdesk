@@ -1480,6 +1480,12 @@
             <span class="icon">🔗</span> <span class="nav-text">Footer Link Manager</span>
           </div>
 
+          <div class="admin-nav-group-title">MONETIZATION &amp; REVENUE</div>
+          <div class="admin-nav-item" data-tab="ads" onclick="switchAdminTab('ads')">
+            <span class="icon">📢</span> <span class="nav-text">Ads &amp; Monetization Hub</span>
+            <span class="nav-badge highlight">ADS</span>
+          </div>
+
           <div class="admin-nav-group-title">INFRASTRUCTURE &amp; SECURITY</div>
           <div class="admin-nav-item" data-tab="seo" onclick="switchAdminTab('seo')">
             <span class="icon">🔍</span> <span class="nav-text">SEO &amp; Google Console</span>
@@ -2813,6 +2819,91 @@
             </div>
           </div>
         </section>
+
+        <!-- TAB 14: MONETIZATION & ADS CONTROL HUB -->
+        <section id="panelAds" class="admin-panel-view">
+          <div class="admin-header">
+            <div>
+              <h1>📢 Monetization &amp; Ads Control Hub</h1>
+              <p>Manage site-wide advertisements, upload image banners, configure Google AdSense, or keep all ads completely disabled with a single master toggle.</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn-adm-primary" id="btnSaveAdsTop" onclick="saveAdminAdsHub()">💾 Save Ads Settings</button>
+              <button type="button" class="btn-adm-danger" onclick="loadAdminAdsHub()">🔄 Reload</button>
+            </div>
+          </div>
+
+          <div id="admAdsAlert" class="alert-adm" style="display:none; margin-bottom:16px;"></div>
+
+          <!-- MASTER NETWORK STATUS CARD -->
+          <div class="adm-card" style="border: 1px solid rgba(234, 179, 8, 0.4); background: linear-gradient(180deg, rgba(234, 179, 8, 0.05) 0%, rgba(5, 10, 22, 0.6) 100%);">
+            <div class="adm-card-header" style="flex-wrap:wrap; gap:12px;">
+              <div>
+                <h3 style="color:#facc15; display:flex; align-items:center; gap:8px; margin:0; font-size:16px;">
+                  <span>⚡</span> Master Network Status
+                </h3>
+                <p style="font-size:12.5px; color:var(--adm-muted); margin:4px 0 0 0;">
+                  Turn OFF to immediately disable all ads and banners site-wide. Zero layout shifts, 100% clean site.
+                </p>
+              </div>
+              <div style="display:flex; align-items:center; gap:16px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; font-weight:700; color:#f8fafc; background:rgba(0,0,0,0.3); padding:8px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+                  <input type="checkbox" id="admAdsMasterToggle" onchange="updateAdmAdsStatusBadge()" style="width:20px; height:20px; cursor:pointer; accent-color:#eab308;" />
+                  <span>Master Ads Network: <b id="admAdsMasterStatusBadge" style="color:#ef4444;">DISABLED (OFF)</b></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Global AdSense & Mode Settings -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-top:16px; background:rgba(0,0,0,0.25); border-radius:8px; padding:16px; border:1px solid rgba(255,255,255,0.06);">
+              <div>
+                <label style="font-size:12px; font-weight:700; color:#38bdf8; display:block; margin-bottom:6px;">
+                  Google AdSense Publisher ID (Client ID):
+                </label>
+                <input type="text" id="admAdsClientId" class="adm-input" placeholder="e.g. ca-pub-1234567890123456" style="width:100%;" />
+                <span style="font-size:11px; color:var(--adm-muted); display:block; margin-top:4px;">Leave blank if using direct image banners or custom partner HTML.</span>
+              </div>
+              <div style="display:flex; flex-direction:column; justify-content:center; gap:12px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#f8fafc;">
+                  <input type="checkbox" id="admAdsTestModeToggle" style="width:18px; height:18px; accent-color:#38bdf8;" />
+                  <span><b>Show Previews on Site (Test Mode)</b> — <small style="color:var(--adm-muted);">Keep OFF so live visitors never see preview boxes</small></span>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#f8fafc;">
+                  <input type="checkbox" id="admAdsAutoAdsToggle" style="width:18px; height:18px; accent-color:#eab308;" />
+                  <span><b>Google Auto-Ads Script Tag</b> — <small style="color:var(--adm-muted);">Inject AdSense automatic high-performing tag</small></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLOTS GRID CARD -->
+          <div class="adm-card" style="margin-top:20px;">
+            <div class="adm-card-header">
+              <div>
+                <h3 style="color:#f8fafc; font-size:16px; margin:0;">🎯 Strategic Ad Placement Slots</h3>
+                <p style="font-size:12px; color:var(--adm-muted); margin:4px 0 0 0;">Upload image banners, enter sponsor links, custom HTML scripts, or AdSense slot IDs for each position.</p>
+              </div>
+              <span class="p2-badge p2-badge-teal">6 ACTIVE SLOTS</span>
+            </div>
+
+            <div id="admAdSlotsGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:16px; margin-top:16px;">
+              <!-- Rendered dynamically by loadAdminAdsHub -->
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.08); flex-wrap:wrap; gap:12px;">
+              <div style="color:var(--adm-muted); font-size:12px;">
+                💡 When a slot is disabled or empty, container collapses with zero layout shift (CLS 0.00).
+              </div>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <span id="admAdsBottomMsg" style="font-size:13px; font-weight:700;"></span>
+                <button type="button" class="btn-adm-primary" id="btnSaveAdsBottom" onclick="saveAdminAdsHub()" style="padding:10px 24px; font-size:14px;">
+                  💾 Save All Ads Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </main>
     </div>
 
@@ -3408,6 +3499,7 @@
 
             // Resilient independent initializers
             try { loadTelemetry(); } catch(e) { console.warn('telemetry err:', e); }
+            try { loadAdminAdsHub(); } catch(e) { console.warn('ads hub err:', e); }
             try { loadDiagnostics(); } catch(e) { console.warn('diag err:', e); }
             try { loadMasterBrokers(); } catch(e) { console.warn('brokers err:', e); }
             try { loadSeoConfig(); } catch(e) { console.warn('seo err:', e); }
@@ -3539,6 +3631,9 @@
         });
         const target = document.getElementById('panel' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
         if (target) target.classList.add('active');
+        if (tabName === 'ads') {
+          try { loadAdminAdsHub(); } catch(e) { console.warn('loadAdminAdsHub err:', e); }
+        }
 
         // Update Top Bar Breadcrumb
         const activeItem = document.querySelector(`.admin-nav-item[data-tab="${tabName}"]`);
@@ -6481,6 +6576,337 @@
           }
         }
       });
-    </script>
+    
+// =========================================================================
+// MONETIZATION & ADS CONTROL HUB (ADMIN PANEL)
+// =========================================================================
+window._adminAdsConfig = null;
+
+async function loadAdminAdsHub() {
+  const grid = document.getElementById('admAdSlotsGrid');
+  const alertEl = document.getElementById('admAdsAlert');
+  try {
+    const res = await fetch('/api/ads-config?t=' + Date.now());
+    const data = await res.json();
+    if (!data || !data.ok) throw new Error(data.message || 'Failed loading ads config');
+    
+    const cfg = data.config || {};
+    window._adminAdsConfig = cfg;
+
+    const masterToggle = document.getElementById('admAdsMasterToggle');
+    const clientIdInp = document.getElementById('admAdsClientId');
+    const testModeToggle = document.getElementById('admAdsTestModeToggle');
+    const autoAdsToggle = document.getElementById('admAdsAutoAdsToggle');
+
+    if (masterToggle) masterToggle.checked = !!cfg.enabled;
+    if (clientIdInp) clientIdInp.value = cfg.adsense_client_id || cfg.client_id || '';
+    if (testModeToggle) testModeToggle.checked = !!cfg.test_mode;
+    if (autoAdsToggle) autoAdsToggle.checked = !!cfg.auto_ads;
+
+    updateAdmAdsStatusBadge();
+
+    const slots = cfg.slots || {};
+    const defaultSlots = {
+      dashboard_top:    { label: 'Dashboard Top Leaderboard', desc: '728x90 banner displayed at the top of the main dashboard.', format: 'horizontal' },
+      dashboard_native: { label: 'Dashboard Content Native Banner', desc: 'In-feed native banner placed between market cards.', format: 'responsive' },
+      blog_top:         { label: 'Blog Article Header Banner', desc: '728x90 or fluid banner displayed above blog article content.', format: 'horizontal' },
+      blog_mid:         { label: 'Blog In-Article Mid Banner', desc: '300x250 medium rectangle placed within blog post body.', format: 'square' },
+      blog_bottom:      { label: 'Blog Article Footer Banner', desc: 'Responsive display banner placed at the end of articles.', format: 'responsive' },
+      footer_banner:    { label: 'Sitewide Footer / Bottom Banner', desc: '728x90 or responsive banner placed sitewide above footer.', format: 'horizontal' }
+    };
+
+    if (grid) {
+      grid.innerHTML = '';
+      const allKeys = Array.from(new Set([...Object.keys(defaultSlots), ...Object.keys(slots)]));
+      
+      allKeys.forEach(key => {
+        const s = slots[key] || defaultSlots[key] || {};
+        const meta = defaultSlots[key] || { label: key, desc: 'Ad placement slot', format: 'responsive' };
+        const label = s.label || meta.label;
+        const desc = s.description || meta.desc;
+        const isEnabled = !!s.enabled;
+        const format = s.format || meta.format || 'horizontal';
+        const bannerImg = s.banner_image || '';
+        const bannerLink = s.banner_link || '';
+        const slotId = s.slot_id || '';
+        const customHtml = s.custom_html || s.custom_code || '';
+
+        const card = document.createElement('div');
+        card.className = 'adm-card';
+        card.id = `slotCard_${key}`;
+        card.setAttribute('data-slot-key', key);
+        card.style.cssText = 'background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 18px; margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;';
+
+        card.innerHTML = `
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+              <div>
+                <span style="font-size:10px; font-weight:800; background:rgba(56,189,248,0.15); color:#38bdf8; padding:3px 7px; border-radius:4px; font-family:monospace; text-transform:uppercase;">${key}</span>
+                <h4 style="margin:6px 0 2px 0; color:#f8fafc; font-size:15px; font-weight:700;">${label}</h4>
+                <p style="margin:0; font-size:11.5px; color:var(--adm-muted);">${desc}</p>
+              </div>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; font-weight:700; color:#cbd5e1; background:rgba(0,0,0,0.3); padding:4px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.08);">
+                <input type="checkbox" class="slot-enabled-chk" ${isEnabled ? 'checked' : ''} style="width:16px; height:16px; accent-color:#38bdf8;" />
+                <span>Active</span>
+              </label>
+            </div>
+
+            <!-- Format Selector -->
+            <div class="adm-form-group" style="margin-bottom:12px;">
+              <label style="font-size:11px; font-weight:700; color:#94a3b8;">Format / Target Size</label>
+              <select class="adm-input slot-format-select" style="font-size:12px; padding:6px 8px;">
+                <option value="horizontal" ${format === 'horizontal' ? 'selected' : ''}>Leaderboard (728x90) / Horizontal</option>
+                <option value="square" ${format === 'square' ? 'selected' : ''}>Medium Rectangle (300x250) / Square</option>
+                <option value="vertical" ${format === 'vertical' ? 'selected' : ''}>Skyscraper (160x600) / Vertical</option>
+                <option value="responsive" ${format === 'responsive' ? 'selected' : ''}>Auto-Responsive / Fluid</option>
+              </select>
+            </div>
+
+            <!-- Image Banner Upload Engine -->
+            <div style="background:rgba(0,0,0,0.35); border:1px solid rgba(56,189,248,0.2); border-radius:8px; padding:12px; margin-bottom:12px;">
+              <div style="font-size:11.5px; font-weight:700; color:#38bdf8; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;">
+                <span>🖼️ Custom Image Banner</span>
+                <span style="font-size:10px; color:var(--adm-muted); font-weight:normal;">PNG, JPG, WebP, GIF, SVG (max 5MB)</span>
+              </div>
+
+              <!-- Preview -->
+              <div id="bannerPreviewBox_${key}" style="margin-bottom:8px; ${bannerImg ? '' : 'display:none;'} background:#020617; border:1px solid #334155; border-radius:6px; padding:6px; text-align:center;">
+                <img src="${bannerImg}" id="bannerPreviewImg_${key}" alt="Preview" style="max-height:65px; max-width:100%; border-radius:4px; display:inline-block;" />
+              </div>
+
+              <input type="hidden" class="slot-banner-url" value="${bannerImg}" />
+
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                <input type="file" class="adm-input slot-banner-file" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml" style="font-size:11px; padding:4px 6px; flex:1;" />
+                <button type="button" class="btn-adm-primary" onclick="uploadAdminSlotBanner('${key}')" style="font-size:11px; padding:6px 10px; white-space:nowrap;">⬆ Upload</button>
+                <button type="button" class="btn-adm-danger" onclick="clearAdminSlotBanner('${key}')" style="font-size:11px; padding:6px 8px;" title="Clear image">🗑</button>
+              </div>
+
+              <label style="font-size:11px; font-weight:700; color:#94a3b8; display:block; margin-bottom:4px;">Banner Destination / Click Link:</label>
+              <input type="url" class="adm-input slot-banner-link" value="${bannerLink}" placeholder="https://example.com/sponsor" style="font-size:12px; padding:6px 8px; width:100%;" />
+              <div id="bannerFeedback_${key}" style="font-size:11px; margin-top:4px;"></div>
+            </div>
+
+            <!-- Alternative / Fallback Options -->
+            <div style="font-size:11px; color:var(--adm-muted); text-align:center; margin:8px 0; font-weight:700;">— OR ALTERNATIVE AD SOURCE —</div>
+
+            <!-- AdSense Slot ID -->
+            <div class="adm-form-group" style="margin-bottom:8px;">
+              <label style="font-size:11px; font-weight:700; color:#94a3b8;">Google AdSense Slot ID (optional)</label>
+              <input type="text" class="adm-input slot-id-input" value="${slotId}" placeholder="e.g. 1234567890" style="font-size:12px; padding:6px 8px;" />
+            </div>
+
+            <!-- Custom HTML / Script -->
+            <div class="adm-form-group" style="margin-bottom:0;">
+              <label style="font-size:11px; font-weight:700; color:#94a3b8;">Custom HTML / Script Embed (optional)</label>
+              <textarea class="adm-input slot-custom-code" placeholder="<a href='...'><img ...></a> or ad script tag" style="font-size:11px; padding:6px 8px; height:50px; resize:vertical; font-family:monospace;">${customHtml}</textarea>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+  } catch (err) {
+    console.error('Error loading ads hub:', err);
+    if (alertEl) {
+      alertEl.className = 'alert-adm alert-adm-danger';
+      alertEl.style.display = 'block';
+      alertEl.textContent = '❌ Failed to load Ads Configuration: ' + (err.message || err);
+    }
+  }
+}
+
+function updateAdmAdsStatusBadge() {
+  const masterToggle = document.getElementById('admAdsMasterToggle');
+  const badge = document.getElementById('admAdsMasterStatusBadge');
+  if (!badge) return;
+  if (masterToggle && masterToggle.checked) {
+    badge.textContent = 'ACTIVE / ENABLED';
+    badge.style.color = '#10b981';
+  } else {
+    badge.textContent = 'DISABLED (OFF)';
+    badge.style.color = '#ef4444';
+  }
+}
+
+async function uploadAdminSlotBanner(slotKey) {
+  const card = document.getElementById(`slotCard_${slotKey}`);
+  if (!card) return;
+  const fileInp = card.querySelector('.slot-banner-file');
+  const feedback = document.getElementById(`bannerFeedback_${slotKey}`);
+  const previewBox = document.getElementById(`bannerPreviewBox_${slotKey}`);
+  const previewImg = document.getElementById(`bannerPreviewImg_${slotKey}`);
+  const urlInp = card.querySelector('.slot-banner-url');
+
+  if (!fileInp || !fileInp.files || !fileInp.files[0]) {
+    if (feedback) { feedback.style.color = '#f59e0b'; feedback.textContent = '⚠️ Please select an image file first.'; }
+    return;
+  }
+  const file = fileInp.files[0];
+  if (file.size > 5 * 1024 * 1024) {
+    if (feedback) { feedback.style.color = '#ef4444'; feedback.textContent = '❌ File too large (max 5MB).'; }
+    return;
+  }
+
+  const pin = adminSecretKey || sessionStorage.getItem('bl_admin_secret') || localStorage.getItem('bl_admin_secret') || (document.getElementById('adminSecretInput') ? document.getElementById('adminSecretInput').value.trim() : '') || '';
+  if (!pin) {
+    if (feedback) { feedback.style.color = '#ef4444'; feedback.textContent = '❌ Admin session invalid. Please re-login.'; }
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('slot_key', slotKey);
+
+  if (feedback) { feedback.style.color = '#38bdf8'; feedback.textContent = '⏳ Uploading banner image...'; }
+
+  try {
+    const res = await fetch('/api/admin/ads/upload-banner', {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': pin },
+      body: formData
+    });
+    const data = await res.json();
+    if (data && data.ok) {
+      if (urlInp) urlInp.value = data.url;
+      if (previewImg) previewImg.src = data.url;
+      if (previewBox) previewBox.style.display = 'block';
+      if (feedback) {
+        feedback.style.color = '#10b981';
+        feedback.textContent = '✅ Banner uploaded! Click "Save Ads Settings" to apply.';
+      }
+    } else {
+      if (feedback) { feedback.style.color = '#ef4444'; feedback.textContent = `❌ ${data.message || 'Upload failed'}`; }
+    }
+  } catch (e) {
+    if (feedback) { feedback.style.color = '#ef4444'; feedback.textContent = '❌ Network error during upload.'; }
+  }
+}
+
+function clearAdminSlotBanner(slotKey) {
+  const card = document.getElementById(`slotCard_${slotKey}`);
+  if (!card) return;
+  const urlInp = card.querySelector('.slot-banner-url');
+  const previewBox = document.getElementById(`bannerPreviewBox_${slotKey}`);
+  const previewImg = document.getElementById(`bannerPreviewImg_${slotKey}`);
+  const feedback = document.getElementById(`bannerFeedback_${slotKey}`);
+  const fileInp = card.querySelector('.slot-banner-file');
+
+  if (urlInp) urlInp.value = '';
+  if (previewImg) previewImg.src = '';
+  if (previewBox) previewBox.style.display = 'none';
+  if (fileInp) fileInp.value = '';
+  if (feedback) {
+    feedback.style.color = '#38bdf8';
+    feedback.textContent = 'Banner removed. Click "Save Ads Settings" to apply.';
+  }
+}
+
+async function saveAdminAdsHub() {
+  const alertEl = document.getElementById('admAdsAlert');
+  const bottomMsg = document.getElementById('admAdsBottomMsg');
+  const pin = adminSecretKey || sessionStorage.getItem('bl_admin_secret') || localStorage.getItem('bl_admin_secret') || (document.getElementById('adminSecretInput') ? document.getElementById('adminSecretInput').value.trim() : '') || '';
+
+  if (!pin) {
+    if (alertEl) {
+      alertEl.className = 'alert-adm alert-adm-danger';
+      alertEl.style.display = 'block';
+      alertEl.textContent = '❌ Admin PIN session missing. Please re-authenticate.';
+    }
+    return;
+  }
+
+  const masterToggle = document.getElementById('admAdsMasterToggle');
+  const clientIdInp = document.getElementById('admAdsClientId');
+  const testModeToggle = document.getElementById('admAdsTestModeToggle');
+  const autoAdsToggle = document.getElementById('admAdsAutoAdsToggle');
+
+  const cards = document.querySelectorAll('#admAdSlotsGrid .adm-card');
+  const updatedSlots = {};
+
+  cards.forEach(card => {
+    const key = card.getAttribute('data-slot-key');
+    if (!key) return;
+
+    const chk = card.querySelector('.slot-enabled-chk');
+    const fmt = card.querySelector('.slot-format-select');
+    const sid = card.querySelector('.slot-id-input');
+    const code = card.querySelector('.slot-custom-code');
+    const bannerUrlEl = card.querySelector('.slot-banner-url');
+    const linkEl = card.querySelector('.slot-banner-link');
+
+    const existing = (window._adminAdsConfig && window._adminAdsConfig.slots && window._adminAdsConfig.slots[key]) || {};
+
+    updatedSlots[key] = {
+      ...existing,
+      enabled: chk ? chk.checked : false,
+      format: fmt ? fmt.value : 'horizontal',
+      slot_id: sid ? sid.value.trim() : '',
+      custom_html: code ? code.value : '',
+      banner_image: bannerUrlEl ? bannerUrlEl.value : '',
+      banner_link: linkEl ? linkEl.value.trim() : '',
+      label: existing.label || key,
+      description: existing.description || ''
+    };
+  });
+
+  const newConfig = {
+    enabled: masterToggle ? masterToggle.checked : false,
+    adsense_client_id: clientIdInp ? clientIdInp.value.trim() : '',
+    test_mode: testModeToggle ? testModeToggle.checked : false,
+    auto_ads: autoAdsToggle ? autoAdsToggle.checked : false,
+    slots: updatedSlots
+  };
+
+  const btnTop = document.getElementById('btnSaveAdsTop');
+  const btnBottom = document.getElementById('btnSaveAdsBottom');
+  if (btnTop) btnTop.disabled = true;
+  if (btnBottom) btnBottom.disabled = true;
+  if (bottomMsg) { bottomMsg.style.color = '#38bdf8'; bottomMsg.textContent = '⏳ Saving...'; }
+
+  try {
+    const res = await fetch('/api/admin/ads/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Secret': pin
+      },
+      body: JSON.stringify({ adminPin: pin, config: newConfig })
+    });
+    const data = await res.json();
+    if (data && data.ok) {
+      window._adminAdsConfig = data.config;
+      if (alertEl) {
+        alertEl.className = 'alert-adm alert-adm-success';
+        alertEl.style.display = 'block';
+        alertEl.textContent = '✅ Ads Configuration saved successfully! Live website settings updated.';
+        setTimeout(() => { if (alertEl) alertEl.style.display = 'none'; }, 4000);
+      }
+      if (bottomMsg) {
+        bottomMsg.style.color = '#10b981';
+        bottomMsg.textContent = '✅ Saved!';
+        setTimeout(() => { if (bottomMsg) bottomMsg.textContent = ''; }, 3500);
+      }
+      updateAdmAdsStatusBadge();
+    } else {
+      if (alertEl) {
+        alertEl.className = 'alert-adm alert-adm-danger';
+        alertEl.style.display = 'block';
+        alertEl.textContent = '❌ Failed saving: ' + (data.message || 'Unknown error');
+      }
+    }
+  } catch (e) {
+    if (alertEl) {
+      alertEl.className = 'alert-adm alert-adm-danger';
+      alertEl.style.display = 'block';
+      alertEl.textContent = '❌ Network error saving ads configuration.';
+    }
+  } finally {
+    if (btnTop) btnTop.disabled = false;
+    if (btnBottom) btnBottom.disabled = false;
+  }
+}
+
+</script>
   </body>
 </html>
