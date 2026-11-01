@@ -935,42 +935,12 @@
             </div>
           </div>
 
-          <!-- In-Desk Sub-Views Navigation Ribbon -->
-          <div class="fut-subtabs-nav" style="display:flex; gap:6px; margin:0 0 14px 0; padding:6px; border-radius:8px; overflow-x:auto;">
-            <a href="/futures" class="fut-tab-btn active" data-tab="matrix" onclick="return window.futuresDeskTabClick(event, 'matrix')">📊 Marketwatch</a>
-            <a href="/futures/open-interest" class="fut-tab-btn" data-tab="openInterest" onclick="return window.futuresDeskTabClick(event, 'openInterest')">📈 Future Open Interest</a>
-            <a href="/futures/future-intraday" class="fut-tab-btn" data-tab="futureIntraday" data-feature-flag="futures_future_intraday" onclick="return window.futuresDeskTabClick(event, 'futureIntraday')">⚡ Future Intraday</a>
-            <a href="/futures/future-vs-oi" class="fut-tab-btn" data-tab="futureVsOi" data-feature-flag="futures_future_vs_oi" onclick="return window.futuresDeskTabClick(event, 'futureVsOi')">🎯 Future vs OI</a>
-            <a href="/futures/buildup" class="fut-tab-btn" data-tab="buildup" onclick="return window.futuresDeskTabClick(event, 'buildup')">🧭 Buildup Quadrants</a>
-            <a href="/futures/heatmap" class="fut-tab-btn" data-tab="heatmap" onclick="return window.futuresDeskTabClick(event, 'heatmap')">🗺️ Heatmap</a>
-            <a href="/futures/indices" class="fut-tab-btn" data-tab="indices" onclick="return window.futuresDeskTabClick(event, 'indices')">📐 Index Term Structure</a>
-            <a href="/futures/mwpl" class="fut-tab-btn" data-tab="mwpl" onclick="return window.futuresDeskTabClick(event, 'mwpl')">🚫 MWPL &amp; Ban Radar</a>
-            <a href="/futures/rollover" class="fut-tab-btn" data-tab="rollover" style="text-decoration:none; display:inline-flex; align-items:center;" title="Futures Rollover Matrix">🔄 Rollover Matrix</a>
-          </div>
-
           <!-- ================================================================
                VIEW 1: FUTURE MARKETWATCH (ALL F&O CONTRACTS)
                ================================================================ -->
           <div id="futView_matrix" class="fut-view-panel">
             <!-- Dedicated Filter Ribbon for Marketwatch -->
             <div class="fut-nav-container" style="margin-bottom:14px;">
-              <!-- Sector Filter Pills -->
-              <div class="fut-filter-ribbon" id="futSectorPills">
-                <button type="button" class="fut-sec-pill active" data-sector="ALL">🌐 All Universe (200)</button>
-                <button type="button" class="fut-sec-pill highlight" data-sector="INDICES">📊 Indices (7)</button>
-                <button type="button" class="fut-sec-pill" data-sector="Banking">🏦 Banking (15)</button>
-                <button type="button" class="fut-sec-pill" data-sector="Financials">💳 Financials (18)</button>
-                <button type="button" class="fut-sec-pill" data-sector="IT">💻 IT &amp; Tech (14)</button>
-                <button type="button" class="fut-sec-pill" data-sector="Auto">🚗 Auto (16)</button>
-                <button type="button" class="fut-sec-pill" data-sector="Energy">⚡ Energy &amp; Power (22)</button>
-                <button type="button" class="fut-sec-pill" data-sector="Metals">🏗️ Metals (12)</button>
-                <button type="button" class="fut-sec-pill" data-sector="Pharma">💊 Pharma (18)</button>
-                <button type="button" class="fut-sec-pill" data-sector="FMCG">🛒 FMCG (15)</button>
-                <button type="button" class="fut-sec-pill" data-sector="Capital Goods">🛡️ Defence &amp; Infra (16)</button>
-                <button type="button" class="fut-sec-pill" data-sector="Realty">🏢 Realty (7)</button>
-                <button type="button" class="fut-sec-pill" data-sector="Chemicals">🧪 Chemicals (10)</button>
-                <button type="button" class="fut-sec-pill" data-sector="Services">📦 Retail &amp; Services (14)</button>
-              </div>
 
               <!-- Flow / Signal Presets -->
               <div class="fut-signal-ribbon" id="futSignalPills">
