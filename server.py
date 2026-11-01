@@ -11958,7 +11958,22 @@ class RequestHandler(BaseHTTPRequestHandler):
                 ok, msg = seo_engine.rebuild_sitemap_xml()
                 with _SEO_HTML_CACHE_LOCK:
                     _SEO_HTML_CACHE.clear()
+                try:
+                    import indexnow_engine
+                    indexnow_engine.submit_sitemap_to_indexnow()
+                except Exception:
+                    pass
                 return self.send_json(200 if ok else 500, {"ok": ok, "message": msg})
+
+            if parsed.path == "/api/admin/seo/submit-indexnow":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                try:
+                    import indexnow_engine
+                    res = indexnow_engine.submit_sitemap_to_indexnow()
+                    return self.send_json(200, res)
+                except Exception as exc:
+                    return self.send_json(500, {"ok": False, "error": str(exc)})
 
             if parsed.path == "/api/admin/seo/sync-dynamic":
                 if not check_admin_request(self):

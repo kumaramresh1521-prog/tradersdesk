@@ -12238,12 +12238,12 @@ if (document.readyState === "loading") {
 const ROUTE_CONFIG = {
   "/": {
     desk: "dashboard",
-    title: "Market Dashboard | Live Nifty 50 & Real-Time Institutional Intelligence - TradersDesk",
+    title: "TradersDesk | Free Option Chain, Live OI & Derivatives",
     desc: "Real-time executive trading dashboard with live Nifty 50, GIFT Nifty, India VIX, FII/DII flow, MTF book, and market breadth pulse."
   },
   "/dashboard": {
     desk: "dashboard",
-    title: "Market Dashboard | Live Nifty 50 & Real-Time Institutional Intelligence - TradersDesk",
+    title: "Live Market Pulse & Derivatives Dashboard | TradersDesk",
     desc: "Real-time executive trading dashboard with live Nifty 50, GIFT Nifty, India VIX, FII/DII flow, MTF book, and market breadth pulse."
   },
   "/open-interest": {
@@ -12258,7 +12258,7 @@ const ROUTE_CONFIG = {
   },
   "/option-chain-pro": {
     desk: "upstoxChain",
-    title: "Option Chain Pro - Live Option Greeks, PCR & Multi-Strike OI Scanner | TradersDesk",
+    title: "Option Chain Pro - Live Option Greeks & PCR | TradersDesk",
     desc: "Direct exchange streaming Option Chain Pro with real-time Option Greeks (Delta, Gamma, Theta, Vega, IV), ATM Straddles & dynamic weekly/monthly expiries."
   },
   "/option-chain": {
@@ -12269,55 +12269,55 @@ const ROUTE_CONFIG = {
   "/wpcr": {
     desk: "upstoxChain",
     subview: "wpcrPceView",
-    title: "wPCR & PCE Quant Terminal - Real-Time Put-Call Ratio & Institutional Capital Flow | TradersDesk",
+    title: "Live Put-Call Ratio (PCR) & PCE Analytics | TradersDesk",
     desc: "Institutional wPCR (Premium-Weighted PCR), dPCR, Put-Call Parity equilibrium, retail trap detection and institutional capital deployment analytics across NSE options."
   },
   "/option-chain-pro/overview": {
     desk: "upstoxChain",
     subview: "indexOverviewView",
-    title: "Option Chain Pro - Index & Market Overview | TradersDesk",
+    title: "Option Chain Pro Intelligence Terminal | TradersDesk",
     desc: "Real-time index options overview, spot vs futures basis, IV rank, PCR sentiment, and strike distribution."
   },
   "/option-chain-pro/chain": {
     desk: "upstoxChain",
     subview: "chainView",
-    title: "Multi-Strike Option Chain - Live Real-Time Options Quotes | TradersDesk",
+    title: "Live Nifty & BankNifty Option Chain Grid | TradersDesk",
     desc: "Direct exchange streaming multi-strike Option Chain with LTP, Bid/Ask, Greek calculations, and volume."
   },
   "/option-chain-pro/greeks": {
     desk: "upstoxChain",
     subview: "statsView",
-    title: "Options Greeks Analytics - Delta, Gamma, Theta, Vega & IV Skew | TradersDesk",
+    title: "Black-Scholes Options Greeks Calculator | TradersDesk",
     desc: "Real-time Black-Scholes Options Greeks calculator and scanner tracking Delta neutral, Gamma risk, Theta decay, and Vega volatility."
   },
   "/option-chain-pro/pcr": {
     desk: "upstoxChain",
     subview: "wpcrPceView",
-    title: "wPCR & PCE Quant Terminal - Options Put-Call Ratio Scanner | TradersDesk",
+    title: "Put-Call Ratio (PCR) & Sentiment Analysis | TradersDesk",
     desc: "Volume and Open Interest weighted Put-Call Ratio (W-PCR), Put Call Equilibrium (PCE), and institutional hedging sentiment."
   },
   "/option-chain-pro/volatility": {
     desk: "upstoxChain",
     subview: "volatilityView",
-    title: "Options Volatility Skew & IV Term Structure | TradersDesk",
+    title: "Implied Volatility (IV) & Skew Surface | TradersDesk",
     desc: "Implied Volatility (IV) smile, volatility surface, term structure, and historical IV percentile across expiries."
   },
   "/fii-dii/participant-oi": {
     desk: "smartmoney",
     subview: "oi",
-    title: "Participant-wise Open Interest - FII, DII, Pro & Client Positioning | TradersDesk",
+    title: "F&O Participant Open Interest & Positioning | TradersDesk",
     desc: "NSE Participant-wise Open Interest analysis. Track daily net contracts in Index Futures, Index Options, Stock Futures for FII, DII, Pro, and Retail Clients."
   },
   "/fii-dii/oi": {
     desk: "smartmoney",
     subview: "oi",
-    title: "Participant-wise Open Interest - FII, DII, Pro & Client Positioning | TradersDesk",
+    title: "F&O Participant Open Interest & Positioning | TradersDesk",
     desc: "NSE Participant-wise Open Interest analysis. Track daily net contracts in Index Futures, Index Options, Stock Futures for FII, DII, Pro, and Retail Clients."
   },
   "/mtf/brokers": {
     desk: "mtf",
     subview: "broker",
-    title: "MTF Broker Terms, Interest Rates & Haircuts | TradersDesk",
+    title: "Broker MTF Interest Rates & Leverage Terms | TradersDesk",
     desc: "Comparison of MTF broker terms, lending interest rates (Zerodha, Angel One, m.Stock, Dhan), and leverage guidelines."
   },
   "/options": {
@@ -12328,97 +12328,97 @@ const ROUTE_CONFIG = {
   "/futures": {
     desk: "futures",
     subview: "matrix",
-    title: "Futures Intelligence Desk - Live Open Interest, Buildup & MWPL Ban Tracker | TradersDesk",
+    title: "Live Futures Buildup Screener & Radar | TradersDesk",
     desc: "Institutional futures desk tracking live Open Interest buildup, Long/Short unwinding, MWPL exposure, F&O ban period, and sector heatmaps."
   },
   "/futures/marketwatch": {
     desk: "futures",
     subview: "matrix",
-    title: "Futures Marketwatch - Live F&O Contracts Screener | TradersDesk",
+    title: "Real-Time NSE Futures Marketwatch Grid | TradersDesk",
     desc: "Real-time futures contracts screener, Open Interest volume, and basis premiums across NSE equities."
   },
   "/futures/dashboard": {
     desk: "futures",
     subview: "matrix",
-    title: "Futures Intelligence Desk - Live Open Interest Screener | TradersDesk",
+    title: "Futures Intelligence & Buildup Dashboard | TradersDesk",
     desc: "Real-time futures contracts screener, Open Interest volume, and basis premiums across NSE equities."
   },
   "/futures/screener": {
     desk: "futures",
     subview: "matrix",
-    title: "Futures Intelligence Desk - Live Open Interest Screener | TradersDesk",
+    title: "NSE Futures Long & Short Buildup Screener | TradersDesk",
     desc: "Real-time futures contracts screener, Open Interest volume, and basis premiums across NSE equities."
   },
   "/futures/buildup": {
     desk: "futures",
     subview: "buildup",
-    title: "Futures Buildup Quadrant - Long & Short Buildup Scanner | TradersDesk",
+    title: "NSE Futures Long & Short Buildup Radar | TradersDesk",
     desc: "Real-time Long Buildup, Short Buildup, Short Covering, and Long Unwinding quadrants across NSE F&O equities and indices."
   },
   "/futures/heatmap": {
     desk: "futures",
     subview: "heatmap",
-    title: "Futures & Options Heatmap - Sector & Stock Heatmaps | TradersDesk",
+    title: "NSE Futures Sector Heatmap & Matrix | TradersDesk",
     desc: "Multi-sector institutional F&O heatmap visualizing price vs OI change clusters and sector leadership."
   },
   "/futures/heatmaps": {
     desk: "futures",
     subview: "heatmap",
-    title: "Futures & Options Heatmap - Sector & Stock Heatmaps | TradersDesk",
+    title: "NSE Futures Sector Heatmap & Matrix | TradersDesk",
     desc: "Multi-sector institutional F&O heatmap visualizing price vs OI change clusters and sector leadership."
   },
   "/futures/indices": {
     desk: "futures",
     subview: "indices",
-    title: "Index Futures Intelligence Desk - Nifty, Bank Nifty & Fin Nifty | TradersDesk",
+    title: "NSE Index Futures Basis & Premium Radar | TradersDesk",
     desc: "Deep-dive analysis into Index Futures contracts, rollover cost, and institutional basis."
   },
   "/futures/mwpl": {
     desk: "futures",
     subview: "mwpl",
-    title: "MWPL & F&O Ban Tracker Desk - Market-Wide Position Limit | TradersDesk",
+    title: "NSE F&O MWPL Ban List & Position Limits | TradersDesk",
     desc: "Real-time Market-Wide Position Limit (MWPL) utilization tracker and upcoming NSE F&O ban and exit alerts."
   },
   "/futures/rollover": {
     desk: "futures",
     subview: "rollover",
-    title: "Futures Rollover Matrix - Expiry Rollover Tracker | TradersDesk",
+    title: "NSE Futures Rollover Analysis & Matrix | TradersDesk",
     desc: "Institutional expiry rollover matrix, rollover percentage, and rollover cost tracking."
   },
   "/futures/future-intraday": {
     desk: "futures",
     subview: "futureIntraday",
-    title: "Future Intraday Price vs OI Analytics | TradersDesk",
+    title: "Intraday Futures Buildup & Volume Radar | TradersDesk",
     desc: "Real-time index futures intraday Price vs Open Interest buildup terminal with VWAP, Basis, and volume metrics (NSE & BSE)."
   },
   "/futures/future-vs-oi": {
     desk: "futures",
     subview: "futureVsOi",
-    title: "Future vs Open Interest (Price vs OI) Divergence | TradersDesk",
+    title: "Futures Price vs Open Interest Analysis | TradersDesk",
     desc: "Institutional dual-axis Future Price vs Open Interest divergence chart, interactive replay engine, and buildup quadrant analysis."
   },
   "/futures/price-vs-oi": {
     desk: "futures",
     subview: "futureVsOi",
-    title: "Future vs Open Interest (Price vs OI) Divergence | TradersDesk",
+    title: "Futures Price vs Open Interest Analysis | TradersDesk",
     desc: "Institutional dual-axis Future Price vs Open Interest divergence chart, interactive replay engine, and buildup quadrant analysis."
   },
   "/futures/intraday": {
     desk: "futures",
     subview: "futureIntraday",
-    title: "Future Intraday Price vs OI Analytics | TradersDesk",
+    title: "Intraday Futures Buildup & Volume Radar | TradersDesk",
     desc: "Real-time index futures intraday Price vs Open Interest buildup terminal with VWAP, Basis, and volume metrics (NSE & BSE)."
   },
   "/futures/open-interest": {
     desk: "futures",
     subview: "openInterest",
-    title: "Future Open Interest & Buildup Analytics | TradersDesk",
+    title: "Live Open Interest (OI) Analysis & Charts | TradersDesk",
     desc: "Interactive EOD and real-time multi-panel futures candlestick charts, open interest buildup, delivery %, RSI, and Option Chain Max Pain."
   },
   "/futures/oi": {
     desk: "futures",
     subview: "openInterest",
-    title: "Future Open Interest & Buildup Analytics | TradersDesk",
+    title: "Open Interest Analysis & Live OI Matrix | TradersDesk",
     desc: "Interactive EOD and real-time multi-panel futures candlestick charts, open interest buildup, delivery %, RSI, and Option Chain Max Pain."
   },
   "/market-breadth": {
@@ -12430,12 +12430,12 @@ const ROUTE_CONFIG = {
   "/breadth": {
     redirect: "/breadth-contribution",
     desk: "contribution",
-    title: "Market Breadth & Point and Figure (PnF) Analytics Desk | TradersDesk",
+    title: "Market Breadth & PnF Advance-Decline | TradersDesk",
     desc: "Institutional Market Breadth engine with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum."
   },
   "/fii-dii": {
     desk: "smartmoney",
-    title: "FII / DII Smart Money Flow - Institutional Cash & Derivatives Positioning | TradersDesk",
+    title: "FII DII Activity & Smart Money Flow Today | TradersDesk",
     desc: "Track institutional smart money flows, FII/DII net daily purchases, Index Futures long/short positioning, and options activity."
   },
   "/smart-money": {
@@ -12452,7 +12452,7 @@ const ROUTE_CONFIG = {
   "/fii-dii/cash": {
     desk: "smartmoney",
     subview: "cash",
-    title: "FII / DII Cash Market Flow - Daily Institutional Net Buy/Sell | TradersDesk",
+    title: "FII DII Cash Market Daily Net Flow | TradersDesk",
     desc: "FII and DII daily cash market net buy/sell figures from NSE. Nifty 50 benchmark correlation and monthly/yearly trend charts."
   },
   "/fii-dii-cash": {
@@ -12464,103 +12464,103 @@ const ROUTE_CONFIG = {
   "/fii-dii/derivatives": {
     desk: "smartmoney",
     subview: "derivatives",
-    title: "FII / DII F&O Derivatives Positioning - Index Futures & Options OI | TradersDesk",
+    title: "FII Index & Stock Futures Positioning | TradersDesk",
     desc: "FII institutional F&O positioning: Index Futures long/short, Options OI, participant volume breakdown and derivatives flow."
   },
   "/mtf-analytics": {
     desk: "mtf",
-    title: "MTF Analytics - Margin Trading Facility Book & Stock Leverage Tracker | TradersDesk",
+    title: "Margin Trading Facility (MTF) Leverage | TradersDesk",
     desc: "Comprehensive Margin Trading Facility (MTF) analytics tracking stock leverage, aggregate MTF loan exposure, daily financing trends, and category distribution."
   },
   "/mtf": {
     desk: "mtf",
-    title: "MTF Analytics - Margin Trading Facility Book & Stock Leverage Tracker | TradersDesk",
+    title: "Margin Trading Facility (MTF) Leverage | TradersDesk",
     desc: "Comprehensive Margin Trading Facility (MTF) analytics tracking stock leverage, aggregate MTF loan exposure, daily financing trends, and category distribution."
   },
   "/mtf/overview": {
     desk: "mtf",
     subview: "overview",
-    title: "MTF Overview & Market Summary - Margin Trading Facility | TradersDesk",
+    title: "SEBI MTF Aggregate Book & Leverage Radar | TradersDesk",
     desc: "Aggregate MTF book overview, total funded margin, and daily debt financing trend across NSE listed equities."
   },
   "/mtf/topstocks": {
     desk: "mtf",
     subview: "topstocks",
-    title: "Top MTF Stocks Screener - Margin Trading Facility Book | TradersDesk",
+    title: "Top Funded MTF Stocks & Leverage Book | TradersDesk",
     desc: "Ranked screener of top stocks by MTF loan exposure, daily financing change, and concentration."
   },
   "/mtf/retail": {
     desk: "mtf",
     subview: "retail",
-    title: "MTF Retail Speculation Cluster - Retail Heavy Stocks | TradersDesk",
+    title: "Retail MTF Margin Leverage & Positioning | TradersDesk",
     desc: "Analysis of retail speculative leverage, low-priced stock concentration, and debt acceleration."
   },
   "/mtf/movers": {
     desk: "mtf",
     subview: "movers",
-    title: "MTF Top Inflows & Outflows - Daily Financing Velocity | TradersDesk",
+    title: "MTF Book Movers - Largest Leverage Spikes | TradersDesk",
     desc: "Daily MTF book expansion and deleveraging leaders across NSE equities."
   },
   "/mtf/sectors": {
     desk: "mtf",
     subview: "sectors",
-    title: "MTF Sector Heatmap & Debt Distribution | TradersDesk",
+    title: "MTF Sector Leverage & Industry Exposure | TradersDesk",
     desc: "Sector-wise aggregate margin financing exposure and sectoral leverage concentration."
   },
   "/mtf/trend": {
     desk: "mtf",
     subview: "trend",
-    title: "MTF Multi-Session Debt Growth Trend | TradersDesk",
+    title: "Historical MTF Book Trend & Growth Curves | TradersDesk",
     desc: "Historical MTF debt trajectory, cumulative exposure charts, and leverage growth velocity."
   },
   "/mtf/broker": {
     desk: "mtf",
     subview: "broker",
-    title: "MTF Broker Terms, Interest Rates & Haircuts | TradersDesk",
+    title: "Broker MTF Interest Rates & Leverage Terms | TradersDesk",
     desc: "Comprehensive broker comparison matrix for MTF interest charges, leverage multipliers, and holding tenures."
   },
   "/mtf/calculator": {
     desk: "mtf",
     subview: "calculator",
-    title: "MTF Leverage & Interest Cost Calculator | TradersDesk",
+    title: "MTF Margin & Interest Cost Calculator | TradersDesk",
     desc: "Interactive MTF calculator simulating capital required, holding interest cost, and liquidation buffer."
   },
   "/mtf/compare": {
     desk: "mtf",
     subview: "compare",
-    title: "MTF Stock Comparison Desk | TradersDesk",
+    title: "MTF Stock Comparison Desk & Leverage | TradersDesk",
     desc: "Side-by-side MTF metrics comparison between two equities including book size, debt growth, and risk rating."
   },
   "/delivery-analytics": {
     desk: "delivery",
-    title: "Delivery Analytics Desk - High Delivery Volume & Institutional Accumulation | TradersDesk",
+    title: "Cash Delivery Volume & Shocks Scanner | TradersDesk",
     desc: "Live delivery analytics detecting institutional accumulation, spike in delivery percentage, block deals, and high conviction cash volume."
   },
   "/delivery": {
     desk: "delivery",
-    title: "Delivery Analytics Desk - High Delivery Volume & Institutional Accumulation | TradersDesk",
+    title: "Cash Delivery Volume & Shocks Scanner | TradersDesk",
     desc: "Live delivery analytics detecting institutional accumulation, spike in delivery percentage, block deals, and high conviction cash volume."
   },
   "/delivery/scan": {
     desk: "delivery",
     subview: "scan",
-    title: "Delivery Scanner - High Delivery Volume & Institutional Accumulation | TradersDesk",
+    title: "NSE Stock Delivery Volume Surge Scanner | TradersDesk",
     desc: "Scan cash market delivery volume, 5-day averages, delivery percentage spikes, and accumulation signals."
   },
   "/delivery/inspect": {
     desk: "delivery",
     subview: "inspect",
-    title: "Stock Delivery Inspector - Real-Time Demat Absorption | TradersDesk",
+    title: "Stock Delivery Inspector & Historical Flow | TradersDesk",
     desc: "Inspect stock-wise deliverable quantity, cash absorption value, turnover, and historical delivery patterns."
   },
   "/quant-tools": {
     desk: "dashboard",
-    title: "Market Pulse & Derivatives Terminal | TradersDesk",
+    title: "Quantitative Trading Tools & Analytics | TradersDesk",
     desc: "Institutional-grade financial trading terminal with real-time analytics."
   },
   "/tools": {
     desk: "dashboard",
-    title: "Market Pulse & Derivatives Terminal | TradersDesk",
+    title: "Quantitative Trading Tools & Analytics | TradersDesk",
     desc: "Institutional-grade financial trading terminal with real-time analytics."
   },
   "/settings": {
@@ -12570,12 +12570,12 @@ const ROUTE_CONFIG = {
   },
   "/straddle": {
     desk: "straddle",
-    title: "Straddle Desk - Live ATM Straddle Analysis & Greeks | TradersDesk",
+    title: "Nifty ATM Straddle Chart & Premium Decay | TradersDesk",
     desc: "Real-time Options Straddle chart tracking combined CE+PE straddle premium, live intraday delta-neutral curves, IV crush, and synthetic futures."
   },
   "/atm-straddle": {
     desk: "straddle",
-    title: "Straddle Desk - Live ATM Straddle Analysis & Greeks | TradersDesk",
+    title: "Nifty ATM Straddle Chart & Premium Decay | TradersDesk",
     desc: "Real-time Options Straddle chart tracking combined CE+PE straddle premium, live intraday delta-neutral curves, IV crush, and synthetic futures."
   }
 };

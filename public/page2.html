@@ -8,17 +8,7 @@
   <link rel="shortcut icon" href="/favicon.ico">
   <meta property="og:image" content="https://tradersdesk.in/og-image.png">
   <meta name="twitter:image" content="https://tradersdesk.in/og-image.png">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FinancialService",
-    "name": "TradersDesk.in",
-    "url": "https://tradersdesk.in",
-    "logo": "https://tradersdesk.in/favicon.svg",
-    "image": "https://tradersdesk.in/og-image.png",
-    "description": "Institutional Quantitative Derivatives & Market Breadth Terminal"
-  }
-  </script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TradersDesk.in | ATM Options Straddle, FII/DII &amp; Institutional Analytics</title>
@@ -90,6 +80,8 @@
     </style>
 </head>
 <body class="page2-body">
+  <h1 class="visually-hidden" style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;">TradersDesk.in - Real-Time ATM Straddle, Market Breadth & Point Contribution Terminal</h1>
+
 
   <!-- ====================================================================
        TOP MAIN NAVIGATION BAR
@@ -1199,21 +1191,24 @@
          ================================================================ -->
     
             <!-- Institutional Footer with Legal & Compliance Links (Strict 4-Column Layout) -->
-      <footer class="terminal-footer">
-        <!-- EXACTLY 4 COLUMNS GRID -->
-        <div class="footer-four-columns" id="footerFourColumnsGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:24px; margin-bottom:30px;">
-          <!-- Column 1: Institutional Desks -->
+            <footer class="terminal-footer">
+        <!-- 5 COLUMNS SEO DIRECTORY GRID -->
+        <div class="footer-four-columns" id="footerFourColumnsGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:24px; margin-bottom:30px;">
+          <!-- Column 1: Institutional & Cash Desks -->
           <div class="footer-link-group" data-col="col1">
             <h4 style="display:flex; align-items:center; gap:6px; color:#38bdf8; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
               🏛️ Institutional Desks
             </h4>
-            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
-              <a href="/breadth-contribution" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/breadth-contribution', event); }">Market Breadth &amp; Contribution</a>
-              <a href="/fii-dii" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('smartMoney', '', '/fii-dii', event); }">FII &amp; DII Smart Money</a>
-              <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('delivery', '', '/delivery', event); }">Cash Delivery Absorption</a>
-              <a href="/mtf" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('mtf', '', '/mtf', event); }">MTF Margin Trading Book</a>
-              <a href="/open-interest/nifty">Open Interest Desk</a>
-              <a href="/dashboard" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('dashboard', '', '/dashboard', event); }">Institutional Dashboard</a>
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:7px;">
+              <a href="/fii-dii">FII &amp; DII Smart Money Flow</a>
+              <a href="/fii-dii/cash">FII DII Cash Market Daily</a>
+              <a href="/fii-dii/derivatives">FII Index &amp; Stock Futures</a>
+              <a href="/fii-dii/participant-oi">F&amp;O Participant Open Interest</a>
+              <a href="/delivery">Cash Delivery Volume Shocks</a>
+              <a href="/delivery/scan">Delivery Accumulation Scanner</a>
+              <a href="/delivery/inspect">Delivery Drilldown Inspector</a>
+              <a href="/breadth-contribution">Market Breadth &amp; Contribution</a>
+              <a href="/dashboard">Terminal Pulse Dashboard</a>
             </div>
           </div>
 
@@ -1222,50 +1217,72 @@
             <h4 style="display:flex; align-items:center; gap:6px; color:#a78bfa; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
               ⚡ Derivatives &amp; Options
             </h4>
-            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
-              <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('upstoxChain', '', '/option-chain-pro', event); }">Option Chain Pro</a>
-              <a href="/futures" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'matrix', '/futures', event); }">Future Marketwatch Matrix</a>
-              <a href="/straddle" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/straddle', event); }">Straddle Analytics Engine</a>
-              <a href="/futures/buildup" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'buildup', '/futures/buildup', event); }">Future Buildup Quadrants</a>
-              <a href="/futures/mwpl" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'mwpl', '/futures/mwpl', event); }">MWPL &amp; Ban Radar</a>
-              <a href="/futures/rollover" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'rollover', '/futures/rollover', event); }">Historical Rollover Matrix</a>
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:7px;">
+              <a href="/option-chain-pro">Option Chain Pro &amp; Greeks</a>
+              <a href="/option-chain-pro/chain">Live Nifty Option Chain Grid</a>
+              <a href="/option-chain-pro/greeks">Black-Scholes Options Greeks</a>
+              <a href="/wpcr">wPCR &amp; PCE Quant Terminal</a>
+              <a href="/straddle">ATM Straddle Premium Decay</a>
+              <a href="/futures">Futures Marketwatch Matrix</a>
+              <a href="/futures/open-interest">Live Open Interest (OI) Analysis</a>
+              <a href="/futures/buildup">Long &amp; Short Buildup Screener</a>
+              <a href="/futures/heatmap">F&amp;O Sector Visual Heatmap</a>
             </div>
           </div>
 
-          <!-- Column 3: Advanced Analytics & Tools -->
+          <!-- Column 3: Futures & Rollover Radar -->
           <div class="footer-link-group" data-col="col3">
             <h4 style="display:flex; align-items:center; gap:6px; color:#34d399; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
-              📊 Market Analytics &amp; Tools
+              📊 Futures &amp; Rollover
             </h4>
-            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
-              <a href="/breadth-contribution" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/breadth-contribution', event); }">Breadth &amp; Net Contribution</a>
-              <a href="/calendar_studio.html" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/calendar_studio.html', event); }">NSE Trading Holiday Calendar</a>
-              <a href="/fii-dii#oi" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('smartMoney', 'oi', '/fii-dii#oi', event); }">Participant OI Matrix</a>
-              <a href="/futures/heatmap" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'heatmap', '/futures/heatmap', event); }">F&amp;O Sector Visual Heatmap</a>
-              <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('upstoxChain', '', '/option-chain-pro', event); }">Real-Time Options Greeks</a>
-              <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('delivery', '', '/delivery', event); }">Stock Delivery Drilldown</a>
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:7px;">
+              <a href="/futures/rollover">Historical Rollover Matrix</a>
+              <a href="/futures/mwpl">NSE MWPL &amp; F&amp;O Ban Radar</a>
+              <a href="/futures/indices">Index Futures Basis &amp; Premium</a>
+              <a href="/futures/marketwatch">Real-Time Futures Scrip Watch</a>
+              <a href="/quant-tools">Quantitative Trading Tools</a>
+              <a href="/calendar-studio">NSE Trading Holiday Calendar</a>
+              <a href="/chart">Historical Technical Charts</a>
             </div>
           </div>
 
-          <!-- Column 4: Regulatory, Compliance & Governance -->
+          <!-- Column 4: MTF Leverage & Broker Suite -->
           <div class="footer-link-group" data-col="col4">
-            <h4 style="display:flex; align-items:center; gap:6px; color:#f59e0b; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
-              🛡️ Regulatory &amp; Compliance
+            <h4 style="display:flex; align-items:center; gap:6px; color:#f472b6; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+              💼 MTF Analytics Suite
             </h4>
-            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:7px;">
+              <a href="/mtf">MTF Margin Trading Facility</a>
+              <a href="/mtf/sectors">MTF Sector Leverage Exposure</a>
+              <a href="/mtf/movers">Top MTF Leverage Movers</a>
+              <a href="/mtf/retail">Retail MTF Leverage Exposure</a>
+              <a href="/mtf/overview">SEBI MTF Aggregate Book</a>
+              <a href="/mtf/trend">Historical MTF Trend Analytics</a>
+              <a href="/mtf/compare">MTF Stock Comparison Desk</a>
+              <a href="/mtf/broker">Broker-wise Interest Rates</a>
+              <a href="/mtf/topstocks">Top Funded MTF Stocks</a>
+              <a href="/mtf/calculator">MTF Margin &amp; Interest Calculator</a>
+            </div>
+          </div>
+
+          <!-- Column 5: Regulatory & Governance -->
+          <div class="footer-link-group" data-col="col5">
+            <h4 style="display:flex; align-items:center; gap:6px; color:#f59e0b; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+              🛡️ Legal &amp; Governance
+            </h4>
+            <div class="footer-links-list" style="display:flex; flex-direction:column; gap:7px;">
               <a href="/disclaimer">SEBI Regulatory Disclaimer</a>
               <a href="/privacy">Privacy &amp; Data Governance</a>
               <a href="/terms">Terms of Institutional Service</a>
-              <a href="/about">Quantitative Model Methodologies</a>
+              <a href="/about">Quantitative Model Architecture</a>
               <a href="/contact">Contact &amp; Trader Support</a>
               <a href="https://www.nseindia.com" target="_blank" rel="noopener">NSE Official Regulatory Archive ↗</a>
-              
             </div>
           </div>
         </div>
 
         <div class="footer-bottom" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:20px; border-top:1px solid var(--border-default, rgba(255,255,255,0.08)); font-size:11.5px; color:var(--text-muted, #94a3b8);">
-          <span>&copy; 2026 TradersDesk.in &bull; All calculations Black-Scholes algorithmically certified &bull; Real-Time Indian Equities &amp; Derivatives Terminal</span>
+          <span>&copy; 2026 TradersDesk.in &bull; Black-Scholes Mathematically Certified &bull; Real-Time Indian Equities &amp; Derivatives Terminal</span>
           <span>SEBI Compliance Notice: Educational &amp; Quantitative Analytics Research Only</span>
         </div>
       </footer>

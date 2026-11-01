@@ -1213,21 +1213,34 @@ def generate_dynamic_json_ld(path: str, snapshot: dict) -> str:
                 "description": "Institutional-grade Indian stock market derivatives terminal, real-time Options Chain Pro with Greeks, and Market Breadth."
             },
             {
-                "@type": "FinancialService",
-                "@id": f"{canonical}#service",
-                "name": "TradersDesk Quantitative Intelligence",
-                "url": canonical,
-                "serviceType": "Quantitative Market Research & Analytics Desk",
-                "areaServed": "IN",
-                "disclaimer": "Educational and quantitative research platform. Not a SEBI registered investment advisor."
+                "@type": "Organization",
+                "@id": "https://tradersdesk.in/#organization",
+                "name": "TradersDesk",
+                "url": "https://tradersdesk.in/",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://tradersdesk.in/favicon.svg"
+                },
+                "description": "Institutional Quantitative Derivatives, Real-Time Option Chain Pro & Market Breadth Terminal"
             },
             {
                 "@type": "Dataset",
                 "@id": f"{canonical}#dataset",
-                "name": f"Indian Equity Derivatives Market Analytics ({snapshot.get('date', '16-Oct-2026')})",
+                "name": f"Indian Equity Derivatives Market Analytics ({snapshot.get('date', '30-Oct-2026')})",
                 "description": f"Real-time exchange dataset covering Nifty 50 ({nifty:,.2f}), Bank Nifty, Open Interest buildup, FII net cash (₹{fii:+,.1f} Cr), and Black-Scholes Greeks.",
                 "temporalCoverage": date_iso,
                 "spatialCoverage": "IN",
+                "creator": {
+                    "@type": "Organization",
+                    "name": "TradersDesk",
+                    "url": "https://tradersdesk.in/"
+                },
+                "publisher": {
+                    "@type": "Organization",
+                    "name": "TradersDesk",
+                    "url": "https://tradersdesk.in/"
+                },
+                "license": "https://tradersdesk.in/terms",
                 "variableMeasured": [
                     "Nifty 50 Index Spot",
                     "Bank Nifty Index Spot",
