@@ -131,7 +131,7 @@
           const idAttr = btnId ? ` id="${btnId}"` : '';
           const topOnclick = DESK_ONCLICK_MAP[item.url] ? ` onclick="${DESK_ONCLICK_MAP[item.url]}"` : '';
 
-          const badgeHtml = item.badge ? `<span class="p2-badge p2-badge-${item.badgeColor || 'teal'}">${escapeText(item.badge)}</span>` : '';
+          const badgeHtml = (item.badge && !/^(PRO|NEW|LIVE|OI|F&O|HOT|BETA)$/i.test(item.badge.trim())) ? `<span class="p2-badge p2-badge-${item.badgeColor || 'teal'}">${escapeText(item.badge)}</span>` : '';
           const iconHtml = item.icon ? `<span class="inst-nav-icon">${escapeText(item.icon)}</span>` : '';
 
           if (!hasDd) {
@@ -168,7 +168,7 @@
             activeColumns.forEach(col => {
               let itemsHtml = '';
               col.items.forEach(sub => {
-                const subBadge = sub.badge ? `<span class="p2-badge p2-badge-${sub.badgeColor || 'teal'}" style="margin-left:4px;">${escapeText(sub.badge)}</span>` : '';
+                const subBadge = (sub.badge && !/^(PRO|NEW|LIVE|OI|F&O|HOT|BETA)$/i.test(sub.badge.trim())) ? `<span class="p2-badge p2-badge-${sub.badgeColor || 'teal'}" style="margin-left:4px;">${escapeText(sub.badge)}</span>` : '';
                 const flagAttr = sub.featureFlag ? ` data-feature-flag="${escapeText(sub.featureFlag)}"` : '';
                 const subDesc = sub.subtitle || sub.sub || '';
                 const subOnclick = DESK_ONCLICK_MAP[sub.url] ? ` onclick="${DESK_ONCLICK_MAP[sub.url]}"` : '';
@@ -259,7 +259,7 @@
                 if (sub.url === '/futures/future-intraday' && flags.futures_future_intraday === false) return false;
                 if (sub.url === '/futures/future-vs-oi' && flags.futures_future_vs_oi === false) return false;
 
-                const subBadge = sub.badge ? `<span class="p2-badge p2-badge-${sub.badgeColor || 'teal'}" style="font-size:9.5px; margin-left:3px;">${escapeText(sub.badge)}</span>` : '';
+                const subBadge = (sub.badge && !/^(PRO|NEW|LIVE|OI|F&O|HOT|BETA)$/i.test(sub.badge.trim())) ? `<span class="p2-badge p2-badge-${sub.badgeColor || 'teal'}" style="margin-left:4px;">${escapeText(sub.badge)}</span>` : '';
                 const flagAttr = sub.featureFlag ? ` data-feature-flag="${escapeText(sub.featureFlag)}"` : '';
                 const subDesc = sub.subtitle || sub.sub || '';
                 const subOnclick = DESK_ONCLICK_MAP[sub.url] ? ` onclick="${DESK_ONCLICK_MAP[sub.url]}"` : '';
@@ -281,7 +281,7 @@
                 <div class="dot-menu-section-header">
                   <span class="dot-section-icon">${escapeText(item.icon || '⚡')}</span>
                   <span class="dot-section-title">${escapeText(item.label || '')}</span>
-                  ${item.badge ? `<span class="p2-badge p2-badge-${item.badgeColor || 'teal'}" style="font-size:10px;">${escapeText(item.badge)}</span>` : ''}
+                  ${(item.badge && !/^(PRO|NEW|LIVE|OI|F&O|HOT|BETA)$/i.test(item.badge.trim())) ? `<span class="p2-badge p2-badge-${item.badgeColor || 'teal'}" style="font-size:10px;">${escapeText(item.badge)}</span>` : ''}
                 </div>
                 <div class="dot-sub-grid">
                   ${subItemsHtml}

@@ -40,7 +40,7 @@
               "subtitle": "Multi-panel EOD & Live chart, delivery % & option chain",
               "url": "/futures/open-interest",
               "icon": "📈",
-              "badge": "PRO",
+              "badge": "",
               "badgeColor": "teal",
               "active": true
             },
@@ -70,7 +70,7 @@
               "subtitle": "5-Min Price vs OI divergence, VWAP & Basis (7 Indices)",
               "url": "/futures/future-intraday",
               "icon": "⚡",
-              "badge": "LIVE",
+              "badge": "",
               "badgeColor": "teal",
               "featureFlag": "futures_future_intraday",
               "active": false
@@ -106,17 +106,17 @@
               "subtitle": "Expiry rollover %, 3M/6M averages & historical velocity",
               "url": "/futures/rollover",
               "icon": "🔄",
-              "badge": "PRO",
+              "badge": "",
               "badgeColor": "teal",
               "active": true
             },
             {
               "id": "sub_fut_vsoi",
               "title": "Future vs Open Interest",
-              "subtitle": "Dual-axis divergence analysis & historical replay engine",
+              "subtitle": "Dual-axis divergence analysis & historical replay tools",
               "url": "/futures/future-vs-oi",
               "icon": "🎯",
-              "badge": "PRO",
+              "badge": "",
               "badgeColor": "teal",
               "featureFlag": "futures_future_vs_oi",
               "active": false
@@ -145,7 +145,7 @@
               "subtitle": "Live multi-broker chain, Greeks, PCR & IV skew",
               "url": "/option-chain-pro",
               "icon": "⚡",
-              "badge": "PRO",
+              "badge": "",
               "badgeColor": "teal",
               "active": true
             },
@@ -155,7 +155,7 @@
               "subtitle": "Live Call vs Put distribution, PCR & Max Pain strike",
               "url": "/open-interest/nifty",
               "icon": "📊",
-              "badge": "OI",
+              "badge": "",
               "badgeColor": "blue",
               "active": true
             },
@@ -165,7 +165,7 @@
               "subtitle": "Intraday breadth advance/decline & stock point impact",
               "url": "/breadth-contribution",
               "icon": "⚖️",
-              "badge": "LIVE",
+              "badge": "",
               "badgeColor": "cyan",
               "active": true
             }
@@ -190,7 +190,7 @@
               "subtitle": "Live CE vs PE comparison, strike skew & pricing imbalance",
               "url": "/call-vs-put-premium",
               "icon": "⚔️",
-              "badge": "NEW",
+              "badge": "",
               "badgeColor": "cyan",
               "active": true
             }
@@ -204,7 +204,7 @@
       "url": "/chart",
       "icon": "📈",
       "hasDropdown": false,
-      "badge": "PRO",
+      "badge": "",
       "badgeColor": "teal",
       "active": true
     },
@@ -237,7 +237,7 @@
               "subtitle": "Index futures, options OI & participant positioning",
               "url": "/fii-dii",
               "icon": "⚡",
-              "badge": "F&O",
+              "badge": "",
               "badgeColor": "teal",
               "active": true
             },
@@ -281,7 +281,7 @@
       "url": "/blog",
       "icon": "✍️",
       "hasDropdown": false,
-      "badge": "NEW",
+      "badge": "",
       "badgeColor": "teal",
       "active": true
     }
