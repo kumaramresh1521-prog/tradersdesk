@@ -323,6 +323,12 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
         "keywords": "mtf calculator, margin trading calculator, carrying cost calculator, mtf margin requirement, liquidation price",
         "canonical": "https://tradersdesk.in/mtf/calculator",
     },
+    "/mtf/global": {
+        "title": "Global MTF Market Lens - Macro Margin Financing Dynamics | TradersDesk",
+        "desc": "Cross-border comparison of equity margin debt, leverage cycles, and systemic credit dynamics across global capital markets.",
+        "keywords": "global mtf, margin debt comparison, macro margin financing, systemic leverage, global credit cycle",
+        "canonical": "https://tradersdesk.in/mtf/global",
+    },
     "/mtf/compare": {
         "title": "MTF Stock Comparison Desk - Head-to-Head Leverage Analytics | TradersDesk",
         "desc": "Compare two stocks head-to-head on MTF funded debt, historical leverage growth trends with interactive crosshair, and risk metrics.",
@@ -1513,6 +1519,47 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
             return tag
 
         html = re.sub(rf'<div[^>]*id=["\']{target_panel}["\'][^>]*>', _activate_panel, html, count=1)
+
+        # 3b. MTF sub-view SSR activation
+        if target_panel == "panelMtf":
+            mtf_sub_map = {
+                "/mtf": "overview",
+                "/mtf/overview": "overview",
+                "/mtf/topstocks": "topstocks",
+                "/mtf/retail": "retail",
+                "/mtf/movers": "movers",
+                "/mtf/sectors": "sectors",
+                "/mtf/trend": "trend",
+                "/mtf/broker": "broker",
+                "/mtf/brokers": "broker",
+                "/mtf/global": "global",
+                "/mtf/calculator": "calculator",
+                "/mtf/compare": "compare",
+                "/compare": "compare"
+            }
+            sub = mtf_sub_map.get(clean_p, "overview")
+            if sub != "overview":
+                html = re.sub(r'id=["\']mtaPanel-overview["\']\s+class=["\']mta-inner-panel\s+active["\']', 'id="mtaPanel-overview" class="mta-inner-panel"', html)
+                html = re.sub(r'class=["\']mta-inner-panel\s+active["\']\s+id=["\']mtaPanel-overview["\']', 'class="mta-inner-panel" id="mtaPanel-overview"', html)
+                html = re.sub(rf'id=["\']mtaPanel-{sub}["\']\s+class=["\']mta-inner-panel["\']', f'id="mtaPanel-{sub}" class="mta-inner-panel active"', html)
+                html = re.sub(rf'class=["\']mta-inner-panel["\']\s+id=["\']mtaPanel-{sub}["\']', f'class="mta-inner-panel active" id="mtaPanel-{sub}"', html)
+
+            mta_desk_meta = {
+                "topstocks": ("TOP 50 MTF STOCKS & FINANCED SECURITIES", "🔥", "Ranked screener of top equities by MTF funded book size, institutional absorption & concentration"),
+                "retail": ("RETAIL VS INSTITUTIONAL LEVERAGE RADAR", "👥", "Analysis of retail speculative debt, bluechip institutional financing & low-priced leverage crowding"),
+                "movers": ("MTF MOVERS & SHORT SQUEEZE RADAR", "⚡", "Daily MTF book expansion, high leverage surges & margin short squeeze candidates"),
+                "sectors": ("SECTOR-WISE MTF LEVERAGE BREAKDOWN", "🏗️", "Industry-level margin financing distribution, market share & active security count"),
+                "trend": ("HISTORICAL MTF BOOK & CREDIT GROWTH CYCLES", "📈", "Multi-session historical margin debt trajectory & systemic leverage expansion"),
+                "broker": ("BROKER LEVERAGE & INTEREST RATES DESK", "🏢", "Official broker MTF lending interest rates, margin haircuts & regulatory limits"),
+                "global": ("GLOBAL MACRO MARGIN FINANCING LENS", "🌐", "Cross-border comparison of equity margin debt & systemic credit dynamics"),
+                "calculator": ("INTERACTIVE MTF MARGIN & INTEREST CALCULATOR", "🧮", "Real-time margin requirement, daily interest cost, liquidation price & buffer simulator"),
+                "compare": ("HEAD-TO-HEAD MTF STOCK COMPARISON DESK", "⚖️", "Side-by-side MTF metrics comparison between two equities with historical leverage charts"),
+            }
+            if sub in mta_desk_meta:
+                m_title, m_icon, m_desc = mta_desk_meta[sub]
+                html = re.sub(r'id="mtaDeskTitle">.*?</h2>', f'id="mtaDeskTitle">{m_title}</h2>', html)
+                html = re.sub(r'id="mtaDeskIcon">.*?</span>', f'id="mtaDeskIcon">{m_icon}</span>', html)
+                html = re.sub(r'id="mtaDeskDesc">.*?</p>', f'id="mtaDeskDesc">{m_desc}</p>', html)
 
         # 4. Desk-specific <h1> injection for 100% on-page heading alignment
         desk_h1_map = {

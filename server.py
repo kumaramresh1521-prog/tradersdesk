@@ -11010,6 +11010,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/mtf/broker",
             "/mtf/calculator",
             "/mtf/compare",
+            "/mtf/global",
             "/compare",
             "/delivery-analytics",
             "/delivery",

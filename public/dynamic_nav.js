@@ -28,7 +28,18 @@
     "/fii-dii": "return window.instNavClick(event, 'smartmoney')",
     "/fii-dii#oi": "return window.instNavClick(event, 'smartmoney', 'oi')",
     "/delivery": "return window.instNavClick(event, 'delivery')",
-    "/mtf": "return window.instNavClick(event, 'mtf')",
+    "/mtf": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'overview');}",
+    "/mtf/overview": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'overview');}",
+    "/mtf/topstocks": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'topstocks');}",
+    "/mtf/retail": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'retail');}",
+    "/mtf/movers": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'movers');}",
+    "/mtf/sectors": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'sectors');}",
+    "/mtf/trend": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'trend');}",
+    "/mtf/broker": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'broker');}",
+    "/mtf/brokers": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'broker');}",
+    "/mtf/global": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'global');}",
+    "/mtf/calculator": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'calculator');}",
+    "/mtf/compare": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'compare');}",
   };
 
   function getCanonicalBtnId(item) {

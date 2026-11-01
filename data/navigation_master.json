@@ -270,10 +270,122 @@
       "label": "MTF Desk",
       "url": "/mtf",
       "icon": "💳",
-      "hasDropdown": false,
+      "hasDropdown": true,
       "badge": "",
       "badgeColor": "",
-      "active": true
+      "active": true,
+      "columns": [
+        {
+          "header": "📊 MTF Books & Stock Screener",
+          "items": [
+            {
+              "id": "sub_mtf_overview",
+              "title": "MTF Overview & Total Book",
+              "subtitle": "Consolidated NSE + BSE margin book & daily exposures",
+              "url": "/mtf",
+              "icon": "📊",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_mtf_topstocks",
+              "title": "Top 50 MTF Stocks",
+              "subtitle": "Active securities, funded value & leverage concentration",
+              "url": "/mtf/topstocks",
+              "icon": "🔥",
+              "badge": "HOT",
+              "badgeColor": "rose",
+              "active": true
+            },
+            {
+              "id": "sub_mtf_retail",
+              "title": "Retail vs Institutional",
+              "subtitle": "Speculative retail margin vs institutional absorption",
+              "url": "/mtf/retail",
+              "icon": "👥",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_mtf_movers",
+              "title": "Movers & Squeeze Radar",
+              "subtitle": "High MTF expansion & margin short squeeze alerts",
+              "url": "/mtf/movers",
+              "icon": "⚡",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_mtf_sectors",
+              "title": "Sector Breakdown",
+              "subtitle": "Capital distribution across Banking, IT, Auto & Power",
+              "url": "/mtf/sectors",
+              "icon": "🏗️",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            }
+          ]
+        },
+        {
+          "header": "🛠️ Leverage Tools & Intel",
+          "items": [
+            {
+              "id": "sub_mtf_trend",
+              "title": "Historical Book Trend",
+              "subtitle": "Multi-month growth trajectory & market credit cycles",
+              "url": "/mtf/trend",
+              "icon": "📈",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_mtf_broker",
+              "title": "Broker Leverage Desk",
+              "subtitle": "Official broker interest rates, margin haircuts & tenures",
+              "url": "/mtf/brokers",
+              "icon": "🏢",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_mtf_global",
+              "title": "Global Market Lens",
+              "subtitle": "Macro cross-border margin financing dynamics",
+              "url": "/mtf/global",
+              "icon": "🌐",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            },
+            {
+              "id": "sub_mtf_calculator",
+              "title": "MTF Margin Calculator",
+              "subtitle": "Real-time interest cost, capital required & buffer",
+              "url": "/mtf/calculator",
+              "icon": "🧮",
+              "badge": "CALC",
+              "badgeColor": "teal",
+              "active": true
+            },
+            {
+              "id": "sub_mtf_compare",
+              "title": "Stock Compare Desk",
+              "subtitle": "Side-by-side MTF debt comparison & risk profiling",
+              "url": "/mtf/compare",
+              "icon": "⚖️",
+              "badge": "",
+              "badgeColor": "",
+              "active": true
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "nav_blog",

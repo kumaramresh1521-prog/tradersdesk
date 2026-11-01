@@ -1233,5 +1233,20 @@
     "keywords": "quant tools, quantitative models, options calculator, derivatives tools india",
     "canonical": "https://tradersdesk.in/tools",
     "robots": "index, follow"
+  },
+  "/mtf/global": {
+    "path": "/mtf/global",
+    "title": "Global MTF Market Lens - Macro Margin Financing Dynamics | TradersDesk",
+    "desc": "Cross-border comparison of equity margin debt, leverage cycles, and systemic credit dynamics across global capital markets.",
+    "keywords": "global mtf, margin debt comparison, macro margin financing, systemic leverage, global credit cycle",
+    "canonical": "https://tradersdesk.in/mtf/global",
+    "og_title": "Global MTF Market Lens - Macro Margin Financing Dynamics | TradersDesk",
+    "og_desc": "Cross-border comparison of equity margin debt, leverage cycles, and systemic credit dynamics across global capital markets.",
+    "robots": "index, follow",
+    "category": "mtf",
+    "priority": "0.8",
+    "changefreq": "daily",
+    "custom": false,
+    "last_updated": "2026-11-01 12:30:34 IST"
   }
 }

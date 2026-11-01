@@ -25773,3 +25773,66 @@ a.fut-tab-btn[data-feature-flag].feature-active {
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+/* Dedicated MTF Sub-Desk Header Card (Individual & Focused) */
+.mta-desk-header-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s ease;
+}
+.mta-desk-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.mta-desk-header-icon {
+  font-size: 26px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+.mta-desk-header-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+  margin: 0 0 3px 0;
+  text-transform: uppercase;
+}
+.mta-desk-header-desc {
+  font-size: 11.5px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+.mta-desk-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+[data-theme="dark"] .mta-desk-header-card {
+  background: #111827;
+  border-color: #1f2937;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+[data-theme="dark"] .mta-desk-header-icon {
+  background: #1f2937;
+}
+[data-theme="dark"] .mta-desk-header-title {
+  color: #f8fafc;
+}
+[data-theme="dark"] .mta-desk-header-desc {
+  color: #94a3b8;
+}
