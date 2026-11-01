@@ -1905,12 +1905,12 @@
             </div>
 
             <!-- ================================================================
-                 📊 MULTI-STRIKE OPTION VISUALIZER (14 METRICS + 3 PRO VIEW MODES)
+                 📊 MULTI-STRIKE OPTION VISUALIZER (SYSTEMATIC 8 CORE METRICS)
                  ================================================================ -->
             <div class="opt-vis-banner" style="margin-top:24px;">
               <div style="display:flex; align-items:center; gap:8px;">
                 <span class="opt-vis-banner-title">📊 MULTI-STRIKE OPTION VISUALIZER</span>
-                <span class="opt-vis-banner-badge">14 METRICS</span>
+                <span class="opt-vis-banner-badge">8 METRICS</span>
               </div>
               <button type="button" id="upstoxVisToggleBtn" class="opt-vis-toggle-btn">
                 <span id="upstoxVisToggleIcon">▲</span> <span id="upstoxVisToggleText">Collapse Visualizer</span>
@@ -1918,34 +1918,23 @@
             </div>
             <div class="upstox-vis-panel" id="upstoxVisPanel">
               
-              <!-- 14-Metric Pills Bar (Group 1 | Group 2 | Group 3 | Group 4 GEX) -->
+              <!-- Systematic 8-Metric Pills Bar: Group 1 OI & Volume | Group 2 Volatility & Greeks | Group 3 Intraday Trends -->
               <div class="opt-vis-pill-bar">
                 <div class="opt-pill-group">
-                  <button type="button" class="opt-vis-pill" data-metric="oi">OI</button>
-                  <button type="button" class="opt-vis-pill active" data-metric="oichg">OI Chg</button>
-                  <button type="button" class="opt-vis-pill" data-metric="prem">Prem</button>
-                  <button type="button" class="opt-vis-pill" data-metric="premskew">Prem Skew</button>
-                  <button type="button" class="opt-vis-pill" data-metric="maxpain">Max Pain</button>
-                  <button type="button" class="opt-vis-pill" data-metric="oipctile">OI %ile</button>
+                  <button type="button" class="opt-vis-pill active" data-metric="oichg" title="Net Intraday OI Buildup vs Unwinding">OI Change</button>
+                  <button type="button" class="opt-vis-pill" data-metric="oi" title="Cumulative Open Interest depth across strikes">Open Interest</button>
+                  <button type="button" class="opt-vis-pill" data-metric="volume" title="Contract Volume Traded">Volume</button>
+                  <button type="button" class="opt-vis-pill" data-metric="premflow" title="Total Premium Turnover Traded (₹ Cr)">Premium Flow</button>
                 </div>
                 <div class="opt-pill-sep"></div>
                 <div class="opt-pill-group">
-                  <button type="button" class="opt-vis-pill" data-metric="writeskew">Write Skew</button>
-                  <button type="button" class="opt-vis-pill" data-metric="premflow">Prem Flow</button>
-                  <button type="button" class="opt-vis-pill" data-metric="turnover">Turnover</button>
-                  <button type="button" class="opt-vis-pill" data-metric="volume">Volume</button>
-                  <button type="button" class="opt-vis-pill" data-metric="callput">call:put</button>
-                  <button type="button" class="opt-vis-pill" data-metric="force">force</button>
+                  <button type="button" class="opt-vis-pill" data-metric="ivskew" title="Call vs Put Implied Volatility Surface">IV Skew</button>
+                  <button type="button" class="opt-vis-pill" data-metric="gex_oi" title="Institutional Dealer Gamma Exposure">Gamma (GEX)</button>
                 </div>
                 <div class="opt-pill-sep"></div>
                 <div class="opt-pill-group">
-                  <button type="button" class="opt-vis-pill" data-metric="ivskew">IV Skew</button>
-                  <button type="button" class="opt-vis-pill" data-metric="dayoi">Day Oi</button>
-                </div>
-                <div class="opt-pill-sep"></div>
-                <div class="opt-pill-group">
-                  <button type="button" class="opt-vis-pill" data-metric="gex_oi" title="Gamma Exposure - Open Interest (Image 2)">GEX-OI</button>
-                  <button type="button" class="opt-vis-pill" data-metric="gex_vol" title="Gamma Exposure - Volume Flow">GEX-Vol</button>
+                  <button type="button" class="opt-vis-pill" data-metric="pcr" title="Intraday Put-Call Ratio Curve vs Underlying Spot Price">📈 PCR vs Spot</button>
+                  <button type="button" class="opt-vis-pill" data-metric="maxpain" title="Intraday Max Pain Strike Barrier vs Underlying Spot Price">🎯 Max Pain vs Spot</button>
                 </div>
               </div>
 
@@ -1955,12 +1944,6 @@
                   <div class="opt-vis-title-group">
                     <h3 class="opt-vis-title" id="optVisChartTitle">Open Interest Change (Contracts / Lakhs)</h3>
                     <span class="opt-vis-sub" id="optVisChartSub">Strike-wise institutional distribution • Click any bar for deep radar</span>
-                  </div>
-                  <!-- View Switcher Tabs matching Reference Images 1, 2, 3 -->
-                  <div class="opt-vis-view-tabs" id="optVisViewTabs">
-                    <button type="button" class="opt-vis-vtab active" data-view="strike" id="visTabStrike">📊 Strike Distribution</button>
-                    <button type="button" class="opt-vis-vtab" data-view="pcr" id="visTabPcr">📈 Intraday PCR vs Spot</button>
-                    <button type="button" class="opt-vis-vtab" data-view="maxpain" id="visTabMaxPain">🎯 Max Pain vs Spot</button>
                   </div>
                   <div class="opt-vis-actions">
                     <button type="button" id="optVisLockBtn" class="opt-vis-lock-btn" title="Toggle Lock Strike Centering">🔓 Auto</button>

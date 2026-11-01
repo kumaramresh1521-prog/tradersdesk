@@ -1385,7 +1385,7 @@
     },
     oichg: {
       title: 'Change in Open Interest (Contracts)',
-      sub: 'Net intraday position buildup (fresh writes vs unwinding) • Zero baseline (Image 2)',
+      sub: 'Net intraday position buildup (fresh writes vs unwinding) • Zero baseline',
       callLabel: 'Call OI Chg',
       putLabel: 'Put OI Chg',
       format: 'qty',
@@ -1546,7 +1546,7 @@
     },
     gex_oi: {
       title: 'Gamma Exposure - Open Interest (GEX-OI)',
-      sub: 'Institutional Dealer Gamma Exposure across strikes • Positive suppresses volatility, Negative expands volatility (Image 2)',
+      sub: 'Institutional Dealer Gamma Exposure across strikes • Positive suppresses volatility, Negative expands volatility',
       callLabel: 'Positive GEX (Calls)',
       putLabel: 'Negative GEX (Puts)',
       format: 'gex',
@@ -1641,10 +1641,12 @@
     // VIEW MODE 2: 📈 INTRADAY PCR VS SPOT TREND (REFERENCE IMAGE 1)
     // =========================================================================
     if (viewMode === 'pcr') {
+      const elActions = document.querySelector('.opt-vis-actions');
+      if (elActions) elActions.style.display = 'none';
       const elTitle = document.getElementById('optVisChartTitle');
       if (elTitle) elTitle.textContent = 'Intraday PCR vs Spot Trend (Dual-Axis)';
       const elSub = document.getElementById('optVisChartSub');
-      if (elSub) elSub.textContent = 'Reference Image 1 • PCR curve (Left Axis - Red) vs Underlying Spot Price (Right Axis - Green) • 09:15 to 15:30';
+      if (elSub) elSub.textContent = 'Intraday Put-Call Ratio (PCR curve - Red) vs Underlying Spot Price (Green) • 09:15 to 15:30';
 
       const pts = (data.intradayTimeline && data.intradayTimeline.length >= 2) ? data.intradayTimeline : getStableClientTimeline(spot, Number(data.pcr || 0.85), Number(data.maxPain || spot));
       if (!pts || pts.length === 0) return;
@@ -1812,10 +1814,12 @@
     // VIEW MODE 3: 🎯 INTRADAY MAX PAIN VS SPOT TREND (REFERENCE IMAGE 3)
     // =========================================================================
     if (viewMode === 'maxpain') {
+      const elActions = document.querySelector('.opt-vis-actions');
+      if (elActions) elActions.style.display = 'none';
       const elTitle = document.getElementById('optVisChartTitle');
       if (elTitle) elTitle.textContent = 'Intraday Max Pain vs Spot Trend';
       const elSub = document.getElementById('optVisChartSub');
-      if (elSub) elSub.textContent = 'Reference Image 3 • Underlying Spot Price (Green) vs Max Pain Strike Barrier Stair-Step (Red) • 09:15 to 15:30';
+      if (elSub) elSub.textContent = 'Underlying Spot Price (Green) vs Max Pain Strike Barrier Stair-Step (Red) • 09:15 to 15:30';
 
       const pts = (data.intradayTimeline && data.intradayTimeline.length >= 2) ? data.intradayTimeline : getStableClientTimeline(spot, Number(data.pcr || 0.85), Number(data.maxPain || spot));
       if (!pts || pts.length === 0) return;
@@ -1948,6 +1952,8 @@
     const metricKey = state.visualizerMetric || 'oichg';
     const cfg = VIS_METRICS_CONFIG[metricKey] || VIS_METRICS_CONFIG.oichg;
 
+    const elActions = document.querySelector('.opt-vis-actions');
+    if (elActions) elActions.style.display = 'flex';
     const elTitle = document.getElementById('optVisChartTitle');
     if (elTitle) elTitle.textContent = cfg.title;
     const elSub = document.getElementById('optVisChartSub');
@@ -2271,19 +2277,6 @@
     const tooltip = document.getElementById('optVisTooltip');
     if (!wrap || !canvas || !tooltip) return;
 
-    // View Switcher Tabs (Images 1, 2, 3)
-    const vTabs = document.querySelectorAll('.opt-vis-vtab');
-    vTabs.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        vTabs.forEach(b => b.classList.remove('active'));
-        e.currentTarget.classList.add('active');
-        state.visViewMode = e.currentTarget.getAttribute('data-view');
-        state.visHoverIndex = -1;
-        tooltip.style.display = 'none';
-        if (state.chainData) renderVisualizerChart(state.chainData);
-      });
-    });
-
     // Lock Strikes Centering Button (Fixes visualizer strike window)
     const lockBtn = document.getElementById('optVisLockBtn');
     if (lockBtn) {
@@ -2321,14 +2314,21 @@
       });
     }
 
-    // 14-Metric Pills Click Listeners (Never hijacks view tab)
+    // Metric & View Mode Pills Click Listeners (Unified Visualizer Controls)
     const pills = document.querySelectorAll('.opt-vis-pill');
     pills.forEach(p => {
       p.addEventListener('click', (e) => {
         pills.forEach(x => x.classList.remove('active'));
         e.currentTarget.classList.add('active');
         const mKey = e.currentTarget.getAttribute('data-metric');
-        state.visualizerMetric = mKey;
+        if (mKey === 'pcr') {
+          state.visViewMode = 'pcr';
+        } else if (mKey === 'maxpain') {
+          state.visViewMode = 'maxpain';
+        } else {
+          state.visViewMode = 'strike';
+          state.visualizerMetric = mKey;
+        }
         state.visHoverIndex = -1;
         tooltip.style.display = 'none';
         if (state.chainData) renderVisualizerChart(state.chainData);

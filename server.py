@@ -12162,14 +12162,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                         print(f"[CMS] Dynamic navigation injection notice: {nav_exc}")
                 clean_rpath = req_path.rstrip("/")
                 if clean_rpath in ("/breadth-contribution", "/contribution"):
-                    injected_html = injected_html.replace('id="p2SuiteStraddleBtn" class="page2-suite-btn active"', 'id="p2SuiteStraddleBtn" class="page2-suite-btn"')
-                    injected_html = injected_html.replace('id="p2SuiteContributionBtn" class="page2-suite-btn"', 'id="p2SuiteContributionBtn" class="page2-suite-btn active"')
                     injected_html = injected_html.replace('id="p2SectionStraddle" class="page2-main-content"', 'id="p2SectionStraddle" class="page2-main-content" style="display:none;"')
                     injected_html = injected_html.replace('id="p2SectionBreadthContribution" class="page2-main-content" style="display:none;"', 'id="p2SectionBreadthContribution" class="page2-main-content"')
 
                 elif clean_rpath in ("/call-vs-put-premium", "/call-vs-put"):
-                    injected_html = injected_html.replace('id="p2SuiteStraddleBtn" class="page2-suite-btn active"', 'id="p2SuiteStraddleBtn" class="page2-suite-btn"')
-                    injected_html = injected_html.replace('id="p2SuiteCallVsPutBtn" class="page2-suite-btn"', 'id="p2SuiteCallVsPutBtn" class="page2-suite-btn active"')
                     injected_html = injected_html.replace('id="p2SectionStraddle" class="page2-main-content"', 'id="p2SectionStraddle" class="page2-main-content" style="display:none;"')
                     injected_html = injected_html.replace('id="p2SectionCallVsPut" class="page2-main-content" style="display:none;"', 'id="p2SectionCallVsPut" class="page2-main-content"')
                 data = injected_html.encode("utf-8")
