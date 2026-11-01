@@ -25,8 +25,14 @@
     "/futures/mwpl": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'mwpl');}",
     "/option-chain-pro": "if(window.instNavClick){return window.instNavClick(event, 'upstoxChain');}",
     "/options": "if(window.instNavClick){return window.instNavClick(event, 'upstoxChain');}",
-    "/fii-dii": "return window.instNavClick(event, 'smartmoney')",
-    "/fii-dii#oi": "return window.instNavClick(event, 'smartmoney', 'oi')",
+    "/fii-dii": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'cash');}",
+    "/fii-dii/cash": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'cash');}",
+    "/fii-dii-cash": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'cash');}",
+    "/fii-dii/derivatives": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'derivatives');}",
+    "/fii-dii-derivatives": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'derivatives');}",
+    "/fii-dii/participant-oi": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'oi');}",
+    "/fii-dii/oi": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'oi');}",
+    "/fii-dii#oi": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'oi');},"
     "/delivery": "return window.instNavClick(event, 'delivery')",
     "/mtf": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'overview');}",
     "/mtf/overview": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'overview');}",
@@ -76,10 +82,11 @@
     if (clean === '/option-chain-pro' || clean === '/option-chain' || clean === '/options') return { desk: 'upstoxChain', subview: null };
     if (clean === '/fii-dii' || clean === '/smart-money' || clean === '/smartmoney') {
       if (url.includes('#oi')) return { desk: 'smartMoney', subview: 'oi' };
-      return { desk: 'smartMoney', subview: null };
+      return { desk: 'smartMoney', subview: 'cash' };
     }
-    if (clean === '/fii-dii/cash') return { desk: 'smartMoney', subview: 'cash' };
-    if (clean === '/fii-dii/derivatives') return { desk: 'smartMoney', subview: 'derivatives' };
+    if (clean === '/fii-dii/cash' || clean === '/fii-dii-cash') return { desk: 'smartMoney', subview: 'cash' };
+    if (clean === '/fii-dii/derivatives' || clean === '/fii-dii-derivatives') return { desk: 'smartMoney', subview: 'derivatives' };
+    if (clean === '/fii-dii/participant-oi' || clean === '/fii-dii/oi') return { desk: 'smartMoney', subview: 'oi' };
     if (clean === '/delivery' || clean === '/delivery-analytics') return { desk: 'delivery', subview: null };
     if (clean.startsWith('/delivery/')) return { desk: 'delivery', subview: clean.replace('/delivery/', '') };
     if (clean === '/mtf' || clean === '/mtf-analytics') return { desk: 'mtf', subview: null };

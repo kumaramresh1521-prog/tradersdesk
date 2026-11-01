@@ -25240,11 +25240,11 @@ const DESK_TO_URL = {
 
   breadth:       "/breadth-contribution",
 
-  smartmoney:    "/fii-dii",
+  smartmoney:    "/fii-dii/cash",
 
-  smartMoney:    "/fii-dii",
+  smartMoney:    "/fii-dii/cash",
 
-  fiidii:        "/fii-dii",
+  fiidii:        "/fii-dii/cash",
 
   mtf:           "/mtf",
 
@@ -25312,20 +25312,11 @@ function getUrlForDesk(key, subview) {
 
   }
 
-  if ((key === "smartMoney" || key === "smartmoney" || key === "fiidii") && (subview === "oi" || subview === "participant-oi")) {
-    return "/fii-dii/participant-oi";
-  }
-
-  if ((key === "smartMoney" || key === "smartmoney" || key === "fiidii") && subview === "cash") {
-
+  if (key === "smartMoney" || key === "smartmoney" || key === "fiidii") {
+    if (subview === "oi" || subview === "participant-oi") return "/fii-dii/participant-oi";
+    if (subview === "derivatives" || subview === "deriv" || subview === "fno") return "/fii-dii/derivatives";
+    if (subview === "cash") return "/fii-dii/cash";
     return "/fii-dii/cash";
-
-  }
-
-  if ((key === "smartMoney" || key === "smartmoney" || key === "fiidii") && subview === "derivatives") {
-
-    return "/fii-dii/derivatives";
-
   }
 
   return DESK_TO_URL[key] || "/";
@@ -25641,17 +25632,14 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
     }
 
     if (tabKey === "smartMoney" || key === "smartMoney" || key === "smartmoney") {
-
+      if (typeof applyFiiDeskSubview === "function") {
+        applyFiiDeskSubview(subview || "cash");
+      }
       setTimeout(() => {
-
         if (typeof applyFiiDeskSubview === "function") {
-
-          applyFiiDeskSubview(subview || null);
-
+          applyFiiDeskSubview(subview || "cash");
         }
-
-      }, 120);
-
+      }, 50);
     }
 
   }

@@ -211,7 +211,7 @@
     {
       "id": "nav_fiidii",
       "label": "FII / DII Desk",
-      "url": "/fii-dii",
+      "url": "/fii-dii/cash",
       "icon": "🏛️",
       "hasDropdown": true,
       "badge": "",
@@ -219,13 +219,13 @@
       "active": true,
       "columns": [
         {
-          "header": "Smart Money Flow",
+          "header": "Institutional Flow & Positioning",
           "items": [
             {
               "id": "sub_fii_cash",
               "title": "FII / DII Cash Market",
               "subtitle": "Daily net buy/sell flow, monthly & yearly trends",
-              "url": "/fii-dii",
+              "url": "/fii-dii/cash",
               "icon": "💵",
               "badge": "",
               "badgeColor": "",
@@ -234,8 +234,8 @@
             {
               "id": "sub_fii_fno",
               "title": "FII / DII Derivatives",
-              "subtitle": "Index futures, options OI & participant positioning",
-              "url": "/fii-dii",
+              "subtitle": "Index futures, stock futures & turnover breakdown",
+              "url": "/fii-dii/derivatives",
               "icon": "⚡",
               "badge": "",
               "badgeColor": "teal",
@@ -244,9 +244,9 @@
             {
               "id": "sub_fii_matrix",
               "title": "Participant OI Matrix",
-              "subtitle": "Client, DII, FII & Pro net contract positioning matrix",
-              "url": "/fii-dii#oi",
-              "icon": "📊",
+              "subtitle": "Client, DII, FII & Pro open interest positioning",
+              "url": "/fii-dii/participant-oi",
+              "icon": "📋",
               "badge": "",
               "badgeColor": "",
               "active": true

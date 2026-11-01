@@ -302,27 +302,37 @@
           </a>
         </div>
 
-        <!-- 5. FII / DII DESK (DROPDOWN WITH 2 SUB-MENUS) -->
+        <!-- 5. FII / DII DESK (DROPDOWN WITH 3 INDIVIDUAL SUB-MENUS) -->
         <div class="inst-nav-item has-dropdown">
-          <a href="/fii-dii" class="inst-nav-btn" onclick="if(window.activateSuite){if(event.ctrlKey||event.metaKey||event.button===1)return true; event.preventDefault(); activateSuite('fiidii'); return false;}" title="FII / DII Institutional Cash &amp; Derivatives Flow">
+          <a href="/fii-dii/cash" class="inst-nav-btn" title="Institutional Cash &amp; Derivatives Positioning">
             <span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII / DII Desk</span>
             <span class="inst-nav-arrow">▾</span>
           </a>
           <div class="inst-dropdown inst-dropdown-sm">
             <div class="inst-dropdown-col">
-              <span class="inst-dropdown-header">Smart Money Flow</span>
-              <a href="/fii-dii" class="inst-dd-item">
+              <span class="inst-dropdown-header">Institutional Flow &amp; Positioning</span>
+              <!-- Sub 1: FII DII Cash -->
+              <a href="/fii-dii/cash" class="inst-dd-item">
                 <span class="dd-icon">💵</span>
                 <div class="dd-text">
                   <span class="dd-title">FII / DII Cash Market</span>
                   <span class="dd-sub">Daily net buy/sell flow, monthly &amp; yearly trends</span>
                 </div>
               </a>
-              <a href="/fii-dii" class="inst-dd-item">
+              <!-- Sub 2: FII DII Derivatives -->
+              <a href="/fii-dii/derivatives" class="inst-dd-item">
                 <span class="dd-icon">⚡</span>
                 <div class="dd-text">
                   <span class="dd-title">FII / DII Derivatives</span>
-                  <span class="dd-sub">Index futures, options OI &amp; participant positioning</span>
+                  <span class="dd-sub">Index futures, stock futures &amp; turnover breakdown</span>
+                </div>
+              </a>
+              <!-- Sub 3: Participant OI Matrix -->
+              <a href="/fii-dii/participant-oi" class="inst-dd-item">
+                <span class="dd-icon">📋</span>
+                <div class="dd-text">
+                  <span class="dd-title">Participant OI Matrix</span>
+                  <span class="dd-sub">Client, DII, FII &amp; Pro open interest positioning</span>
                 </div>
               </a>
             </div>
@@ -1513,15 +1523,15 @@
             </div>
           </div>
 
-          <!-- 5. FII / DII DESK (WITH BOTH SUBMENUS) -->
+          <!-- 5. FII / DII DESK (WITH 3 INDIVIDUAL SUBMENUS) -->
           <div class="dot-menu-section" data-dot-section="fiidii">
             <div class="dot-menu-section-header">
-              <span class="dot-section-icon">🏦</span>
+              <span class="dot-section-icon">🏛️</span>
               <span class="dot-section-title">FII / DII Desk</span>
             </div>
             <div class="dot-sub-grid">
               <!-- Sub 1 -->
-              <a href="/fii-dii" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'cash')">
+              <a href="/fii-dii/cash" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'cash')">
                 <span class="dot-sub-icon">💵</span>
                 <div class="dot-sub-text">
                   <div class="dot-sub-title">FII / DII Cash Market</div>
@@ -1529,11 +1539,19 @@
                 </div>
               </a>
               <!-- Sub 2 -->
-              <a href="/fii-dii" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'derivatives')">
-                <span class="dot-sub-icon">📊</span>
+              <a href="/fii-dii/derivatives" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'derivatives')">
+                <span class="dot-sub-icon">⚡</span>
                 <div class="dot-sub-text">
                   <div class="dot-sub-title">FII / DII Derivatives</div>
-                  <div class="dot-sub-desc">Index &amp; stock futures OI &amp; positioning</div>
+                  <div class="dot-sub-desc">Index &amp; stock futures turnover &amp; daily action</div>
+                </div>
+              </a>
+              <!-- Sub 3 -->
+              <a href="/fii-dii/participant-oi" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'oi')">
+                <span class="dot-sub-icon">📋</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Participant OI Matrix</div>
+                  <div class="dot-sub-desc">Client, DII, FII &amp; Pro cumulative OI matrix</div>
                 </div>
               </a>
             </div>
