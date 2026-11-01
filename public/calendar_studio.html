@@ -21,7 +21,7 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calendar Spread Studio - Multi-Strike Calendar &amp; Diagonal Engine | TradersDesk</title>
+  <title>Calendar Spread Studio - Multi-Strike Calendar &amp; Diagonal Spreads | TradersDesk</title>
   <meta name="description" content="TradersDesk Institutional Calendar Spread Studio for time decay arbitrage, term structure visualization, and dynamic Greeks spread modeling.">
   <meta name="keywords" content="calendar spread, options calendar, diagonal spread, time decay arbitrage, tradersdesk, options greeks, term structure">
   <meta name="author" content="TradersDesk.in Quantitative Analytics">
@@ -33,7 +33,7 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://tradersdesk.in/calendar-studio">
-  <meta property="og:title" content="Calendar Spread Studio - Multi-Strike &amp; Diagonal Engine | TradersDesk">
+  <meta property="og:title" content="Calendar Spread Studio - Multi-Strike &amp; Diagonal Spreads | TradersDesk">
   <meta property="og:description" content="Institutional Calendar Spread Studio for time decay arbitrage, term structure visualization, and dynamic Greeks spread modeling.">
   <meta property="og:site_name" content="TradersDesk.in">
   <meta property="og:image" content="https://tradersdesk.in/tradersdesk-logo.jpg">
@@ -1211,12 +1211,12 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://tradersdesk.in/calendar-studio">
-  <meta name="twitter:title" content="Calendar Spread Studio - Multi-Strike Options Engine | TradersDesk">
+  <meta name="twitter:title" content="Calendar Spread Studio - Multi-Strike Options Studio | TradersDesk">
   <meta name="twitter:description" content="Model calendar and diagonal option spreads across weekly and monthly expiries with real-time volatility surface pricing.">
   <meta name="twitter:image" content="https://tradersdesk.in/og-image.png">
 </head>
 <body>
-  <h1 class="visually-hidden" style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;">Calendar Spread Studio - Multi-Strike Options Diagonal & Calendar Spread Engine</h1>
+  <h1 class="visually-hidden" style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;">Calendar Spread Studio - Multi-Strike Options & Diagonal Spreads</h1>
 
 
   <!-- ========================================
@@ -1636,7 +1636,7 @@
     let currentPendingExpiryTarget = 'far';
 
     /* ============================================================
-       EXCEL FORMULA SCOPE ENGINE (Allows =choose-50, =ATM-50, =SUM, etc.)
+       EXCEL FORMULA SCOPE SYSTEM (Allows =choose-50, =ATM-50, =SUM, etc.)
        ============================================================ */
     try {
       Object.defineProperty(window, 'ATM', { get: () => currentAtmStrike || 24800, configurable: true });
@@ -1684,7 +1684,7 @@
       window.sqrt = window.SQRT;
       window.IF = (cond, ifTrue, ifFalse) => cond ? ifTrue : ifFalse;
     } catch (e) {
-      console.warn("Global formula engine registration:", e);
+      console.warn("Global formula system registration:", e);
     }
 
     function escapeHtml(str) {
@@ -2757,7 +2757,7 @@
     }
 
     /* ============================================================
-       EXCEL ENGINE: XLSX EXPORT, IMPORT & FORMATTING TOOLS
+       EXCEL TOOLS: XLSX EXPORT, IMPORT & FORMATTING TOOLS
        ============================================================ */
     function exportExcelXlsx() {
       if (typeof XLSX === 'undefined') {
@@ -3830,7 +3830,7 @@
             const spotEl = document.getElementById('spotBadge');
             if (spotEl) spotEl.textContent = `${sym} Spot: ₹${data.spotPrice.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
             const syncEl = document.getElementById('syncLabel');
-            if (syncEl) syncEl.textContent = data.isLive ? "Upstox Live Feed" : "Live Greeks Engine";
+            if (syncEl) syncEl.textContent = data.isLive ? "Upstox Live Feed" : "Live Greeks Desk";
 
             if (data.headerQuotes) updateHeaderTickerCards(data.headerQuotes);
 
@@ -3938,7 +3938,7 @@
           const modalBroker = document.getElementById('modalActiveBrokerName');
           const modalStatus = document.getElementById('modalBrokerStatusTag');
 
-          if (modalBroker) modalBroker.textContent = d.isLive ? 'Direct Exchange Gateway' : 'Quantitative Engine';
+          if (modalBroker) modalBroker.textContent = d.isLive ? 'Direct Exchange Gateway' : 'Quantitative Analytics';
 
           if (d.isLive) {
             if (btn) { btn.className = 'cs-hbtn api-btn'; }
@@ -4078,7 +4078,7 @@
             <div class="footer-links-list" style="display:flex; flex-direction:column; gap:8px;">
               <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('upstoxChain', '', '/option-chain-pro', event); }">Option Chain Pro</a>
               <a href="/futures" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'matrix', '/futures', event); }">Future Marketwatch Matrix</a>
-              <a href="/straddle" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/straddle', event); }">Straddle Analytics Engine</a>
+              <a href="/straddle" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/straddle', event); }">Straddle Analytics</a>
               <a href="/futures/buildup" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'buildup', '/futures/buildup', event); }">Future Buildup Quadrants</a>
               <a href="/futures/mwpl" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'mwpl', '/futures/mwpl', event); }">MWPL &amp; Ban Radar</a>
               <a href="/futures/rollover" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('futures', 'rollover', '/futures/rollover', event); }">Historical Rollover Matrix</a>

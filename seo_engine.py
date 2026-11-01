@@ -157,13 +157,13 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
     },
     "/breadth": {
         "title": "Market Breadth & Point and Figure (PnF) Analytics Desk | TradersDesk",
-        "desc": "Institutional Market Breadth engine with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum distribution.",
+        "desc": "Institutional Market Breadth analytics with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum distribution.",
         "keywords": "market breadth, pnf breadth, point and figure, advance decline ratio, sector breadth, ad line, nse breadth",
         "canonical": "https://tradersdesk.in/breadth",
     },
     "/market-breadth": {
         "title": "Market Breadth & Point and Figure (PnF) Analytics Desk | TradersDesk",
-        "desc": "Institutional Market Breadth engine with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum distribution.",
+        "desc": "Institutional Market Breadth analytics with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum distribution.",
         "keywords": "market breadth, point and figure, pnf breadth, advance decline ratio, sector breadth, ad line",
         "canonical": "https://tradersdesk.in/breadth",
     },
@@ -228,7 +228,7 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
         "canonical": "https://tradersdesk.in/option-chain-pro/volatility",
     },
     "/wpcr": {
-        "title": "wPCR & PCE Quant Terminal - Real-Time Put-Call Ratio & Institutional Capital Flow | TradersDesk",
+        "title": "wPCR & PCE Analytics - Real-Time Put-Call Ratio & Institutional Capital Flow | TradersDesk",
         "desc": "Institutional wPCR (Premium-Weighted PCR), dPCR, Put-Call Parity equilibrium, retail trap detection and institutional capital deployment analytics across NSE options.",
         "keywords": "wpcr, weighted pcr, pce ratio, put call parity, options capital flow, options trap detection, tradersdesk",
         "canonical": "https://tradersdesk.in/wpcr",
@@ -391,24 +391,24 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
     },
     "/breadth-contribution": {
         "title": "Breadth Contribution Desk - Point Contribution to Nifty & Sector Breakdown | TradersDesk",
-        "desc": "Detailed stock-by-stock point contribution engine showing heavyweights driving Nifty 50, Bank Nifty, and sector rally or decline.",
+        "desc": "Detailed stock-by-stock point contribution analysis showing heavyweights driving Nifty 50, Bank Nifty, and sector rally or decline.",
         "keywords": "breadth contribution, nifty point contribution, heavyweight movers, reliance contribution, index movers",
         "canonical": "https://tradersdesk.in/breadth-contribution",
     },
     "/contribution": {
         "title": "Breadth Contribution Desk - Point Contribution to Nifty & Sector Breakdown | TradersDesk",
-        "desc": "Detailed stock-by-stock point contribution engine showing heavyweights driving Nifty 50, Bank Nifty, and sector rally or decline.",
+        "desc": "Detailed stock-by-stock point contribution analysis showing heavyweights driving Nifty 50, Bank Nifty, and sector rally or decline.",
         "keywords": "breadth contribution, nifty point contribution, heavyweight movers",
         "canonical": "https://tradersdesk.in/breadth-contribution",
     },
     "/calendar-studio": {
-        "title": "Calendar Spread Studio - Multi-Strike Calendar & Diagonal Engine | TradersDesk",
+        "title": "Calendar Spread Studio - Multi-Strike Calendar & Diagonal Spreads | TradersDesk",
         "desc": "TradersDesk Institutional Calendar Spread Studio for time decay arbitrage, term structure visualization, and dynamic Greeks spread modeling.",
         "keywords": "calendar spread, options calendar, diagonal spread, time decay arbitrage, tradersdesk, options greeks, term structure",
         "canonical": "https://tradersdesk.in/calendar-studio",
     },
     "/calendar_studio.html": {
-        "title": "Calendar Spread Studio - Multi-Strike Calendar & Diagonal Engine | TradersDesk",
+        "title": "Calendar Spread Studio - Multi-Strike Calendar & Diagonal Spreads | TradersDesk",
         "desc": "TradersDesk Institutional Calendar Spread Studio for time decay arbitrage, term structure visualization, and dynamic Greeks spread modeling.",
         "keywords": "calendar spread, options calendar, diagonal spread, time decay arbitrage, tradersdesk, options greeks, term structure",
         "canonical": "https://tradersdesk.in/calendar-studio",
@@ -427,14 +427,14 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
     },
     "/about": {
         "title": "Quantitative Model Methodologies & Architecture | TradersDesk",
-        "desc": "Learn about TradersDesk's Black-Scholes Greeks engines, Point & Figure market breadth calculations, and institutional data pipelines.",
-        "keywords": "about tradersdesk, quantitative models, black scholes engine, market breadth methodology",
+        "desc": "Learn about TradersDesk's Black-Scholes Greeks models, Point & Figure market breadth calculations, and institutional data pipelines.",
+        "keywords": "about tradersdesk, quantitative models, black scholes calculator, market breadth methodology",
         "canonical": "https://tradersdesk.in/about",
     },
     "/about.html": {
         "title": "Quantitative Model Methodologies & Architecture | TradersDesk",
-        "desc": "Learn about TradersDesk's Black-Scholes Greeks engines, Point & Figure market breadth calculations, and institutional data pipelines.",
-        "keywords": "about tradersdesk, quantitative models, black scholes engine, market breadth methodology",
+        "desc": "Learn about TradersDesk's Black-Scholes Greeks models, Point & Figure market breadth calculations, and institutional data pipelines.",
+        "keywords": "about tradersdesk, quantitative models, black scholes calculator, market breadth methodology",
         "canonical": "https://tradersdesk.in/about",
     },
     "/disclaimer": {
@@ -1167,7 +1167,7 @@ def get_dynamic_meta_for_path(path: str, snapshot: dict) -> dict:
         base_meta["title"] = "MTF Analytics - Margin Trading Facility Book & Stock Leverage | TradersDesk"
         base_meta["desc"] = f"Comprehensive Margin Trading Facility (MTF) loan book analytics, category leverage distribution, and SEBI regulatory disclosures ({date_str})."
     elif clean_p.startswith("/breadth") or clean_p.startswith("/contribution"):
-        base_meta["title"] = "Market Breadth Pro - Point & Figure Advance-Decline Engine | TradersDesk"
+        base_meta["title"] = "Market Breadth Pro - Point & Figure Advance-Decline Analytics | TradersDesk"
         base_meta["desc"] = f"Institutional Indian market breadth with Point & Figure (PnF) matrices, advance-decline momentum, and heavyweight point contribution."
     elif clean_p.startswith("/open-interest") or clean_p.startswith("/oi"):
         base_meta["title"] = "Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk"
@@ -1323,7 +1323,7 @@ def build_semantic_crawler_html(path: str, snapshot: dict = None) -> str:
     elif "option" in clean_p or "straddle" in clean_p:
         context_block = """
         <div style="margin-top:16px; padding:16px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
-          <h3 style="font-size:14px; color:#38bdf8; margin:0 0 8px;">⚡ Option Chain Pro &amp; Black-Scholes Greeks Engine</h3>
+          <h3 style="font-size:14px; color:#38bdf8; margin:0 0 8px;">⚡ Option Chain Pro &amp; Black-Scholes Greeks Analytics</h3>
           <p style="margin:0 0 6px; font-size:12.5px; line-height:1.6;">Direct exchange streaming Option Chain Pro for Nifty 50, Bank Nifty, and NSE single-stock options. High-speed mathematical modeling calculates first and second-order Black-Scholes Greeks: Delta (price sensitivity), Gamma (delta acceleration), Theta (daily time decay), Vega (volatility risk), and Rho. Integrated with real-time Put-Call Ratio (PCR), Max Pain strike calculation, IV Skew curves, and ATM Straddle decay charts.</p>
         </div>
         """

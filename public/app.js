@@ -309,7 +309,7 @@ const els = {
   resistanceWallsList: document.getElementById("resistanceWallsList"),
   supportWallsList: document.getElementById("supportWallsList"),
 
-  // wPCR & PCE Quant Terminal Elements
+  // wPCR & PCE Analytics Elements
   subtabWpcrPce: document.getElementById("subtabWpcrPce"),
   optWpcrPceViewWrap: document.getElementById("optWpcrPceViewWrap"),
   wpcrHeroVal: document.getElementById("wpcrHeroVal"),
@@ -535,7 +535,7 @@ const els = {
   cocSentimentVal: document.getElementById("cocSentimentVal"),
   stealthAccumTableBody: document.getElementById("stealthAccumTableBody"),
 
-  // Positional Option Selling Strategy Engine
+  // Positional Option Selling Strategies
   posStratBadge: document.getElementById("posStratBadge"),
   posStratRefreshBtn: document.getElementById("posStratRefreshBtn"),
   posStratTitle: document.getElementById("posStratTitle"),
@@ -1706,7 +1706,7 @@ async function runBreadth(options = {}) {
     const isSimNotice = errText.includes("Simulated") || errText.includes("simulated");
     let msg;
     if (isBusy) {
-      msg = "Exchange analytics engine is syncing market sessions. Please refresh in a moment.";
+      msg = "Exchange analytics system is syncing market sessions. Please refresh in a moment.";
     } else if (isSimNotice) {
       msg = "Market breadth live feed is offline. Displaying latest verified session.";
     } else {
@@ -2533,7 +2533,7 @@ function renderOptionsStatistics(stats, spot) {
 }
 
 /* ==========================================================================
-   ⚖️ wPCR & PCE Quant Terminal Implementation
+   ⚖️ wPCR & PCE Analytics Implementation
    ========================================================================== */
 let wpcrDataGlobal = null;
 let wpcrChartGeometry = null;
@@ -8413,7 +8413,7 @@ function switchTab(tab) {
 window.switchTab = switchTab;
 
 /* ==========================================================================
-   ⚡ Quant Options Desk & Intraday Straddle Engine Implementation
+   ⚡ Quant Options Desk & Intraday Straddle Analytics Implementation
    ========================================================================== */
 let straddleDataGlobal = null;
 let selectedStraddleStrike = null;
@@ -9891,7 +9891,7 @@ function renderSecretTerminal(data) {
   const coc = data.costOfCarry || {};
   const strat = data.positionalStrategy || {};
 
-  // 0. Positional Option Selling Strategy Engine
+  // 0. Positional Option Selling Strategies
   if (els.posStratBadge) els.posStratBadge.textContent = strat.badge || "Auto Strategy";
   if (els.posStratTitle) els.posStratTitle.textContent = strat.strategyName || "Positional Setup";
   if (els.posStratRationale) els.posStratRationale.textContent = strat.rationale || "--";
@@ -12100,7 +12100,7 @@ async function loadToolsTrapDetector() {
   }
 }
 
-// Tool 4: Auto-Anchored VWAP Engine
+// Tool 4: Auto-Anchored VWAP Tool
 async function loadToolsAvwap() {
   const select = document.getElementById("toolAvwapIndexSelect");
   const sym = select ? select.value : "nifty50";
@@ -12395,13 +12395,13 @@ const ROUTE_CONFIG = {
     desk: "futures",
     subview: "futureVsOi",
     title: "Futures Price vs Open Interest Analysis | TradersDesk",
-    desc: "Institutional dual-axis Future Price vs Open Interest divergence chart, interactive replay engine, and buildup quadrant analysis."
+    desc: "Institutional dual-axis Future Price vs Open Interest divergence chart, interactive replay tools, and buildup quadrant analysis."
   },
   "/futures/price-vs-oi": {
     desk: "futures",
     subview: "futureVsOi",
     title: "Futures Price vs Open Interest Analysis | TradersDesk",
-    desc: "Institutional dual-axis Future Price vs Open Interest divergence chart, interactive replay engine, and buildup quadrant analysis."
+    desc: "Institutional dual-axis Future Price vs Open Interest divergence chart, interactive replay tools, and buildup quadrant analysis."
   },
   "/futures/intraday": {
     desk: "futures",
@@ -12425,13 +12425,13 @@ const ROUTE_CONFIG = {
     redirect: "/breadth-contribution",
     desk: "contribution",
     title: "Market Breadth & Point and Figure (PnF) Analytics Desk | TradersDesk",
-    desc: "Institutional Market Breadth engine with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum."
+    desc: "Institutional Market Breadth analytics with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum."
   },
   "/breadth": {
     redirect: "/breadth-contribution",
     desk: "contribution",
     title: "Market Breadth & PnF Advance-Decline | TradersDesk",
-    desc: "Institutional Market Breadth engine with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum."
+    desc: "Institutional Market Breadth analytics with Point & Figure (PnF) column matrices, advance-decline ratios, and sector breadth momentum."
   },
   "/fii-dii": {
     desk: "smartmoney",
