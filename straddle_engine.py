@@ -207,44 +207,7 @@ def get_categories() -> dict:
             {
                 "name": "Equity",
                 "indices": indices_list,
-            },
-            {
-                "name": "Commodity",
-                "indices": [
-                    {
-                        "key": "CRUDEOIL",
-                        "name": "CRUDE OIL",
-                        "immediate_expiry": (today + timedelta(days=15)).strftime("%Y-%m-%d"),
-                        "dte": 15,
-                        "expiries": [(today + timedelta(days=15)).strftime("%Y-%m-%d")],
-                        "expiry_details": [{"value": (today + timedelta(days=15)).strftime("%Y-%m-%d"), "label": (today + timedelta(days=15)).strftime("%d %b %Y") + " (15 DTE)", "dte": 15}],
-                    },
-                    {
-                        "key": "NATURALGAS",
-                        "name": "NATURAL GAS",
-                        "immediate_expiry": (today + timedelta(days=10)).strftime("%Y-%m-%d"),
-                        "dte": 10,
-                        "expiries": [(today + timedelta(days=10)).strftime("%Y-%m-%d")],
-                        "expiry_details": [{"value": (today + timedelta(days=10)).strftime("%Y-%m-%d"), "label": (today + timedelta(days=10)).strftime("%d %b %Y") + " (10 DTE)", "dte": 10}],
-                    },
-                    {
-                        "key": "GOLD",
-                        "name": "GOLD",
-                        "immediate_expiry": (today + timedelta(days=20)).strftime("%Y-%m-%d"),
-                        "dte": 20,
-                        "expiries": [(today + timedelta(days=20)).strftime("%Y-%m-%d")],
-                        "expiry_details": [{"value": (today + timedelta(days=20)).strftime("%Y-%m-%d"), "label": (today + timedelta(days=20)).strftime("%d %b %Y") + " (20 DTE)", "dte": 20}],
-                    },
-                    {
-                        "key": "SILVER",
-                        "name": "SILVER",
-                        "immediate_expiry": (today + timedelta(days=20)).strftime("%Y-%m-%d"),
-                        "dte": 20,
-                        "expiries": [(today + timedelta(days=20)).strftime("%Y-%m-%d")],
-                        "expiry_details": [{"value": (today + timedelta(days=20)).strftime("%Y-%m-%d"), "label": (today + timedelta(days=20)).strftime("%d %b %Y") + " (20 DTE)", "dte": 20}],
-                    },
-                ],
-            },
+            }
         ]
     }
 
