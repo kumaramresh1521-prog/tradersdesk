@@ -1495,7 +1495,7 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
                 target_panel = pnl
                 break
 
-    if target_panel and target_panel != "panelDashboard":
+    if target_panel and target_panel != "panelDashboard" and (target_panel in html):
         # Remove active from panelDashboard and hide it
         html = re.sub(r'(id=["\']panelDashboard["\'][^>]*class=["\'][^"\']*)\bactive\b([^"\']*["\'])', r'\1\2 style="display:none;"', html)
         html = html.replace('class="tab-panel inst-dashboard-panel "', 'class="tab-panel inst-dashboard-panel"')
@@ -1514,18 +1514,22 @@ def clean_dynamic_html_body(html: str, path: str, snapshot: dict) -> str:
 
         html = re.sub(rf'<div[^>]*id=["\']{target_panel}["\'][^>]*>', _activate_panel, html, count=1)
 
-    # 4. Desk-specific <h1> injection for 100% on-page heading alignment
-    desk_h1_map = {
-        "panelUpstoxChain": "Option Chain Pro &amp; Real-Time Option Greeks Terminal",
-        "panelFutures": "Futures Intelligence &amp; Open Interest (OI) Buildup Desk",
-        "panelSmartMoney": "Institutional Smart Money Flow &amp; Participant OI Radar",
-        "panelDelivery": "Cash Delivery Volume Absorption &amp; Accumulation Scanner",
-        "panelMtf": "Margin Trading Facility (MTF) &amp; Systemic Leverage Book",
-        "panelBreadth": "Market Breadth &amp; Point and Figure Analytics Desk",
-    }
-    target_h1 = desk_h1_map.get(target_panel)
-    if target_h1:
-        html = re.sub(r'<h1[^>]*>.*?</h1>', f'<h1>{target_h1}</h1>', html, count=1, flags=re.DOTALL | re.IGNORECASE)
+        # 4. Desk-specific <h1> injection for 100% on-page heading alignment
+        desk_h1_map = {
+            "panelUpstoxChain": "Option Chain Pro &amp; Real-Time Option Greeks Analytics",
+            "panelFutures": "Futures Intelligence &amp; Open Interest (OI) Buildup Desk",
+            "panelSmartMoney": "Institutional Smart Money Flow &amp; Participant OI Radar",
+            "panelDelivery": "Cash Delivery Volume Absorption &amp; Accumulation Scanner",
+            "panelMtf": "Margin Trading Facility (MTF) &amp; Systemic Leverage Book",
+            "panelBreadth": "Market Breadth &amp; Point and Figure Analytics Desk",
+        }
+        target_h1 = desk_h1_map.get(target_panel)
+        if target_h1 and ("class=\"visually-hidden\"" not in html):
+            def _preserve_h1(m):
+                tag_open = m.group(1)
+                tag_close = m.group(3)
+                return f"{tag_open}{target_h1}{tag_close}"
+            html = re.sub(r'(<h1[^>]*>)(.*?)(</h1>)', _preserve_h1, html, count=1, flags=re.DOTALL | re.IGNORECASE)
 
     return html
 
