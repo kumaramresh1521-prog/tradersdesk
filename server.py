@@ -11816,6 +11816,91 @@ class RequestHandler(BaseHTTPRequestHandler):
                     _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if success else 400, {"ok": success, "message": "Page deleted successfully" if success else "Failed deleting page"})
 
+            if parsed.path == "/api/admin/ads/upload-banner":
+                # Multipart banner image upload - manual parser (no cgi module needed, Python 3.13+ compatible)
+                pin_provided = self.headers.get("X-Admin-Secret", "").strip().strip('"').strip("'")
+                secret = get_admin_secret()
+                is_valid = bool(pin_provided and secret and hmac.compare_digest(pin_provided, secret))
+                if not is_valid and not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Invalid Admin PIN."})
+
+                content_type_hdr = self.headers.get("Content-Type", "")
+                if "multipart/form-data" not in content_type_hdr:
+                    return self.send_json(400, {"ok": False, "message": "Expected multipart/form-data"})
+
+                boundary_match = re.search(r'boundary=([^;\r\n]+)', content_type_hdr)
+                if not boundary_match:
+                    return self.send_json(400, {"ok": False, "message": "Missing multipart boundary"})
+                boundary = boundary_match.group(1).strip().strip('"').strip("'")
+
+                length = int(self.headers.get("Content-Length", "0") or 0)
+                if length <= 0 or length > 5 * 1024 * 1024:
+                    return self.send_json(400, {"ok": False, "message": "Invalid or too large file (max 5MB)"})
+
+                raw_body = self.rfile.read(length)
+
+                # Manual multipart parsing (avoids deprecated cgi module)
+                b_boundary = b"--" + boundary.encode("latin-1")
+                b_final = b_boundary + b"--"
+                parts = raw_body.split(b_boundary)
+                slot_key_field = ""
+                file_bytes = None
+                file_name = ""
+                file_mime = ""
+
+                for part in parts:
+                    if not part or part == b"--" or part.strip() == b"--":
+                        continue
+                    # Split header / body at double CRLF
+                    if b"\r\n\r\n" in part:
+                        header_raw, body_raw = part.split(b"\r\n\r\n", 1)
+                    elif b"\n\n" in part:
+                        header_raw, body_raw = part.split(b"\n\n", 1)
+                    else:
+                        continue
+                    if body_raw.endswith(b"\r\n"):
+                        body_raw = body_raw[:-2]
+                    elif body_raw.endswith(b"\n"):
+                        body_raw = body_raw[:-1]
+                    header_str = header_raw.decode("latin-1", errors="replace")
+
+                    disp_match = re.search(r'\bname="([^"]+)"', header_str, re.IGNORECASE)
+                    if not disp_match:
+                        continue
+                    field_name = disp_match.group(1)
+
+                    fname_match = re.search(r'filename="([^"]*)"', header_str, re.IGNORECASE)
+                    ctype_match = re.search(r'Content-Type:\s*([^\r\n]+)', header_str, re.IGNORECASE)
+
+                    if field_name == "slot_key":
+                        slot_key_field = body_raw.decode("utf-8", errors="replace").strip()
+                    elif (field_name == "file" or fname_match) and fname_match:
+                        file_bytes = body_raw
+                        file_name = fname_match.group(1)
+                        file_mime = ctype_match.group(1).strip() if ctype_match else "application/octet-stream"
+
+                if not file_bytes or not file_name:
+                    return self.send_json(400, {"ok": False, "message": "No file found in request"})
+
+                ext = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
+                allowed_ext = {"jpg", "jpeg", "png", "gif", "webp", "svg"}
+                if ext not in allowed_ext:
+                    return self.send_json(400, {"ok": False, "message": f"Unsupported format: .{ext} — use JPG/PNG/GIF/WebP/SVG"})
+
+                safe_slot = re.sub(r"[^a-z0-9_]", "", (slot_key_field or "banner").lower())
+                import time as _time
+                filename = f"ad_{safe_slot}_{int(_time.time())}.{ext}"
+                banner_dir = PUBLIC_DIR / "ad-banners"
+                banner_dir.mkdir(parents=True, exist_ok=True)
+                out_path = banner_dir / filename
+
+                with open(out_path, "wb") as img_f:
+                    img_f.write(file_bytes)
+
+                url = f"/ad-banners/{filename}"
+                log_system_event("SUCCESS", "MONETIZATION", f"Ad banner uploaded: {filename} for slot {safe_slot}")
+                return self.send_json(200, {"ok": True, "url": url, "filename": filename, "size": len(file_bytes)})
+
             if parsed.path == "/api/admin/ads/save":
                 payload = self.read_body()
                 pin_provided = (

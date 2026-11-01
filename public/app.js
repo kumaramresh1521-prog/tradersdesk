@@ -27742,10 +27742,21 @@ if (document.readyState === 'loading') { document.addEventListener('DOMContentLo
 
 
 /* ==========================================================================
-   ADS CONTROL & MONETIZATION ENGINE (Non-Intrusive, Engagement-Preserving)
+   ADS CONTROL & MONETIZATION ENGINE — v2.0 (Full Working, Zero-CLS)
    ========================================================================== */
+
 window._adsConfig = null;
 
+// ── Helper: get correct field name ─────────────────────────────────────────
+function _adsClientId(cfg) {
+  return (cfg && (cfg.adsense_client_id || cfg.client_id || '')) || '';
+}
+
+function _slotCustomHtml(s) {
+  return (s && (s.custom_html || s.custom_code || '')) || '';
+}
+
+// ── Load config from backend ───────────────────────────────────────────────
 async function loadAdsConfig() {
   try {
     const res = await fetch('/api/ads-config');
@@ -27755,165 +27766,353 @@ async function loadAdsConfig() {
       return data.config;
     }
   } catch (err) {
-    console.warn('[Ads] Failed to load ads config:', err);
+    console.warn('[Ads] Failed to load config:', err);
   }
   return null;
 }
 
-function renderClientAdSlots() {
-  const cfg = window._adsConfig;
-  if (!cfg || !cfg.enabled) {
-    document.querySelectorAll('.ad-slot-wrapper').forEach(el => {
-      el.style.display = 'none';
-    });
+// ── Build ad preview placeholder ──────────────────────────────────────────
+function _buildPreviewPlaceholder(slotKey, slotCfg) {
+  if (slotKey === 'dashboard_native') {
+    return `<div style="background:linear-gradient(135deg,rgba(30,41,59,0.7)0%,rgba(15,23,42,0.8)100%);border:1px dashed rgba(56,189,248,0.4);border-radius:8px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:8px;background:rgba(56,189,248,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid rgba(56,189,248,0.3);">⚡</div>
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:700;font-size:14px;color:#f8fafc;">Sponsored Market Partner</span>
+            <span style="font-size:10px;font-weight:800;background:rgba(56,189,248,0.2);color:#38bdf8;padding:2px 6px;border-radius:4px;text-transform:uppercase;">Promoted</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Fast-execution institutional equity & options order routing for active traders.</div>
+        </div>
+      </div>
+      <a href="javascript:void(0)" style="padding:6px 14px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;">Explore Terminal &rarr;</a>
+    </div>`;
+  }
+  return `<div style="background:rgba(30,41,59,0.5);border:1px dashed rgba(148,163,184,0.3);border-radius:6px;padding:14px 20px;width:100%;max-width:728px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:16px;">📢</span>
+      <span style="font-size:12px;color:var(--text-secondary);font-weight:600;">${(slotCfg && slotCfg.label) || 'Ad Placement'} — ${(slotCfg && slotCfg.description) || 'Verified Trading Partner Banner Slot'}</span>
+    </div>
+    <span style="font-size:10px;font-weight:700;background:rgba(148,163,184,0.15);color:#94a3b8;padding:3px 8px;border-radius:4px;">PREVIEW MODE</span>
+  </div>`;
+}
+
+// ── Render a single slot container ────────────────────────────────────────
+function _renderOneSlot(slotKey, containerId, cfg) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const slotCfg = (cfg.slots && cfg.slots[slotKey]) || { enabled: false };
+
+  if (!slotCfg.enabled) {
+    container.style.display = 'none';
     return;
   }
 
-  // Inject Google AdSense auto-ads script if configured
-  if (cfg.auto_ads && cfg.client_id && !document.getElementById('adsense-script-tag')) {
-    const script = document.createElement('script');
-    script.id = 'adsense-script-tag';
-    script.async = true;
-    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(cfg.client_id)}`;
-    script.crossOrigin = 'anonymous';
-    document.head.appendChild(script);
+  const contentBox = container.querySelector('.ad-content-box') || container;
+  const clientId = _adsClientId(cfg);
+  const customHtml = _slotCustomHtml(slotCfg);
+  const bannerImage = slotCfg.banner_image || '';
+  const bannerLink = slotCfg.banner_link || '';
+
+  if (bannerImage) {
+    // Image banner upload mode
+    const imgTag = `<img src="${bannerImage}" alt="${slotCfg.banner_alt || 'Advertisement'}" style="max-width:100%;height:auto;border-radius:6px;display:block;margin:0 auto;" loading="lazy">`;
+    contentBox.innerHTML = bannerLink
+      ? `<a href="${bannerLink}" target="_blank" rel="noopener noreferrer nofollow" style="display:block;">${imgTag}</a>`
+      : imgTag;
+    container.style.display = 'block';
+  } else if (customHtml.trim()) {
+    // Custom HTML/script code
+    contentBox.innerHTML = customHtml;
+    // Execute any script tags in custom HTML
+    contentBox.querySelectorAll('script').forEach(oldS => {
+      const newS = document.createElement('script');
+      if (oldS.src) newS.src = oldS.src;
+      else newS.textContent = oldS.textContent;
+      newS.async = true;
+      document.head.appendChild(newS);
+      oldS.remove();
+    });
+    container.style.display = 'block';
+  } else if (clientId && slotCfg.slot_id) {
+    // Google AdSense named slot
+    contentBox.innerHTML = `<ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="${clientId}"
+         data-ad-slot="${slotCfg.slot_id}"
+         data-ad-format="${slotCfg.format || 'auto'}"
+         data-full-width-responsive="true"></ins>`;
+    container.style.display = 'block';
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+  } else if (cfg.test_mode) {
+    // Visual preview placeholder
+    contentBox.innerHTML = _buildPreviewPlaceholder(slotKey, slotCfg);
+    container.style.display = 'block';
+  } else {
+    container.style.display = 'none';
+  }
+}
+
+// ── Render all visible frontend slots ────────────────────────────────────
+async function renderClientAdSlots() {
+  if (!window._adsConfig) {
+    await loadAdsConfig();
+  }
+  const cfg = window._adsConfig;
+  if (!cfg || !cfg.enabled) {
+    document.querySelectorAll('.ad-slot-wrapper').forEach(el => { el.style.display = 'none'; });
+    return;
+  }
+
+  // Inject AdSense auto-ads global script if configured
+  const clientId = _adsClientId(cfg);
+  if (cfg.auto_ads && clientId && !document.getElementById('adsense-script-tag')) {
+    const s = document.createElement('script');
+    s.id = 'adsense-script-tag';
+    s.async = true;
+    s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(clientId)}`;
+    s.crossOrigin = 'anonymous';
+    document.head.appendChild(s);
   }
 
   const slotMap = {
-    dashboard_top: 'adSlotDashboardTop',
+    dashboard_top:    'adSlotDashboardTop',
     dashboard_native: 'adSlotDashboardNative',
-    footer_banner: 'adSlotFooterBanner'
+    footer_banner:    'adSlotFooterBanner'
   };
 
-  Object.entries(slotMap).forEach(([slotKey, containerId]) => {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    const slotCfg = (cfg.slots && cfg.slots[slotKey]) || { enabled: false };
-
-    if (!slotCfg.enabled) {
-      container.style.display = 'none';
-      return;
-    }
-
-    const contentBox = container.querySelector('.ad-content-box') || container;
-
-    if (slotCfg.custom_code && slotCfg.custom_code.trim()) {
-      contentBox.innerHTML = slotCfg.custom_code;
-      container.style.display = 'block';
-    } else if (cfg.client_id && slotCfg.slot_id) {
-      contentBox.innerHTML = `
-        <ins class="adsbygoogle"
-             style="display:block"
-             data-ad-client="${cfg.client_id}"
-             data-ad-slot="${slotCfg.slot_id}"
-             data-ad-format="${slotCfg.format || 'auto'}"
-             data-full-width-responsive="true"></ins>
-      `;
-      container.style.display = 'block';
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (e) {}
-    } else if (cfg.test_mode) {
-      if (slotKey === 'dashboard_native') {
-        contentBox.innerHTML = `
-          <div style="background:linear-gradient(135deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.8) 100%); border:1px dashed rgba(56,189,248,0.4); border-radius:8px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <div style="width:40px; height:40px; border-radius:8px; background:rgba(56,189,248,0.15); display:flex; align-items:center; justify-content:center; font-size:20px; border:1px solid rgba(56,189,248,0.3);">⚡</div>
-              <div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <span style="font-weight:700; font-size:14px; color:#f8fafc;">Sponsored Market Partner</span>
-                  <span style="font-size:10px; font-weight:800; background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 6px; border-radius:4px; text-transform:uppercase;">Promoted</span>
-                </div>
-                <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Fast-execution institutional equity & options order routing for active traders.</div>
-              </div>
-            </div>
-            <a href="javascript:void(0)" style="padding:6px 14px; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); border-radius:6px; font-size:12px; font-weight:700; text-decoration:none;">Explore Terminal &rarr;</a>
-          </div>
-        `;
-      } else {
-        contentBox.innerHTML = `
-          <div style="background:rgba(30,41,59,0.5); border:1px dashed rgba(148,163,184,0.3); border-radius:6px; padding:14px 20px; width:100%; max-width:728px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-              <span style="font-size:16px;">📢</span>
-              <span style="font-size:12px; color:var(--text-secondary); font-weight:600;">${slotCfg.description || 'Verified Trading Partner Banner Slot (728x90 Leaderboard)'}</span>
-            </div>
-            <span style="font-size:10px; font-weight:700; background:rgba(148,163,184,0.15); color:#94a3b8; padding:3px 8px; border-radius:4px;">PREVIEW MODE</span>
-          </div>
-        `;
-      }
-      container.style.display = 'block';
-    } else {
-      container.style.display = 'none';
-    }
-  });
+  Object.entries(slotMap).forEach(([key, id]) => _renderOneSlot(key, id, cfg));
 }
 
+// ── Upload banner image for a slot ───────────────────────────────────────
+async function uploadAdBanner(slotKey, fileInput, pin, onProgress) {
+  const file = fileInput.files[0];
+  if (!file) return { ok: false, message: 'No file selected' };
+
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxSize) return { ok: false, message: 'File too large (max 5MB)' };
+
+  const allowed = ['image/jpeg','image/jpg','image/png','image/gif','image/webp','image/svg+xml'];
+  if (!allowed.includes(file.type)) return { ok: false, message: 'Invalid format — use JPG/PNG/GIF/WebP/SVG' };
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('slot_key', slotKey);
+
+  if (onProgress) onProgress('Uploading...');
+  try {
+    const res = await fetch('/api/admin/ads/upload-banner', {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': pin },
+      body: fd
+    });
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    return { ok: false, message: 'Upload failed: ' + e.message };
+  }
+}
+
+// ── Admin Hub: Full control panel renderer ───────────────────────────────
 function initAdminAdsHub() {
   const grid = document.getElementById('adminAdSlotsGrid');
   const masterToggle = document.getElementById('adsMasterToggle');
+  const masterStatus = document.getElementById('adsMasterStatus');
   const clientIdInput = document.getElementById('adsClientId');
   const testModeToggle = document.getElementById('adsTestModeToggle');
   const autoAdsToggle = document.getElementById('adsAutoAdsToggle');
   const btnSave = document.getElementById('btnSaveAdsConfig');
   const statusMsg = document.getElementById('adsSaveStatusMsg');
+  const pinInput = document.getElementById('adsAdminPinInput');
 
   if (!grid || !btnSave) return;
 
-  loadAdsConfig().then(cfg => {
-    if (!cfg) return;
+  // Master toggle live label update
+  if (masterToggle && masterStatus) {
+    masterToggle.onchange = () => {
+      masterStatus.textContent = masterToggle.checked ? 'ENABLED' : 'DISABLED';
+      masterStatus.style.color = masterToggle.checked ? '#eab308' : '#ef4444';
+    };
+  }
 
-    if (masterToggle) masterToggle.checked = !!cfg.enabled;
-    if (clientIdInput) clientIdInput.value = cfg.client_id || '';
+  loadAdsConfig().then(cfg => {
+    if (!cfg) {
+      grid.innerHTML = '<div style="color:#ef4444;font-size:13px;padding:12px;">⚠️ Could not load ads configuration from server.</div>';
+      return;
+    }
+
+    const clientId = _adsClientId(cfg);
+    if (masterToggle) { masterToggle.checked = !!cfg.enabled; masterToggle.onchange(); }
+    if (clientIdInput) clientIdInput.value = clientId;
     if (testModeToggle) testModeToggle.checked = !!cfg.test_mode;
     if (autoAdsToggle) autoAdsToggle.checked = !!cfg.auto_ads;
 
+    const SLOT_ICONS = {
+      dashboard_top: '📊', dashboard_native: '🌐', blog_top: '📄',
+      blog_mid: '📝', blog_bottom: '📋', footer_banner: '🦶'
+    };
+
     const slots = cfg.slots || {};
     grid.innerHTML = Object.entries(slots).map(([key, s]) => {
+      const icon = SLOT_ICONS[key] || '📌';
+      const isEnabled = !!s.enabled;
+      const bannerImg = s.banner_image || '';
       return `
-        <div class="ad-slot-card" data-slot-key="${key}" style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:10px;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div class="ad-slot-card" data-slot-key="${key}" style="background:rgba(15,23,42,0.9); border:1px solid ${isEnabled ? 'rgba(16,185,129,0.4)' : '#334155'}; border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:12px; transition:border-color 0.2s;">
+          <!-- Header -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
             <div>
-              <div style="font-weight:700; font-size:13px; color:#f8fafc;">${s.label || key}</div>
-              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${s.description || ''}</div>
+              <div style="font-weight:700; font-size:13px; color:#f8fafc; display:flex; align-items:center; gap:6px;">${icon} ${s.label || key}</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:3px;">${s.description || ''}</div>
             </div>
-            <label style="position:relative; display:inline-block; width:36px; height:20px; flex-shrink:0;">
-              <input type="checkbox" class="slot-active-toggle" ${s.enabled ? 'checked' : ''} style="opacity:0; width:0; height:0;">
-              <span style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:${s.enabled ? '#10b981' : '#475569'}; transition:.3s; border-radius:20px;" onclick="this.previousElementSibling.click(); this.style.background = this.previousElementSibling.checked ? '#10b981' : '#475569';"></span>
+            <!-- Toggle switch -->
+            <label class="ad-slot-toggle-label" style="position:relative; display:inline-block; width:42px; height:22px; flex-shrink:0; cursor:pointer;">
+              <input type="checkbox" class="slot-active-toggle" ${isEnabled ? 'checked' : ''} style="opacity:0; width:0; height:0;">
+              <span class="ad-slot-toggle-track" style="position:absolute; cursor:pointer; inset:0; background:${isEnabled ? '#10b981' : '#475569'}; border-radius:22px; transition:background 0.25s;"></span>
+              <span style="position:absolute; content:''; width:16px; height:16px; left:${isEnabled ? '22px' : '3px'}; top:3px; background:#fff; border-radius:50%; transition:left 0.25s; pointer-events:none;" class="ad-slot-toggle-knob"></span>
             </label>
           </div>
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <div style="display:flex; gap:8px;">
-              <div style="flex:1;">
-                <label style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Ad Format</label>
-                <select class="slot-format-select" style="width:100%; padding:5px 8px; font-size:12px; background:#1e293b; border:1px solid #475569; color:#f8fafc; border-radius:4px; margin-top:2px;">
-                  <option value="auto" ${s.format === 'auto' ? 'selected' : ''}>Auto Responsive</option>
-                  <option value="horizontal" ${s.format === 'horizontal' ? 'selected' : ''}>Horizontal Banner</option>
-                  <option value="rectangle" ${s.format === 'rectangle' ? 'selected' : ''}>Medium Rectangle</option>
-                  <option value="native" ${s.format === 'native' ? 'selected' : ''}>Native In-Feed</option>
-                </select>
+
+          <!-- Banner Image Upload Section -->
+          <div style="background:rgba(0,0,0,0.3); border:1px solid #1e293b; border-radius:6px; padding:12px;">
+            <div style="font-size:11px; font-weight:700; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">📎 Banner Image Upload</div>
+            <div style="display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap;">
+              <div style="flex:1; min-width:160px;">
+                <div id="bannerPreview_${key}" style="margin-bottom:6px; ${bannerImg ? '' : 'display:none;'}">
+                  <img src="${bannerImg}" alt="Banner Preview" style="max-width:100%; max-height:60px; border-radius:4px; border:1px solid #334155; display:block;" onerror="this.parentElement.style.display='none'">
+                  <div style="font-size:10px; color:#10b981; margin-top:3px;">✅ Banner active: <code style="background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:3px;">${bannerImg}</code></div>
+                </div>
+                <input type="file" class="slot-banner-file" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                  style="display:block; width:100%; font-size:11px; color:#94a3b8; background:#0f172a; border:1px dashed #475569; border-radius:4px; padding:4px 8px; cursor:pointer;"
+                  title="Upload JPG/PNG/GIF/WebP/SVG banner (max 5MB)">
+                <div style="font-size:10px; color:#64748b; margin-top:3px;">JPG/PNG/GIF/WebP/SVG • Max 5MB</div>
               </div>
-              <div style="flex:1;">
-                <label style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Slot ID</label>
-                <input type="text" class="slot-id-input" value="${s.slot_id || ''}" placeholder="e.g. 9876543210" style="width:100%; padding:5px 8px; font-size:12px; background:#1e293b; border:1px solid #475569; color:#f8fafc; border-radius:4px; margin-top:2px; font-family:'JetBrains Mono',monospace;">
+              <div style="display:flex; flex-direction:column; gap:6px; min-width:120px;">
+                <button type="button" class="btn-upload-banner" data-slot="${key}" style="padding:5px 12px; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); border-radius:5px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">⬆ Upload Banner</button>
+                <button type="button" class="btn-clear-banner" data-slot="${key}" style="padding:5px 12px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:5px; font-size:11px; font-weight:600; cursor:pointer; ${bannerImg ? '' : 'display:none;'}">🗑 Clear Banner</button>
               </div>
             </div>
-            <div>
-              <label style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Custom Banner HTML / Script (Optional)</label>
-              <textarea class="slot-custom-code" placeholder="Leave empty to use Google AdSense slot" style="width:100%; height:42px; padding:4px 8px; font-size:11px; background:#1e293b; border:1px solid #475569; color:#38bdf8; border-radius:4px; margin-top:2px; font-family:'JetBrains Mono',monospace; resize:vertical;">${s.custom_code || ''}</textarea>
+            <div style="margin-top:6px;">
+              <label style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Banner Link URL (optional)</label>
+              <input type="url" class="slot-banner-link" value="${s.banner_link || ''}" placeholder="https://example.com" style="width:100%; padding:5px 8px; font-size:12px; background:#1e293b; border:1px solid #475569; color:#f8fafc; border-radius:4px; margin-top:2px;">
             </div>
           </div>
+
+          <!-- OR Divider -->
+          <div style="display:flex; align-items:center; gap:8px; font-size:11px; color:#475569;">
+            <div style="flex:1; height:1px; background:#1e293b;"></div>
+            <span>OR</span>
+            <div style="flex:1; height:1px; background:#1e293b;"></div>
+          </div>
+
+          <!-- AdSense Slot + Format -->
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1;">
+              <label style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">AdSense Slot ID</label>
+              <input type="text" class="slot-id-input" value="${s.slot_id || ''}" placeholder="e.g. 9876543210" style="width:100%; padding:5px 8px; font-size:12px; background:#1e293b; border:1px solid #475569; color:#f8fafc; border-radius:4px; margin-top:2px; font-family:'JetBrains Mono',monospace;">
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Ad Format</label>
+              <select class="slot-format-select" style="width:100%; padding:6px 8px; font-size:12px; background:#1e293b; border:1px solid #475569; color:#f8fafc; border-radius:4px; margin-top:2px;">
+                <option value="auto" ${(s.format||'auto')==='auto' ? 'selected' : ''}>Auto Responsive</option>
+                <option value="horizontal" ${s.format==='horizontal' ? 'selected' : ''}>Horizontal Leaderboard</option>
+                <option value="rectangle" ${s.format==='rectangle' ? 'selected' : ''}>Medium Rectangle</option>
+                <option value="native" ${s.format==='native' ? 'selected' : ''}>Native In-Feed</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Custom HTML -->
+          <div>
+            <label style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Custom HTML / Affiliate Script (Optional)</label>
+            <textarea class="slot-custom-code" placeholder="Paste custom banner code (affiliate HTML, third-party ad script, etc.)" style="width:100%; height:48px; padding:5px 8px; font-size:11px; background:#1e293b; border:1px solid #475569; color:#38bdf8; border-radius:4px; margin-top:2px; font-family:'JetBrains Mono',monospace; resize:vertical;">${s.custom_html || s.custom_code || ''}</textarea>
+            <span style="font-size:10px; color:#64748b;">Priority: Image Banner → Custom HTML → AdSense Slot → Test Preview</span>
+          </div>
+
+          <!-- Upload status -->
+          <div class="slot-upload-status" style="font-size:11px; font-weight:600; min-height:14px;"></div>
         </div>
       `;
     }).join('');
+
+    // Wire up toggle switches
+    grid.querySelectorAll('.ad-slot-card').forEach(card => {
+      const key = card.dataset.slotKey;
+      const chk = card.querySelector('.slot-active-toggle');
+      const track = card.querySelector('.ad-slot-toggle-track');
+      const knob = card.querySelector('.ad-slot-toggle-knob');
+
+      if (chk && track && knob) {
+        chk.addEventListener('change', () => {
+          track.style.background = chk.checked ? '#10b981' : '#475569';
+          knob.style.left = chk.checked ? '22px' : '3px';
+          card.style.borderColor = chk.checked ? 'rgba(16,185,129,0.4)' : '#334155';
+        });
+      }
+    });
+
+    // Wire up upload buttons
+    grid.querySelectorAll('.btn-upload-banner').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const key = btn.dataset.slot;
+        const card = grid.querySelector(`.ad-slot-card[data-slot-key="${key}"]`);
+        if (!card) return;
+        const fileInput = card.querySelector('.slot-banner-file');
+        const statusEl = card.querySelector('.slot-upload-status');
+        const pin = pinInput ? pinInput.value.trim() : '';
+
+        if (!pin) {
+          if (statusEl) { statusEl.style.color = '#ef4444'; statusEl.textContent = '❌ Enter Admin PIN first'; }
+          return;
+        }
+
+        const result = await uploadAdBanner(key, fileInput, pin, (msg) => {
+          if (statusEl) { statusEl.style.color = '#38bdf8'; statusEl.textContent = msg; }
+        });
+
+        if (result.ok) {
+          if (statusEl) { statusEl.style.color = '#10b981'; statusEl.textContent = `✅ Uploaded: ${result.url}`; }
+          // Update preview
+          const previewEl = card.querySelector(`#bannerPreview_${key}`);
+          if (previewEl) {
+            previewEl.style.display = '';
+            const img = previewEl.querySelector('img');
+            if (img) img.src = result.url;
+            const urlSpan = previewEl.querySelector('code');
+            if (urlSpan) urlSpan.textContent = result.url;
+          }
+          // Update banner link input to remember the url in a hidden field
+          card._uploadedBannerUrl = result.url;
+          const clearBtn = card.querySelector('.btn-clear-banner');
+          if (clearBtn) clearBtn.style.display = '';
+        } else {
+          if (statusEl) { statusEl.style.color = '#ef4444'; statusEl.textContent = `❌ ${result.message || 'Upload failed'}`; }
+        }
+      });
+    });
+
+    // Wire up clear banner buttons
+    grid.querySelectorAll('.btn-clear-banner').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.slot;
+        const card = grid.querySelector(`.ad-slot-card[data-slot-key="${key}"]`);
+        if (!card) return;
+        card._uploadedBannerUrl = '';
+        const previewEl = card.querySelector(`#bannerPreview_${key}`);
+        if (previewEl) previewEl.style.display = 'none';
+        btn.style.display = 'none';
+        const statusEl = card.querySelector('.slot-upload-status');
+        if (statusEl) { statusEl.style.color = '#94a3b8'; statusEl.textContent = 'Banner cleared. Save config to apply.'; }
+      });
+    });
   });
 
+  // ── Save Configuration ─────────────────────────────────────────────────
   btnSave.onclick = async () => {
-    const pin = (document.getElementById('adsAdminPinInput') || {}).value || '';
+    const pin = pinInput ? pinInput.value.trim() : '';
     if (!pin) {
-      if (statusMsg) {
-        statusMsg.style.color = '#ef4444';
-        statusMsg.textContent = '❌ Please enter Admin PIN';
-      }
+      if (statusMsg) { statusMsg.style.color = '#ef4444'; statusMsg.textContent = '❌ Please enter Admin PIN first'; }
       return;
     }
 
@@ -27924,73 +28123,72 @@ function initAdminAdsHub() {
       const fmt = card.querySelector('.slot-format-select');
       const sid = card.querySelector('.slot-id-input');
       const code = card.querySelector('.slot-custom-code');
-
+      const linkEl = card.querySelector('.slot-banner-link');
       const existingSlot = (window._adsConfig && window._adsConfig.slots && window._adsConfig.slots[key]) || {};
+
+      // Determine banner_image: use newly uploaded URL or keep existing
+      let bannerImg = existingSlot.banner_image || '';
+      if (card._uploadedBannerUrl !== undefined) bannerImg = card._uploadedBannerUrl;
+      // If cleared explicitly
+      const previewEl = card.querySelector(`#bannerPreview_${key}`);
+      if (previewEl && previewEl.style.display === 'none') bannerImg = '';
 
       updatedSlots[key] = {
         ...existingSlot,
         enabled: chk ? chk.checked : false,
         format: fmt ? fmt.value : 'auto',
         slot_id: sid ? sid.value.trim() : '',
-        custom_code: code ? code.value : ''
+        custom_html: code ? code.value : '',
+        banner_image: bannerImg,
+        banner_link: linkEl ? linkEl.value.trim() : '',
+        banner_alt: existingSlot.banner_alt || '',
+        label: existingSlot.label || key,
+        description: existingSlot.description || ''
       };
     });
 
     const newConfig = {
       enabled: masterToggle ? masterToggle.checked : true,
-      client_id: clientIdInput ? clientIdInput.value.trim() : '',
+      adsense_client_id: clientIdInput ? clientIdInput.value.trim() : '',
       test_mode: testModeToggle ? testModeToggle.checked : true,
       auto_ads: autoAdsToggle ? autoAdsToggle.checked : false,
       slots: updatedSlots
     };
 
-    if (statusMsg) {
-      statusMsg.style.color = '#38bdf8';
-      statusMsg.textContent = 'Saving...';
-    }
+    if (statusMsg) { statusMsg.style.color = '#38bdf8'; statusMsg.textContent = '⏳ Saving...'; }
+    btnSave.disabled = true;
 
     try {
       const res = await fetch('/api/admin/ads/save', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Secret': pin
-        },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': pin },
         body: JSON.stringify({ adminPin: pin, config: newConfig })
       });
       const data = await res.json();
       if (data && data.ok) {
         window._adsConfig = data.config;
-        if (statusMsg) {
-          statusMsg.style.color = '#10b981';
-          statusMsg.textContent = '✅ Saved successfully!';
-          setTimeout(() => { statusMsg.textContent = ''; }, 3500);
-        }
+        if (statusMsg) { statusMsg.style.color = '#10b981'; statusMsg.textContent = '✅ Configuration saved successfully!'; }
+        setTimeout(() => { if (statusMsg) statusMsg.textContent = ''; }, 4000);
         renderClientAdSlots();
       } else {
-        if (statusMsg) {
-          statusMsg.style.color = '#ef4444';
-          statusMsg.textContent = `❌ ${data.message || 'Save failed'}`;
-        }
+        if (statusMsg) { statusMsg.style.color = '#ef4444'; statusMsg.textContent = `❌ ${data.message || 'Save failed'}`; }
       }
     } catch (e) {
-      if (statusMsg) {
-        statusMsg.style.color = '#ef4444';
-        statusMsg.textContent = '❌ Network error saving config';
-      }
+      if (statusMsg) { statusMsg.style.color = '#ef4444'; statusMsg.textContent = '❌ Network error. Is the server running?'; }
+    } finally {
+      btnSave.disabled = false;
     }
   };
 }
 
-// Auto-run Ads initialization
+// ── Auto-init on page load ────────────────────────────────────────────────
 if (typeof window !== 'undefined') {
   window.loadAdsConfig = loadAdsConfig;
   window.renderClientAdSlots = renderClientAdSlots;
   window.initAdminAdsHub = initAdminAdsHub;
+  window.uploadAdBanner = uploadAdBanner;
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      loadAdsConfig().then(() => renderClientAdSlots());
-    });
+    document.addEventListener('DOMContentLoaded', () => loadAdsConfig().then(() => renderClientAdSlots()));
   } else {
     loadAdsConfig().then(() => renderClientAdSlots());
   }

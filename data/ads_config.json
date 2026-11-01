@@ -1,45 +1,75 @@
 {
   "enabled": true,
-  "test_mode": true,
   "adsense_client_id": "",
+  "test_mode": true,
   "auto_ads": false,
   "slots": {
     "dashboard_top": {
       "enabled": true,
-      "name": "Dashboard Top Leaderboard",
+      "label": "Dashboard Top Leaderboard",
+      "description": "728x90 leaderboard banner at top of Dashboard",
+      "format": "horizontal",
       "slot_id": "",
-      "custom_html": ""
+      "custom_html": "",
+      "banner_image": "/ad-banners/ad_dashboard_top_1793546530.png",
+      "banner_link": "https://example.com/promo",
+      "banner_alt": "Market Analytics Banner"
     },
     "dashboard_native": {
       "enabled": true,
-      "name": "Dashboard Native In-Feed Card",
+      "label": "Dashboard Content Native Banner",
+      "description": "Responsive native display banner between dashboard cards",
+      "format": "responsive",
       "slot_id": "",
-      "custom_html": ""
+      "custom_html": "",
+      "banner_image": "",
+      "banner_link": "",
+      "banner_alt": "Trading Insights Banner"
     },
     "blog_top": {
       "enabled": true,
-      "name": "Blog Article Top Banner",
+      "label": "Blog Article Top Leaderboard",
+      "description": "728x90 or fluid banner above article content",
+      "format": "horizontal",
       "slot_id": "",
-      "custom_html": ""
+      "custom_html": "",
+      "banner_image": "",
+      "banner_link": "",
+      "banner_alt": "Educational Blog Sponsor"
     },
     "blog_mid": {
       "enabled": true,
-      "name": "Blog In-Content Mid Ad",
+      "label": "Blog In-Article Mid Banner",
+      "description": "300x250 medium rectangle or in-feed banner inside article",
+      "format": "square",
       "slot_id": "",
-      "custom_html": ""
+      "custom_html": "",
+      "banner_image": "",
+      "banner_link": "",
+      "banner_alt": "Trading Strategy Feature"
     },
     "blog_bottom": {
       "enabled": true,
-      "name": "Blog Article Bottom Banner",
+      "label": "Blog Article Footer Banner",
+      "description": "Responsive display banner at end of blog post",
+      "format": "responsive",
       "slot_id": "",
-      "custom_html": ""
+      "custom_html": "",
+      "banner_image": "",
+      "banner_link": "",
+      "banner_alt": "Market Tools Promotion"
     },
     "footer_banner": {
       "enabled": true,
-      "name": "Global Footer Leaderboard",
+      "label": "Sitewide Footer / Bottom Banner",
+      "description": "728x90 or fluid banner placed above site footer",
+      "format": "horizontal",
       "slot_id": "",
-      "custom_html": ""
+      "custom_html": "",
+      "banner_image": "",
+      "banner_link": "",
+      "banner_alt": "Quant Platform Ad"
     }
   },
-  "updated_at": "2026-11-01 19:44:39 IST"
+  "updated_at": "2026-11-01 20:52:10 IST"
 }
