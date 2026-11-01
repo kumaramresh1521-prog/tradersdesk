@@ -7478,6 +7478,7 @@ def build_delivery_analytics(payload: dict) -> dict:
 _MTF_CACHE = {"timestamp": 0, "data": None, "fetching": False}
 MTF_ARCHIVE_URL = "https://nsearchives.nseindia.com/content/equities/mrg_trading_{date_code}.zip"
 FNO_LOT_SIZE_URL = "https://archives.nseindia.com/content/fo/fo_mktlots.csv"
+MTF_PERSISTENT_DATA_DIR = ROOT / "data" / "mtf"
 MTF_LOCAL_DATA_DIR = ROOT / "data"
 MTF_CACHE_DIR = CACHE_DIR / "mtf"
 _FNO_SYMBOL_CACHE = {"timestamp": 0.0, "symbols": set()}
@@ -7659,10 +7660,11 @@ def fetch_latest_mtf_stockwise() -> tuple[list[dict], date | None, str]:
     # 1. Try downloading or reading cached files for newest recent trading sessions (newest date first)
     for session_date in _mtf_recent_sessions(count=7):
         date_code = session_date.strftime("%d%m%y")
+        persistent_file = MTF_PERSISTENT_DATA_DIR / f"mtf_stockwise_{date_code}.json"
         cached_file = MTF_CACHE_DIR / f"mtf_stockwise_{date_code}.json"
         local_file = MTF_LOCAL_DATA_DIR / f"mtf_stockwise_{date_code}.json"
         
-        target_file = cached_file if cached_file.exists() else (local_file if local_file.exists() else None)
+        target_file = persistent_file if persistent_file.exists() else (cached_file if cached_file.exists() else (local_file if local_file.exists() else None))
         if target_file:
             stocks = _load_mtf_json(target_file, fno_symbols)
             if stocks:
@@ -7677,7 +7679,9 @@ def fetch_latest_mtf_stockwise() -> tuple[list[dict], date | None, str]:
                 csv_text = archive.read(csv_file).decode("utf-8", errors="ignore")
                 stocks = _parse_mtf_rows(csv_text, fno_symbols)
                 if stocks:
+                    MTF_PERSISTENT_DATA_DIR.mkdir(parents=True, exist_ok=True)
                     MTF_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                    write_json(MTF_PERSISTENT_DATA_DIR / f"mtf_stockwise_{date_code}.json", stocks)
                     write_json(MTF_CACHE_DIR / f"mtf_stockwise_{date_code}.json", stocks)
                     return stocks, session_date, f"Live NSE Archive ({session_date.strftime('%d %b %Y')})"
         except Exception:
@@ -7778,6 +7782,7 @@ def _get_official_local_nse_mtf_totals() -> list[dict]:
     if _OFFICIAL_NSE_MTF_TOTALS_CACHE["data"] and (now - _OFFICIAL_NSE_MTF_TOTALS_CACHE["time"] < 600):
         return _OFFICIAL_NSE_MTF_TOTALS_CACHE["data"]
 
+    totals_file = ROOT / "data" / "mtf_daily_totals.json"
     sessions = get_available_mtf_sessions()
     series = []
     # sessions are sorted reverse chronologically; reverse to get chronological series
@@ -7800,6 +7805,17 @@ def _get_official_local_nse_mtf_totals() -> list[dict]:
             })
         except Exception:
             continue
+
+    if series:
+        try:
+            write_json(totals_file, series)
+        except Exception:
+            pass
+    elif totals_file.exists():
+        try:
+            series = read_json(totals_file, [])
+        except Exception:
+            series = []
 
     _OFFICIAL_NSE_MTF_TOTALS_CACHE["data"] = series
     _OFFICIAL_NSE_MTF_TOTALS_CACHE["time"] = now
@@ -8026,7 +8042,7 @@ def _async_update_mtf():
 
 def get_available_mtf_sessions() -> list[tuple[date, str, Path]]:
     candidates: list[tuple[date, str, Path]] = []
-    for directory in (MTF_LOCAL_DATA_DIR, MTF_CACHE_DIR, ROOT / "data" / "mtf"):
+    for directory in (MTF_PERSISTENT_DATA_DIR, MTF_LOCAL_DATA_DIR, MTF_CACHE_DIR):
         if not directory.exists():
             continue
         for file_path in directory.glob("mtf_stockwise_*.json"):

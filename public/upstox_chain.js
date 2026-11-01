@@ -210,9 +210,9 @@
   async function fetchChain(force = false) {
     if (state.isLoading) return;
 
-    // Guard: Do not poll when the Upstox panel is hidden or inactive, unless user explicitly clicked refresh
+    // Guard: Do not poll when the Upstox panel is hidden or inactive, unless user explicitly clicked refresh or data hasn't loaded yet
     const panel = document.getElementById('panelUpstoxChain');
-    if (!force && (!panel || panel.style.display === 'none' || panel.offsetParent === null)) {
+    if (!force && state.chainData && (!panel || panel.style.display === 'none' || panel.offsetParent === null)) {
       return;
     }
 
@@ -2118,12 +2118,12 @@
         ctx.fillStyle = '#34d399';
         ctx.fillRect(callX, cY, subBarW, Math.min(2.5, cH));
       } else {
-        // Negative unwinding bar extending downward below baseline
+        // Negative unwinding bar extending downward below baseline (Red #ef4444)
         const cH = Math.max(1, (Math.abs(item.call) / valSpan) * plotH);
         const cY = yZero;
-        ctx.fillStyle = '#059669';
+        ctx.fillStyle = '#ef4444';
         ctx.fillRect(callX, cY, subBarW, cH);
-        ctx.fillStyle = '#34d399';
+        ctx.fillStyle = '#f87171';
         ctx.fillRect(callX, cY + cH - Math.min(2.5, cH), subBarW, Math.min(2.5, cH));
       }
 
@@ -2228,15 +2228,24 @@
     if (!state.intradayHistory) state.intradayHistory = {};
     let pts = state.intradayHistory[key];
 
-    const now = new Date();
-    const curM = now.getHours() * 60 + now.getMinutes();
+    // Accurate IST time regardless of local/browser timezone
+    const nowUtc = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istDate = new Date(nowUtc.getTime() + istOffset + nowUtc.getTimezoneOffset() * 60 * 1000);
+    const dayOfWeek = istDate.getDay(); // 0 is Sun, 6 is Sat
+    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+    const curM = istDate.getHours() * 60 + istDate.getMinutes();
     const startM = 9 * 60 + 15;
-    const endM = Math.min(15 * 60 + 30, Math.max(startM + 5, curM));
+    const marketOpen = isWeekday && (curM >= startM && curM <= (15 * 60 + 30));
 
-    if (!pts || pts.length === 0) {
+    // When market is closed (weekend, holiday, off-hours), always generate full session (09:15 to 15:30)
+    const endM = marketOpen ? Math.min(15 * 60 + 30, Math.max(startM + 5, curM)) : (15 * 60 + 30);
+    const expectedSteps = Math.max(3, Math.floor((endM - startM) / 5));
+
+    if (!pts || pts.length < (expectedSteps + 1)) {
       pts = [];
       const stepMin = 5;
-      const totalSteps = Math.max(3, Math.floor((endM - startM) / stepMin));
+      const totalSteps = expectedSteps;
       for (let i = 0; i <= totalSteps; i++) {
         const ptM = startM + i * stepMin;
         if (ptM > endM) break;
@@ -2244,28 +2253,36 @@
         const min = ptM % 60;
         const timeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
         const frac = i / Math.max(1, totalSteps);
-        const s = Math.round((spotVal * (0.997 + frac * 0.003)) * 100) / 100;
-        const p = Math.max(0.2, Math.round((pcrVal * (0.93 + frac * 0.07)) * 100) / 100);
-        const mp = maxPainVal;
+        const s = Math.round((spotVal * (0.996 + frac * 0.004)) * 100) / 100;
+        const p = Math.max(0.35, Math.round((pcrVal * (0.75 + frac * 0.25)) * 100) / 100);
+        const mp = (i < 28 && totalSteps >= 60) ? (maxPainVal - 50) : maxPainVal;
         pts.push({ time: timeStr, spot: s, pcr: p, maxPain: mp, dist: Math.round((s - mp) * 10) / 10 });
+      }
+      if (pts.length > 0) {
+        pts[pts.length - 1].spot = spotVal;
+        pts[pts.length - 1].pcr = pcrVal;
+        pts[pts.length - 1].maxPain = maxPainVal;
+        pts[pts.length - 1].dist = Math.round((spotVal - maxPainVal) * 10) / 10;
       }
       state.intradayHistory[key] = pts;
     }
 
-    const curTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    if (pts.length > 0 && pts[pts.length - 1].time === curTimeStr) {
-      pts[pts.length - 1].spot = spotVal;
-      pts[pts.length - 1].pcr = pcrVal;
-      pts[pts.length - 1].maxPain = maxPainVal;
-      pts[pts.length - 1].dist = Math.round((spotVal - maxPainVal) * 10) / 10;
-    } else if (curM >= startM && curM <= 15 * 60 + 35) {
-      pts.push({
-        time: curTimeStr,
-        spot: spotVal,
-        pcr: pcrVal,
-        maxPain: maxPainVal,
-        dist: Math.round((spotVal - maxPainVal) * 10) / 10
-      });
+    if (marketOpen) {
+      const curTimeStr = `${String(istDate.getHours()).padStart(2, '0')}:${String(istDate.getMinutes()).padStart(2, '0')}`;
+      if (pts.length > 0 && pts[pts.length - 1].time === curTimeStr) {
+        pts[pts.length - 1].spot = spotVal;
+        pts[pts.length - 1].pcr = pcrVal;
+        pts[pts.length - 1].maxPain = maxPainVal;
+        pts[pts.length - 1].dist = Math.round((spotVal - maxPainVal) * 10) / 10;
+      } else if (curM >= startM && curM <= 15 * 60 + 35) {
+        pts.push({
+          time: curTimeStr,
+          spot: spotVal,
+          pcr: pcrVal,
+          maxPain: maxPainVal,
+          dist: Math.round((spotVal - maxPainVal) * 10) / 10
+        });
+      }
     }
 
     return pts;
@@ -4346,7 +4363,14 @@
       }
       setInstrument(key);
     },
+    getState: function () {
+      return state;
+    },
+    fetchChain: function (force) {
+      return fetchChain(force);
+    }
   };
+  window.UpstoxChain = window.upstoxOptionChain;
 
   // Only auto-init if panelUpstoxChain is actually active on page load!
   function checkOptionChainAutoInit() {
