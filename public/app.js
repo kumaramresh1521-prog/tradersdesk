@@ -4836,10 +4836,10 @@ function renderDeliveryDashboard(data) {
       let stanceLabel = "NEUTRAL";
       if (idx.stance === "STRONG_ACCUMULATION") {
         stanceClass = "accum";
-        stanceLabel = "ACCUMULATION";
+        stanceLabel = "ACCUM";
       } else if (idx.stance === "HEAVY_DISTRIBUTION") {
         stanceClass = "distrib";
-        stanceLabel = "DISTRIBUTION";
+        stanceLabel = "DISTRIB";
       }
 
       const deltaVsMonth = (dailyPct - monthPct).toFixed(1);
