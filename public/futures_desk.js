@@ -1338,6 +1338,13 @@
       if (!data || !data.ok) throw new Error(data ? data.error || 'Failed to compute analytics' : 'No data');
 
       oiState.analyticsData = data;
+      const sessionDateEl = document.getElementById('futSessionDateBadge');
+      if (sessionDateEl) {
+        const asOfStr = data.asOfDate || (data.date ? String(data.date).toUpperCase() : '');
+        if (asOfStr) {
+          sessionDateEl.textContent = `EOD • ${asOfStr}`;
+        }
+      }
       oiState.symbolMeta = {
         s: data.symbol,
         n: data.name || data.symbol,
@@ -1956,7 +1963,8 @@
       cx.setLineDash([]);
 
       // 4. Highlighted Price Pill on Axis
-      const hPxText = fmtNum(hBar.c, (hBar.c < 100 ? 2 : 1));
+      const activeHoverPx = hBar.fut_c || hBar.c;
+      const hPxText = fmtNum(activeHoverPx, (activeHoverPx < 100 ? 2 : 1));
       cx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       const hPillW = cx.measureText(hPxText).width + 8;
       const hPillCol = hPos ? '#10b981' : '#f43f5e';
@@ -2002,7 +2010,8 @@
       cx.fillText(hDtText, dtBoxX + hDtW / 2, H - PB + 12);
 
       // 6. Floating Crosshair HUD Pill on Mobile & Desktop
-      const hudStr = `${formatOiDateShort(hBar.dt)}  C: ₹${fmtNum(hBar.c, 1)} (${hPos ? '+' : ''}${fmtNum(hChgPct, 1)}%)  OI: ${hBar.oi >= 1e7 ? (hBar.oi/1e7).toFixed(1)+'Cr' : (hBar.oi/1e6).toFixed(1)+'M'} (${hCat})  Vol: ${hBar.v >= 1e7 ? (hBar.v/1e7).toFixed(1)+'Cr' : (hBar.v/1e6).toFixed(1)+'M'}`;
+      const hudFutPart = hBar.fut_c ? `Fut: ₹${fmtNum(hBar.fut_c, 1)}  Spot: ₹${fmtNum(hBar.c, 1)}` : `C: ₹${fmtNum(hBar.c, 1)}`;
+      const hudStr = `${formatOiDateShort(hBar.dt)}  ${hudFutPart} (${hPos ? '+' : ''}${fmtNum(hChgPct, 1)}%)  OI: ${hBar.oi >= 1e7 ? (hBar.oi/1e7).toFixed(1)+'Cr' : (hBar.oi/1e6).toFixed(1)+'M'} (${hCat})  Vol: ${hBar.v >= 1e7 ? (hBar.v/1e7).toFixed(1)+'Cr' : (hBar.v/1e6).toFixed(1)+'M'}`;
       cx.font = isMobile ? 'bold 8.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' : 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       const hudW = Math.min(W - 16, cx.measureText(hudStr).width + 16);
       cx.fillStyle = isLight ? 'rgba(15, 23, 42, 0.94)' : 'rgba(7, 16, 38, 0.94)';
@@ -2042,26 +2051,32 @@
       rngEl.textContent = `${formatOiDate(vis[0].dt)} - ${formatOiDate(b.dt)} • ${vis.length} sessions (Period: ${periodSign}${fmtNum(periodChgPct, 1)}%)`;
     }
 
+    const activePrice = b.fut_c || b.c;
+    const prevPrice = (prev.fut_c || prev.c || activePrice);
+    const futDayChg = activePrice - prevPrice;
+    const futDayChgPct = prevPrice ? (futDayChg / prevPrice) * 100 : 0;
+    const isFutPos = futDayChg >= 0;
+
     const ltpEl = document.getElementById('futOiLtp');
     if (ltpEl) {
-      ltpEl.textContent = `₹${fmtNum(b.c, (b.c < 100 ? 2 : (b.c < 1000 ? 1 : 0)))}`;
+      ltpEl.textContent = `₹${fmtNum(activePrice, (activePrice < 100 ? 2 : (activePrice < 1000 ? 1 : 2)))}`;
     }
     const basisEl = document.getElementById('futOiBasisRow');
     if (basisEl) {
-      if (b.fut_c && Math.abs(b.fut_c - b.c) > 0.05) {
+      if (b.fut_c && b.c && Math.abs(b.fut_c - b.c) > 0.05) {
         const diff = b.fut_c - b.c;
         const bSign = diff >= 0 ? '+' : '';
         const bColor = diff >= 0 ? '#10b981' : '#f43f5e';
-        basisEl.innerHTML = `<span>Near Futures: <b>₹${fmtNum(b.fut_c, (b.fut_c < 100 ? 2 : (b.fut_c < 1000 ? 1 : 0)))}</b></span> · <span>Basis: <b style="color:${bColor}">${bSign}${fmtNum(diff, 1)} (${diff >= 0 ? 'Premium' : 'Discount'})</b></span>`;
+        basisEl.innerHTML = `<span>Futures: <b>₹${fmtNum(b.fut_c, 2)}</b></span> · <span>Spot: <b>₹${fmtNum(b.c, 2)}</b></span> · <span>Basis: <b style="color:${bColor}">${bSign}${fmtNum(diff, 2)} (${diff >= 0 ? 'Premium' : 'Discount'})</b></span>`;
       } else {
-        basisEl.innerHTML = '';
+        basisEl.innerHTML = `<span>Spot: <b>₹${fmtNum(b.c, 2)}</b></span>`;
       }
     }
 
     const chgEl = document.getElementById('futOiChg');
     if (chgEl) {
-      chgEl.textContent = `${isPos ? '▲ +' : '▼ '}${fmtNum(dayChg, 2)} (${isPos ? '+' : ''}${fmtNum(dayChgPct, 2)}%)`;
-      chgEl.style.color = isPos ? '#10b981' : '#ef4444';
+      chgEl.textContent = `${isFutPos ? '▲ +' : '▼ '}${fmtNum(futDayChg, 2)} (${isFutPos ? '+' : ''}${fmtNum(futDayChgPct, 2)}%)`;
+      chgEl.style.color = isFutPos ? '#10b981' : '#ef4444';
     }
 
     const cnt = [0, 0, 0, 0];

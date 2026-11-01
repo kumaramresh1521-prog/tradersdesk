@@ -1086,7 +1086,9 @@ def get_live_kotak_quotes_map(target_symbols: Optional[list] = None) -> dict[str
             logger.debug(f"Kotak batch fetch error: {e}")
 
     # 3. Angel One SmartAPI Fallback for NFO (Exchange Live Feed)
-    if kotak_fetched == 0:
+    now_dt = datetime.now()
+    is_market_hours = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
+    if kotak_fetched == 0 and (is_market_hours or target_set):
         try:
             from server import AngelClient, Instrument
             ac = AngelClient()
@@ -1115,33 +1117,37 @@ def get_live_kotak_quotes_map(target_symbols: Optional[list] = None) -> dict[str
                                 token=tok,
                                 exchange="NFO"
                             ))
-                    # Batch quote in chunks of 50
-                    for c_idx in range(0, min(len(inst_list), 250), 50):
-                        chunk = inst_list[c_idx:c_idx + 50]
+
+                    def _fetch_angel_chunk(chunk):
                         try:
-                            a_res = ac.quote(chunk, mode="FULL")
-                            for f in a_res.get("fetched", []):
-                                tok = str(f.get("symbolToken") or "")
-                                sym = tok_to_sym.get(tok)
-                                ltp = float(f.get("ltp") or 0.0)
-                                if sym and ltp > 0:
-                                    chg = float(f.get("netChange") or 0.0)
-                                    pct = float(f.get("percentChange") or 0.0)
-                                    quotes_res[f"FUT:{sym}"] = {
-                                        "ltp": ltp,
-                                        "change": chg,
-                                        "changePct": pct,
-                                        "open": float(f.get("open") or ltp),
-                                        "high": float(f.get("high") or ltp),
-                                        "low": float(f.get("low") or ltp),
-                                        "close": float(f.get("close") or (ltp - chg)),
-                                        "volume": int(float(f.get("tradeVolume") or 0)),
-                                        "oi": int(float(f.get("opnInterest") or 0)),
-                                        "vwap": float(f.get("avgPrice") or ltp),
-                                        "source": "ANGEL_NFO"
-                                    }
+                            return ac.quote(chunk, mode="FULL")
                         except Exception:
-                            pass
+                            return {}
+
+                    chunks = [inst_list[c_idx:c_idx + 50] for c_idx in range(0, min(len(inst_list), 250), 50)]
+                    with ThreadPoolExecutor(max_workers=min(len(chunks), 5)) as pool:
+                        results = pool.map(_fetch_angel_chunk, chunks)
+                    for a_res in results:
+                        for f in a_res.get("fetched", []):
+                            tok = str(f.get("symbolToken") or "")
+                            sym = tok_to_sym.get(tok)
+                            ltp = float(f.get("ltp") or 0.0)
+                            if sym and ltp > 0:
+                                chg = float(f.get("netChange") or 0.0)
+                                pct = float(f.get("percentChange") or 0.0)
+                                quotes_res[f"FUT:{sym}"] = {
+                                    "ltp": ltp,
+                                    "change": chg,
+                                    "changePct": pct,
+                                    "open": float(f.get("open") or ltp),
+                                    "high": float(f.get("high") or ltp),
+                                    "low": float(f.get("low") or ltp),
+                                    "close": float(f.get("close") or (ltp - chg)),
+                                    "volume": int(float(f.get("tradeVolume") or 0)),
+                                    "oi": int(float(f.get("opnInterest") or 0)),
+                                    "vwap": float(f.get("avgPrice") or ltp),
+                                    "source": "ANGEL_NFO"
+                                }
         except Exception as e:
             logger.debug(f"Angel NFO batch fallback error: {e}")
 
@@ -1175,13 +1181,49 @@ def get_live_kotak_quotes_map(target_symbols: Optional[list] = None) -> dict[str
     except Exception as e:
         logger.debug(f"Server index quotes fallback error: {e}")
 
-    # 5. Yahoo Finance Fallback for any still missing indices
-    for idx_key, yf_sym in [("NIFTY", "%5ENSEI"), ("BANKNIFTY", "%5ENSEBANK"), ("SENSEX", "%5EBSESN")]:
-        if idx_key not in quotes_res or quotes_res[idx_key].get("ltp", 0) <= 0:
+    # 4.5 Fast EOD Bhavcopy Master Fallback for Benchmark Indices (0ms instant resolution)
+    try:
+        master_path = Path("data/fo_bhav_eod_master.json")
+        if master_path.exists():
+            with open(master_path, "r", encoding="utf-8") as f:
+                mdata = json.load(f)
+            sym_data = mdata.get("symbols_data", {})
+            for ik in ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50"]:
+                if (ik not in quotes_res or quotes_res[ik].get("ltp", 0) <= 0) and ik in sym_data and sym_data[ik]:
+                    last_b = sym_data[ik][-1]
+                    c = float(last_b.get("c") or 0.0)
+                    fut_c = float(last_b.get("fut_c") or c)
+                    prev_c = float(sym_data[ik][-2].get("c", c)) if len(sym_data[ik]) > 1 else c
+                    chg = round(c - prev_c, 2)
+                    pct = round((chg / prev_c) * 100.0, 2) if prev_c > 0 else 0.0
+                    quotes_res[ik] = {
+                        "ltp": c,
+                        "change": chg,
+                        "changePct": pct,
+                        "close": prev_c,
+                        "source": "MASTER_EOD"
+                    }
+                    quotes_res[f"SPOT:{ik}"] = quotes_res[ik]
+                    quotes_res[f"FUT:{ik}"] = {
+                        "ltp": fut_c,
+                        "change": chg,
+                        "changePct": pct,
+                        "close": prev_c,
+                        "source": "MASTER_EOD"
+                    }
+    except Exception as e:
+        logger.debug(f"Master EOD index fallback error: {e}")
+
+    # 5. Concurrent Fast Yahoo Finance Fallback for any still missing indices
+    missing_yf = [(ik, ys) for ik, ys in [("NIFTY", "%5ENSEI"), ("BANKNIFTY", "%5ENSEBANK"), ("SENSEX", "%5EBSESN")]
+                  if ik not in quotes_res or quotes_res[ik].get("ltp", 0) <= 0]
+    if missing_yf:
+        def _fetch_single_yf(item):
+            ik, ys = item
             try:
-                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{yf_sym}?interval=1m&range=1d"
+                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ys}?interval=1m&range=1d"
                 req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req, timeout=4) as r:
+                with urllib.request.urlopen(req, timeout=1.5) as r:
                     d = json.loads(r.read().decode())
                     meta = d["chart"]["result"][0]["meta"]
                     price = float(meta.get("regularMarketPrice") or 0.0)
@@ -1189,16 +1231,26 @@ def get_live_kotak_quotes_map(target_symbols: Optional[list] = None) -> dict[str
                     chg = round(price - prev, 2)
                     pct = round((chg / prev) * 100, 2) if prev else 0.0
                     if price > 0:
-                        quotes_res[idx_key] = {
+                        return ik, {
                             "ltp": price,
                             "changePct": pct,
                             "change": chg,
                             "close": prev,
                             "source": "YAHOO"
                         }
-                        quotes_res[f"SPOT:{idx_key}"] = quotes_res[idx_key]
             except Exception:
                 pass
+            return ik, None
+
+        try:
+            with ThreadPoolExecutor(max_workers=min(len(missing_yf), 3)) as yf_pool:
+                for ik, yf_res in yf_pool.map(_fetch_single_yf, missing_yf):
+                    if yf_res:
+                        quotes_res[ik] = yf_res
+                        quotes_res[f"SPOT:{ik}"] = yf_res
+        except Exception as e:
+            logger.debug(f"Yahoo pool error: {e}")
+
 
     if quotes_res:
         _LIVE_QUOTES_CACHE = {"ts": now, "data": quotes_res}

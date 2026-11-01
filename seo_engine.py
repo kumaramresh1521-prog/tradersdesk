@@ -28,7 +28,7 @@ SITEMAP_EXCLUDED_PATHS = frozenset({
     # Non-canonical duplicate aliases that 301/redirect to their canonical slug
     "/options", "/compare", "/smart-money", "/atm-straddle", "/contribution",
     "/market-breadth", "/delivery-analytics", "/mtf-analytics", "/open-interest",
-    "/fii-dii-derivatives", "/fii-dii/cash", "/fii-dii/derivatives",
+    "/fii-dii-derivatives",
     "/calendar_studio.html", "/about.html", "/privacy.html", "/terms.html",
     "/disclaimer.html", "/contact.html",
 })
@@ -172,6 +172,78 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
         "desc": "Track institutional smart money flows, FII/DII net daily purchases, Index Futures long/short positioning, and Participant OI distribution.",
         "keywords": "fii dii data, institutional smart money, fii net flow, dii buying, index futures long short ratio, participant oi",
         "canonical": "https://tradersdesk.in/fii-dii",
+    },
+    "/fii-dii/cash": {
+        "title": "FII / DII Cash Market Flow - Historical Institutional Inflow & Outflow | TradersDesk",
+        "desc": "Historical and intraday FII / DII cash market flow with monthly/annual totals, cumulative institutional liquidity charts, and market impact analysis.",
+        "keywords": "fii dii cash market, institutional cash inflow, fii buying history, dii cash purchases",
+        "canonical": "https://tradersdesk.in/fii-dii/cash",
+    },
+    "/fii-dii/derivatives": {
+        "title": "FII / DII Derivatives Flow - Index & Stock Futures Positioning | TradersDesk",
+        "desc": "Institutional FII & DII derivatives positioning: Index Futures long/short ratio, Options open interest, client vs pro flow.",
+        "keywords": "fii derivatives flow, index futures long short, fii options positioning, participant oi",
+        "canonical": "https://tradersdesk.in/fii-dii/derivatives",
+    },
+    "/fii-dii/participant-oi": {
+        "title": "Participant-wise Open Interest - FII, DII, Pro & Client Positioning | TradersDesk",
+        "desc": "NSE Participant-wise Open Interest analysis. Track daily net contracts in Index Futures, Index Options, Stock Futures for FII, DII, Pro, and Retail Clients.",
+        "keywords": "participant oi, participant wise open interest, fii vs retail oi, pro trader positioning, nse participant data",
+        "canonical": "https://tradersdesk.in/fii-dii/participant-oi",
+    },
+    "/fii-dii/oi": {
+        "title": "Participant-wise Open Interest - FII, DII, Pro & Client Positioning | TradersDesk",
+        "desc": "NSE Participant-wise Open Interest analysis. Track daily net contracts in Index Futures, Index Options, Stock Futures for FII, DII, Pro, and Retail Clients.",
+        "keywords": "participant oi, participant wise open interest, fii vs retail oi, pro trader positioning, nse participant data",
+        "canonical": "https://tradersdesk.in/fii-dii/participant-oi",
+    },
+    "/option-chain-pro/overview": {
+        "title": "Option Chain Pro - Index & Market Overview | TradersDesk",
+        "desc": "Real-time index options overview, spot vs futures basis, IV rank, PCR sentiment, and strike distribution.",
+        "keywords": "option chain overview, nse options market overview, iv rank, options pcr",
+        "canonical": "https://tradersdesk.in/option-chain-pro/overview",
+    },
+    "/option-chain-pro/chain": {
+        "title": "Multi-Strike Option Chain - Live Real-Time Options Quotes | TradersDesk",
+        "desc": "Direct exchange streaming multi-strike Option Chain with LTP, Bid/Ask, Greek calculations, and volume.",
+        "keywords": "multi strike option chain, live option quotes, nse options streaming, strike wise oi",
+        "canonical": "https://tradersdesk.in/option-chain-pro/chain",
+    },
+    "/option-chain-pro/greeks": {
+        "title": "Options Greeks Analytics - Delta, Gamma, Theta, Vega & IV Skew | TradersDesk",
+        "desc": "Real-time Black-Scholes Options Greeks calculator and scanner tracking Delta neutral, Gamma risk, Theta decay, and Vega volatility.",
+        "keywords": "options greeks, delta, gamma, theta, vega, iv skew, black scholes options calculator",
+        "canonical": "https://tradersdesk.in/option-chain-pro/greeks",
+    },
+    "/option-chain-pro/pcr": {
+        "title": "Options W-PCR & PCE Analytics - Put-Call Ratio Scanner | TradersDesk",
+        "desc": "Volume and Open Interest weighted Put-Call Ratio (W-PCR), Put Call Equilibrium (PCE), and institutional hedging sentiment.",
+        "keywords": "options wpcr, pce ratio, put call ratio, options hedging sentiment",
+        "canonical": "https://tradersdesk.in/option-chain-pro/pcr",
+    },
+    "/option-chain-pro/volatility": {
+        "title": "Options Volatility Skew & IV Term Structure | TradersDesk",
+        "desc": "Implied Volatility (IV) smile, volatility surface, term structure, and historical IV percentile across expiries.",
+        "keywords": "options volatility skew, iv smile, iv percentile, volatility term structure",
+        "canonical": "https://tradersdesk.in/option-chain-pro/volatility",
+    },
+    "/wpcr": {
+        "title": "wPCR & PCE Quant Terminal - Real-Time Put-Call Ratio & Institutional Capital Flow | TradersDesk",
+        "desc": "Institutional wPCR (Premium-Weighted PCR), dPCR, Put-Call Parity equilibrium, retail trap detection and institutional capital deployment analytics across NSE options.",
+        "keywords": "wpcr, weighted pcr, pce ratio, put call parity, options capital flow, options trap detection, tradersdesk",
+        "canonical": "https://tradersdesk.in/wpcr",
+    },
+    "/futures/open-interest": {
+        "title": "Future Open Interest & Buildup Analytics | TradersDesk",
+        "desc": "Interactive EOD and real-time multi-panel futures candlestick charts, open interest buildup, delivery %, RSI, and Option Chain Max Pain across 260+ NSE F&O scrips.",
+        "keywords": "futures open interest, future oi buildup, nse futures chart, open interest analysis, futures delivery percentage",
+        "canonical": "https://tradersdesk.in/futures/open-interest",
+    },
+    "/mtf/brokers": {
+        "title": "MTF Broker Terms, Interest Rates & Haircuts | TradersDesk",
+        "desc": "Comparison of MTF broker terms, lending interest rates (Zerodha, Angel One, m.Stock, Dhan), and leverage guidelines.",
+        "keywords": "mtf broker terms, mtf interest rate, zerodha mtf, angel one mtf, margin interest rate",
+        "canonical": "https://tradersdesk.in/mtf/brokers",
     },
     "/smart-money": {
         "title": "FII / DII Smart Money Flow - Institutional Cash & Derivatives Positioning | TradersDesk",
@@ -535,6 +607,30 @@ def load_all_seo_routes() -> dict[str, dict]:
                     break
             except Exception:
                 pass
+
+    # Seamlessly merge any new core catalog routes from SEO_ROUTES into disk cache
+    routes_modified = False
+    for path, meta in SEO_ROUTES.items():
+        clean_p = ("/" + path.strip("/")).lower() if path != "/" else "/"
+        if clean_p not in routes and clean_p not in deleted:
+            routes[clean_p] = {
+                "path": clean_p,
+                "title": meta.get("title", ""),
+                "desc": meta.get("desc", ""),
+                "keywords": meta.get("keywords", ""),
+                "canonical": meta.get("canonical", f"https://tradersdesk.in{clean_p if clean_p != '/' else ''}"),
+                "og_title": meta.get("title", ""),
+                "og_desc": meta.get("desc", ""),
+                "robots": "index, follow",
+                "category": _detect_category(clean_p),
+                "priority": "1.0" if clean_p == "/" else ("0.9" if clean_p in ("/futures", "/futures/open-interest", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/mtf", "/straddle", "/call-vs-put-premium", "/wpcr") else "0.8"),
+                "changefreq": "always" if clean_p in ("/", "/futures", "/futures/open-interest", "/option-chain-pro", "/open-interest", "/open-interest/nifty", "/straddle", "/call-vs-put-premium", "/wpcr") else "daily",
+                "custom": False,
+                "last_updated": time.strftime("%Y-%m-%d %H:%M:%S IST")
+            }
+            routes_modified = True
+    if routes_modified:
+        save_all_seo_routes(routes)
 
     # 2. Supabase Cloud Database fallback (if disk is not initialized)
     if not routes and supabase_engine:

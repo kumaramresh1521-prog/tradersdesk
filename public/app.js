@@ -1960,13 +1960,34 @@ function tickAutoRefresh() {
 }
 
 function switchOptionsSubtab(target = "chainView") {
-  [els.subtabChain, els.subtabStats, els.subtabWpcrPce, els.subtabVolatility].forEach(btn => {
+  [els.subtabIndexOverview, els.subtabChain, els.subtabStats, els.subtabWpcrPce, els.subtabVolatility].forEach(btn => {
     if (btn) btn.classList.toggle("active", btn.dataset.target === target);
   });
   if (els.optChainViewWrap) els.optChainViewWrap.style.display = target === "chainView" ? "block" : "none";
   if (els.optStatsViewWrap) els.optStatsViewWrap.style.display = target === "statsView" ? "flex" : "none";
   if (els.optWpcrPceViewWrap) els.optWpcrPceViewWrap.style.display = target === "wpcrPceView" ? "block" : "none";
   if (els.optVolatilityViewWrap) els.optVolatilityViewWrap.style.display = target === "volatilityView" ? "block" : "none";
+  if (els.optIndexOverviewWrap) els.optIndexOverviewWrap.style.display = target === "indexOverviewView" ? "block" : "none";
+
+  // SEO URL synchronization
+  const optUrlMap = {
+    chainView: "/option-chain-pro/chain",
+    statsView: "/option-chain-pro/greeks",
+    wpcrPceView: "/wpcr",
+    volatilityView: "/option-chain-pro/volatility",
+    indexOverviewView: "/option-chain-pro/overview"
+  };
+  const targetOptUrl = optUrlMap[target] || "/option-chain-pro";
+  const routeMeta = (typeof ROUTE_CONFIG !== "undefined" && ROUTE_CONFIG[targetOptUrl]) || {
+    title: "Option Chain Pro | TradersDesk",
+    desc: "Live option chain and derivatives analytics."
+  };
+  if (typeof history !== "undefined" && history.pushState && window.location.pathname !== targetOptUrl) {
+    history.pushState({ desk: "upstoxChain", subview: target }, routeMeta.title, targetOptUrl);
+  }
+  if (typeof updateSeoMetadata === "function") {
+    updateSeoMetadata(routeMeta.title, routeMeta.desc, targetOptUrl);
+  }
 
   if (target === "chainView") {
     resizeOptCanvases();
@@ -3750,6 +3771,24 @@ function switchP1FiiSubtab(tabKey) {
     { btn: els.btnFiiSubtabDeriv, panel: els.p1FiiSubtabDeriv, key: "deriv" },
     { btn: els.btnFiiSubtabOi, panel: els.p1FiiSubtabOi, key: "oi" },
   ];
+
+  // SEO URL synchronization
+  const fiiUrlMap = {
+    cash: "/fii-dii/cash",
+    deriv: "/fii-dii/derivatives",
+    oi: "/fii-dii/participant-oi"
+  };
+  const targetFiiUrl = fiiUrlMap[tabKey] || "/fii-dii";
+  const routeMeta = (typeof ROUTE_CONFIG !== "undefined" && ROUTE_CONFIG[targetFiiUrl]) || {
+    title: "FII / DII Flow | TradersDesk",
+    desc: "Institutional smart money flow analytics."
+  };
+  if (typeof history !== "undefined" && history.pushState && window.location.pathname !== targetFiiUrl && !window.location.hash.includes("oi")) {
+    history.pushState({ desk: "smartMoney", subview: tabKey }, routeMeta.title, targetFiiUrl);
+  }
+  if (typeof updateSeoMetadata === "function") {
+    updateSeoMetadata(routeMeta.title, routeMeta.desc, targetFiiUrl);
+  }
 
   tabs.forEach(t => {
     const isActive = t.key === tabKey;
@@ -12227,6 +12266,60 @@ const ROUTE_CONFIG = {
     title: "Option Chain Pro - Live Option Greeks, PCR & Multi-Strike OI Scanner | TradersDesk",
     desc: "Direct exchange streaming Option Chain Pro with real-time Option Greeks (Delta, Gamma, Theta, Vega, IV), ATM Straddles & dynamic weekly/monthly expiries."
   },
+  "/wpcr": {
+    desk: "upstoxChain",
+    subview: "wpcrPceView",
+    title: "wPCR & PCE Quant Terminal - Real-Time Put-Call Ratio & Institutional Capital Flow | TradersDesk",
+    desc: "Institutional wPCR (Premium-Weighted PCR), dPCR, Put-Call Parity equilibrium, retail trap detection and institutional capital deployment analytics across NSE options."
+  },
+  "/option-chain-pro/overview": {
+    desk: "upstoxChain",
+    subview: "indexOverviewView",
+    title: "Option Chain Pro - Index & Market Overview | TradersDesk",
+    desc: "Real-time index options overview, spot vs futures basis, IV rank, PCR sentiment, and strike distribution."
+  },
+  "/option-chain-pro/chain": {
+    desk: "upstoxChain",
+    subview: "chainView",
+    title: "Multi-Strike Option Chain - Live Real-Time Options Quotes | TradersDesk",
+    desc: "Direct exchange streaming multi-strike Option Chain with LTP, Bid/Ask, Greek calculations, and volume."
+  },
+  "/option-chain-pro/greeks": {
+    desk: "upstoxChain",
+    subview: "statsView",
+    title: "Options Greeks Analytics - Delta, Gamma, Theta, Vega & IV Skew | TradersDesk",
+    desc: "Real-time Black-Scholes Options Greeks calculator and scanner tracking Delta neutral, Gamma risk, Theta decay, and Vega volatility."
+  },
+  "/option-chain-pro/pcr": {
+    desk: "upstoxChain",
+    subview: "wpcrPceView",
+    title: "wPCR & PCE Quant Terminal - Options Put-Call Ratio Scanner | TradersDesk",
+    desc: "Volume and Open Interest weighted Put-Call Ratio (W-PCR), Put Call Equilibrium (PCE), and institutional hedging sentiment."
+  },
+  "/option-chain-pro/volatility": {
+    desk: "upstoxChain",
+    subview: "volatilityView",
+    title: "Options Volatility Skew & IV Term Structure | TradersDesk",
+    desc: "Implied Volatility (IV) smile, volatility surface, term structure, and historical IV percentile across expiries."
+  },
+  "/fii-dii/participant-oi": {
+    desk: "smartmoney",
+    subview: "oi",
+    title: "Participant-wise Open Interest - FII, DII, Pro & Client Positioning | TradersDesk",
+    desc: "NSE Participant-wise Open Interest analysis. Track daily net contracts in Index Futures, Index Options, Stock Futures for FII, DII, Pro, and Retail Clients."
+  },
+  "/fii-dii/oi": {
+    desk: "smartmoney",
+    subview: "oi",
+    title: "Participant-wise Open Interest - FII, DII, Pro & Client Positioning | TradersDesk",
+    desc: "NSE Participant-wise Open Interest analysis. Track daily net contracts in Index Futures, Index Options, Stock Futures for FII, DII, Pro, and Retail Clients."
+  },
+  "/mtf/brokers": {
+    desk: "mtf",
+    subview: "broker",
+    title: "MTF Broker Terms, Interest Rates & Haircuts | TradersDesk",
+    desc: "Comparison of MTF broker terms, lending interest rates (Zerodha, Angel One, m.Stock, Dhan), and leverage guidelines."
+  },
   "/options": {
     desk: "upstoxChain",
     title: "Option Chain Pro - Live Option Greeks, PCR & Multi-Strike OI Scanner | TradersDesk",
@@ -12511,6 +12604,14 @@ const DESK_TO_URL = {
 };
 
 function getUrlForDesk(key, subview) {
+  if (key === "wpcr") return "/wpcr";
+  if (key === "upstoxChain" || key === "options") {
+    if (subview === "chainView" || subview === "chain") return "/option-chain-pro/chain";
+    if (subview === "statsView" || subview === "greeks") return "/option-chain-pro/greeks";
+    if (subview === "wpcrPceView" || subview === "pcr" || subview === "wpcr") return "/wpcr";
+    if (subview === "volatilityView" || subview === "volatility") return "/option-chain-pro/volatility";
+    if (subview === "indexOverviewView" || subview === "overview") return "/option-chain-pro/overview";
+  }
   if (key === "futures" && subview) {
     if (subview === "futureIntraday" || subview === "intraday") return "/futures/future-intraday";
     if (subview === "futureVsOi" || subview === "priceVsOi") return "/futures/future-vs-oi";
@@ -12686,6 +12787,13 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
           switchDelivSubtab(subview, false);
         }
       }, 80);
+    }
+    if (tabKey === "upstoxChain" || key === "upstoxChain" || key === "options" || key === "wpcr") {
+      if (key === "wpcr" || subview === "wpcrPceView" || subview === "pcr" || subview === "wpcr") {
+        setTimeout(() => { if (typeof switchOptionsSubtab === "function") switchOptionsSubtab("wpcrPceView"); }, 60);
+      } else if (subview && typeof switchOptionsSubtab === "function") {
+        setTimeout(() => { switchOptionsSubtab(subview); }, 60);
+      }
     }
     if (tabKey === "smartMoney" || key === "smartMoney" || key === "smartmoney") {
       setTimeout(() => {
@@ -13627,6 +13735,16 @@ window.dotNavClick = function(e, key, subview) {
     return true;
   }
   window.closeMobileDotMenu();
+
+  if (key === 'wpcr') {
+    if (typeof instNav === 'function') {
+      if (e && e.preventDefault) e.preventDefault();
+      instNav('upstoxChain', 'wpcrPceView');
+      return false;
+    }
+    window.location.href = '/wpcr';
+    return false;
+  }
 
   if (key === 'straddle') {
     if (window.activateSuite && typeof window.activateSuite === 'function') {

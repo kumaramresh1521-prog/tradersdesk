@@ -100,7 +100,16 @@ def load_fii_dii_history() -> Dict[str, Any]:
         return {"yearly": [], "monthly": [], "daily": [], "lastUpdated": ""}
     try:
         with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            for d in data.get("daily", [])[:5]:
+                d_date = d.get("date") or d.get("period")
+                if d_date:
+                    bench = get_nifty_benchmark_for_date(d_date)
+                    if bench.get("close", 0) > 0 and abs(float(d.get("niftyClose") or 0) - bench["close"]) > 0.05:
+                        d["niftyClose"] = bench["close"]
+                        d["niftyChange"] = bench["change"]
+                        d["niftyPct"] = bench["pct"]
+            return data
     except Exception:
         return {"yearly": [], "monthly": [], "daily": [], "lastUpdated": ""}
 
@@ -169,7 +178,7 @@ def get_nifty_benchmark_for_date(date_str: str) -> Dict[str, float]:
     except Exception:
         pass
 
-    return {"close": 23098.90, "change": 51.50, "pct": 0.22}
+    return {"close": 23053.10, "change": 116.35, "pct": 0.51}
 
 
 def sync_fii_dii_history(
@@ -232,9 +241,9 @@ def sync_fii_dii_history(
             pass
 
     if nifty_close is None or nifty_close <= 0:
-        nifty_close = 23098.90
-        nifty_change = 51.50
-        nifty_pct = 0.22
+        nifty_close = 23053.10
+        nifty_change = 116.35
+        nifty_pct = 0.51
     elif daily_list and (nifty_change is None or nifty_change == 0.0):
         prev_c = float(daily_list[0].get("niftyClose") or 0.0)
         if prev_c > 0 and nifty_close:
