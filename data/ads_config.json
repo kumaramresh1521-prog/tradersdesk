@@ -1,0 +1,45 @@
+{
+  "enabled": true,
+  "test_mode": true,
+  "adsense_client_id": "",
+  "auto_ads": false,
+  "slots": {
+    "dashboard_top": {
+      "enabled": true,
+      "name": "Dashboard Top Leaderboard",
+      "slot_id": "",
+      "custom_html": ""
+    },
+    "dashboard_native": {
+      "enabled": true,
+      "name": "Dashboard Native In-Feed Card",
+      "slot_id": "",
+      "custom_html": ""
+    },
+    "blog_top": {
+      "enabled": true,
+      "name": "Blog Article Top Banner",
+      "slot_id": "",
+      "custom_html": ""
+    },
+    "blog_mid": {
+      "enabled": true,
+      "name": "Blog In-Content Mid Ad",
+      "slot_id": "",
+      "custom_html": ""
+    },
+    "blog_bottom": {
+      "enabled": true,
+      "name": "Blog Article Bottom Banner",
+      "slot_id": "",
+      "custom_html": ""
+    },
+    "footer_banner": {
+      "enabled": true,
+      "name": "Global Footer Leaderboard",
+      "slot_id": "",
+      "custom_html": ""
+    }
+  },
+  "updated_at": "2026-11-01 19:44:39 IST"
+}

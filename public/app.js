@@ -11333,6 +11333,7 @@ Object.defineProperty(window, 'mtfDataGlobal', {
 // ── Sub-tab switcher ─────────────────────────────────────────────────────────
 
 function mtaSwitchTab(name, updateUrl = true) {
+  if (name === 'brokers') name = 'broker';
 
   mtaActiveSubTab = name;
 
@@ -13878,7 +13879,40 @@ function mtaHandleChartMouseLeave() {
 
 // ── Broker Desk Tab ───────────────────────────────────────────────────────────
 
+// --- Official MTF Broker Lending Terms & Margin Schedule (2026 Analysis) ---
+const BROKER_MTF_TERMS = [
+  { broker: "ICICI Direct", annualRate: "9.65% - 13.90%", dailyRate: "0.026% - 0.038%", leverage: "Up to 4x", holdingPeriod: "365 Days", marginCall: "T+1 Day (11:00 AM)", pledgeFee: "₹20 + GST", status: "Active SEBI Book" },
+  { broker: "Kotak Securities", annualRate: "9.75% - 14.50%", dailyRate: "0.027% - 0.040%", leverage: "Up to 4x", holdingPeriod: "365 Days", marginCall: "T+1 Day (11:30 AM)", pledgeFee: "₹15 + GST", status: "Active SEBI Book" },
+  { broker: "HDFC Sky", annualRate: "12.00% - 15.00%", dailyRate: "0.033% - 0.041%", leverage: "Up to 4x", holdingPeriod: "365 Days", marginCall: "T+1 Day (11:00 AM)", pledgeFee: "₹20 + GST", status: "Active SEBI Book" },
+  { broker: "Zerodha", annualRate: "12.50% - 14.50%", dailyRate: "0.034% - 0.040%", leverage: "Up to 3.5x", holdingPeriod: "365 Days", marginCall: "T+1 Day (11:30 AM)", pledgeFee: "₹30 + GST", status: "Active SEBI Book" },
+  { broker: "Angel One", annualRate: "14.99% - 18.00%", dailyRate: "0.041% - 0.049%", leverage: "Up to 4x", holdingPeriod: "365 Days", marginCall: "T+1 Day (10:30 AM)", pledgeFee: "₹20 + GST", status: "Active SEBI Book" },
+  { broker: "m.Stock (Mirae)", annualRate: "6.99% - 9.99%", dailyRate: "0.019% - 0.027%", leverage: "Up to 4.5x", holdingPeriod: "365 Days", marginCall: "T+1 Day (12:00 PM)", pledgeFee: "₹12 + GST", status: "Active SEBI Book" },
+  { broker: "Dhan", annualRate: "12.50% - 14.00%", dailyRate: "0.034% - 0.038%", leverage: "Up to 4x", holdingPeriod: "365 Days", marginCall: "T+1 Day (11:00 AM)", pledgeFee: "₹12.5 + GST", status: "Active SEBI Book" },
+  { broker: "Groww", annualRate: "14.00% - 16.50%", dailyRate: "0.038% - 0.045%", leverage: "Up to 4x", holdingPeriod: "365 Days", marginCall: "T+1 Day (10:00 AM)", pledgeFee: "₹20 + GST", status: "Active SEBI Book" },
+  { broker: "Motilal Oswal", annualRate: "11.00% - 15.00%", dailyRate: "0.030% - 0.041%", leverage: "Up to 4x", holdingPeriod: "365 Days", marginCall: "T+1 Day (11:00 AM)", pledgeFee: "₹25 + GST", status: "Active SEBI Book" },
+  { broker: "Axis Direct", annualRate: "11.50% - 16.00%", dailyRate: "0.031% - 0.044%", leverage: "Up to 4x", holdingPeriod: "365 Days", marginCall: "T+1 Day (11:30 AM)", pledgeFee: "₹20 + GST", status: "Active SEBI Book" }
+];
+
+function renderBrokerRatesComparisonTable() {
+  const tbody = document.getElementById("mtfBrokerRatesTableBody");
+  if (!tbody) return;
+  tbody.innerHTML = BROKER_MTF_TERMS.map(b => {
+    return `<tr>
+      <td><strong style="color:var(--text-bright, #f8fafc);">${b.broker}</strong></td>
+      <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; color:#38bdf8;">${b.annualRate}</td>
+      <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:600; color:#10b981;">${b.dailyRate}</td>
+      <td style="text-align:center;"><span class="mta-badge" style="background:rgba(56,189,248,0.12); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">${b.leverage}</span></td>
+      <td style="text-align:center; font-size:12px; color:var(--text-secondary);">${b.holdingPeriod}</td>
+      <td style="text-align:center; font-size:12px; color:#f59e0b; font-weight:600;">${b.marginCall}</td>
+      <td style="text-align:center; font-size:12px; font-family:'JetBrains Mono',monospace; color:var(--text-muted);">${b.pledgeFee}</td>
+      <td style="text-align:center;"><span class="mta-badge" style="background:rgba(16,185,129,0.12); color:#10b981; border:1px solid rgba(16,185,129,0.3);">Verified</span></td>
+    </tr>`;
+  }).join("");
+}
+
 function mtaRenderBrokerDesk(data) {
+  renderBrokerRatesComparisonTable();
+
 
   const brokers = (data.brokers || {}).brokers || [];
 
@@ -16814,9 +16848,13 @@ function switchTab(tab) {
 
     isOptionsTabActive = false;
 
-    showPanel("panelDashboard", "tabDashboard");
+    showPanel("panelSettings", "tabSettings");
 
-    try { loadMarketDashboard(); } catch(e){}
+    try {
+      if (typeof window.initAdminAdsHub === 'function') {
+        window.initAdminAdsHub();
+      }
+    } catch(e){}
 
   }
 
@@ -27702,3 +27740,258 @@ window.autoBalanceDropdowns = function() {
 
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', () => setTimeout(window.autoBalanceDropdowns, 100)); } else { setTimeout(window.autoBalanceDropdowns, 100); }
 
+
+/* ==========================================================================
+   ADS CONTROL & MONETIZATION ENGINE (Non-Intrusive, Engagement-Preserving)
+   ========================================================================== */
+window._adsConfig = null;
+
+async function loadAdsConfig() {
+  try {
+    const res = await fetch('/api/ads-config');
+    const data = await res.json();
+    if (data && data.ok) {
+      window._adsConfig = data.config;
+      return data.config;
+    }
+  } catch (err) {
+    console.warn('[Ads] Failed to load ads config:', err);
+  }
+  return null;
+}
+
+function renderClientAdSlots() {
+  const cfg = window._adsConfig;
+  if (!cfg || !cfg.enabled) {
+    document.querySelectorAll('.ad-slot-wrapper').forEach(el => {
+      el.style.display = 'none';
+    });
+    return;
+  }
+
+  // Inject Google AdSense auto-ads script if configured
+  if (cfg.auto_ads && cfg.client_id && !document.getElementById('adsense-script-tag')) {
+    const script = document.createElement('script');
+    script.id = 'adsense-script-tag';
+    script.async = true;
+    script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(cfg.client_id)}`;
+    script.crossOrigin = 'anonymous';
+    document.head.appendChild(script);
+  }
+
+  const slotMap = {
+    dashboard_top: 'adSlotDashboardTop',
+    dashboard_native: 'adSlotDashboardNative',
+    footer_banner: 'adSlotFooterBanner'
+  };
+
+  Object.entries(slotMap).forEach(([slotKey, containerId]) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const slotCfg = (cfg.slots && cfg.slots[slotKey]) || { enabled: false };
+
+    if (!slotCfg.enabled) {
+      container.style.display = 'none';
+      return;
+    }
+
+    const contentBox = container.querySelector('.ad-content-box') || container;
+
+    if (slotCfg.custom_code && slotCfg.custom_code.trim()) {
+      contentBox.innerHTML = slotCfg.custom_code;
+      container.style.display = 'block';
+    } else if (cfg.client_id && slotCfg.slot_id) {
+      contentBox.innerHTML = `
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="${cfg.client_id}"
+             data-ad-slot="${slotCfg.slot_id}"
+             data-ad-format="${slotCfg.format || 'auto'}"
+             data-full-width-responsive="true"></ins>
+      `;
+      container.style.display = 'block';
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (e) {}
+    } else if (cfg.test_mode) {
+      if (slotKey === 'dashboard_native') {
+        contentBox.innerHTML = `
+          <div style="background:linear-gradient(135deg, rgba(30,41,59,0.7) 0%, rgba(15,23,42,0.8) 100%); border:1px dashed rgba(56,189,248,0.4); border-radius:8px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:40px; height:40px; border-radius:8px; background:rgba(56,189,248,0.15); display:flex; align-items:center; justify-content:center; font-size:20px; border:1px solid rgba(56,189,248,0.3);">⚡</div>
+              <div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-weight:700; font-size:14px; color:#f8fafc;">Sponsored Market Partner</span>
+                  <span style="font-size:10px; font-weight:800; background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 6px; border-radius:4px; text-transform:uppercase;">Promoted</span>
+                </div>
+                <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">Fast-execution institutional equity & options order routing for active traders.</div>
+              </div>
+            </div>
+            <a href="javascript:void(0)" style="padding:6px 14px; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); border-radius:6px; font-size:12px; font-weight:700; text-decoration:none;">Explore Terminal &rarr;</a>
+          </div>
+        `;
+      } else {
+        contentBox.innerHTML = `
+          <div style="background:rgba(30,41,59,0.5); border:1px dashed rgba(148,163,184,0.3); border-radius:6px; padding:14px 20px; width:100%; max-width:728px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:16px;">📢</span>
+              <span style="font-size:12px; color:var(--text-secondary); font-weight:600;">${slotCfg.description || 'Verified Trading Partner Banner Slot (728x90 Leaderboard)'}</span>
+            </div>
+            <span style="font-size:10px; font-weight:700; background:rgba(148,163,184,0.15); color:#94a3b8; padding:3px 8px; border-radius:4px;">PREVIEW MODE</span>
+          </div>
+        `;
+      }
+      container.style.display = 'block';
+    } else {
+      container.style.display = 'none';
+    }
+  });
+}
+
+function initAdminAdsHub() {
+  const grid = document.getElementById('adminAdSlotsGrid');
+  const masterToggle = document.getElementById('adsMasterToggle');
+  const clientIdInput = document.getElementById('adsClientId');
+  const testModeToggle = document.getElementById('adsTestModeToggle');
+  const autoAdsToggle = document.getElementById('adsAutoAdsToggle');
+  const btnSave = document.getElementById('btnSaveAdsConfig');
+  const statusMsg = document.getElementById('adsSaveStatusMsg');
+
+  if (!grid || !btnSave) return;
+
+  loadAdsConfig().then(cfg => {
+    if (!cfg) return;
+
+    if (masterToggle) masterToggle.checked = !!cfg.enabled;
+    if (clientIdInput) clientIdInput.value = cfg.client_id || '';
+    if (testModeToggle) testModeToggle.checked = !!cfg.test_mode;
+    if (autoAdsToggle) autoAdsToggle.checked = !!cfg.auto_ads;
+
+    const slots = cfg.slots || {};
+    grid.innerHTML = Object.entries(slots).map(([key, s]) => {
+      return `
+        <div class="ad-slot-card" data-slot-key="${key}" style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div style="font-weight:700; font-size:13px; color:#f8fafc;">${s.label || key}</div>
+              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${s.description || ''}</div>
+            </div>
+            <label style="position:relative; display:inline-block; width:36px; height:20px; flex-shrink:0;">
+              <input type="checkbox" class="slot-active-toggle" ${s.enabled ? 'checked' : ''} style="opacity:0; width:0; height:0;">
+              <span style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:${s.enabled ? '#10b981' : '#475569'}; transition:.3s; border-radius:20px;" onclick="this.previousElementSibling.click(); this.style.background = this.previousElementSibling.checked ? '#10b981' : '#475569';"></span>
+            </label>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; gap:8px;">
+              <div style="flex:1;">
+                <label style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Ad Format</label>
+                <select class="slot-format-select" style="width:100%; padding:5px 8px; font-size:12px; background:#1e293b; border:1px solid #475569; color:#f8fafc; border-radius:4px; margin-top:2px;">
+                  <option value="auto" ${s.format === 'auto' ? 'selected' : ''}>Auto Responsive</option>
+                  <option value="horizontal" ${s.format === 'horizontal' ? 'selected' : ''}>Horizontal Banner</option>
+                  <option value="rectangle" ${s.format === 'rectangle' ? 'selected' : ''}>Medium Rectangle</option>
+                  <option value="native" ${s.format === 'native' ? 'selected' : ''}>Native In-Feed</option>
+                </select>
+              </div>
+              <div style="flex:1;">
+                <label style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Slot ID</label>
+                <input type="text" class="slot-id-input" value="${s.slot_id || ''}" placeholder="e.g. 9876543210" style="width:100%; padding:5px 8px; font-size:12px; background:#1e293b; border:1px solid #475569; color:#f8fafc; border-radius:4px; margin-top:2px; font-family:'JetBrains Mono',monospace;">
+              </div>
+            </div>
+            <div>
+              <label style="font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">Custom Banner HTML / Script (Optional)</label>
+              <textarea class="slot-custom-code" placeholder="Leave empty to use Google AdSense slot" style="width:100%; height:42px; padding:4px 8px; font-size:11px; background:#1e293b; border:1px solid #475569; color:#38bdf8; border-radius:4px; margin-top:2px; font-family:'JetBrains Mono',monospace; resize:vertical;">${s.custom_code || ''}</textarea>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  });
+
+  btnSave.onclick = async () => {
+    const pin = (document.getElementById('adsAdminPinInput') || {}).value || '';
+    if (!pin) {
+      if (statusMsg) {
+        statusMsg.style.color = '#ef4444';
+        statusMsg.textContent = '❌ Please enter Admin PIN';
+      }
+      return;
+    }
+
+    const updatedSlots = {};
+    grid.querySelectorAll('.ad-slot-card').forEach(card => {
+      const key = card.dataset.slotKey;
+      const chk = card.querySelector('.slot-active-toggle');
+      const fmt = card.querySelector('.slot-format-select');
+      const sid = card.querySelector('.slot-id-input');
+      const code = card.querySelector('.slot-custom-code');
+
+      const existingSlot = (window._adsConfig && window._adsConfig.slots && window._adsConfig.slots[key]) || {};
+
+      updatedSlots[key] = {
+        ...existingSlot,
+        enabled: chk ? chk.checked : false,
+        format: fmt ? fmt.value : 'auto',
+        slot_id: sid ? sid.value.trim() : '',
+        custom_code: code ? code.value : ''
+      };
+    });
+
+    const newConfig = {
+      enabled: masterToggle ? masterToggle.checked : true,
+      client_id: clientIdInput ? clientIdInput.value.trim() : '',
+      test_mode: testModeToggle ? testModeToggle.checked : true,
+      auto_ads: autoAdsToggle ? autoAdsToggle.checked : false,
+      slots: updatedSlots
+    };
+
+    if (statusMsg) {
+      statusMsg.style.color = '#38bdf8';
+      statusMsg.textContent = 'Saving...';
+    }
+
+    try {
+      const res = await fetch('/api/admin/ads/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Secret': pin
+        },
+        body: JSON.stringify({ adminPin: pin, config: newConfig })
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        window._adsConfig = data.config;
+        if (statusMsg) {
+          statusMsg.style.color = '#10b981';
+          statusMsg.textContent = '✅ Saved successfully!';
+          setTimeout(() => { statusMsg.textContent = ''; }, 3500);
+        }
+        renderClientAdSlots();
+      } else {
+        if (statusMsg) {
+          statusMsg.style.color = '#ef4444';
+          statusMsg.textContent = `❌ ${data.message || 'Save failed'}`;
+        }
+      }
+    } catch (e) {
+      if (statusMsg) {
+        statusMsg.style.color = '#ef4444';
+        statusMsg.textContent = '❌ Network error saving config';
+      }
+    }
+  };
+}
+
+// Auto-run Ads initialization
+if (typeof window !== 'undefined') {
+  window.loadAdsConfig = loadAdsConfig;
+  window.renderClientAdSlots = renderClientAdSlots;
+  window.initAdminAdsHub = initAdminAdsHub;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAdsConfig().then(() => renderClientAdSlots());
+    });
+  } else {
+    loadAdsConfig().then(() => renderClientAdSlots());
+  }
+}

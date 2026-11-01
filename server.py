@@ -10703,6 +10703,16 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
             return self.send_json(200, {"ok": True, "posts": cms_engine.list_posts(published_only=False)})
 
+        if path == "/api/ads-config":
+            ads_path = Path("data/ads_config.json")
+            if ads_path.exists():
+                try:
+                    with open(ads_path, "r", encoding="utf-8") as af:
+                        return self.send_json(200, {"ok": True, "config": json.load(af)})
+                except Exception:
+                    pass
+            return self.send_json(200, {"ok": True, "config": {"enabled": False, "slots": {}}})
+
         if path == "/api/feature-flags":
             return self.send_json(200, {"ok": True, "flags": get_feature_flags()})
 
@@ -11805,6 +11815,32 @@ class RequestHandler(BaseHTTPRequestHandler):
                 with _SEO_HTML_CACHE_LOCK:
                     _SEO_HTML_CACHE.clear()
                 return self.send_json(200 if success else 400, {"ok": success, "message": "Page deleted successfully" if success else "Failed deleting page"})
+
+            if parsed.path == "/api/admin/ads/save":
+                payload = self.read_body()
+                pin_provided = (
+                    self.headers.get("X-Admin-Secret", "").strip().strip('"').strip("'")
+                    or str(payload.get("adminSecret") or payload.get("adminPin") or "")
+                )
+                secret = get_admin_secret()
+                is_valid = bool(pin_provided and secret and hmac.compare_digest(pin_provided, secret))
+                if not is_valid and not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Invalid Master Admin PIN / Secret."})
+
+                cfg = payload.get("config", payload)
+                if "adminSecret" in cfg:
+                    del cfg["adminSecret"]
+                if "adminPin" in cfg:
+                    del cfg["adminPin"]
+                cfg["updated_at"] = now_ist().strftime("%Y-%m-%d %H:%M:%S IST")
+
+                ads_path = Path("data/ads_config.json")
+                ads_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(ads_path, "w", encoding="utf-8") as af:
+                    json.dump(cfg, af, indent=2)
+
+                log_system_event("SUCCESS", "MONETIZATION", "Ads configuration updated successfully.")
+                return self.send_json(200, {"ok": True, "message": "Ads configuration updated successfully.", "config": cfg})
 
             if parsed.path == "/api/admin/blog/save":
                 if not check_admin_request(self):

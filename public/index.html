@@ -150,7 +150,8 @@
               "/smart-money": "panelSmartMoney",
               "/smartmoney": "panelSmartMoney",
               "/delivery": "panelDelivery",
-              "/mtf": "panelMtf"
+              "/mtf": "panelMtf",
+              "/settings": "panelSettings"
             };
             var targetPanelId = routeMap[rawPath];
             if (!targetPanelId) {
@@ -197,6 +198,39 @@
 
               var tabBar = document.querySelector(".fii-dii-subtabs");
               if (tabBar) tabBar.style.display = "none";
+            }
+
+            // Early activation of MTF subpanel if URL points directly to an MTF subview
+            if (targetPanelId === "panelMtf") {
+              var mtfSub = null;
+              if (rawPath === "/mtf/brokers" || rawPath === "/mtf/broker") mtfSub = "broker";
+              else if (rawPath === "/mtf/topstocks") mtfSub = "topstocks";
+              else if (rawPath === "/mtf/retail") mtfSub = "retail";
+              else if (rawPath === "/mtf/movers") mtfSub = "movers";
+              else if (rawPath === "/mtf/sectors") mtfSub = "sectors";
+              else if (rawPath === "/mtf/trend") mtfSub = "trend";
+              else if (rawPath === "/mtf/global") mtfSub = "global";
+              else if (rawPath === "/mtf/calculator") mtfSub = "calculator";
+              else if (rawPath === "/mtf/compare") mtfSub = "compare";
+
+              if (mtfSub) {
+                var mPanels = document.querySelectorAll(".mta-inner-panel");
+                for (var j = 0; j < mPanels.length; j++) {
+                  var mp = mPanels[j];
+                  if (mp.id === "mtaPanel-" + mtfSub) {
+                    mp.classList.add("active");
+                    mp.style.display = "block";
+                  } else {
+                    mp.classList.remove("active");
+                    mp.style.display = "none";
+                  }
+                }
+                var mTabs = document.querySelectorAll(".mta-inner-tab");
+                for (var k = 0; k < mTabs.length; k++) {
+                  var tb = mTabs[k];
+                  tb.classList.toggle("active", tb.dataset.subtab === mtfSub);
+                }
+              }
             }
           } catch(e) {}
         });
@@ -640,6 +674,12 @@
           </div>
         </div>
 
+        <!-- DASHBOARD TOP AD SLOT (LEADERBOARD / NATIVE BANNER) -->
+        <div id="adSlotDashboardTop" class="ad-slot-wrapper ad-slot-dash-top" style="display:none; margin: 12px 0 20px 0; text-align:center;">
+          <div class="ad-label" style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted, #64748b); margin-bottom:4px;">Advertisement</div>
+          <div class="ad-content-box" style="display:flex; justify-content:center; align-items:center; min-height:90px; border-radius:8px; overflow:hidden;"></div>
+        </div>
+
 
 
         <!-- 2. Core 4 Indian Indices Benchmark Cards -->
@@ -737,6 +777,11 @@
               <span>Breadth &amp; Contribution ↗</span>
             </div>
           </div>
+        </div>
+
+        <!-- DASHBOARD NATIVE IN-FEED AD SLOT -->
+        <div id="adSlotDashboardNative" class="ad-slot-wrapper ad-slot-dash-native" style="display:none; margin: 16px 0 24px 0;">
+          <div class="ad-content-box"></div>
         </div>
 
         <!-- 3. Executive Market Health & Sentiment KPI Strip -->
@@ -4532,6 +4577,35 @@
               </div>
             </div>
           </div>
+          <!-- Official Broker MTF Lending Rates & Terms Comparison Desk -->
+          <div class="mta-section" style="margin-bottom:20px;">
+            <div class="mta-section-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span>🏷️ Official Broker MTF Lending Rates &amp; Margin Terms (2026 Comparison)</span>
+                <span class="mta-badge" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">SEBI Regulated Limits</span>
+              </div>
+              <span style="font-size:11px; color:var(--text-muted, #94a3b8);">10 Major Indian Brokers &bull; Daily &amp; Annual Rates</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="mta-table mta-table-sticky" id="mtfBrokerRatesTable">
+                <thead>
+                  <tr>
+                    <th>Brokerage Platform</th>
+                    <th style="text-align:right;">Annual Rate (p.a.)</th>
+                    <th style="text-align:right;">Daily Interest</th>
+                    <th style="text-align:center;">Max Leverage</th>
+                    <th style="text-align:center;">Approved Stocks</th>
+                    <th style="text-align:left;">Holding Tenure</th>
+                    <th style="text-align:left;">Lending Plan / Key Highlight</th>
+                  </tr>
+                </thead>
+                <tbody id="mtfBrokerRatesTableBody">
+                  <tr><td colspan="7" style="text-align:center; padding:16px; color:#94a3b8;">Loading broker lending rates...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Full Broker Table -->
           <div class="mta-section">
             <div class="mta-section-header">
@@ -5138,6 +5212,68 @@
             </div>
           </div>
 
+          <!-- ============================================================ -->
+          <!-- 📢 MONETIZATION & ADS CONTROL HUB (ADMIN PANEL) -->
+          <!-- ============================================================ -->
+          <div class="settings-section-card" id="adminAdsControlCard" style="border: 1px solid rgba(234, 179, 8, 0.35); background: linear-gradient(135deg, rgba(234, 179, 8, 0.04) 0%, rgba(15, 23, 42, 0.8) 100%); margin-bottom:24px;">
+            <div class="section-title-wrap" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div>
+                <span class="section-badge" style="background:#eab308; color:#0f172a; font-weight:800;">MONETIZATION HUB</span>
+                <h3>📢 Global Ads Management &amp; Layout Control</h3>
+                <p>Configure Google AdSense, custom banner tags, native sponsor cards, and fine-tune ad placements across Dashboard &amp; Blog pages without disrupting user engagement.</p>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:700; color:var(--text-bright, #fff); background:rgba(0,0,0,0.3); padding:8px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.12);">
+                  <input type="checkbox" id="adsMasterToggle" style="width:18px; height:18px; cursor:pointer; accent-color:#eab308;">
+                  <span>Master Ads Network: <b id="adsMasterStatus" style="color:#eab308;">ENABLED</b></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- AdSense Global Configuration -->
+            <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:16px; margin:16px 0; border:1px solid rgba(255,255,255,0.06); display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+              <div>
+                <label style="font-size:12px; font-weight:700; color:#38bdf8; display:block; margin-bottom:6px;">
+                  Google AdSense Publisher ID (Client ID):
+                </label>
+                <input type="text" id="adsClientId" placeholder="e.g. ca-pub-1234567890123456" style="width:100%; padding:8px 12px; font-size:13px; border-radius:6px; background:#0f172a; border:1px solid #334155; color:#fff; font-family:'JetBrains Mono',monospace;">
+                <span style="font-size:11px; color:#94a3b8; display:block; margin-top:4px;">Leave blank if using custom banner HTML or affiliate links.</span>
+              </div>
+              <div style="display:flex; flex-direction:column; justify-content:center; gap:10px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text-secondary);">
+                  <input type="checkbox" id="adsTestModeToggle" checked style="width:16px; height:16px; accent-color:#38bdf8;">
+                  <span><b>Visual Preview / Test Mode</b> (Show non-intrusive demo creative placeholders when live ads are pending)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text-secondary);">
+                  <input type="checkbox" id="adsAutoAdsToggle" style="width:16px; height:16px; accent-color:#eab308;">
+                  <span><b>Auto Ads Script Tag</b> (Allows AdSense to test automatic high-performing placements)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Individual Ad Slots Grid -->
+            <h4 style="font-size:14px; font-weight:800; color:var(--text-bright, #fff); margin:18px 0 10px 0; display:flex; align-items:center; gap:6px;">
+              <span>🎯 Strategic Placement Slots (Zero-CLS &amp; Engagement Preserving)</span>
+            </h4>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:14px; margin-bottom:18px;" id="adminAdSlotsGrid">
+              <!-- Slot Cards will be rendered here dynamically -->
+            </div>
+
+            <!-- PIN & Save Strip -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; background:rgba(0,0,0,0.3); padding:14px 18px; border-radius:8px; border:1px solid rgba(234,179,8,0.25);">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:12px; font-weight:700; color:#38bdf8;">🔒 Admin Verification PIN:</span>
+                <input type="password" id="adsAdminPinInput" placeholder="PIN: 9771897535" style="padding:6px 10px; font-size:13px; border-radius:6px; background:#0f172a; border:1px solid #334155; color:#fff; width:160px;">
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span id="adsSaveStatusMsg" style="font-size:12px; font-weight:600;"></span>
+                <button type="button" id="btnSaveAdsConfig" class="btn btn-primary" style="background:#eab308; color:#0f172a; font-weight:800; padding:8px 18px; border-radius:6px; border:none; cursor:pointer;">
+                  💾 Save Ads Configuration
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- User Profile & Workspace Settings Card -->
           <div class="settings-section-card" style="border: 1px solid rgba(56, 189, 248, 0.25); background: linear-gradient(135deg, rgba(56, 189, 248, 0.04) 0%, rgba(15, 23, 42, 0.6) 100%);">
             <div class="section-title-wrap" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
@@ -5646,7 +5782,13 @@
       </div>
 
             <!-- Institutional Footer with Legal & Compliance Links (Strict 4-Column Layout) -->
-            <footer class="terminal-footer">
+            <!-- GLOBAL FOOTER AD SLOT -->
+    <div id="adSlotFooterBanner" class="ad-slot-wrapper ad-slot-footer" style="display:none; max-width:1440px; margin: 24px auto; padding: 0 16px; text-align:center;">
+      <div class="ad-label" style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted, #64748b); margin-bottom:4px;">Advertisement</div>
+      <div class="ad-content-box" style="display:flex; justify-content:center; align-items:center; min-height:90px; border-radius:8px; overflow:hidden;"></div>
+    </div>
+
+    <footer class="terminal-footer">
         <!-- 5 COLUMNS SEO DIRECTORY GRID -->
         <div class="footer-four-columns" id="footerFourColumnsGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:24px; margin-bottom:30px;">
           <!-- Column 1: Institutional & Cash Desks -->

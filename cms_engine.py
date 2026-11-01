@@ -497,10 +497,20 @@ def render_cms_shell(
     if not template:
         template = "<html><head><title><!-- CMS_HEAD_TITLE --></title></head><body><header><!-- CMS_NAV_HTML --></header><main><!-- CMS_BODY_CONTENT --></main></body></html>"
 
+    ads = get_ads_config()
+    ads_header_script = ""
+    if ads.get("enabled") and ads.get("adsense_client_id"):
+        cid = html.escape(ads["adsense_client_id"].strip())
+        ads_header_script = f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={cid}" crossorigin="anonymous"></script>'
+
+    footer_ad = build_cms_ad_slot("footer_banner", "Advertisement", "24px auto 16px auto")
+    if footer_ad:
+        body_content = body_content + footer_ad
+
     replacements = {
         "<!-- CMS_HEAD_TITLE -->": html.escape(title),
         "<!-- CMS_META_DESC -->": html.escape(description),
-        "<!-- CMS_KEYWORDS -->": keywords_tag,
+        "<!-- CMS_KEYWORDS -->": keywords_tag + ads_header_script,
         "<!-- CMS_ROBOTS -->": html.escape(robots),
         "<!-- CMS_CANONICAL -->": html.escape(canon),
         "<!-- CMS_OG_TYPE -->": og_type,
@@ -590,6 +600,54 @@ def render_blog_index() -> str:
     )
 
 
+def get_ads_config() -> dict:
+    try:
+        p = DATA_DIR / "ads_config.json"
+        if p.exists():
+            with open(p, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {"enabled": False, "slots": {}}
+
+def build_cms_ad_slot(slot_key: str, label: str = "Sponsored Advertisement", margin: str = "24px 0") -> str:
+    ads = get_ads_config()
+    if not ads.get("enabled", False):
+        return ""
+    slots = ads.get("slots", {})
+    slot = slots.get(slot_key, {})
+    if not slot.get("enabled", False):
+        return ""
+
+    custom_html = (slot.get("custom_html") or "").strip()
+    slot_id = (slot.get("slot_id") or "").strip()
+    client_id = (ads.get("adsense_client_id") or "").strip()
+    test_mode = ads.get("test_mode", False)
+
+    if custom_html:
+        inner = custom_html
+    elif slot_id and client_id:
+        inner = f"""<ins class="adsbygoogle"
+             style="display:block; text-align:center;"
+             data-ad-layout="in-article"
+             data-ad-format="fluid"
+             data-ad-client="{html.escape(client_id)}"
+             data-ad-slot="{html.escape(slot_id)}"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({{}});</script>"""
+    elif test_mode:
+        inner = f"""<div style="background:linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(15,23,42,0.4) 100%); border:1px dashed rgba(56,189,248,0.35); border-radius:8px; padding:18px 20px; text-align:center;">
+          <div style="font-size:10px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">PROMOTED &bull; SPONSORED INSIGHT</div>
+          <div style="font-size:14px; font-weight:700; color:var(--text-bright, #f8fafc); margin-bottom:4px;">Elevate Your Trading Strategy with Next-Gen Quantitative Tools</div>
+          <div style="font-size:12px; color:#94a3b8;">Direct exchange analytics, Options Greeks, and MTF leveraged intelligence &mdash; Zero latency.</div>
+        </div>"""
+    else:
+        return ""
+
+    return f"""<div class="ad-slot-container ad-slot-{slot_key}" style="margin:{margin}; text-align:center; overflow:hidden;">
+      <div style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#64748b; margin-bottom:6px;">{label}</div>
+      {inner}
+    </div>"""
+
 def render_post_view(slug: str, is_preview: bool = False) -> Optional[str]:
     post = get_post(slug)
     if not post:
@@ -606,6 +664,20 @@ def render_post_view(slug: str, is_preview: bool = False) -> Optional[str]:
 
     draft_tag = '<span style="background:rgba(234,179,8,0.2); color:#eab308; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">DRAFT</span>' if status == "draft" else ""
 
+    ad_top = build_cms_ad_slot("blog_top", "Advertisement", "16px 0 24px 0")
+    ad_mid = build_cms_ad_slot("blog_mid", "Sponsored Content", "28px 0")
+    ad_bottom = build_cms_ad_slot("blog_bottom", "Advertisement", "28px 0 16px 0")
+
+    if ad_mid and "</p>" in rendered_body:
+        parts = rendered_body.split("</p>")
+        if len(parts) >= 3:
+            parts[1] = parts[1] + "</p>" + ad_mid
+            rendered_body = "".join([p + ("</p>" if i < len(parts)-1 and i != 1 else "") for i, p in enumerate(parts)])
+        else:
+            rendered_body = rendered_body + ad_mid
+    elif ad_mid:
+        rendered_body = rendered_body + ad_mid
+
     body_html = f"""<article class="cms-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <a href="/blog" style="color:#38bdf8; text-decoration:none; font-size:13px; font-weight:600;">&larr; Back to All Articles</a>
@@ -620,7 +692,9 @@ def render_post_view(slug: str, is_preview: bool = False) -> Optional[str]:
         <span>{html.escape(post.get('publishedAt', ''))}</span> &bull; 
         <span>{html.escape(post.get('readTime', '5 min read'))}</span>
       </div>
+      {ad_top}
       {rendered_body}
+      {ad_bottom}
     </article>"""
 
     return render_cms_shell(
