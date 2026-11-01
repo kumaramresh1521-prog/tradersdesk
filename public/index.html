@@ -172,6 +172,32 @@
                 p.style.display = "none";
               }
             }
+
+            // Early activation of individual FII / DII subpanel based on specific URL
+            if (targetPanelId === "panelSmartMoney") {
+              var isDeriv = rawPath.indexOf("/fii-dii/derivatives") === 0 || rawPath.indexOf("/fii-dii-derivatives") === 0;
+              var isOi = rawPath.indexOf("/fii-dii/participant-oi") === 0 || rawPath.indexOf("/fii-dii/oi") === 0;
+
+              var cPanel = document.getElementById("p1FiiSubtabCash");
+              var dPanel = document.getElementById("p1FiiSubtabDeriv");
+              var oPanel = document.getElementById("p1FiiSubtabOi");
+              if (cPanel) cPanel.style.display = (!isDeriv && !isOi) ? "block" : "none";
+              if (dPanel) dPanel.style.display = isDeriv ? "block" : "none";
+              if (oPanel) oPanel.style.display = isOi ? "block" : "none";
+
+              var bCash = document.getElementById("fiiBannerCash");
+              var bDeriv = document.getElementById("fiiBannerDeriv");
+              var bOi = document.getElementById("fiiBannerOi");
+              if (bCash) bCash.style.display = (!isDeriv && !isOi) ? "flex" : "none";
+              if (bDeriv) bDeriv.style.display = isDeriv ? "flex" : "none";
+              if (bOi) bOi.style.display = isOi ? "flex" : "none";
+
+              var sCtrl = document.getElementById("fiiSessionControlsSection");
+              if (sCtrl) sCtrl.style.display = (!isDeriv && !isOi) ? "none" : "flex";
+
+              var tabBar = document.querySelector(".fii-dii-subtabs");
+              if (tabBar) tabBar.style.display = "none";
+            }
           } catch(e) {}
         });
       })();
@@ -422,17 +448,17 @@
             </a>
           </div>
 
-          <!-- 5. FII / DII DESK (DROPDOWN WITH 2 SUB-MENUS) -->
+          <!-- 5. FII / DII DESK (DROPDOWN WITH 3 INDIVIDUAL SUB-MENUS) -->
           <div class="inst-nav-item has-dropdown">
-            <a href="/fii-dii" class="inst-nav-btn" id="navFiiDii" onclick="return window.instNavClick(event, 'smartmoney')" title="Institutional Cash &amp; Derivatives Positioning">
+            <a href="/fii-dii/cash" class="inst-nav-btn" id="navFiiDii" onclick="return window.instNavClick(event, 'smartmoney', 'cash')" title="Institutional Cash &amp; Derivatives Positioning">
               <span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII / DII Desk</span>
               <span class="inst-nav-arrow">▾</span>
             </a>
             <div class="inst-dropdown inst-dropdown-sm">
               <div class="inst-dropdown-col">
-                <span class="inst-dropdown-header">Smart Money Flow</span>
+                <span class="inst-dropdown-header">Institutional Flow &amp; Positioning</span>
                 <!-- Sub 1: FII DII Cash -->
-                <a href="/fii-dii" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'cash')">
+                <a href="/fii-dii/cash" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'cash')">
                   <span class="dd-icon">💵</span>
                   <div class="dd-text">
                     <span class="dd-title">FII / DII Cash Market</span>
@@ -440,11 +466,19 @@
                   </div>
                 </a>
                 <!-- Sub 2: FII DII Derivatives -->
-                <a href="/fii-dii" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'derivatives')">
+                <a href="/fii-dii/derivatives" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'derivatives')">
                   <span class="dd-icon">⚡</span>
                   <div class="dd-text">
                     <span class="dd-title">FII / DII Derivatives</span>
-                    <span class="dd-sub">Index futures, options OI &amp; participant positioning</span>
+                    <span class="dd-sub">Index futures, stock futures &amp; turnover breakdown</span>
+                  </div>
+                </a>
+                <!-- Sub 3: Participant OI Matrix -->
+                <a href="/fii-dii/participant-oi" class="inst-dd-item" onclick="return window.instNavClick(event, 'smartmoney', 'oi')">
+                  <span class="dd-icon">📋</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Participant OI Matrix</span>
+                    <span class="dd-sub">Client, DII, FII &amp; Pro open interest positioning</span>
                   </div>
                 </a>
               </div>
@@ -3247,15 +3281,65 @@
            ================================================================ -->
       <div id="panelSmartMoney" class="tab-panel">
         
-        <!-- Header Controls Bar -->
-        <section class="controls sm-controls" style="margin-bottom: 16px;">
+        <!-- 1. Dedicated Header for FII / DII Cash Market -->
+        <div id="fiiBannerCash" class="fii-individual-banner" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; background:var(--bg-card); border:1px solid var(--border-default); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:44px; height:44px; border-radius:10px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.25); display:flex; align-items:center; justify-content:center; font-size:22px;">💵</div>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h2 style="margin:0; font-size:17px; font-weight:800; color:var(--text-primary); letter-spacing:-0.2px;">FII / DII CASH MARKET DESK</h2>
+                <span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:4px; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3);">INSTITUTIONAL CASH</span>
+              </div>
+              <p style="margin:4px 0 0; font-size:12px; color:var(--text-muted);">Daily net buy/sell flow, monthly &amp; yearly trends, and historical cash allocation by Foreign &amp; Domestic Institutional Investors.</p>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="sm-eod-badge" style="font-size:11px; padding:4px 10px;">🟢 NSE Official Cash Records</span>
+          </div>
+        </div>
+
+        <!-- 2. Dedicated Header for FII / DII Derivatives -->
+        <div id="fiiBannerDeriv" class="fii-individual-banner" style="display:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; background:var(--bg-card); border:1px solid var(--border-default); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:44px; height:44px; border-radius:10px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.25); display:flex; align-items:center; justify-content:center; font-size:22px;">⚡</div>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h2 style="margin:0; font-size:17px; font-weight:800; color:var(--text-primary); letter-spacing:-0.2px;">FII / DII DERIVATIVES DESK</h2>
+                <span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:4px; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">INSTITUTIONAL F&amp;O</span>
+              </div>
+              <p style="margin:4px 0 0; font-size:12px; color:var(--text-muted);">Index futures, stock futures &amp; options turnover breakdown across Nifty 50, Bank Nifty, and daily participant trading action.</p>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="sm-eod-badge" style="font-size:11px; padding:4px 10px;">🟢 NSE Official F&amp;O Turnover</span>
+          </div>
+        </div>
+
+        <!-- 3. Dedicated Header for Participant Open Interest Matrix -->
+        <div id="fiiBannerOi" class="fii-individual-banner" style="display:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; background:var(--bg-card); border:1px solid var(--border-default); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:44px; height:44px; border-radius:10px; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.25); display:flex; align-items:center; justify-content:center; font-size:22px;">📋</div>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h2 style="margin:0; font-size:17px; font-weight:800; color:var(--text-primary); letter-spacing:-0.2px;">PARTICIPANT OPEN INTEREST MATRIX</h2>
+                <span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:4px; background:rgba(168,85,247,0.15); color:#a855f7; border:1px solid rgba(168,85,247,0.3);">SMART MONEY POSITIONING</span>
+              </div>
+              <p style="margin:4px 0 0; font-size:12px; color:var(--text-muted);">Client, DII, FII, and Pro cumulative and day-change open interest breakdown across Index Futures, Calls &amp; Puts.</p>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="sm-eod-badge" style="font-size:11px; padding:4px 10px;">🟢 NSE EOD Disclosure</span>
+          </div>
+        </div>
+
+        <!-- Header Controls Bar (Used for Derivatives & Participant OI Matrix Session Selection) -->
+        <section class="controls sm-controls" id="fiiSessionControlsSection" style="margin-bottom: 16px; display:none;">
           <div class="ctrl-group" style="flex-wrap:wrap; gap:10px;">
             <label>
               <span>Trading Session</span>
               <select id="smSessionSelect" class="ctrl-select" style="font-weight:700; min-width:160px;">
                 <option value="" disabled selected>⏳ Loading sessions...</option>
               </select>
-
             </label>
             <label>
               <span>Custom Date</span>
@@ -3272,9 +3356,8 @@
           </div>
         </section>
 
-        <!-- FII / DII Desk Sub-Navigation Tabs -->
-        <!-- FII / DII Desk Sub-Navigation Tabs -->
-        <div class="fii-dii-subtabs">
+        <!-- Hidden Legacy Tab Bar: Individual Desk Pages are now activated via Navigation Dropdown -->
+        <div class="fii-dii-subtabs" style="display:none !important;">
           <button type="button" id="btnFiiSubtabCash" class="fii-dii-subtab-btn active">Cash Market Flow</button>
           <button type="button" id="btnFiiSubtabDeriv" class="fii-dii-subtab-btn">F&amp;O Institutional Flow</button>
           <button type="button" id="btnFiiSubtabOi" class="fii-dii-subtab-btn">Open Interest Matrix</button>
@@ -5828,7 +5911,7 @@
             </div>
           </div>
 
-          <!-- 5. FII / DII DESK (WITH BOTH SUBMENUS) -->
+          <!-- 5. FII / DII DESK (WITH ALL 3 SUBMENUS) -->
           <div class="dot-menu-section" data-dot-section="fiidii">
             <div class="dot-menu-section-header">
               <span class="dot-section-icon">🏦</span>
@@ -5836,7 +5919,7 @@
             </div>
             <div class="dot-sub-grid">
               <!-- Sub 1 -->
-              <a href="/fii-dii" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'cash')">
+              <a href="/fii-dii/cash" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'cash')">
                 <span class="dot-sub-icon">💵</span>
                 <div class="dot-sub-text">
                   <div class="dot-sub-title">FII / DII Cash Market</div>
@@ -5844,11 +5927,19 @@
                 </div>
               </a>
               <!-- Sub 2 -->
-              <a href="/fii-dii" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'derivatives')">
-                <span class="dot-sub-icon">📊</span>
+              <a href="/fii-dii/derivatives" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'derivatives')">
+                <span class="dot-sub-icon">⚡</span>
                 <div class="dot-sub-text">
                   <div class="dot-sub-title">FII / DII Derivatives</div>
-                  <div class="dot-sub-desc">Index &amp; stock futures OI &amp; positioning</div>
+                  <div class="dot-sub-desc">Index &amp; stock futures turnover &amp; daily action</div>
+                </div>
+              </a>
+              <!-- Sub 3 -->
+              <a href="/fii-dii/participant-oi" class="dot-sub-item" onclick="return window.dotNavClick(event, 'smartmoney', 'oi')">
+                <span class="dot-sub-icon">📋</span>
+                <div class="dot-sub-text">
+                  <div class="dot-sub-title">Participant OI Matrix</div>
+                  <div class="dot-sub-desc">Client, DII, FII &amp; Pro cumulative OI matrix</div>
                 </div>
               </a>
             </div>
