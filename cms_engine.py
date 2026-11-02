@@ -328,6 +328,170 @@ def render_navigation_html(current_path: str = "/") -> str:
 
 
 # ==============================================================================
+# 2.5 DYNAMIC FOOTER ENGINE (Real-Time Admin Sync with Left Brand Logo Column)
+# ==============================================================================
+
+FOOTER_FILE = DATA_DIR / "footer_links.json"
+
+DEFAULT_FOOTER_DATA = {
+    "ok": True,
+    "columns": [
+        {
+            "id": "col1",
+            "title": "🏛️ Institutional Desks",
+            "links": [
+                {"label": "Breadth & Contribution", "url": "/breadth-contribution", "type": "link", "target": "_self"},
+                {"label": "FII & DII Smart Money", "url": "/fii-dii", "type": "inst", "target": "smartMoney"},
+                {"label": "Cash Delivery Absorption", "url": "/delivery", "type": "inst", "target": "delivery"},
+                {"label": "MTF Margin Trading Book", "url": "/mtf", "type": "inst", "target": "mtf"},
+                {"label": "Open Interest Desk", "url": "/open-interest/nifty", "type": "link", "target": "_self"},
+                {"label": "Institutional Dashboard", "url": "/dashboard", "type": "inst", "target": "dashboard"}
+            ]
+        },
+        {
+            "id": "col2",
+            "title": "⚡ Derivatives & Options",
+            "links": [
+                {"label": "Option Chain Pro", "url": "/option-chain-pro", "type": "inst", "target": "upstoxChain"},
+                {"label": "Future Marketwatch Matrix", "url": "/futures", "type": "inst", "target": "futures:matrix"},
+                {"label": "Future Buildup Quadrants", "url": "/futures/buildup", "type": "inst", "target": "futures:buildup"},
+                {"label": "Future Open Interest & Buildup", "url": "/futures/open-interest", "type": "inst", "target": "futures:openInterest"},
+                {"label": "Futures Sector Heatmap", "url": "/futures/heatmap", "type": "inst", "target": "futures:heatmap"},
+                {"label": "Straddle Analytics Engine", "url": "/straddle", "type": "link", "target": "_self"},
+                {"label": "Call vs Put Premium", "url": "/call-vs-put-premium", "type": "link", "target": "_self"},
+                {"label": "MWPL & Ban Radar", "url": "/futures/mwpl", "type": "inst", "target": "futures:mwpl"},
+                {"label": "Historical Rollover Matrix", "url": "/futures/rollover", "type": "link", "target": "_self"}
+            ]
+        },
+        {
+            "id": "col3",
+            "title": "📊 Market Analytics & Tools",
+            "links": [
+                {"label": "Breadth & Net Contribution", "url": "/breadth-contribution", "type": "link", "target": "_self"},
+                {"label": "NSE Trading Holiday Calendar", "url": "/calendar_studio.html", "type": "link", "target": "_self"},
+                {"label": "Participant OI Matrix", "url": "/fii-dii#oi", "type": "inst", "target": "smartMoney:oi"},
+                {"label": "F&O Sector Visual Heatmap", "url": "/futures/heatmap", "type": "inst", "target": "futures:heatmap"},
+                {"label": "Real-Time Options Greeks", "url": "/option-chain-pro", "type": "inst", "target": "upstoxChain"},
+                {"label": "Stock Delivery Accumulation", "url": "/delivery", "type": "inst", "target": "delivery"},
+                {"label": "Historical Technical Charts", "url": "/chart", "type": "link", "target": "_self"}
+            ]
+        },
+        {
+            "id": "col4",
+            "title": "🛡️ Regulatory & Compliance",
+            "links": [
+                {"label": "SEBI Regulatory Disclaimer", "url": "/disclaimer", "type": "link", "target": "_self"},
+                {"label": "Privacy & Data Governance", "url": "/privacy", "type": "link", "target": "_self"},
+                {"label": "Terms of Institutional Service", "url": "/terms", "type": "link", "target": "_self"},
+                {"label": "Quantitative Model Architecture", "url": "/about", "type": "link", "target": "_self"},
+                {"label": "Contact & Trader Support", "url": "/contact", "type": "link", "target": "_self"},
+                {"label": "NSE Official Regulatory Archive ↗", "url": "https://www.nseindia.com", "type": "link", "target": "_blank"}
+            ]
+        }
+    ]
+}
+
+def get_footer_links_data() -> dict:
+    """Loads footer configuration from data/footer_links.json, repository root, or defaults."""
+    if FOOTER_FILE.exists():
+        try:
+            with open(FOOTER_FILE, "r", encoding="utf-8") as f:
+                d = json.load(f)
+                if isinstance(d, dict) and d.get("columns"):
+                    return d
+        except Exception:
+            pass
+    rf = ROOT_DIR / "footer_links.json"
+    if rf.exists():
+        try:
+            with open(rf, "r", encoding="utf-8") as f:
+                d = json.load(f)
+                if isinstance(d, dict) and d.get("columns"):
+                    return d
+        except Exception:
+            pass
+    return DEFAULT_FOOTER_DATA
+
+def render_footer_html(current_path: str = "/") -> str:
+    """Renders the complete, unified institutional footer with Left Brand Logo Column."""
+    footer_data = get_footer_links_data()
+    columns = footer_data.get("columns", [])
+    col_colors = {
+        "col1": "#38bdf8",
+        "col2": "#a78bfa",
+        "col3": "#34d399",
+        "col4": "#f59e0b"
+    }
+
+    cols_html = []
+    for c_idx, col in enumerate(columns):
+        cid = col.get("id", f"col{c_idx+1}")
+        color = col_colors.get(cid, "#38bdf8")
+        title = col.get("title", f"Column {c_idx+1}")
+        links = col.get("links", [])
+        
+        links_markup = []
+        for lnk in links:
+            lbl = html.escape(lnk.get("label", ""))
+            url = html.escape(lnk.get("url", "#"))
+            target = lnk.get("target", "_self")
+            target_attr = ' target="_blank" rel="noopener"' if target == "_blank" else ''
+            onclick_attr = f' onclick="if(typeof navigateDesk===\'function\'){{ return navigateDesk(\'\', \'\', \'{url}\', event); }}"' if target != "_blank" else ''
+            links_markup.append(f'        <a href="{url}"{target_attr}{onclick_attr}>{lbl}</a>')
+        
+        joined_links = "\n".join(links_markup)
+        cols_html.append(f"""      <div class="footer-link-group" data-col="{html.escape(cid)}">
+        <h4 style="color:{color};">{html.escape(title)}</h4>
+        <div class="footer-links-list">
+{joined_links}
+        </div>
+      </div>""")
+
+    joined_cols = "\n".join(cols_html)
+
+    return f"""<footer class="terminal-footer">
+  <div class="footer-layout-wrapper">
+    <!-- Brand Column on the Left with Logo -->
+    <div class="footer-brand-col">
+      <a href="/" class="footer-brand-logo" title="TradersDesk.in • Institutional Quant &amp; Derivatives Terminal">
+        <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('footerBrandFallback').style.display='inline-flex';" />
+        <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('footerBrandFallback').style.display='inline-flex';" />
+        <div class="inst-brand-fallback-text" id="footerBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
+          <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk</span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
+        </div>
+      </a>
+      <p class="footer-brand-desc">
+        Institutional-grade quantitative analytics, real-time market breadth, options Greeks &amp; derivatives intelligence terminal for Indian equities and indices.
+      </p>
+      <div class="footer-brand-badges">
+        <span class="p2-badge p2-badge-teal">NSE • BSE • MCX</span>
+        <span class="p2-badge p2-badge-blue">Live Derivatives</span>
+      </div>
+      <div class="footer-system-status">
+        <span class="footer-status-dot"></span>
+        <span>Black-Scholes &bull; Quant Architecture</span>
+      </div>
+    </div>
+
+    <!-- 4-Column Navigation Links Grid -->
+    <div class="footer-four-columns" id="footerFourColumnsGrid">
+{joined_cols}
+    </div>
+  </div>
+
+  <!-- Bottom Regulatory & Copyright Row -->
+  <div class="footer-bottom">
+    <div class="footer-copy-text">
+      &copy; 2026 TradersDesk.in &bull; Black-Scholes Mathematically Certified &bull; Real-Time Indian Equities &amp; Derivatives Terminal
+    </div>
+    <div class="footer-sebi-text">
+      SEBI Compliance Notice: Strictly for educational, quantitative research &amp; institutional market analysis only. Not investment advice.
+    </div>
+  </div>
+</footer>"""
+
+
+# ==============================================================================
 # 3. DYNAMIC PAGES CMS ENGINE
 # ==============================================================================
 

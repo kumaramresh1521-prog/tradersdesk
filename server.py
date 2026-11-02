@@ -11993,6 +11993,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                         supabase_engine.save_app_config_to_supabase("footer_links", payload)
                     except Exception as e:
                         print(f"[Admin] Supabase footer sync note: {e}")
+                    with _SEO_HTML_CACHE_LOCK:
+                        _SEO_HTML_CACHE.clear()
                     return self.send_json(200, {"ok": True, "message": "Footer configuration saved and backed up to Supabase cloud successfully", "data": payload})
                 except Exception as exc:
                     return self.send_json(500, {"ok": False, "message": str(exc)})
@@ -12321,6 +12323,18 @@ class RequestHandler(BaseHTTPRequestHandler):
                             )
                     except Exception as nav_exc:
                         print(f"[CMS] Dynamic navigation injection notice: {nav_exc}")
+                    try:
+                        dyn_footer_html = cms_engine.render_footer_html(req_path)
+                        if '<footer class="terminal-footer"' in injected_html:
+                            injected_html = re.sub(
+                                r'<footer class="terminal-footer".*?</footer>',
+                                lambda m: dyn_footer_html,
+                                injected_html,
+                                count=1,
+                                flags=re.DOTALL
+                            )
+                    except Exception as foot_exc:
+                        print(f"[CMS] Dynamic footer injection notice: {foot_exc}")
                 clean_rpath = req_path.rstrip("/")
                 if clean_rpath in ("/breadth-contribution", "/contribution"):
                     injected_html = injected_html.replace('id="p2SectionStraddle" class="page2-main-content"', 'id="p2SectionStraddle" class="page2-main-content" style="display:none;"')

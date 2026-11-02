@@ -328,7 +328,7 @@
   // Delegated click interceptor for instantaneous SPA navigation
   document.addEventListener('click', function(e) {
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return; // Allow new tab
-    const link = e.target.closest('#mainInstNav a, .dot-menu-content a, #mobileBottomNav a');
+    const link = e.target.closest('#mainInstNav a, .dot-menu-content a, #mobileBottomNav a, .footer-links-list a');
     if (!link) return;
     const href = link.getAttribute('href');
     if (!href || href === '#' || href.startsWith('http') || href.startsWith('javascript:')) return;
@@ -347,11 +347,47 @@
     }
   });
 
+
+  async function syncDynamicFooter() {
+    const container = document.getElementById("footerFourColumnsGrid");
+    if (!container) return;
+
+    try {
+      const res = await fetch("/api/footer-links");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || !Array.isArray(data.columns) || data.columns.length < 4) return;
+
+      const titleColors = { col1: "#38bdf8", col2: "#a78bfa", col3: "#34d399", col4: "#f59e0b" };
+
+      container.innerHTML = data.columns.map((col, idx) => {
+        const cid = col.id || `col${idx+1}`;
+        const color = titleColors[cid] || "var(--text-primary, #38bdf8)";
+        const links = (col.links || []).map(link => {
+          const targetAttr = link.target === "_blank" ? ' target="_blank" rel="noopener"' : '';
+          const onclickAttr = link.target !== "_blank" ? ` onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '${link.url}', event); }"` : '';
+          return `        <a href="${link.url}"${targetAttr}${onclickAttr}>${escapeText(link.label)}</a>`;
+        }).join("\n");
+
+        return `      <div class="footer-link-group" data-col="${escapeText(cid)}">
+        <h4 style="color:${color};">${escapeText(col.title)}</h4>
+        <div class="footer-links-list">
+${links}
+        </div>
+      </div>`;
+      }).join("\n");
+    } catch (err) {
+      // Gracefully retain existing server-rendered HTML
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', syncDynamicNavigation);
+    document.addEventListener('DOMContentLoaded', () => { syncDynamicNavigation(); syncDynamicFooter(); });
   } else {
     syncDynamicNavigation();
+    syncDynamicFooter();
   }
 
   window.syncDynamicNavigation = syncDynamicNavigation;
+  window.syncDynamicFooter = syncDynamicFooter;
 })();

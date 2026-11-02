@@ -5255,23 +5255,59 @@
         }
       }
 
-      function renderFooterLivePreview() {
+            function renderFooterLivePreview() {
         const preview = document.getElementById('admFooterLivePreview');
         if (!preview || !admFooterState || !admFooterState.columns) return;
 
         const titleColors = { col1: "#38bdf8", col2: "#a78bfa", col3: "#34d399", col4: "#f59e0b" };
         preview.innerHTML = `
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; background:#040914; border-radius:8px; padding:16px; border:1px solid rgba(255,255,255,0.08);">
-            ${admFooterState.columns.map(col => `
-              <div>
-                <h4 style="margin:0 0 10px 0; font-size:12px; font-weight:800; color:${titleColors[col.id] || '#fff'}; text-transform:uppercase;">${col.title}</h4>
-                <div style="display:flex; flex-direction:column; gap:6px;">
-                  ${(col.links || []).map(lnk => `
-                    <span style="font-size:12px; color:#94a3b8; font-weight:500;">&bull; ${lnk.label} <code style="font-size:10px; color:#64748b;">(${lnk.url})</code></span>
-                  `).join('')}
+          <div style="background:#040914; border-radius:12px; padding:24px; border:1px solid rgba(255,255,255,0.08);">
+            <div style="display:grid; grid-template-columns:260px 1fr; gap:28px; margin-bottom:20px; align-items:start;">
+              <!-- Left Brand Logo Column -->
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="display:flex; align-items:center;">
+                  <img src="/tradersdesk_header.svg" alt="TradersDesk.in" style="height:26px !important; width:auto !important; max-height:26px !important;" onerror="this.style.display=\'none\'; document.getElementById(\'admPreviewLogoFallback\').style.display=\'inline-flex\';" />
+                  <div class="inst-brand-fallback-text" id="admPreviewLogoFallback" style="display:none; align-items:center; font-size:16px; font-weight:800; color:#fff;">
+                    <span>Traders</span><span>Desk</span><span style="background:#10b981; color:#030712; font-size:10px; font-weight:900; padding:1px 4px; border-radius:3px; margin-left:4px;">.in</span>
+                  </div>
+                </div>
+                <p style="font-size:12px; color:#94a3b8; line-height:1.5; margin:0;">
+                  Institutional-grade quantitative analytics, real-time market breadth, options Greeks &amp; derivatives intelligence terminal for Indian equities and indices.
+                </p>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <span style="font-size:9.5px; font-weight:700; background:rgba(16,185,129,0.15); color:#34d399; padding:2px 7px; border-radius:4px; border:1px solid rgba(16,185,129,0.25);">NSE • BSE • MCX</span>
+                  <span style="font-size:9.5px; font-weight:700; background:rgba(56,189,248,0.15); color:#38bdf8; padding:2px 7px; border-radius:4px; border:1px solid rgba(56,189,248,0.25);">Live Intel</span>
+                </div>
+                <div style="font-size:10.5px; color:#64748b; display:flex; align-items:center; gap:5px;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#10b981; display:inline-block; box-shadow:0 0 6px #10b981;"></span>
+                  Black-Scholes &bull; Quant Architecture
                 </div>
               </div>
-            `).join('')}
+
+              <!-- 4-Column Navigation Links Grid -->
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:20px;">
+                ${admFooterState.columns.map(col => `
+                  <div>
+                    <h4 style="margin:0 0 10px 0; font-size:11.5px; font-weight:800; color:${titleColors[col.id] || '#fff'}; text-transform:uppercase; letter-spacing:0.5px;">${col.title}</h4>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                      ${(col.links || []).map(lnk => `
+                        <span style="font-size:12px; color:#94a3b8; font-weight:500; display:flex; align-items:center; gap:4px;">
+                          &bull; <span style="color:#e2e8f0;">${lnk.label}</span>
+                          <code style="font-size:9.5px; color:#64748b; font-family:monospace;">(${lnk.url})</code>
+                          ${lnk.target === '_blank' ? '<span style="color:#38bdf8; font-size:9px;">↗</span>' : ''}
+                        </span>
+                      `).join('')}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Preview Bottom Notice -->
+            <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:14px; display:flex; justify-content:space-between; font-size:10.5px; color:#64748b; flex-wrap:wrap; gap:8px;">
+              <span>&copy; 2026 TradersDesk.in &bull; Black-Scholes Mathematically Certified &bull; Real-Time Indian Equities Terminal</span>
+              <span>SEBI Compliance Notice: Strictly for educational, quantitative research &amp; analytical study only</span>
+            </div>
           </div>
         `;
       }
