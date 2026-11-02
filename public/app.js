@@ -7767,102 +7767,12 @@ function renderPoiDesk(data) {
 
 
 function _renderPoiSignalCards(data, fiiM, trapRadar) {
-
   const row = document.getElementById("poiSignalRow");
-
-  if (!row) return;
-
-
-
-  const isSpring = fiiM.zone === "OVERSOLD_SPRINGBOARD";
-
-  const isOverbought = fiiM.zone === "OVERBOUGHT_CORRECTION" || (fiiM.zone || "").includes("BEAR");
-
-  const zoneBg = isSpring ? "#10b981" : isOverbought ? "#ef4444" : "var(--bg-subtle)";
-
-  const zoneTxt = (isSpring || isOverbought) ? "#ffffff" : "var(--text-primary)";
-
-  const zoneBorder = (isSpring || isOverbought) ? "none" : "1px solid var(--border-default)";
-
-
-
-  const trapLevel = (trapRadar.level || "");
-
-  const isTrapRed = trapLevel.includes("BULL_TRAP") || trapLevel.includes("DISTRIBUTION");
-
-  const isTrapGreen = trapLevel.includes("BEAR_TRAP") || trapLevel.includes("ACCUMULATION");
-
-  const isTrapAmber = trapLevel.includes("WARNING");
-
-  const trapBg = isTrapRed ? "#ef4444" : isTrapGreen ? "#10b981" : isTrapAmber ? "#f59e0b" : "var(--bg-subtle)";
-
-  const trapTxt = (isTrapRed || isTrapGreen) ? "#ffffff" : isTrapAmber ? "#030712" : "var(--text-primary)";
-
-  const trapBorder = (isTrapRed || isTrapGreen || isTrapAmber) ? "none" : "1px solid var(--border-default)";
-
-  const trapLeftColor = isTrapRed ? "#ef4444" : isTrapGreen ? "#10b981" : isTrapAmber ? "#f59e0b" : "var(--cyan)";
-
-
-
-  const gpBias = (data.gameplan || {}).bias || "";
-
-  const isGpBull = gpBias.includes("BULLISH");
-
-  const isGpBear = gpBias.includes("BEARISH");
-
-  const isGpShortCover = gpBias.includes("SHORT_COVERING");
-
-  const gpBg = isGpBull ? "#10b981" : isGpBear ? "#ef4444" : isGpShortCover ? "#8b5cf6" : "var(--bg-subtle)";
-
-  const gpTxt = (isGpBull || isGpBear || isGpShortCover) ? "#ffffff" : "var(--text-primary)";
-
-  const gpBorder = (isGpBull || isGpBear || isGpShortCover) ? "none" : "1px solid var(--border-default)";
-
-  const gpLeftColor = isGpBull ? "#10b981" : isGpBear ? "#ef4444" : isGpShortCover ? "#8b5cf6" : "var(--cyan)";
-
-
-
-  row.innerHTML = `
-
-    <div class="sm-card" style="padding:12px 14px; border-left:3px solid var(--primary); background:var(--bg-card); border-top:1px solid var(--border-default); border-right:1px solid var(--border-default); border-bottom:1px solid var(--border-default); border-radius:var(--radius-md);">
-
-      <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:4px;">FII Index Futures Zone</div>
-
-      <div style="font-size:18px; font-weight:800; color:var(--primary); font-family:'JetBrains Mono',monospace;">${fiiM.longPct || "--"}% Long</div>
-
-      <div style="margin-top:6px;"><span style="background:${zoneBg}; color:${zoneTxt}; border:${zoneBorder}; font-size:10px; font-weight:800; padding:2px 8px; border-radius:3px;">${fiiM.zoneBadge || "--"}</span></div>
-
-      <div style="font-size:11px; color:var(--text-muted); margin-top:5px; line-height:1.4;">${fiiM.zoneDesc || ""}</div>
-
-    </div>
-
-    <div class="sm-card" style="padding:12px 14px; border-left:3px solid ${trapLeftColor}; background:var(--bg-card); border-top:1px solid var(--border-default); border-right:1px solid var(--border-default); border-bottom:1px solid var(--border-default); border-radius:var(--radius-md);">
-
-      <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:4px;">Trap Radar</div>
-
-      <div style="margin-top:2px;"><span style="background:${trapBg}; color:${trapTxt}; border:${trapBorder}; font-size:10px; font-weight:800; padding:2px 8px; border-radius:3px;">${trapRadar.badge || "--"}</span></div>
-
-      <div style="font-size:12.5px; font-weight:700; color:var(--text-primary); margin-top:6px;">${trapRadar.title || "--"}</div>
-
-      <div style="font-size:11px; color:var(--text-muted); margin-top:4px; line-height:1.4;">${(trapRadar.desc || "").substring(0, 120)}...</div>
-
-    </div>
-
-    <div class="sm-card" style="padding:12px 14px; border-left:3px solid ${gpLeftColor}; background:var(--bg-card); border-top:1px solid var(--border-default); border-right:1px solid var(--border-default); border-bottom:1px solid var(--border-default); border-radius:var(--radius-md);">
-
-      <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.7px; margin-bottom:4px;">Market Gameplan Bias</div>
-
-      <div style="margin-top:2px;"><span style="background:${gpBg}; color:${gpTxt}; border:${gpBorder}; font-size:10px; font-weight:800; padding:2px 8px; border-radius:3px;">${gpBias.replace(/_/g, " ")}</span></div>
-
-      <div style="font-size:11px; color:var(--text-muted); margin-top:6px; line-height:1.4;">${((data.gameplan || {}).summary || "").substring(0, 140)}...</div>
-
-    </div>
-
-  `;
-
+  if (row) {
+    row.innerHTML = "";
+    row.style.display = "none";
+  }
 }
-
-
 
 let _poiViewMode = "cumulative"; // "cumulative" (default: Trendlyne EOD Total OI) | "dayChange" | "detailed"
 

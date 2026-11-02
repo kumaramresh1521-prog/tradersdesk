@@ -183,6 +183,12 @@
   ],
   "monthly": [
     {
+      "period": "Nov 2026",
+      "fiiNet": 3114.68,
+      "diiNet": -392.2,
+      "totalNet": 2722.48
+    },
+    {
       "period": "Oct 2026",
       "fiiNet": -44191.92,
       "diiNet": 56314.31,
@@ -298,6 +304,20 @@
     }
   ],
   "daily": [
+    {
+      "period": "02-Nov-2026",
+      "date": "02-Nov-2026",
+      "niftyClose": 23440.8,
+      "niftyChange": 387.7,
+      "niftyPct": 1.68,
+      "totalNet": 2722.48,
+      "fiiNet": 3114.68,
+      "diiNet": -392.2,
+      "fiiBuy": 16499.46,
+      "fiiSell": 13384.78,
+      "diiBuy": 14988.48,
+      "diiSell": 15380.68
+    },
     {
       "period": "30-Oct-2026",
       "date": "30-Oct-2026",
@@ -1139,5 +1159,5 @@
       "niftyPct": 0.12
     }
   ],
-  "lastUpdated": "02-Nov-2026 17:51 IST"
+  "lastUpdated": "02-Nov-2026 19:24 IST"
 }

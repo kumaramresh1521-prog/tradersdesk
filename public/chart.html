@@ -1,2065 +1,2116 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="shortcut icon" href="/favicon.ico">
-  <meta property="og:image" content="https://tradersdesk.in/og-image.png">
-  <meta name="twitter:image" content="https://tradersdesk.in/og-image.png">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "TradersDesk",
-    "url": "https://tradersdesk.in/",
-    "logo": "https://tradersdesk.in/favicon.svg",
-    "description": "Institutional Quantitative Derivatives, Technical Charts & Market Breadth Terminal"
-  }
-  </script>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Technical Charts &amp; 10+ Year Historical Analysis - Nifty, F&amp;O &amp; Stocks | TradersDesk</title>
-  <meta name="description" content="Institutional TradingView interactive technical charts for NSE Nifty, Bank Nifty, Stock Futures &amp; Options. Analyze 10+ years of candlestick action, indicators, Open Interest and volume delivery.">
-  <link rel="canonical" href="https://tradersdesk.in/chart">
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Technical Charts &amp; Historical Analysis | TradersDesk">
-  <meta property="og:description" content="Live &amp; 10+ year historical interactive TradingView charts for all NSE stocks, indices, and derivatives with built-in F&amp;O intelligence.">
-  <meta property="og:url" content="https://tradersdesk.in/chart">
-  <meta property="og:site_name" content="TradersDesk.in">
-
-    <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://tradersdesk.in/chart">
-  <meta name="twitter:title" content="Technical Charts & Historical Analysis | TradersDesk">
-  <meta name="twitter:description" content="Live & 10+ year historical interactive TradingView charts for all NSE stocks, indices, and derivatives with built-in F&O intelligence.">
-  <meta name="twitter:image" content="https://tradersdesk.in/og-image.png">
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <!-- Core Page Stylesheets -->
-  <link rel="stylesheet" href="/styles.css?v=20261021_v1">
-  <link rel="stylesheet" href="/page2.css?v=20261021_v1">
-  <script src="/security_shield.js"></script>
-
-  <!-- Official TradingView Lightweight Charts (Pro Institutional Charting - Zero Symbol Restrictions) -->
-  <script src="/libs/lightweight-charts.standalone.production.js"></script>
-
-  <!-- Theme Initializer -->
-  <script>
-    (function() {
-      try {
-        var savedTheme = localStorage.getItem('breadth_theme');
-        var theme = savedTheme ? savedTheme : 'light';
-        document.documentElement.setAttribute('data-theme', theme);
-      } catch (e) {}
-    })();
-  </script>
-
-  <style>
-    :root {
-      --chart-bg: #f8fafc;
-      --chart-card-bg: #ffffff;
-      --chart-border: #e2e8f0;
-      --chart-text: #0f172a;
-      --chart-text-muted: #64748b;
-      --chart-brand: #0284c7;
-      --chart-bull-green: #10b981;
-      --chart-bear-red: #ef4444;
-      --chart-buildup-bg: rgba(16, 185, 129, 0.1);
-    }
-
-    [data-theme="dark"] {
-      --chart-bg: #090d16;
-      --chart-card-bg: #0f172a;
-      --chart-border: #1e293b;
-      --chart-text: #f1f5f9;
-      --chart-text-muted: #94a3b8;
-      --chart-brand: #38bdf8;
-      --chart-bull-green: #10b981;
-      --chart-bear-red: #f87171;
-      --chart-buildup-bg: rgba(16, 185, 129, 0.18);
-    }
-
-    body {
-      background-color: var(--chart-bg);
-      color: var(--chart-text);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      margin: 0;
-      padding: 0;
-      overflow-x: hidden;
-    }
-
-    /* Fixed Logo Height Constraint */
-    .inst-brand-logo-img, .inst-logo-img {
-      height: 28px !important;
-      width: auto !important;
-      max-height: 28px !important;
-      object-fit: contain !important;
-      display: block;
-    }
-    .inst-brand-logo-dark { display: block !important; visibility: visible !important; }
-    .inst-brand-logo-light { display: none !important; }
-    html[data-theme="light"] .inst-brand-logo-dark,
-    body[data-theme="light"] .inst-brand-logo-dark,
-    [data-theme="light"] .inst-brand-logo-dark { display: none !important; }
-    html[data-theme="light"] .inst-brand-logo-light,
-    body[data-theme="light"] .inst-brand-logo-light,
-    [data-theme="light"] .inst-brand-logo-light { display: block !important; visibility: visible !important; }
-
-    /* Chart Desk Main Wrapper */
-    .chart-desk-wrapper {
-      max-width: 1720px;
-      margin: 0 auto;
-      padding: 12px 18px 30px 18px;
-    }
-
-    /* Top Control Toolbar */
-    .chart-control-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      background: var(--chart-card-bg);
-      border: 1px solid var(--chart-border);
-      border-radius: 12px;
-      padding: 10px 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-      flex-wrap: wrap;
-    }
-
-    .chart-search-wrap {
-      position: relative;
-      flex: 1;
-      min-width: 240px;
-      max-width: 360px;
-    }
-
-    .chart-search-input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 9px 14px 9px 38px;
-      background: var(--chart-bg);
-      border: 1px solid var(--chart-border);
-      border-radius: 8px;
-      color: var(--chart-text);
-      font-size: 13.5px;
-      font-weight: 600;
-      outline: none;
-      transition: all 0.15s ease;
-    }
-    .chart-search-input:focus {
-      border-color: var(--chart-brand);
-      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
-    }
-    .chart-search-icon {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--chart-text-muted);
-      font-size: 14px;
-      pointer-events: none;
-    }
-
-    /* Search Dropdown */
-    .chart-search-dropdown {
-      position: absolute;
-      top: calc(100% + 4px);
-      left: 0;
-      right: 0;
-      background: var(--chart-card-bg);
-      border: 1px solid var(--chart-border);
-      border-radius: 8px;
-      box-shadow: 0 12px 28px rgba(0,0,0,0.12);
-      max-height: 380px;
-      overflow-y: auto;
-      z-index: 1000;
-      display: none;
-    }
-    .search-result-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 9px 14px;
-      cursor: pointer;
-      border-bottom: 1px solid var(--chart-border);
-      transition: background 0.12s;
-    }
-    .search-result-item:last-child { border-bottom: none; }
-    .search-result-item:hover {
-      background: rgba(2, 132, 199, 0.08);
-    }
-    .search-res-sym {
-      font-weight: 700;
-      font-size: 13px;
-      color: var(--chart-text);
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .search-res-name {
-      font-size: 11.5px;
-      color: var(--chart-text-muted);
-      margin-left: 8px;
-    }
-    .search-res-badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: rgba(100, 116, 139, 0.15);
-      color: var(--chart-text-muted);
-      font-weight: 700;
-    }
-
-    /* Quick Selector Chips */
-    .chart-chips-scroll {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      overflow-x: auto;
-      white-space: nowrap;
-      padding: 2px 0;
-    }
-    .chart-chips-scroll::-webkit-scrollbar { height: 4px; }
-    .chart-chips-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-
-    .chart-chip-btn {
-      padding: 6px 11px;
-      font-size: 11.5px;
-      font-weight: 700;
-      border-radius: 6px;
-      border: 1px solid var(--chart-border);
-      background: var(--chart-card-bg);
-      color: var(--chart-text);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.15s ease;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .chart-chip-btn:hover {
-      background: rgba(2, 132, 199, 0.08);
-      border-color: var(--chart-brand);
-    }
-    .chart-chip-btn.active {
-      background: var(--chart-brand);
-      color: #ffffff;
-      border-color: var(--chart-brand);
-      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
-    }
-
-    /* Timeframe Selector */
-    .chart-tf-group {
-      display: flex;
-      align-items: center;
-      background: var(--chart-bg);
-      border: 1px solid var(--chart-border);
-      border-radius: 6px;
-      padding: 2px;
-      gap: 2px;
-    }
-    .chart-tf-btn {
-      border: none;
-      background: transparent;
-      padding: 5px 9px;
-      font-size: 11.5px;
-      font-weight: 700;
-      color: var(--chart-text-muted);
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: 'JetBrains Mono', monospace;
-      transition: all 0.1s;
-    }
-    .chart-tf-btn:hover {
-      color: var(--chart-text);
-      background: rgba(0,0,0,0.05);
-    }
-    .chart-tf-btn.active {
-      background: var(--chart-card-bg);
-      color: var(--chart-brand);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    /* Range Selector (10+ Years EOD) */
-    .chart-range-group {
-      display: flex;
-      align-items: center;
-      background: var(--chart-bg);
-      border: 1px solid var(--chart-border);
-      border-radius: 6px;
-      padding: 2px;
-      gap: 2px;
-    }
-    .range-group-label {
-      font-size: 10px;
-      font-weight: 800;
-      color: var(--chart-text-muted);
-      padding: 0 6px 0 8px;
-      letter-spacing: 0.5px;
-    }
-    .chart-range-btn {
-      border: none;
-      background: transparent;
-      padding: 5px 8px;
-      font-size: 11px;
-      font-weight: 800;
-      color: var(--chart-text-muted);
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: 'JetBrains Mono', monospace;
-      transition: all 0.12s;
-    }
-    .chart-range-btn:hover {
-      color: var(--chart-text);
-      background: rgba(0,0,0,0.06);
-    }
-    .chart-range-btn.active {
-      background: var(--chart-brand);
-      color: #ffffff;
-      box-shadow: 0 1px 4px rgba(2, 132, 199, 0.3);
-    }
-
-    /* Live Pro Badge */
-    .chart-live-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border-radius: 6px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      font-size: 11.5px;
-      font-weight: 800;
-      color: #10b981;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .live-dot-pulse {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 0 rgba(16, 185, 129, 0.7);
-      animation: pulse-dot 1.8s infinite;
-    }
-    @keyframes pulse-dot {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-      70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
-
-    /* Live Institutional Quote Ribbon */
-    .chart-kpi-ribbon {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      background: var(--chart-card-bg);
-      border: 1px solid var(--chart-border);
-      border-radius: 12px;
-      padding: 12px 18px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-      flex-wrap: wrap;
-    }
-
-    .kpi-left-cluster {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      flex-wrap: wrap;
-    }
-
-    .kpi-symbol-block {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .kpi-symbol-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--chart-text);
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .kpi-symbol-badge {
-      font-size: 10.5px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: rgba(2, 132, 199, 0.12);
-      color: var(--chart-brand);
-    }
-    .badge-cash {
-      background: rgba(168, 85, 247, 0.12) !important;
-      color: #a855f7 !important;
-    }
-
-    .kpi-price-block {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-    }
-    .kpi-ltp {
-      font-size: 22px;
-      font-weight: 900;
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--chart-text);
-      transition: color 0.3s;
-    }
-    .kpi-change-pill {
-      font-size: 12px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .kpi-change-pill.pos {
-      background: rgba(16, 185, 129, 0.12);
-      color: #10b981;
-    }
-    .kpi-change-pill.neg {
-      background: rgba(239, 68, 68, 0.12);
-      color: #ef4444;
-    }
-
-    .kpi-metric-group {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      border-left: 1px solid var(--chart-border);
-      padding-left: 16px;
-      flex-wrap: wrap;
-    }
-    .kpi-metric-item {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .kpi-metric-label {
-      font-size: 10.5px;
-      font-weight: 700;
-      color: var(--chart-text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    .kpi-metric-val {
-      font-size: 12.5px;
-      font-weight: 800;
-      color: var(--chart-text);
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .kpi-buildup-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 5px;
-    }
-    .buildup-long { background: rgba(16, 185, 129, 0.14); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .buildup-short { background: rgba(239, 68, 68, 0.14); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .buildup-covering { background: rgba(2, 132, 199, 0.14); color: #0284c7; border: 1px solid rgba(2, 132, 199, 0.3); }
-    .buildup-unwinding { background: rgba(245, 158, 11, 0.14); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
-
-    .kpi-right-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-    .kpi-action-link {
-      text-decoration: none;
-      padding: 7px 12px;
-      font-size: 12px;
-      font-weight: 700;
-      border-radius: 6px;
-      border: 1px solid var(--chart-border);
-      background: var(--chart-bg);
-      color: var(--chart-text);
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.15s;
-    }
-    .kpi-action-link:hover {
-      background: rgba(2, 132, 199, 0.08);
-      border-color: var(--chart-brand);
-      color: var(--chart-brand);
-    }
-
-    /* Main Chart Canvas Container */
-    .chart-view-frame {
-      background: var(--chart-card-bg);
-      border: 1px solid var(--chart-border);
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-      height: 640px;
-      position: relative;
-    }
-
-    #lw_chart_container {
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      inset: 0;
-    }
-    #lw_chart_container canvas,
-    .tv-lightweight-charts canvas {
-      background: transparent !important;
-    }
-
-    /* Hover Legend for Lightweight Charts */
-    .chart-legend-box {
-      position: absolute;
-      top: 12px;
-      left: 14px;
-      z-index: 10;
-      background: rgba(255, 255, 255, 0.94);
-      border: 1px solid var(--chart-border);
-      border-radius: 8px;
-      padding: 7px 14px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      pointer-events: none;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      backdrop-filter: blur(8px);
-      flex-wrap: wrap;
-    }
-    [data-theme="dark"] .chart-legend-box {
-      background: rgba(15, 23, 42, 0.94);
-    }
-    .leg-date-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: rgba(2, 132, 199, 0.08);
-      color: var(--chart-brand);
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-weight: 800;
-    }
-
-    /* Bottom Range & Status Bar */
-    .chart-range-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 14px;
-      background: var(--chart-bg);
-      border-top: 1px solid var(--chart-border);
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 5;
-      font-size: 11px;
-      color: var(--chart-text-muted);
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    /* Bottom Secondary Intelligence Deck */
-    .chart-bottom-deck {
-      margin-top: 14px;
-      background: var(--chart-card-bg);
-      border: 1px solid var(--chart-border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    .deck-tab-bar {
-      display: flex;
-      align-items: center;
-      border-bottom: 1px solid var(--chart-border);
-      background: var(--chart-bg);
-      padding: 0 12px;
-    }
-    .deck-tab-btn {
-      padding: 11px 18px;
-      font-size: 12.5px;
-      font-weight: 700;
-      border: none;
-      background: transparent;
-      color: var(--chart-text-muted);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.12s;
-    }
-    .deck-tab-btn.active {
-      color: var(--chart-brand);
-      border-bottom-color: var(--chart-brand);
-      background: var(--chart-card-bg);
-    }
-    .deck-tab-pane {
-      padding: 16px;
-      display: none;
-    }
-    .deck-tab-pane.active {
-      display: block;
-    }
-
-    .hist-table-wrap {
-      max-height: 280px;
-      overflow-y: auto;
-    }
-    .hist-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .hist-table th {
-      position: sticky;
-      top: 0;
-      background: var(--chart-bg);
-      text-align: right;
-      padding: 8px 12px;
-      font-weight: 700;
-      color: var(--chart-text-muted);
-      border-bottom: 1px solid var(--chart-border);
-    }
-    .hist-table th:first-child, .hist-table td:first-child { text-align: left; }
-    .hist-table th:last-child, .hist-table td:last-child { text-align: center; }
-    .hist-table td {
-      padding: 7px 12px;
-      border-bottom: 1px solid var(--chart-border);
-      text-align: right;
-    }
-    .hist-table tr:hover {
-      background: rgba(2, 132, 199, 0.04);
-    }
-
-    @media (max-width: 960px) {
-      .chart-kpi-ribbon {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-      }
-      .kpi-right-actions {
-        width: 100%;
-        justify-content: flex-start;
-      }
-      .chart-view-frame { height: 520px; }
-    }
-  </style>
-    <style id="ffCriticalStyle">
-      [data-feature-flag],
-      .inst-dd-item[data-feature-flag],
-      a.inst-dd-item[data-feature-flag],
-      .fut-tab-btn[data-feature-flag],
-      a.fut-tab-btn[data-feature-flag] {
-        display: none !important;
-      }
-      .inst-dd-item[data-feature-flag].feature-active,
-      a.inst-dd-item[data-feature-flag].feature-active {
-        display: flex !important;
-      }
-      .fut-tab-btn[data-feature-flag].feature-active,
-      a.fut-tab-btn[data-feature-flag].feature-active {
-        display: inline-flex !important;
-      }
-    </style>
-<script src="/global_search.js?v=20261029_mob" defer></script>
-</head>
-<body>
-  <h1 class="visually-hidden" style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;">Technical Charts & Historical Multi-Year Price Analysis | TradersDesk</h1>
-
-
-  <!-- Top Header Navigation -->
-  <header class="inst-header" id="instTopHeader">
-    <div class="inst-brand-bar">
-      <div class="inst-brand-left">
-        <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in — Institutional Quant &amp; Derivatives Terminal">
-          <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
-          <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
-          <div class="inst-brand-fallback-text" id="instBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
-            <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk<svg style="width:13px; height:13px; vertical-align:middle; transform:translateY(-2px); margin-left:-1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg></span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
-          </div>
-        </a>
-        
-      </div>
-
-      <div class="inst-market-clock-wrap" id="topMarketClockWrap">
-        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE Regular Trading Session">
-          <span class="market-dot" id="marketDot"></span>
-          <span id="marketStatusText">NSE LIVE</span>
-        </div>
-        <div class="inst-clock-pill" title="Indian Standard Time (IST)">
-          <span class="clock-icon">🕒</span>
-          <span id="instLiveClock" class="clock-digits">--:--:-- IST</span>
-        </div>
-      </div>
-
-      <div class="inst-right-controls">
-        <button id="chartDotMenuBtn" type="button" class="inst-dot-menu-btn" onclick="openMobileDotMenu()" aria-label="Open Navigation Drawer" title="All Desks &amp; Menus">
-          <svg class="dot-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="8" cy="5" r="2.2" /><circle cx="16" cy="5" r="2.2" /><circle cx="8" cy="12" r="2.2" /><circle cx="16" cy="12" r="2.2" /><circle cx="8" cy="19" r="2.2" /><circle cx="16" cy="19" r="2.2" />
-          </svg>
-          <span class="dot-menu-label">Menu</span>
-        </button>
-        <button id="themeToggleBtn" type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle White / Dark Theme">
-          <span id="themeToggleIcon">🌙</span>
-          <span class="theme-btn-text" id="themeToggleText">Theme</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Mega-Menu Navigation Bar -->
-    <nav class="inst-nav" aria-label="Main Navigation" id="mainInstNav">
-      <div class="inst-nav-item"><a href="/" class="inst-nav-btn"><span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span></a></div>
-      <div class="inst-nav-item has-dropdown">
-        <a href="/futures" class="inst-nav-btn"><span class="inst-nav-icon">📈</span> <span class="nav-label">Futures</span><span class="inst-nav-arrow">▾</span></a>
-                    <div class="inst-dropdown inst-dropdown-md">
-              <div class="inst-dropdown-col">
-                <span class="inst-dropdown-header">📊 Trading &amp; Open Interest</span>
-                <!-- Submenu 1: Future Marketwatch -->
-                <a href="/futures" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'matrix');}">
-                  <span class="dd-icon">📊</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Future Marketwatch</span>
-                    <span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span>
-                  </div>
-                </a>
-                <!-- Submenu 2: Future Open Interest -->
-                <a href="/futures/open-interest" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'openInterest');}">
-                  <span class="dd-icon">📈</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Future Open Interest</span>
-                    <span class="dd-sub">Multi-panel EOD &amp; Live chart, delivery % &amp; option chain</span>
-                  </div>
-                </a>
-                <!-- Submenu 3: Future Intraday Price vs OI -->
-                <a href="/futures/future-intraday" class="inst-dd-item" data-feature-flag="futures_future_intraday" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureIntraday');}">
-                  <span class="dd-icon">⚡</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Future Intraday</span>
-                    <span class="dd-sub">5-Min Price vs OI divergence, VWAP &amp; Basis (7 Indices)</span>
-                  </div>
-                </a>
-                <!-- Submenu 4: Future vs Open Interest -->
-                <a href="/futures/future-vs-oi" class="inst-dd-item" data-feature-flag="futures_future_vs_oi" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureVsOi');}">
-                  <span class="dd-icon">🎯</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Future vs Open Interest</span>
-                    <span class="dd-sub">Dual-axis divergence analysis &amp; historical replay tools</span>
-                  </div>
-                </a>
-              </div>
-              <div class="inst-dropdown-col">
-                <span class="inst-dropdown-header">⚡ Market Structure &amp; Risk</span>
-                <!-- Submenu 5: Future Buildup -->
-                <a href="/futures/buildup" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'buildup');}">
-                  <span class="dd-icon">🧭</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Buildup Quadrants</span>
-                    <span class="dd-sub">Long/short buildup &amp; institutional unwinding flows</span>
-                  </div>
-                </a>
-                <!-- Submenu 6: Future Heatmap -->
-                <a href="/futures/heatmap" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'heatmap');}">
-                  <span class="dd-icon">🗺️</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Futures Heatmap</span>
-                    <span class="dd-sub">Sectoral visual heat &amp; momentum distribution map</span>
-                  </div>
-                </a>
-                <!-- Submenu 7: Future Index Term Structure -->
-                <a href="/futures/indices" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'indices');}">
-                  <span class="dd-icon">📐</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Index Term Structure</span>
-                    <span class="dd-sub">Cash-futures basis, cost of carry &amp; term curve</span>
-                  </div>
-                </a>
-                <!-- Submenu 8: MWPL and Ban Radar -->
-                <a href="/futures/mwpl" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'mwpl');}">
-                  <span class="dd-icon">🚫</span>
-                  <div class="dd-text">
-                    <span class="dd-title">MWPL &amp; Ban Radar</span>
-                    <span class="dd-sub">Market-Wide Position Limit tracker &amp; ban alerts</span>
-                  </div>
-                </a>
-                <!-- Submenu 9: Futures Rollover Matrix -->
-                <a href="/futures/rollover" class="inst-dd-item" title="Open Dedicated Futures Rollover Matrix Terminal">
-                  <span class="dd-icon">🔄</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Futures Rollover Matrix</span>
-                    <span class="dd-sub">Expiry rollover %, 3M/6M averages &amp; historical velocity</span>
-                  </div>
-                </a>
-              </div>
-            </div>
-          </div>
-      <div class="inst-nav-item has-dropdown">
-        <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight" id="navOptions"><span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span><span class="inst-nav-arrow">▾</span></a>
-                    <div class="inst-dropdown inst-dropdown-md">
-              <div class="inst-dropdown-col">
-                <span class="inst-dropdown-header">⚡ Option Chains &amp; OI Analytics</span>
-                <!-- Submenu 1: Option Chain Pro -->
-                <a href="/option-chain-pro" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'upstoxChain');}">
-                  <span class="dd-icon">⚡</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Option Chain Pro</span>
-                    <span class="dd-sub">Live multi-broker chain, Greeks, PCR &amp; IV skew</span>
-                  </div>
-                </a>
-                <!-- Submenu 2: Open Interest Analysis -->
-                <a href="/open-interest/nifty" class="inst-dd-item" title="Live Nifty &amp; F&amp;O Call vs Put Open Interest, PCR &amp; Max Pain">
-                  <span class="dd-icon">📊</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Open Interest Analysis</span>
-                    <span class="dd-sub">Live Call vs Put distribution, PCR &amp; Max Pain strike</span>
-                  </div>
-                </a>
-                <!-- Submenu 3: Breadth & Net Contribution -->
-                <a href="/breadth-contribution" class="inst-dd-item" style="text-decoration:none; color:inherit;">
-                  <span class="dd-icon">⚖️</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Breadth &amp; Net Contribution</span>
-                    <span class="dd-sub">Intraday breadth advance/decline &amp; stock point impact</span>
-                  </div>
-                </a>
-              </div>
-              <div class="inst-dropdown-col">
-                <span class="inst-dropdown-header">📉 Straddle &amp; Options Analysis</span>
-                <!-- Submenu 4: ATM Straddle -->
-                <a href="/straddle" class="inst-dd-item" style="text-decoration:none; color:inherit;">
-                  <span class="dd-icon">📉</span>
-                  <div class="dd-text">
-                    <span class="dd-title">ATM Straddle <span class="p2-badge p2-badge-rose" id="navStraddleValueBadge" style="margin-left:4px;">₹--</span></span>
-                    <span class="dd-sub">Live combined CE+PE straddle &amp; synthetic curve</span>
-                  </div>
-                </a>
-                <!-- Submenu 6: Call vs Put Premium -->
-                <a href="/call-vs-put-premium" class="inst-dd-item" style="text-decoration:none; color:inherit;">
-                  <span class="dd-icon">⚔️</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Call vs Put Premium</span>
-                    <span class="dd-sub">Live CE vs PE leg comparison, spread &amp; premium skew</span>
-                  </div>
-                </a>
-              </div>
-            </div>
-          </div>
-      <div class="inst-nav-item">
-        <a href="/chart" class="inst-nav-btn inst-nav-btn-blue active" id="navChartsTab" title="Interactive TradingView Technical &amp; Historical Charts">
-          <span class="inst-nav-icon">📈</span> <span class="nav-label">Charts</span>
-        </a>
-      </div>
-      <div class="inst-nav-item"><a href="/breadth-contribution" class="inst-nav-btn"><span class="inst-nav-icon">⚖️</span> <span class="nav-label">Contribution</span></a></div>
-      <div class="inst-nav-item"><a href="/fii-dii" class="inst-nav-btn"><span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII &amp; DII</span></a></div>
-      <div class="inst-nav-item"><a href="/delivery" class="inst-nav-btn"><span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery</span></a></div>
-      <div class="inst-nav-item"><a href="/mtf" class="inst-nav-btn"><span class="inst-nav-icon">💳</span> <span class="nav-label">MTF Book</span></a></div>
-    </nav>
-  </header>
-
-  <!-- ========================================================================
-       MAIN CHART WORKSPACE
-       ======================================================================== -->
-  <main class="chart-desk-wrapper">
-
-    <!-- Top Universal Search & Quick Chip Bar -->
-    <div class="chart-control-bar">
-      <!-- Search Input with Live Dropdown -->
-      <div class="chart-search-wrap">
-        <span class="chart-search-icon">🔍</span>
-        <input type="text" id="symbolSearchInput" class="chart-search-input" placeholder="Search any Stock or Index (e.g. RELIANCE, NIFTY 50)..." autocomplete="off" spellcheck="false" />
-        <div id="searchDropdown" class="chart-search-dropdown"></div>
-      </div>
-
-      <!-- Quick Selector Chips -->
-      <div class="chart-chips-scroll" id="quickChipsContainer">
-        <button class="chart-chip-btn active" data-sym="NIFTY" onclick="selectSymbol('NIFTY')">NIFTY 50</button>
-        <button class="chart-chip-btn" data-sym="BANKNIFTY" onclick="selectSymbol('BANKNIFTY')">BANK NIFTY</button>
-        <button class="chart-chip-btn" data-sym="FINNIFTY" onclick="selectSymbol('FINNIFTY')">FINNIFTY</button>
-        <button class="chart-chip-btn" data-sym="SENSEX" onclick="selectSymbol('SENSEX')">SENSEX</button>
-        <button class="chart-chip-btn" data-sym="RELIANCE" onclick="selectSymbol('RELIANCE')">RELIANCE</button>
-        <button class="chart-chip-btn" data-sym="HDFCBANK" onclick="selectSymbol('HDFCBANK')">HDFCBANK</button>
-        <button class="chart-chip-btn" data-sym="TCS" onclick="selectSymbol('TCS')">TCS</button>
-        <button class="chart-chip-btn" data-sym="TATAMOTORS" onclick="selectSymbol('TATAMOTORS')">TATAMOTORS</button>
-        <button class="chart-chip-btn" data-sym="SBIN" onclick="selectSymbol('SBIN')">SBIN</button>
-        <button class="chart-chip-btn" data-sym="INFY" onclick="selectSymbol('INFY')">INFY</button>
-      </div>
-
-      <!-- Timeframe Selector -->
-      <div class="chart-tf-group">
-        <button class="chart-tf-btn" data-tf="1" onclick="changeTimeframe('1')">1m</button>
-        <button class="chart-tf-btn" data-tf="5" onclick="changeTimeframe('5')">5m</button>
-        <button class="chart-tf-btn" data-tf="15" onclick="changeTimeframe('15')">15m</button>
-        <button class="chart-tf-btn" data-tf="60" onclick="changeTimeframe('60')">1h</button>
-        <button class="chart-tf-btn active" data-tf="D" onclick="changeTimeframe('D')">1D</button>
-      </div>
-
-      <!-- Overlays / Indicators -->
-      <div class="chart-tf-group" id="indicatorGroup">
-        <button id="btnEma20" class="chart-tf-btn active" onclick="toggleIndicator('ema20')" title="Toggle 20 EMA overlay" style="color:#0284c7;">EMA 20</button>
-        <button id="btnEma50" class="chart-tf-btn" onclick="toggleIndicator('ema50')" title="Toggle 50 EMA overlay" style="color:#f59e0b;">EMA 50</button>
-        <button id="btnEma200" class="chart-tf-btn" onclick="toggleIndicator('ema200')" title="Toggle 200 EMA overlay" style="color:#8b5cf6;">EMA 200</button>
-      </div>
-
-      <!-- Range Selector (10+ Year History) -->
-      <div class="chart-range-group" id="rangeGroup">
-        <span class="range-group-label">RANGE:</span>
-        <button class="chart-range-btn" data-range="1M" onclick="setChartRange('1M')" title="Zoom to 1 Month">1M</button>
-        <button class="chart-range-btn" data-range="3M" onclick="setChartRange('3M')" title="Zoom to 3 Months">3M</button>
-        <button class="chart-range-btn" data-range="6M" onclick="setChartRange('6M')" title="Zoom to 6 Months">6M</button>
-        <button class="chart-range-btn" data-range="1Y" onclick="setChartRange('1Y')" title="Zoom to 1 Year">1Y</button>
-        <button class="chart-range-btn" data-range="3Y" onclick="setChartRange('3Y')" title="Zoom to 3 Years">3Y</button>
-        <button class="chart-range-btn" data-range="5Y" onclick="setChartRange('5Y')" title="Zoom to 5 Years">5Y</button>
-        <button class="chart-range-btn" data-range="10Y" onclick="setChartRange('10Y')" title="Zoom to 10 Years">10Y</button>
-        <button class="chart-range-btn active" data-range="ALL" onclick="setChartRange('ALL')" title="All Available 10+ Year History">ALL</button>
-      </div>
-
-      <!-- Real-Time Desk Status Badge -->
-      <div class="chart-live-badge" title="Live forming candle &amp; 3s auto-refresh active">
-        <span class="live-dot-pulse"></span>
-        <span>PRO LIVE</span>
-      </div>
-    </div>
-
-    <!-- Live Institutional Quote Ribbon -->
-    <div class="chart-kpi-ribbon" id="chartKpiRibbon">
-      <div class="kpi-left-cluster">
-        <div class="kpi-symbol-block">
-          <span class="kpi-symbol-title" id="kpiSymbolText">NIFTY</span>
-          <span class="kpi-symbol-badge" id="kpiExchangeBadge">NSE INDEX</span>
-        </div>
-
-        <div class="kpi-price-block">
-          <span class="kpi-ltp" id="kpiLtp">₹--</span>
-          <span class="kpi-change-pill" id="kpiChangePill">--</span>
-        </div>
-
-        <div class="kpi-metric-group">
-          <div class="kpi-metric-item">
-            <span class="kpi-metric-label">Open / High / Low</span>
-            <span class="kpi-metric-val" id="kpiOhl">-- / -- / --</span>
-          </div>
-          <div class="kpi-metric-item">
-            <span class="kpi-metric-label">Prev Close</span>
-            <span class="kpi-metric-val" id="kpiPrevClose">₹--</span>
-          </div>
-          <div class="kpi-metric-item">
-            <span class="kpi-metric-label">Volume</span>
-            <span class="kpi-metric-val" id="kpiVolume">--</span>
-          </div>
-        </div>
-
-        <!-- Conditional F&O Derivatives Metrics Block -->
-        <div class="kpi-metric-group" id="kpiFoBlock">
-          <div class="kpi-metric-item">
-            <span class="kpi-metric-label">Future OI</span>
-            <span class="kpi-metric-val" id="kpiOi">--</span>
-          </div>
-          <div class="kpi-metric-item">
-            <span class="kpi-metric-label">Buildup Radar</span>
-            <span id="kpiBuildupTag" class="kpi-buildup-tag buildup-long">Long Buildup</span>
-          </div>
-          <div class="kpi-metric-item" id="kpiRolloverItem">
-            <span class="kpi-metric-label">Rollover %</span>
-            <span class="kpi-metric-val" id="kpiRollover">--%</span>
-          </div>
-        </div>
-
-        <!-- Conditional Cash Equities Metrics Block -->
-        <div class="kpi-metric-group" id="kpiCashBlock" style="display:none;">
-          <div class="kpi-metric-item">
-            <span class="kpi-metric-label">52W High / Low</span>
-            <span class="kpi-metric-val" id="kpi52wHl" style="color:var(--chart-brand);">₹-- / ₹--</span>
-          </div>
-          <div class="kpi-metric-item">
-            <span class="kpi-metric-label">Delivery %</span>
-            <span class="kpi-metric-val" id="kpiDeliveryPct" style="color:#10b981;">--%</span>
-          </div>
-          <div class="kpi-metric-item">
-            <span class="kpi-metric-label">Delivery Qty</span>
-            <span class="kpi-metric-val" id="kpiDeliveryQty">--</span>
-          </div>
-          <div class="kpi-metric-item">
-            <span class="kpi-metric-label">Est. Turnover</span>
-            <span class="kpi-metric-val" id="kpiTurnover">₹-- Cr</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Conditional Action Buttons: F&O vs Cash -->
-      <div class="kpi-right-actions" id="kpiFoActions">
-        <a id="btnLinkOptionChain" href="/option-chain-pro" class="kpi-action-link" title="Open Multi-broker Option Chain Pro for this symbol">⚡ Option Chain</a>
-        <a id="btnLinkOpenInterest" href="/open-interest/nifty" class="kpi-action-link" title="Open Call vs Put OI Analysis">📊 OI Analysis</a>
-        <a id="btnLinkFutures" href="/futures" class="kpi-action-link" title="Open Futures Marketwatch">📈 Futures</a>
-      </div>
-      <div class="kpi-right-actions" id="kpiCashActions" style="display:none;">
-        <a href="/delivery" class="kpi-action-link" title="Open Security Delivery Analytics">📦 Delivery Analysis</a>
-        <a href="/mtf" class="kpi-action-link" title="Open MTF Leverage Book">💳 MTF Leverage</a>
-        <a href="/breadth-contribution" class="kpi-action-link" title="Open Market Breadth & Contribution">⚖️ Contribution</a>
-      </div>
-    </div>
-
-    <!-- Main Chart Canvas Container -->
-    <div class="chart-view-frame">
-      <!-- Pro TradingView Lightweight Charts Canvas -->
-      <div id="lw_chart_container"></div>
-
-      <!-- Live Hover Legend Box -->
-      <div class="chart-legend-box" id="chartLegendBox">
-        <span class="leg-date-badge">📅 <span id="legDate">--</span></span>
-        <span>O: <strong id="legOpen" style="color:var(--chart-text);">--</strong></span>
-        <span>H: <strong id="legHigh" style="color:#10b981;">--</strong></span>
-        <span>L: <strong id="legLow" style="color:#ef4444;">--</strong></span>
-        <span>C: <strong id="legClose" style="color:var(--chart-brand);">--</strong></span>
-        <span>Vol: <strong id="legVol" style="color:var(--chart-text-muted);">--</strong></span>
-        <span id="legOiWrap">OI: <strong id="legOi" style="color:#38bdf8;">--</strong></span>
-        <span id="legEma20Wrap" style="display:none; color:#0284c7;">EMA20: <strong id="legEma20">--</strong></span>
-        <span id="legEma50Wrap" style="display:none; color:#f59e0b;">EMA50: <strong id="legEma50">--</strong></span>
-        <span id="legEma200Wrap" style="display:none; color:#8b5cf6;">EMA200: <strong id="legEma200">--</strong></span>
-      </div>
-
-      <!-- Bottom Range & Status Bar -->
-      <div class="chart-range-bar" id="chartRangeBar">
-        <span id="dataSpanText">📊 Loading historical dataset...</span>
-        <span id="livePulseText">🟢 LIVE FEED • Real-time forming candle active</span>
-      </div>
-    </div>
-
-    <!-- Bottom Secondary Intelligence Deck -->
-    <div class="chart-bottom-deck">
-      <div class="deck-tab-bar">
-        <button id="deckTab1Btn" class="deck-tab-btn active" onclick="switchDeckTab(event, 'tabBuildup')">Derivatives &amp; OI Buildup History</button>
-        <button id="deckTab2Btn" class="deck-tab-btn" onclick="switchDeckTab(event, 'tabCrossDesk')">Cross-Desk Quick Navigation</button>
-      </div>
-
-      <!-- Tab 1: Buildup / Cash Delivery History -->
-      <div id="tabBuildup" class="deck-tab-pane active">
-        <div class="hist-table-wrap">
-          <table class="hist-table">
-            <thead id="histTableHead">
-              <tr>
-                <th>Date</th>
-                <th>Open</th>
-                <th>High</th>
-                <th>Low</th>
-                <th>Close</th>
-                <th>Volume</th>
-                <th>Total OI</th>
-                <th>OI Change</th>
-                <th>Buildup Signal</th>
-              </tr>
-            </thead>
-            <tbody id="histTableBody">
-              <tr><td colspan="9" style="text-align:center; color:#64748b; padding:20px;">Loading historical dataset...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Tab 2: Cross Desk Jump -->
-      <div id="tabCrossDesk" class="deck-tab-pane">
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
-          <a id="cardJumpChain" href="/option-chain-pro" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
-            <span style="font-weight:800; font-size:14px;">⚡ Option Chain Pro</span>
-            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Multi-broker live chain, Greeks, PCR &amp; IV skew</span>
-          </a>
-          <a id="cardJumpOi" href="/open-interest/nifty" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
-            <span style="font-weight:800; font-size:14px;">📊 Open Interest Analysis</span>
-            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Call vs Put distribution, PCR &amp; Max Pain</span>
-          </a>
-          <a id="cardJumpFutures" href="/futures/rollover" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
-            <span style="font-weight:800; font-size:14px;">📑 Futures Rollover Matrix</span>
-            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Expiry rollover %, 3M/6M averages &amp; velocity</span>
-          </a>
-          <a href="/delivery" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
-            <span style="font-weight:800; font-size:14px;">📦 Cash Delivery Analytics</span>
-            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Security-wise delivery %, block volume &amp; turnover</span>
-          </a>
-          <a href="/mtf" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
-            <span style="font-weight:800; font-size:14px;">💳 MTF Margin Book</span>
-            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Leverage haircuts, MTF holding volume &amp; stocks</span>
-          </a>
-          <a href="/breadth-contribution" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
-            <span style="font-weight:800; font-size:14px;">📉 Market Breadth & Contribution</span>
-            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Advance/Decline velocity, 52W high/low ratio</span>
-          </a>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-      <!-- Institutional Footer with Legal & Compliance Links (Strict 4-Column Layout) -->
-      <footer class="terminal-footer">
-  <div class="footer-layout-wrapper">
-    <!-- Brand Column on the Left with Logo -->
-    <div class="footer-brand-col">
-      <a href="/" class="footer-brand-logo" title="TradersDesk.in • Institutional Quant &amp; Derivatives Terminal">
-        <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('footerBrandFallback').style.display='inline-flex';" />
-        <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('footerBrandFallback').style.display='inline-flex';" />
-        <div class="inst-brand-fallback-text" id="footerBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
-          <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk</span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
-        </div>
-      </a>
-      <p class="footer-brand-desc">
-        Institutional-grade quantitative analytics, real-time market breadth, options Greeks &amp; derivatives intelligence terminal for Indian equities and indices.
-      </p>
-      <div class="footer-brand-badges">
-        <span class="p2-badge p2-badge-teal">NSE • BSE • MCX</span>
-        <span class="p2-badge p2-badge-blue">Live Derivatives</span>
-      </div>
-      <div class="footer-system-status">
-        <span class="footer-status-dot"></span>
-        <span>Black-Scholes &bull; Quant Architecture</span>
-      </div>
-    </div>
-
-    <!-- 4-Column Navigation Links Grid -->
-    <div class="footer-four-columns" id="footerFourColumnsGrid">
-      <div class="footer-link-group" data-col="col1">
-        <h4 style="color:#38bdf8;">🏛️ Institutional Desks</h4>
-        <div class="footer-links-list">
-        <a href="/breadth-contribution" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/breadth-contribution', event); }">Breadth &amp; Contribution</a>
-        <a href="/fii-dii" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/fii-dii', event); }">FII &amp; DII Smart Money</a>
-        <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/delivery', event); }">Cash Delivery Absorption</a>
-        <a href="/mtf" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/mtf', event); }">MTF Margin Trading Book</a>
-        <a href="/open-interest/nifty" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/open-interest/nifty', event); }">Open Interest Desk</a>
-        <a href="/dashboard" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/dashboard', event); }">Institutional Dashboard</a>
-        </div>
-      </div>
-      <div class="footer-link-group" data-col="col2">
-        <h4 style="color:#a78bfa;">⚡ Derivatives &amp; Options</h4>
-        <div class="footer-links-list">
-        <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/option-chain-pro', event); }">Upstox Option Chain Pro</a>
-        <a href="/futures/open-interest" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/open-interest', event); }">Future Open Interest &amp; Buildup</a>
-        <a href="/futures/heatmap" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/heatmap', event); }">Futures Sector Heatmap</a>
-        <a href="/futures" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures', event); }">Future Marketwatch Matrix</a>
-        <a href="/straddle" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/straddle', event); }">Straddle Analytics Engine</a>
-        <a href="/call-vs-put-premium" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/call-vs-put-premium', event); }">Call vs Put Premium</a>
-        <a href="/futures/buildup" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/buildup', event); }">Future Buildup Quadrants</a>
-        <a href="/futures/mwpl" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/mwpl', event); }">MWPL &amp; Ban Radar</a>
-        <a href="/futures/rollover" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/rollover', event); }">Historical Rollover Matrix</a>
-        </div>
-      </div>
-      <div class="footer-link-group" data-col="col3">
-        <h4 style="color:#34d399;">📊 Market Analytics &amp; Tools</h4>
-        <div class="footer-links-list">
-        <a href="/breadth-contribution" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/breadth-contribution', event); }">Breadth &amp; Net Contribution</a>
-        <a href="/calendar_studio.html" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/calendar_studio.html', event); }">NSE Trading Holiday Calendar</a>
-        <a href="/fii-dii#oi" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/fii-dii#oi', event); }">Participant OI Matrix</a>
-        <a href="/futures/heatmap" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/heatmap', event); }">F&amp;O Sector Visual Heatmap</a>
-        <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/option-chain-pro', event); }">Real-Time Options Greeks</a>
-        <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/delivery', event); }">Stock Delivery Drilldown</a>
-        </div>
-      </div>
-      <div class="footer-link-group" data-col="col4">
-        <h4 style="color:#f59e0b;">🛡️ Regulatory &amp; Compliance</h4>
-        <div class="footer-links-list">
-        <a href="/disclaimer" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/disclaimer', event); }">SEBI Regulatory Disclaimer</a>
-        <a href="/privacy" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/privacy', event); }">Privacy &amp; Data Governance</a>
-        <a href="/terms" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/terms', event); }">Terms of Institutional Service</a>
-        <a href="/about" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/about', event); }">Quantitative Model Methodologies</a>
-        <a href="/contact" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/contact', event); }">Contact &amp; Trader Support</a>
-        <a href="https://www.nseindia.com" target="_blank" rel="noopener">NSE Official Regulatory Archive ↗</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Bottom Regulatory & Copyright Row -->
-  <div class="footer-bottom">
-    <div class="footer-copy-text">
-      &copy; 2026 TradersDesk.in &bull; Black-Scholes Mathematically Certified &bull; Real-Time Indian Equities &amp; Derivatives Terminal
-    </div>
-    <div class="footer-sebi-text">
-      SEBI Compliance Notice: Strictly for educational, quantitative research &amp; institutional market analysis only. Not investment advice.
-    </div>
-  </div>
-</footer>
-
-
-  <!-- Mobile Drawer Modal -->
-  <div id="mobileDotMenuModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; backdrop-filter:blur(4px); align-items:flex-end;">
-    <div style="background:var(--chart-card-bg); border-top:1px solid var(--chart-border); border-radius:16px 16px 0 0; width:100%; max-height:85vh; overflow-y:auto; padding:20px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <h3 style="margin:0; font-size:16px; font-weight:800;">Terminal Directory</h3>
-        <button type="button" onclick="closeMobileDotMenu()" style="border:none; background:transparent; font-size:20px; cursor:pointer;">✕</button>
-      </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <a href="/" class="kpi-action-link" style="text-decoration:none;">⬛ Dashboard</a>
-        <a href="/chart" class="kpi-action-link" style="text-decoration:none; background:rgba(2,132,199,0.12); color:#0284c7; font-weight:800;">📈 Technical Charts</a>
-        <a href="/futures" class="kpi-action-link" style="text-decoration:none;">📈 Futures Matrix</a>
-        <a href="/open-interest/nifty" class="kpi-action-link" style="text-decoration:none;">📊 Open Interest</a>
-        <a href="/option-chain-pro" class="kpi-action-link" style="text-decoration:none;">⚡ Option Chain Pro</a>
-        <a href="/straddle" class="kpi-action-link" style="text-decoration:none;">📉 Straddle Desk</a>
-        <a href="/breadth-contribution" class="kpi-action-link" style="text-decoration:none;">⚖️ Contribution</a>
-        <a href="/fii-dii" class="kpi-action-link" style="text-decoration:none;">🏛️ FII &amp; DII</a>
-        <a href="/delivery" class="kpi-action-link" style="text-decoration:none;">📦 Delivery</a>
-        <a href="/mtf" class="kpi-action-link" style="text-decoration:none;">💳 MTF Book</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================================================
-       PRO INSTITUTIONAL TRADINGVIEW LIGHTWEIGHT CHARTS
-       ======================================================================== -->
-  <script>
-    let currentSymbol = "NIFTY";
-    let currentTimeframe = "D";
-    let currentRange = "ALL";
-    let currentQuote = null;
-    let lwChart = null;
-    let candleSeries = null;
-    let volumeSeries = null;
-    let lastLoadedBars = [];
-
-    // Technical Indicators State
-    let showEma20 = true;
-    let showEma50 = false;
-    let showEma200 = false;
-    let ema20Series = null;
-    let ema50Series = null;
-    let ema200Series = null;
-
-    // Real-Time Polling Interval ID
-    let liveQuoteInterval = null;
-
-    // Parse URL Params
-    function initFromUrl() {
-      const params = new URLSearchParams(window.location.search);
-      const symParam = params.get("symbol") || params.get("sym") || params.get("s");
-      if (symParam) currentSymbol = symParam.toUpperCase().trim();
-      const tfParam = params.get("tf") || params.get("interval");
-      if (tfParam) currentTimeframe = tfParam;
-      const rangeParam = params.get("range");
-      if (rangeParam) currentRange = rangeParam.toUpperCase();
-    }
-
-    // Calculate Exponential Moving Average
-    function calculateEMA(bars, period) {
-      if (!bars || bars.length < period) return [];
-      const k = 2 / (period + 1);
-      let sum = 0;
-      for (let i = 0; i < period; i++) {
-        sum += Number(bars[i].close);
-      }
-      let prevEma = sum / period;
-      const result = [];
-      result.push({ time: bars[period - 1].time, value: Math.round(prevEma * 100) / 100 });
-
-      for (let i = period; i < bars.length; i++) {
-        const val = Number(bars[i].close) * k + prevEma * (1 - k);
-        const rounded = Math.round(val * 100) / 100;
-        result.push({ time: bars[i].time, value: rounded });
-        prevEma = val;
-      }
-      return result;
-    }
-
-    // Toggle Technical Overlay Indicators
-    window.toggleIndicator = function(ind) {
-      if (ind === 'ema20') {
-        showEma20 = !showEma20;
-        const btn = document.getElementById('btnEma20');
-        if (btn) btn.classList.toggle('active', showEma20);
-      } else if (ind === 'ema50') {
-        showEma50 = !showEma50;
-        const btn = document.getElementById('btnEma50');
-        if (btn) btn.classList.toggle('active', showEma50);
-      } else if (ind === 'ema200') {
-        showEma200 = !showEma200;
-        const btn = document.getElementById('btnEma200');
-        if (btn) btn.classList.toggle('active', showEma200);
-      }
-      renderProChart();
-    };
-
-    // Range Selector (1M, 3M, 6M, 1Y, 3Y, 5Y, 10Y, ALL)
-    window.setChartRange = function(rangeKey) {
-      currentRange = rangeKey;
-      document.querySelectorAll(".chart-range-btn").forEach(b => {
-        b.classList.toggle("active", b.getAttribute("data-range") === rangeKey);
-      });
-
-      if (currentTimeframe !== "D") {
-        changeTimeframe("D");
-        return;
-      }
-      applyRangeZoom(rangeKey);
-    };
-
-    function applyRangeZoom(rangeKey) {
-      if (!lwChart || !lastLoadedBars || lastLoadedBars.length === 0) return;
-
-      const n = lastLoadedBars.length;
-      let barCount = n;
-
-      if (rangeKey === "1M") barCount = 22;
-      else if (rangeKey === "3M") barCount = 66;
-      else if (rangeKey === "6M") barCount = 132;
-      else if (rangeKey === "1Y") barCount = 252;
-      else if (rangeKey === "3Y") barCount = 756;
-      else if (rangeKey === "5Y") barCount = 1260;
-      else if (rangeKey === "10Y" || rangeKey === "ALL") barCount = n;
-
-      if (barCount >= n) {
-        lwChart.timeScale().fitContent();
-        return;
-      }
-
-      const startIndex = Math.max(0, n - barCount);
-      const startBar = lastLoadedBars[startIndex];
-      const endBar = lastLoadedBars[n - 1];
-
-      try {
-        lwChart.timeScale().setVisibleRange({
-          from: startBar.time,
-          to: endBar.time
-        });
-      } catch (e) {
-        lwChart.timeScale().fitContent();
-      }
-    }
-
-    // Format Date string nicely: "Wednesday, 21 Oct 2026"
-    function formatPrettyDate(rawTime) {
-      if (!rawTime) return "--";
-      try {
-        let d;
-        if (typeof rawTime === "number") {
-          d = new Date(rawTime * 1000);
-        } else if (typeof rawTime === "string") {
-          d = new Date(rawTime.includes(" ") ? rawTime.replace(" ", "T") + "+05:30" : rawTime + "T00:00:00+05:30");
-        } else {
-          return String(rawTime);
-        }
-        if (isNaN(d.getTime())) return String(rawTime);
-
-        if (currentTimeframe !== "D") {
-          return d.toLocaleDateString("en-IN", {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false
-          });
-        }
-        return d.toLocaleDateString("en-IN", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-          year: "numeric"
-        });
-      } catch (e) {
-        return String(rawTime);
-      }
-    }
-
-    // Render Native TradingView Lightweight Chart
-    function renderProChart() {
-      const container = document.getElementById("lw_chart_container");
-      if (!container) return;
-
-      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-
-      if (lwChart) {
-        try { lwChart.remove(); } catch(e) {}
-        lwChart = null;
-      }
-      container.innerHTML = "";
-
-      if (typeof LightweightCharts === "undefined") {
-        container.innerHTML = "<div style='display:flex; align-items:center; justify-content:center; height:100%; color:var(--chart-text-muted); font-size:13px;'>⏳ Initializing TradingView Chart...</div>";
-        setTimeout(renderProChart, 100);
-        return;
-      }
-
-      const w = container.clientWidth || 1000;
-      const h = container.clientHeight || 640;
-
-      lwChart = LightweightCharts.createChart(container, {
-        width: w,
-        height: h,
-        layout: {
-          background: { type: 'solid', color: isDark ? '#0f172a' : '#ffffff' },
-          textColor: isDark ? '#cbd5e1' : '#1e293b',
-          fontFamily: "'JetBrains Mono', 'Inter', monospace",
-        },
-        grid: {
-          vertLines: { color: isDark ? '#1e293b' : '#f1f5f9' },
-          horzLines: { color: isDark ? '#1e293b' : '#f1f5f9' },
-        },
-        crosshair: {
-          mode: LightweightCharts.CrosshairMode.Normal,
-        },
-        rightPriceScale: {
-          borderColor: isDark ? '#334155' : '#cbd5e1',
-          scaleMargins: {
-            top: 0.08,
-            bottom: 0.22,
-          },
-        },
-        timeScale: {
-          borderColor: isDark ? '#334155' : '#cbd5e1',
-          visible: true,
-          borderVisible: true,
-          timeVisible: currentTimeframe !== "D",
-          secondsVisible: false,
-          rightOffset: 12,
-          barSpacing: 8,
-          minBarSpacing: 2,
-        },
-      });
-
-      // 1. Candlestick Series
-      candleSeries = lwChart.addCandlestickSeries({
-        upColor: '#10b981',
-        downColor: '#ef4444',
-        borderVisible: false,
-        wickUpColor: '#10b981',
-        wickDownColor: '#ef4444',
-      });
-
-      // 2. Volume Series (PriceScale 'volume' at bottom 20%)
-      volumeSeries = lwChart.addHistogramSeries({
-        color: '#38bdf8',
-        priceFormat: { type: 'volume' },
-        priceScaleId: 'volume',
-      });
-      lwChart.priceScale('volume').applyOptions({
-        scaleMargins: {
-          top: 0.8,
-          bottom: 0,
-        },
-      });
-
-      // 3. Technical EMA Overlay Lines
-      if (showEma20) {
-        ema20Series = lwChart.addLineSeries({
-          color: '#0284c7',
-          lineWidth: 2,
-          priceScaleId: 'right',
-          title: 'EMA 20',
-        });
-      } else {
-        ema20Series = null;
-      }
-
-      if (showEma50) {
-        ema50Series = lwChart.addLineSeries({
-          color: '#f59e0b',
-          lineWidth: 2,
-          priceScaleId: 'right',
-          title: 'EMA 50',
-        });
-      } else {
-        ema50Series = null;
-      }
-
-      if (showEma200) {
-        ema200Series = lwChart.addLineSeries({
-          color: '#8b5cf6',
-          lineWidth: 2,
-          priceScaleId: 'right',
-          title: 'EMA 200',
-        });
-      } else {
-        ema200Series = null;
-      }
-
-      // Crosshair Hover Handler
-      lwChart.subscribeCrosshairMove(param => {
-        if (!param || !param.time || !param.seriesData || !candleSeries) {
-          // If cursor left canvas, reset to last available bar
-          if (lastLoadedBars.length > 0) {
-            const last = lastLoadedBars[lastLoadedBars.length - 1];
-            updateLegend(last, { value: last.volume }, last.oi);
-          }
-          return;
-        }
-        const cData = param.seriesData.get(candleSeries);
-        const vData = volumeSeries ? param.seriesData.get(volumeSeries) : null;
-        if (cData) {
-          let oiVal = "--";
-          if (param.time) {
-            const found = lastLoadedBars.find(b => b.time === param.time);
-            if (found && found.oi) oiVal = found.oi;
-          }
-          updateLegend(cData, vData, oiVal);
-        }
-      });
-
-      // Window Resize Listener
-      window.addEventListener("resize", () => {
-        if (lwChart && container && container.clientWidth > 0) {
-          lwChart.applyOptions({
-            width: container.clientWidth,
-            height: container.clientHeight
-          });
-        }
-      });
-
-      // Fetch Data
-      loadChartData(currentSymbol, currentTimeframe);
-    }
-
-    // Load Data from Backend
-    async function loadChartData(sym, tf) {
-      const container = document.getElementById("lw_chart_container");
-      try {
-        const res = await fetch(`/api/chart/history?symbol=${encodeURIComponent(sym)}&resolution=${encodeURIComponent(tf)}&range=10y`);
-        const json = await res.json();
-        const bars = json.bars || [];
-        lastLoadedBars = bars;
-        const isFno = json.is_fno;
-
-        if (!bars || bars.length === 0) {
-          if (container) {
-            container.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--chart-text-muted); padding:20px; text-align:center;">
-              <div style="font-size:36px; margin-bottom:10px;">📈</div>
-              <div style="font-weight:700; font-size:15px; color:var(--chart-text);">No Historical Bars Available for ${sym}</div>
-              <div style="font-size:12px; margin-top:6px; max-width:400px; color:var(--chart-text-muted);">Historical data is indexed for all 222+ F&O underlyings, indices, and active NSE equities.</div>
-            </div>`;
-          }
-          return;
-        }
-
-        // Convert to Lightweight Charts format with invariant validation
-        const cBars = [];
-        const vBars = [];
-        const seenTimes = new Set();
-
-        for (let b of bars) {
-          let timeVal = b.time;
-          if (typeof timeVal === "string" && timeVal.includes(" ")) {
-            const iso = timeVal.replace(" ", "T") + "+05:30";
-            const parsed = Date.parse(iso);
-            timeVal = !isNaN(parsed) ? Math.floor(parsed / 1000) : Math.floor(new Date(timeVal).getTime() / 1000);
-          }
-
-          if (timeVal === undefined || timeVal === null || seenTimes.has(timeVal)) continue;
-          seenTimes.add(timeVal);
-
-          const o = Number(b.open) || 0;
-          const c = Number(b.close) || 0;
-          let h = Number(b.high) || Math.max(o, c);
-          let l = Number(b.low) || Math.min(o, c);
-
-          h = Math.max(h, o, c);
-          l = Math.min(l, o, c);
-          if (l <= 0) l = Math.min(o, c) * 0.99;
-
-          cBars.push({ time: timeVal, open: o, high: h, low: l, close: c });
-          vBars.push({
-            time: timeVal,
-            value: Number(b.volume) || 0,
-            color: c >= o ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'
-          });
-        }
-
-        if (typeof cBars[0]?.time === "number") {
-          cBars.sort((a, b) => a.time - b.time);
-          vBars.sort((a, b) => a.time - b.time);
-        } else {
-          cBars.sort((a, b) => String(a.time).localeCompare(String(b.time)));
-          vBars.sort((a, b) => String(a.time).localeCompare(String(b.time)));
-        }
-
-        if (candleSeries && cBars.length > 0) candleSeries.setData(cBars);
-        if (volumeSeries && vBars.length > 0) volumeSeries.setData(vBars);
-
-        if (ema20Series && showEma20 && cBars.length >= 20) {
-          ema20Series.setData(calculateEMA(cBars, 20));
-        }
-        if (ema50Series && showEma50 && cBars.length >= 50) {
-          ema50Series.setData(calculateEMA(cBars, 50));
-        }
-        if (ema200Series && showEma200 && cBars.length >= 200) {
-          ema200Series.setData(calculateEMA(cBars, 200));
-        }
-
-        // Apply range zoom
-        applyRangeZoom(currentRange);
-
-        // Update Legend with last bar
-        if (bars.length > 0) {
-          const last = bars[bars.length - 1];
-          updateLegend(last, { value: last.volume }, last.oi);
-        }
-
-        // Update Bottom Range Bar
-        const spanEl = document.getElementById("dataSpanText");
-        if (spanEl && bars.length > 0) {
-          const firstD = bars[0].time;
-          const lastD = bars[bars.length - 1].time;
-          spanEl.textContent = `📊 Historical Span: ${firstD} to ${lastD} • ${bars.length.toLocaleString("en-IN")} Trading Sessions`;
-        }
-
-        // Render Table (F&O vs Cash)
-        renderIntelligenceTable(bars, json.cash_delivery_history, isFno);
-      } catch (e) {
-        console.error("Load chart data error:", e);
-      }
-    }
-
-    // Update Legend Box
-    function updateLegend(c, v, customOi) {
-      if (!c) return;
-      document.getElementById("legDate").textContent = formatPrettyDate(c.time);
-      document.getElementById("legOpen").textContent = "₹" + Number(c.open || 0).toFixed(2);
-      document.getElementById("legHigh").textContent = "₹" + Number(c.high || 0).toFixed(2);
-      document.getElementById("legLow").textContent = "₹" + Number(c.low || 0).toFixed(2);
-      document.getElementById("legClose").textContent = "₹" + Number(c.close || 0).toFixed(2);
-      document.getElementById("legVol").textContent = v && v.value ? Number(v.value).toLocaleString("en-IN") : (c.volume ? Number(c.volume).toLocaleString("en-IN") : "--");
-
-      const oiWrap = document.getElementById("legOiWrap");
-      if (currentQuote && currentQuote.is_fno === false) {
-        oiWrap.style.display = "none";
-      } else {
-        oiWrap.style.display = "inline";
-        const oiVal = customOi !== undefined ? customOi : (c.oi || "--");
-        document.getElementById("legOi").textContent = typeof oiVal === "number" ? oiVal.toLocaleString("en-IN") : oiVal;
-      }
-    }
-
-    // Fetch Live Quote & Snapshot
-    async function fetchSymbolQuote(sym) {
-      try {
-        const resp = await fetch(`/api/chart/quote?symbol=${encodeURIComponent(sym)}`);
-        const data = await resp.json();
-        if (data && data.quote) {
-          currentQuote = data.quote;
-          renderQuoteKpi(data.quote);
-
-          // Real-time tick update to candle chart
-          if (candleSeries && data.quote.live_bar && currentTimeframe === "D") {
-            const lb = data.quote.live_bar;
-            try {
-              candleSeries.update({
-                time: lb.time,
-                open: Number(lb.open),
-                high: Number(lb.high),
-                low: Number(lb.low),
-                close: Number(lb.close)
-              });
-              if (volumeSeries && lb.volume > 0) {
-                volumeSeries.update({
-                  time: lb.time,
-                  value: Number(lb.volume),
-                  color: Number(lb.close) >= Number(lb.open) ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'
-                });
-              }
-            } catch (updErr) {}
-          }
-        }
-      } catch (e) {
-        console.error("Error fetching quote:", e);
-      }
-    }
-
-    function renderQuoteKpi(q) {
-      document.getElementById("kpiSymbolText").textContent = q.symbol;
-
-      const badgeEl = document.getElementById("kpiExchangeBadge");
-      if (q.isIndex) {
-        badgeEl.textContent = "NSE INDEX";
-        badgeEl.className = "kpi-symbol-badge";
-      } else if (q.is_fno) {
-        badgeEl.textContent = "NSE F&O DERIVATIVE";
-        badgeEl.className = "kpi-symbol-badge";
-      } else {
-        badgeEl.textContent = "NSE CASH EQUITY";
-        badgeEl.className = "kpi-symbol-badge badge-cash";
-      }
-
-      // LTP Flash & Update
-      const ltpEl = document.getElementById("kpiLtp");
-      const prevLtp = parseFloat(ltpEl.getAttribute("data-val") || "0");
-      const newLtp = q.ltp || 0;
-      ltpEl.textContent = newLtp ? "₹" + newLtp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "₹--";
-      ltpEl.setAttribute("data-val", newLtp);
-
-      if (prevLtp > 0 && newLtp !== prevLtp) {
-        ltpEl.style.color = newLtp > prevLtp ? "#10b981" : "#ef4444";
-        setTimeout(() => { ltpEl.style.color = ""; }, 800);
-      }
-
-      const chgPill = document.getElementById("kpiChangePill");
-      if (q.change !== undefined && q.change_pct !== undefined) {
-        const sign = q.change >= 0 ? "+" : "";
-        chgPill.textContent = `${sign}${q.change.toFixed(2)} (${sign}${q.change_pct.toFixed(2)}%)`;
-        chgPill.className = "kpi-change-pill " + (q.change >= 0 ? "pos" : "neg");
-      }
-
-      document.getElementById("kpiOhl").textContent = `${q.open || '--'} / ${q.high || '--'} / ${q.low || '--'}`;
-      document.getElementById("kpiPrevClose").textContent = q.prev_close ? "₹" + q.prev_close : "₹--";
-      document.getElementById("kpiVolume").textContent = q.volume ? q.volume.toLocaleString("en-IN") : "--";
-
-      // F&O vs Cash UI Adaptation
-      const foBlock = document.getElementById("kpiFoBlock");
-      const cashBlock = document.getElementById("kpiCashBlock");
-      const foActions = document.getElementById("kpiFoActions");
-      const cashActions = document.getElementById("kpiCashActions");
-      const deckTab1 = document.getElementById("deckTab1Btn");
-      const cardChain = document.getElementById("cardJumpChain");
-      const cardOi = document.getElementById("cardJumpOi");
-      const cardFut = document.getElementById("cardJumpFutures");
-
-      if (q.is_fno) {
-        foBlock.style.display = "flex";
-        cashBlock.style.display = "none";
-        foActions.style.display = "flex";
-        cashActions.style.display = "none";
-        deckTab1.textContent = "Derivatives & OI Buildup History";
-
-        if (cardChain) cardChain.style.display = "flex";
-        if (cardOi) cardOi.style.display = "flex";
-        if (cardFut) cardFut.style.display = "flex";
-
-        const bTag = document.getElementById("kpiBuildupTag");
-        bTag.textContent = q.buildup || "Neutral";
-        if (q.buildup === "Long Buildup") bTag.className = "kpi-buildup-tag buildup-long";
-        else if (q.buildup === "Short Buildup") bTag.className = "kpi-buildup-tag buildup-short";
-        else if (q.buildup === "Short Covering") bTag.className = "kpi-buildup-tag buildup-covering";
-        else bTag.className = "kpi-buildup-tag buildup-unwinding";
-
-        document.getElementById("kpiOi").textContent = q.future_oi ? q.future_oi.toLocaleString("en-IN") : "--";
-        document.getElementById("kpiRollover").textContent = q.rollover_pct ? q.rollover_pct.toFixed(1) + "%" : "--%";
-
-        const chainUrl = `/option-chain-pro?symbol=${encodeURIComponent(q.symbol)}`;
-        document.getElementById("btnLinkOptionChain").href = chainUrl;
-        if (cardChain) cardChain.href = chainUrl;
-
-        const oiUrl = `/open-interest/nifty?symbol=${encodeURIComponent(q.symbol)}`;
-        document.getElementById("btnLinkOpenInterest").href = oiUrl;
-        if (cardOi) cardOi.href = oiUrl;
-      } else {
-        // Non-F&O: CASH STOCK
-        foBlock.style.display = "none";
-        cashBlock.style.display = "flex";
-        foActions.style.display = "none";
-        cashActions.style.display = "flex";
-        deckTab1.textContent = "Cash Delivery & Trading History";
-
-        if (cardChain) cardChain.style.display = "none";
-        if (cardOi) cardOi.style.display = "none";
-        if (cardFut) cardFut.style.display = "none";
-
-        const h52 = q.high_52w ? "₹" + q.high_52w.toFixed(2) : "₹--";
-        const l52 = q.low_52w ? "₹" + q.low_52w.toFixed(2) : "₹--";
-        document.getElementById("kpi52wHl").textContent = `${h52} / ${l52}`;
-        document.getElementById("kpiDeliveryPct").textContent = q.delivery_pct ? q.delivery_pct.toFixed(2) + "%" : "--%";
-        document.getElementById("kpiDeliveryQty").textContent = q.delivery_qty ? q.delivery_qty.toLocaleString("en-IN") : "--";
-        document.getElementById("kpiTurnover").textContent = q.turnover_cr ? `₹${q.turnover_cr.toFixed(2)} Cr` : "--";
-      }
-    }
-
-    function renderIntelligenceTable(bars, cashHistory, isFno) {
-      const thead = document.getElementById("histTableHead");
-      const tbody = document.getElementById("histTableBody");
-
-      if (!isFno && cashHistory && cashHistory.length > 0) {
-        // Cash Delivery Table Headers
-        thead.innerHTML = `
-          <tr>
-            <th>Date</th>
-            <th>Open</th>
-            <th>High</th>
-            <th>Low</th>
-            <th>Close</th>
-            <th>Traded Qty</th>
-            <th>Delivery Qty</th>
-            <th>Delivery %</th>
-            <th>Turnover (Cr)</th>
-          </tr>
-        `;
-        const rev = [...cashHistory].reverse().slice(0, 30);
-        tbody.innerHTML = rev.map(r => `
-          <tr>
-            <td><strong>${r.date}</strong></td>
-            <td>₹${Number(r.open).toFixed(2)}</td>
-            <td>₹${Number(r.high).toFixed(2)}</td>
-            <td>₹${Number(r.low).toFixed(2)}</td>
-            <td style="font-weight:700;">₹${Number(r.close).toFixed(2)}</td>
-            <td>${Number(r.volume).toLocaleString("en-IN")}</td>
-            <td style="font-weight:700; color:var(--chart-brand);">${Number(r.delivery_qty).toLocaleString("en-IN")}</td>
-            <td style="font-weight:800; color:#10b981;">${Number(r.delivery_pct).toFixed(2)}%</td>
-            <td>₹${Number(r.turnover_cr).toFixed(2)} Cr</td>
-          </tr>
-        `).join("");
-      } else {
-        // Derivatives & OI Buildup Headers
-        thead.innerHTML = `
-          <tr>
-            <th>Date</th>
-            <th>Open</th>
-            <th>High</th>
-            <th>Low</th>
-            <th>Close</th>
-            <th>Volume</th>
-            <th>Total OI</th>
-            <th>OI Change</th>
-            <th>Buildup Signal</th>
-          </tr>
-        `;
-        const rev = [...bars].reverse().slice(0, 30);
-        tbody.innerHTML = rev.map(b => {
-          let bClass = "buildup-long";
-          if (b.buildup === "Short Buildup") bClass = "buildup-short";
-          else if (b.buildup === "Short Covering") bClass = "buildup-covering";
-          else if (b.buildup === "Long Unwinding") bClass = "buildup-unwinding";
-
-          const oiChgSign = b.oi_change >= 0 ? "+" : "";
-          const oiChgColor = b.oi_change >= 0 ? "#10b981" : "#ef4444";
-
-          return `
-            <tr>
-              <td><strong>${b.time}</strong></td>
-              <td>₹${Number(b.open).toFixed(2)}</td>
-              <td>₹${Number(b.high).toFixed(2)}</td>
-              <td>₹${Number(b.low).toFixed(2)}</td>
-              <td style="font-weight:700;">₹${Number(b.close).toFixed(2)}</td>
-              <td>${Number(b.volume).toLocaleString("en-IN")}</td>
-              <td style="font-weight:700;">${b.oi ? Number(b.oi).toLocaleString("en-IN") : '--'}</td>
-              <td style="color:${oiChgColor}; font-weight:700;">${oiChgSign}${b.oi_change ? Number(b.oi_change).toLocaleString("en-IN") : '--'}</td>
-              <td><span class="kpi-buildup-tag ${bClass}">${b.buildup}</span></td>
-            </tr>
-          `;
-        }).join("");
-      }
-    }
-
-    // Select Symbol
-    window.selectSymbol = function(sym) {
-      currentSymbol = sym.toUpperCase().trim();
-
-      const url = new URL(window.location);
-      url.searchParams.set("symbol", currentSymbol);
-      window.history.pushState({}, "", url);
-
-      document.querySelectorAll(".chart-chip-btn").forEach(btn => {
-        if (btn.getAttribute("data-sym") === currentSymbol) btn.classList.add("active");
-        else btn.classList.remove("active");
-      });
-
-      const sInput = document.getElementById("symbolSearchInput");
-      if (sInput) sInput.value = "";
-      const sDrop = document.getElementById("searchDropdown");
-      if (sDrop) sDrop.style.display = "none";
-
-      fetchSymbolQuote(currentSymbol);
-      renderProChart();
-
-      // Reset live polling interval
-      if (liveQuoteInterval) clearInterval(liveQuoteInterval);
-      liveQuoteInterval = setInterval(() => {
-        fetchSymbolQuote(currentSymbol);
-      }, 4000);
-    };
-
-    // Change Timeframe
-    window.changeTimeframe = function(tf) {
-      currentTimeframe = tf;
-      document.querySelectorAll(".chart-tf-btn").forEach(btn => {
-        if (btn.getAttribute("data-tf") === tf) btn.classList.add("active");
-        else btn.classList.remove("active");
-      });
-
-      const rangeGrp = document.getElementById("rangeGroup");
-      if (rangeGrp) {
-        rangeGrp.style.opacity = tf === "D" ? "1" : "0.5";
-      }
-
-      renderProChart();
-    };
-
-    // Tab Switcher
-    window.switchDeckTab = function(e, tabId) {
-      document.querySelectorAll(".deck-tab-btn").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".deck-tab-pane").forEach(p => p.classList.remove("active"));
-      e.target.classList.add("active");
-      const targetPane = document.getElementById(tabId);
-      if (targetPane) targetPane.classList.add("active");
-    };
-
-    // Theme Toggle
-    window.toggleTheme = function() {
-      const current = document.documentElement.getAttribute("data-theme") || "light";
-      const next = current === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem("breadth_theme", next);
-      const icon = document.getElementById("themeToggleIcon");
-      if (icon) icon.textContent = next === "dark" ? "☀️" : "🌙";
-
-      renderProChart();
-    };
-
-    // Live Clock & Market Session State
-    function updateLiveClock() {
-      const now = new Date();
-      const istOptions = { timeZone: "Asia/Kolkata", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" };
-      const clockEl = document.getElementById("instLiveClock");
-      if (clockEl) {
-        clockEl.textContent = now.toLocaleTimeString("en-GB", istOptions) + " IST";
-      }
-
-      // Check IST Day & Time
-      try {
-        const istStr = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
-        const istDate = new Date(istStr);
-        const day = istDate.getDay(); // 0 = Sun, 6 = Sat
-        const hours = istDate.getHours();
-        const minutes = istDate.getMinutes();
-        const timeVal = hours * 100 + minutes;
-        const isWeekend = (day === 0 || day === 6);
-        const isMarketHours = !isWeekend && (timeVal >= 915 && timeVal <= 1540);
-
-        const pill = document.getElementById("topMarketStatusPill");
-        const statusText = document.getElementById("marketStatusText");
-        const livePulse = document.getElementById("livePulseText");
-
-        if (isMarketHours) {
-          if (pill) pill.className = "inst-market-pill open";
-          if (statusText) statusText.textContent = "NSE LIVE";
-          if (livePulse) livePulse.innerHTML = "🟢 LIVE FEED • Real-time forming candle active";
-        } else {
-          if (pill) pill.className = "inst-market-pill closed";
-          if (statusText) statusText.textContent = isWeekend ? "NSE CLOSED (WEEKEND)" : "NSE CLOSED";
-          if (livePulse) livePulse.innerHTML = isWeekend ? "🔴 MARKET CLOSED • Weekend (Next session: Monday 09:15 IST)" : "🔴 MARKET CLOSED (Trading ended at 15:30 IST)";
-        }
-      } catch (e) {}
-    }
-    setInterval(updateLiveClock, 1000);
-    updateLiveClock();
-
-    // Mobile Drawer
-    window.openMobileDotMenu = function() {
-      const m = document.getElementById("mobileDotMenuModal");
-      if (m) m.style.display = "flex";
-    };
-    window.closeMobileDotMenu = function() {
-      const m = document.getElementById("mobileDotMenuModal");
-      if (m) m.style.display = "none";
-    };
-
-    // Global Search Autocomplete Setup
-    async function initSearch() {
-      const input = document.getElementById("symbolSearchInput");
-      const dropdown = document.getElementById("searchDropdown");
-
-      let debounceTimer = null;
-      input.addEventListener("input", function() {
-        const q = this.value.trim();
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(async () => {
-          if (!q) {
-            dropdown.style.display = "none";
-            return;
-          }
-          try {
-            const res = await fetch(`/api/chart/symbols?q=${encodeURIComponent(q)}`);
-            const json = await res.json();
-            const items = json.symbols || [];
-            if (items.length === 0) {
-              dropdown.innerHTML = `<div style="padding:12px; color:#64748b; font-size:12px;">No matching stock or index found.</div>`;
-              dropdown.style.display = "block";
-              return;
-            }
-            dropdown.innerHTML = items.map(it => `
-              <div class="search-result-item" onclick="selectSymbol('${it.symbol}')">
-                <div>
-                  <span class="search-res-sym">${it.symbol}</span>
-                  <span class="search-res-name">${it.name}</span>
-                </div>
-                <span class="search-res-badge">${it.category}</span>
-              </div>
-            `).join("");
-            dropdown.style.display = "block";
-          } catch (e) {
-            console.error("Search fetch error:", e);
-          }
-        }, 120);
-      });
-
-      document.addEventListener("click", function(e) {
-        if (!e.target.closest(".chart-search-wrap")) {
-          dropdown.style.display = "none";
-        }
-      });
-    }
-
-    // On Load Initializer
-    function initChartApp() {
-      initFromUrl();
-      initSearch();
-      selectSymbol(currentSymbol);
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initChartApp);
-    } else {
-      initChartApp();
-    }
-  </script>
-
-    <!-- ================================
-         MOBILE BOTTOM NAVIGATION DOCK
-         Visible only on mobile <= 768px
-         ================================ -->
-    <nav class="mobile-bottom-nav" id="mobileBottomNavGlobal" aria-label="Mobile Navigation Dock">
-      <a class="mob-nav-item" href="/" title="Dashboard">
-        <span class="mob-nav-icon">&#9889;</span>
-        <span class="mob-nav-label">Options</span>
-      </a>
-      <a class="mob-nav-item" href="/futures" title="Futures">
-        <span class="mob-nav-icon">&#128200;</span>
-        <span class="mob-nav-label">Futures</span>
-      </a>
-      <a class="mob-nav-item mob-nav-search-center" href="/" onclick="event.preventDefault(); if(typeof openGlobalSearch==='function') openGlobalSearch();" title="Search">
-        <span class="mob-nav-icon">&#128269;</span>
-        <span class="mob-nav-label">Search</span>
-      </a>
-      <a class="mob-nav-item" href="/#delivery" title="Delivery">
-        <span class="mob-nav-icon">&#128230;</span>
-        <span class="mob-nav-label">Delivery</span>
-      </a>
-      <a class="mob-nav-item" href="/blog" title="Market Insights">
-        <span class="mob-nav-icon">&#128240;</span>
-        <span class="mob-nav-label">Insights</span>
-      </a>
-    </nav>
-
-    <!-- Mobile Global Search Script (if not already loaded) -->
-    <script>
-    if (typeof openGlobalSearch === 'undefined') {
-      document.querySelectorAll('.mob-nav-search-center').forEach(function(el) {
-        el.addEventListener('click', function(e) {
-          e.preventDefault();
-          window.location.href = '/?search=1';
-        });
-      });
-    }
-    // Highlight active nav item based on current path
-    (function() {
-      var path = window.location.pathname;
-      document.querySelectorAll('#mobileBottomNavGlobal .mob-nav-item').forEach(function(a) {
-        var href = a.getAttribute('href');
-        if (href && href !== '/' && path.startsWith(href)) {
-          a.classList.add('active');
-        } else if (href === '/' && (path === '/' || path === '')) {
-          a.classList.add('active');
-        }
-      });
-    })();
-    </script>
-<script src="/dynamic_nav.js?v=20261027_v1" defer></script>
-</body>
-</html>
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <meta property="og:image" content="https://tradersdesk.in/og-image.png">
+  <meta name="twitter:image" content="https://tradersdesk.in/og-image.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "TradersDesk",
+    "url": "https://tradersdesk.in/",
+    "logo": "https://tradersdesk.in/favicon.svg",
+    "description": "Institutional Quantitative Derivatives, Technical Charts & Market Breadth Terminal"
+  }
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Technical Charts &amp; 10+ Year Historical Analysis - Nifty, F&amp;O &amp; Stocks | TradersDesk</title>
+  <meta name="description" content="Institutional TradingView interactive technical charts for NSE Nifty, Bank Nifty, Stock Futures &amp; Options. Analyze 10+ years of candlestick action, indicators, Open Interest and volume delivery.">
+  <link rel="canonical" href="https://tradersdesk.in/chart">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Technical Charts &amp; Historical Analysis | TradersDesk">
+  <meta property="og:description" content="Live &amp; 10+ year historical interactive TradingView charts for all NSE stocks, indices, and derivatives with built-in F&amp;O intelligence.">
+  <meta property="og:url" content="https://tradersdesk.in/chart">
+  <meta property="og:site_name" content="TradersDesk.in">
+
+    <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://tradersdesk.in/chart">
+  <meta name="twitter:title" content="Technical Charts & Historical Analysis | TradersDesk">
+  <meta name="twitter:description" content="Live & 10+ year historical interactive TradingView charts for all NSE stocks, indices, and derivatives with built-in F&O intelligence.">
+  <meta name="twitter:image" content="https://tradersdesk.in/og-image.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Core Page Stylesheets -->
+  <link rel="stylesheet" href="/styles.css?v=20261021_v1">
+  <link rel="stylesheet" href="/page2.css?v=20261021_v1">
+  <script src="/security_shield.js"></script>
+
+  <!-- Official TradingView Lightweight Charts (Pro Institutional Charting - Zero Symbol Restrictions) -->
+  <script src="/libs/lightweight-charts.standalone.production.js"></script>
+
+  <!-- Theme Initializer -->
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('breadth_theme');
+        var theme = savedTheme ? savedTheme : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+    :root {
+      --chart-bg: #f8fafc;
+      --chart-card-bg: #ffffff;
+      --chart-border: #e2e8f0;
+      --chart-text: #0f172a;
+      --chart-text-muted: #64748b;
+      --chart-brand: #0284c7;
+      --chart-bull-green: #10b981;
+      --chart-bear-red: #ef4444;
+      --chart-buildup-bg: rgba(16, 185, 129, 0.1);
+    }
+
+    [data-theme="dark"] {
+      --chart-bg: #090d16;
+      --chart-card-bg: #0f172a;
+      --chart-border: #1e293b;
+      --chart-text: #f1f5f9;
+      --chart-text-muted: #94a3b8;
+      --chart-brand: #38bdf8;
+      --chart-bull-green: #10b981;
+      --chart-bear-red: #f87171;
+      --chart-buildup-bg: rgba(16, 185, 129, 0.18);
+    }
+
+    body {
+      background-color: var(--chart-bg);
+      color: var(--chart-text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    /* Fixed Logo Height Constraint */
+    .inst-brand-logo-img, .inst-logo-img {
+      height: 28px !important;
+      width: auto !important;
+      max-height: 28px !important;
+      object-fit: contain !important;
+      display: block;
+    }
+    .inst-brand-logo-dark { display: block !important; visibility: visible !important; }
+    .inst-brand-logo-light { display: none !important; }
+    html[data-theme="light"] .inst-brand-logo-dark,
+    body[data-theme="light"] .inst-brand-logo-dark,
+    [data-theme="light"] .inst-brand-logo-dark { display: none !important; }
+    html[data-theme="light"] .inst-brand-logo-light,
+    body[data-theme="light"] .inst-brand-logo-light,
+    [data-theme="light"] .inst-brand-logo-light { display: block !important; visibility: visible !important; }
+
+    /* Chart Desk Main Wrapper */
+    .chart-desk-wrapper {
+      max-width: 1720px;
+      margin: 0 auto;
+      padding: 12px 18px 30px 18px;
+    }
+
+    /* Top Control Toolbar */
+    .chart-control-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--chart-card-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 12px;
+      padding: 10px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      flex-wrap: wrap;
+    }
+
+    .chart-search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 240px;
+      max-width: 360px;
+    }
+
+    .chart-search-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 14px 9px 38px;
+      background: var(--chart-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 8px;
+      color: var(--chart-text);
+      font-size: 13.5px;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    .chart-search-input:focus {
+      border-color: var(--chart-brand);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+    .chart-search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--chart-text-muted);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    /* Search Dropdown */
+    .chart-search-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--chart-card-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 8px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+      max-height: 380px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--chart-border);
+      transition: background 0.12s;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover {
+      background: rgba(2, 132, 199, 0.08);
+    }
+    .search-res-sym {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--chart-text);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .search-res-name {
+      font-size: 11.5px;
+      color: var(--chart-text-muted);
+      margin-left: 8px;
+    }
+    .search-res-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(100, 116, 139, 0.15);
+      color: var(--chart-text-muted);
+      font-weight: 700;
+    }
+
+    /* Quick Selector Chips */
+    .chart-chips-scroll {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 2px 0;
+    }
+    .chart-chips-scroll::-webkit-scrollbar { height: 4px; }
+    .chart-chips-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    .chart-chip-btn {
+      padding: 6px 11px;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid var(--chart-border);
+      background: var(--chart-card-bg);
+      color: var(--chart-text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .chart-chip-btn:hover {
+      background: rgba(2, 132, 199, 0.08);
+      border-color: var(--chart-brand);
+    }
+    .chart-chip-btn.active {
+      background: var(--chart-brand);
+      color: #ffffff;
+      border-color: var(--chart-brand);
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+    }
+
+    /* Timeframe Selector */
+    .chart-tf-group {
+      display: flex;
+      align-items: center;
+      background: var(--chart-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .chart-tf-btn {
+      border: none;
+      background: transparent;
+      padding: 5px 9px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--chart-text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.1s;
+    }
+    .chart-tf-btn:hover {
+      color: var(--chart-text);
+      background: rgba(0,0,0,0.05);
+    }
+    .chart-tf-btn.active {
+      background: var(--chart-card-bg);
+      color: var(--chart-brand);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* Range Selector (10+ Years EOD) */
+    .chart-range-group {
+      display: flex;
+      align-items: center;
+      background: var(--chart-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .range-group-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--chart-text-muted);
+      padding: 0 6px 0 8px;
+      letter-spacing: 0.5px;
+    }
+    .chart-range-btn {
+      border: none;
+      background: transparent;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--chart-text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.12s;
+    }
+    .chart-range-btn:hover {
+      color: var(--chart-text);
+      background: rgba(0,0,0,0.06);
+    }
+    .chart-range-btn.active {
+      background: var(--chart-brand);
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(2, 132, 199, 0.3);
+    }
+
+    /* Live Pro Badge */
+    .chart-live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #10b981;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .live-dot-pulse {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse-dot 1.8s infinite;
+    }
+    @keyframes pulse-dot {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Live Institutional Quote Ribbon */
+    .chart-kpi-ribbon {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--chart-card-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      flex-wrap: wrap;
+    }
+
+    .kpi-left-cluster {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .kpi-symbol-block {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .kpi-symbol-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--chart-text);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .kpi-symbol-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(2, 132, 199, 0.12);
+      color: var(--chart-brand);
+    }
+    .badge-cash {
+      background: rgba(168, 85, 247, 0.12) !important;
+      color: #a855f7 !important;
+    }
+
+    .kpi-price-block {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .kpi-ltp {
+      font-size: 22px;
+      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--chart-text);
+      transition: color 0.3s;
+    }
+    .kpi-change-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .kpi-change-pill.pos {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+    }
+    .kpi-change-pill.neg {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+    }
+
+    .kpi-metric-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-left: 1px solid var(--chart-border);
+      padding-left: 16px;
+      flex-wrap: wrap;
+    }
+    .kpi-metric-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .kpi-metric-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--chart-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .kpi-metric-val {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: var(--chart-text);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .kpi-buildup-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 5px;
+    }
+    .buildup-long { background: rgba(16, 185, 129, 0.14); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .buildup-short { background: rgba(239, 68, 68, 0.14); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .buildup-covering { background: rgba(2, 132, 199, 0.14); color: #0284c7; border: 1px solid rgba(2, 132, 199, 0.3); }
+    .buildup-unwinding { background: rgba(245, 158, 11, 0.14); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .kpi-right-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .kpi-action-link {
+      text-decoration: none;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid var(--chart-border);
+      background: var(--chart-bg);
+      color: var(--chart-text);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+    }
+    .kpi-action-link:hover {
+      background: rgba(2, 132, 199, 0.08);
+      border-color: var(--chart-brand);
+      color: var(--chart-brand);
+    }
+
+    /* Main Chart Canvas Container */
+    .chart-view-frame {
+      background: var(--chart-card-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+      height: 680px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-canvas-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: var(--chart-card-bg);
+      border-bottom: 1px solid var(--chart-border);
+      gap: 10px;
+      flex-wrap: wrap;
+      z-index: 5;
+    }
+
+    .toolbar-left-cluster {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-right-cluster {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--chart-border);
+      margin: 0 4px;
+    }
+
+    .chart-canvas-inner {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      min-height: 480px;
+    }
+
+    #lw_chart_container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+    }
+    #lw_chart_container canvas,
+    .tv-lightweight-charts canvas {
+      background: transparent !important;
+    }
+
+    /* Hover Legend for Lightweight Charts */
+    .chart-legend-box {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--chart-border);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      backdrop-filter: blur(8px);
+      flex-wrap: wrap;
+    }
+    [data-theme="dark"] .chart-legend-box {
+      background: rgba(15, 23, 42, 0.94);
+    }
+    .leg-date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(2, 132, 199, 0.08);
+      color: var(--chart-brand);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 800;
+    }
+
+    /* Bottom Range & Status Bar */
+    .chart-range-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: var(--chart-bg);
+      border-top: 1px solid var(--chart-border);
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 5;
+      font-size: 11px;
+      color: var(--chart-text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Bottom Secondary Intelligence Deck */
+    .chart-bottom-deck {
+      margin-top: 14px;
+      background: var(--chart-card-bg);
+      border: 1px solid var(--chart-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .deck-tab-bar {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--chart-border);
+      background: var(--chart-bg);
+      padding: 0 12px;
+    }
+    .deck-tab-btn {
+      padding: 11px 18px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--chart-text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.12s;
+    }
+    .deck-tab-btn.active {
+      color: var(--chart-brand);
+      border-bottom-color: var(--chart-brand);
+      background: var(--chart-card-bg);
+    }
+    .deck-tab-pane {
+      padding: 16px;
+      display: none;
+    }
+    .deck-tab-pane.active {
+      display: block;
+    }
+
+    .hist-table-wrap {
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .hist-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .hist-table th {
+      position: sticky;
+      top: 0;
+      background: var(--chart-bg);
+      text-align: right;
+      padding: 8px 12px;
+      font-weight: 700;
+      color: var(--chart-text-muted);
+      border-bottom: 1px solid var(--chart-border);
+    }
+    .hist-table th:first-child, .hist-table td:first-child { text-align: left; }
+    .hist-table th:last-child, .hist-table td:last-child { text-align: center; }
+    .hist-table td {
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--chart-border);
+      text-align: right;
+    }
+    .hist-table tr:hover {
+      background: rgba(2, 132, 199, 0.04);
+    }
+
+    @media (max-width: 960px) {
+      .chart-kpi-ribbon {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .kpi-right-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .chart-view-frame { height: 520px; }
+    }
+  </style>
+    <style id="ffCriticalStyle">
+      [data-feature-flag],
+      .inst-dd-item[data-feature-flag],
+      a.inst-dd-item[data-feature-flag],
+      .fut-tab-btn[data-feature-flag],
+      a.fut-tab-btn[data-feature-flag] {
+        display: none !important;
+      }
+      .inst-dd-item[data-feature-flag].feature-active,
+      a.inst-dd-item[data-feature-flag].feature-active {
+        display: flex !important;
+      }
+      .fut-tab-btn[data-feature-flag].feature-active,
+      a.fut-tab-btn[data-feature-flag].feature-active {
+        display: inline-flex !important;
+      }
+    </style>
+<script src="/global_search.js?v=20261029_mob" defer></script>
+</head>
+<body>
+  <h1 class="visually-hidden" style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0;">Technical Charts & Historical Multi-Year Price Analysis | TradersDesk</h1>
+
+
+  <!-- Top Header Navigation -->
+  <header class="inst-header" id="instTopHeader">
+    <div class="inst-brand-bar">
+      <div class="inst-brand-left">
+        <a href="/" class="inst-brand" style="text-decoration:none; display:flex; align-items:center;" title="TradersDesk.in — Institutional Quant &amp; Derivatives Terminal">
+          <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('instBrandFallback').style.display='inline-flex';" />
+          <div class="inst-brand-fallback-text" id="instBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
+            <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk<svg style="width:13px; height:13px; vertical-align:middle; transform:translateY(-2px); margin-left:-1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg></span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
+          </div>
+        </a>
+        
+      </div>
+
+      <div class="inst-market-clock-wrap" id="topMarketClockWrap">
+        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE Regular Trading Session">
+          <span class="market-dot" id="marketDot"></span>
+          <span id="marketStatusText">NSE LIVE</span>
+        </div>
+        <div class="inst-clock-pill" title="Indian Standard Time (IST)">
+          <span class="clock-icon">🕒</span>
+          <span id="instLiveClock" class="clock-digits">--:--:-- IST</span>
+        </div>
+      </div>
+
+      <div class="inst-right-controls">
+        <button id="chartDotMenuBtn" type="button" class="inst-dot-menu-btn" onclick="openMobileDotMenu()" aria-label="Open Navigation Drawer" title="All Desks &amp; Menus">
+          <svg class="dot-menu-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="8" cy="5" r="2.2" /><circle cx="16" cy="5" r="2.2" /><circle cx="8" cy="12" r="2.2" /><circle cx="16" cy="12" r="2.2" /><circle cx="8" cy="19" r="2.2" /><circle cx="16" cy="19" r="2.2" />
+          </svg>
+          <span class="dot-menu-label">Menu</span>
+        </button>
+        <button id="themeToggleBtn" type="button" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle White / Dark Theme">
+          <span id="themeToggleIcon">🌙</span>
+          <span class="theme-btn-text" id="themeToggleText">Theme</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mega-Menu Navigation Bar -->
+    <nav class="inst-nav" aria-label="Main Navigation" id="mainInstNav">
+      <div class="inst-nav-item"><a href="/" class="inst-nav-btn"><span class="inst-nav-icon">⬛</span> <span class="nav-label">Dashboard</span></a></div>
+      <div class="inst-nav-item has-dropdown">
+        <a href="/futures" class="inst-nav-btn"><span class="inst-nav-icon">📈</span> <span class="nav-label">Futures</span><span class="inst-nav-arrow">▾</span></a>
+                    <div class="inst-dropdown inst-dropdown-md">
+              <div class="inst-dropdown-col">
+                <span class="inst-dropdown-header">📊 Trading &amp; Open Interest</span>
+                <!-- Submenu 1: Future Marketwatch -->
+                <a href="/futures" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'matrix');}">
+                  <span class="dd-icon">📊</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future Marketwatch</span>
+                    <span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span>
+                  </div>
+                </a>
+                <!-- Submenu 2: Future Open Interest -->
+                <a href="/futures/open-interest" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'openInterest');}">
+                  <span class="dd-icon">📈</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future Open Interest</span>
+                    <span class="dd-sub">Multi-panel EOD &amp; Live chart, delivery % &amp; option chain</span>
+                  </div>
+                </a>
+                <!-- Submenu 3: Future Intraday Price vs OI -->
+                <a href="/futures/future-intraday" class="inst-dd-item" data-feature-flag="futures_future_intraday" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureIntraday');}">
+                  <span class="dd-icon">⚡</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future Intraday</span>
+                    <span class="dd-sub">5-Min Price vs OI divergence, VWAP &amp; Basis (7 Indices)</span>
+                  </div>
+                </a>
+                <!-- Submenu 4: Future vs Open Interest -->
+                <a href="/futures/future-vs-oi" class="inst-dd-item" data-feature-flag="futures_future_vs_oi" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureVsOi');}">
+                  <span class="dd-icon">🎯</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Future vs Open Interest</span>
+                    <span class="dd-sub">Dual-axis divergence analysis &amp; historical replay tools</span>
+                  </div>
+                </a>
+              </div>
+              <div class="inst-dropdown-col">
+                <span class="inst-dropdown-header">⚡ Market Structure &amp; Risk</span>
+                <!-- Submenu 5: Future Buildup -->
+                <a href="/futures/buildup" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'buildup');}">
+                  <span class="dd-icon">🧭</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Buildup Quadrants</span>
+                    <span class="dd-sub">Long/short buildup &amp; institutional unwinding flows</span>
+                  </div>
+                </a>
+                <!-- Submenu 6: Future Heatmap -->
+                <a href="/futures/heatmap" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'heatmap');}">
+                  <span class="dd-icon">🗺️</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Futures Heatmap</span>
+                    <span class="dd-sub">Sectoral visual heat &amp; momentum distribution map</span>
+                  </div>
+                </a>
+                <!-- Submenu 7: Future Index Term Structure -->
+                <a href="/futures/indices" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'indices');}">
+                  <span class="dd-icon">📐</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Index Term Structure</span>
+                    <span class="dd-sub">Cash-futures basis, cost of carry &amp; term curve</span>
+                  </div>
+                </a>
+                <!-- Submenu 8: MWPL and Ban Radar -->
+                <a href="/futures/mwpl" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'mwpl');}">
+                  <span class="dd-icon">🚫</span>
+                  <div class="dd-text">
+                    <span class="dd-title">MWPL &amp; Ban Radar</span>
+                    <span class="dd-sub">Market-Wide Position Limit tracker &amp; ban alerts</span>
+                  </div>
+                </a>
+                <!-- Submenu 9: Futures Rollover Matrix -->
+                <a href="/futures/rollover" class="inst-dd-item" title="Open Dedicated Futures Rollover Matrix Terminal">
+                  <span class="dd-icon">🔄</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Futures Rollover Matrix</span>
+                    <span class="dd-sub">Expiry rollover %, 3M/6M averages &amp; historical velocity</span>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+      <div class="inst-nav-item has-dropdown">
+        <a href="/option-chain-pro" class="inst-nav-btn inst-nav-btn-highlight" id="navOptions"><span class="inst-nav-icon">⚡</span> <span class="nav-label">Options</span><span class="inst-nav-arrow">▾</span></a>
+                    <div class="inst-dropdown inst-dropdown-md">
+              <div class="inst-dropdown-col">
+                <span class="inst-dropdown-header">⚡ Option Chains &amp; OI Analytics</span>
+                <!-- Submenu 1: Option Chain Pro -->
+                <a href="/option-chain-pro" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'upstoxChain');}">
+                  <span class="dd-icon">⚡</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Option Chain Pro</span>
+                    <span class="dd-sub">Live multi-broker chain, Greeks, PCR &amp; IV skew</span>
+                  </div>
+                </a>
+                <!-- Submenu 2: Open Interest Analysis -->
+                <a href="/open-interest/nifty" class="inst-dd-item" title="Live Nifty &amp; F&amp;O Call vs Put Open Interest, PCR &amp; Max Pain">
+                  <span class="dd-icon">📊</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Open Interest Analysis</span>
+                    <span class="dd-sub">Live Call vs Put distribution, PCR &amp; Max Pain strike</span>
+                  </div>
+                </a>
+                <!-- Submenu 3: Breadth & Net Contribution -->
+                <a href="/breadth-contribution" class="inst-dd-item" style="text-decoration:none; color:inherit;">
+                  <span class="dd-icon">⚖️</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Breadth &amp; Net Contribution</span>
+                    <span class="dd-sub">Intraday breadth advance/decline &amp; stock point impact</span>
+                  </div>
+                </a>
+              </div>
+              <div class="inst-dropdown-col">
+                <span class="inst-dropdown-header">📉 Straddle &amp; Options Analysis</span>
+                <!-- Submenu 4: ATM Straddle -->
+                <a href="/straddle" class="inst-dd-item" style="text-decoration:none; color:inherit;">
+                  <span class="dd-icon">📉</span>
+                  <div class="dd-text">
+                    <span class="dd-title">ATM Straddle <span class="p2-badge p2-badge-rose" id="navStraddleValueBadge" style="margin-left:4px;">₹--</span></span>
+                    <span class="dd-sub">Live combined CE+PE straddle &amp; synthetic curve</span>
+                  </div>
+                </a>
+                <!-- Submenu 6: Call vs Put Premium -->
+                <a href="/call-vs-put-premium" class="inst-dd-item" style="text-decoration:none; color:inherit;">
+                  <span class="dd-icon">⚔️</span>
+                  <div class="dd-text">
+                    <span class="dd-title">Call vs Put Premium</span>
+                    <span class="dd-sub">Live CE vs PE leg comparison, spread &amp; premium skew</span>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+      <div class="inst-nav-item">
+        <a href="/chart" class="inst-nav-btn inst-nav-btn-blue active" id="navChartsTab" title="Interactive TradingView Technical &amp; Historical Charts">
+          <span class="inst-nav-icon">📈</span> <span class="nav-label">Charts</span>
+        </a>
+      </div>
+      <div class="inst-nav-item"><a href="/breadth-contribution" class="inst-nav-btn"><span class="inst-nav-icon">⚖️</span> <span class="nav-label">Contribution</span></a></div>
+      <div class="inst-nav-item"><a href="/fii-dii" class="inst-nav-btn"><span class="inst-nav-icon">🏛️</span> <span class="nav-label">FII &amp; DII</span></a></div>
+      <div class="inst-nav-item"><a href="/delivery" class="inst-nav-btn"><span class="inst-nav-icon">📦</span> <span class="nav-label">Delivery</span></a></div>
+      <div class="inst-nav-item"><a href="/mtf" class="inst-nav-btn"><span class="inst-nav-icon">💳</span> <span class="nav-label">MTF Book</span></a></div>
+    </nav>
+  </header>
+
+  <!-- ========================================================================
+       MAIN CHART WORKSPACE
+       ======================================================================== -->
+  <main class="chart-desk-wrapper">
+
+    <!-- Top Universal Search & Quick Chip Bar -->
+    <div class="chart-control-bar">
+      <!-- Search Input with Live Dropdown -->
+      <div class="chart-search-wrap">
+        <span class="chart-search-icon">🔍</span>
+        <input type="text" id="symbolSearchInput" class="chart-search-input" placeholder="Search any Stock or Index (e.g. RELIANCE, NIFTY 50)..." autocomplete="off" spellcheck="false" />
+        <div id="searchDropdown" class="chart-search-dropdown"></div>
+      </div>
+
+      <!-- Quick Selector Chips -->
+      <div class="chart-chips-scroll" id="quickChipsContainer">
+        <button class="chart-chip-btn active" data-sym="NIFTY" onclick="selectSymbol('NIFTY')">NIFTY 50</button>
+        <button class="chart-chip-btn" data-sym="BANKNIFTY" onclick="selectSymbol('BANKNIFTY')">BANK NIFTY</button>
+        <button class="chart-chip-btn" data-sym="FINNIFTY" onclick="selectSymbol('FINNIFTY')">FINNIFTY</button>
+        <button class="chart-chip-btn" data-sym="SENSEX" onclick="selectSymbol('SENSEX')">SENSEX</button>
+        <button class="chart-chip-btn" data-sym="RELIANCE" onclick="selectSymbol('RELIANCE')">RELIANCE</button>
+        <button class="chart-chip-btn" data-sym="HDFCBANK" onclick="selectSymbol('HDFCBANK')">HDFCBANK</button>
+        <button class="chart-chip-btn" data-sym="TCS" onclick="selectSymbol('TCS')">TCS</button>
+        <button class="chart-chip-btn" data-sym="TATAMOTORS" onclick="selectSymbol('TATAMOTORS')">TATAMOTORS</button>
+        <button class="chart-chip-btn" data-sym="SBIN" onclick="selectSymbol('SBIN')">SBIN</button>
+        <button class="chart-chip-btn" data-sym="INFY" onclick="selectSymbol('INFY')">INFY</button>
+      </div>
+
+      </div>
+
+    <!-- Live Institutional Quote Ribbon -->
+    <div class="chart-kpi-ribbon" id="chartKpiRibbon">
+      <div class="kpi-left-cluster">
+        <div class="kpi-symbol-block">
+          <span class="kpi-symbol-title" id="kpiSymbolText">NIFTY</span>
+          <span class="kpi-symbol-badge" id="kpiExchangeBadge">NSE INDEX</span>
+        </div>
+
+        <div class="kpi-price-block">
+          <span class="kpi-ltp" id="kpiLtp">₹--</span>
+          <span class="kpi-change-pill" id="kpiChangePill">--</span>
+        </div>
+
+        <div class="kpi-metric-group">
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Open / High / Low</span>
+            <span class="kpi-metric-val" id="kpiOhl">-- / -- / --</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Prev Close</span>
+            <span class="kpi-metric-val" id="kpiPrevClose">₹--</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Volume</span>
+            <span class="kpi-metric-val" id="kpiVolume">--</span>
+          </div>
+        </div>
+
+        <!-- Conditional F&O Derivatives Metrics Block -->
+        <div class="kpi-metric-group" id="kpiFoBlock">
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Future OI</span>
+            <span class="kpi-metric-val" id="kpiOi">--</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Buildup Radar</span>
+            <span id="kpiBuildupTag" class="kpi-buildup-tag buildup-long">Long Buildup</span>
+          </div>
+          <div class="kpi-metric-item" id="kpiRolloverItem">
+            <span class="kpi-metric-label">Rollover %</span>
+            <span class="kpi-metric-val" id="kpiRollover">--%</span>
+          </div>
+        </div>
+
+        <!-- Conditional Cash Equities Metrics Block -->
+        <div class="kpi-metric-group" id="kpiCashBlock" style="display:none;">
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">52W High / Low</span>
+            <span class="kpi-metric-val" id="kpi52wHl" style="color:var(--chart-brand);">₹-- / ₹--</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Delivery %</span>
+            <span class="kpi-metric-val" id="kpiDeliveryPct" style="color:#10b981;">--%</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Delivery Qty</span>
+            <span class="kpi-metric-val" id="kpiDeliveryQty">--</span>
+          </div>
+          <div class="kpi-metric-item">
+            <span class="kpi-metric-label">Est. Turnover</span>
+            <span class="kpi-metric-val" id="kpiTurnover">₹-- Cr</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conditional Action Buttons: F&O vs Cash -->
+      <div class="kpi-right-actions" id="kpiFoActions">
+        <a id="btnLinkOptionChain" href="/option-chain-pro" class="kpi-action-link" title="Open Multi-broker Option Chain Pro for this symbol">⚡ Option Chain</a>
+        <a id="btnLinkOpenInterest" href="/open-interest/nifty" class="kpi-action-link" title="Open Call vs Put OI Analysis">📊 OI Analysis</a>
+        <a id="btnLinkFutures" href="/futures" class="kpi-action-link" title="Open Futures Marketwatch">📈 Futures</a>
+      </div>
+      <div class="kpi-right-actions" id="kpiCashActions" style="display:none;">
+        <a href="/delivery" class="kpi-action-link" title="Open Security Delivery Analytics">📦 Delivery Analysis</a>
+        <a href="/mtf" class="kpi-action-link" title="Open MTF Leverage Book">💳 MTF Leverage</a>
+        <a href="/breadth-contribution" class="kpi-action-link" title="Open Market Breadth & Contribution">⚖️ Contribution</a>
+      </div>
+    </div>
+
+    <!-- Main Chart Canvas Container -->
+    <div class="chart-view-frame">
+      <!-- Pro TradingView Lightweight Charts Canvas -->
+      
+      <!-- Chart Integrated Toolbar (Timeframe, EMA Overlays, Range) -->
+      <div class="chart-canvas-toolbar" id="chartCanvasToolbar">
+        <div class="toolbar-left-cluster">
+          <!-- Timeframe Selector -->
+          <div class="chart-tf-group">
+            <button class="chart-tf-btn" data-tf="1" onclick="changeTimeframe('1')">1m</button>
+            <button class="chart-tf-btn" data-tf="5" onclick="changeTimeframe('5')">5m</button>
+            <button class="chart-tf-btn" data-tf="15" onclick="changeTimeframe('15')">15m</button>
+            <button class="chart-tf-btn" data-tf="60" onclick="changeTimeframe('60')">1h</button>
+            <button class="chart-tf-btn active" data-tf="D" onclick="changeTimeframe('D')">1D</button>
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <!-- Overlays / Indicators -->
+          <div class="chart-tf-group" id="indicatorGroup">
+            <button id="btnEma20" class="chart-tf-btn active" onclick="toggleIndicator('ema20')" title="Toggle 20 EMA overlay" style="color:#0284c7;">EMA 20</button>
+            <button id="btnEma50" class="chart-tf-btn" onclick="toggleIndicator('ema50')" title="Toggle 50 EMA overlay" style="color:#f59e0b;">EMA 50</button>
+            <button id="btnEma200" class="chart-tf-btn" onclick="toggleIndicator('ema200')" title="Toggle 200 EMA overlay" style="color:#8b5cf6;">EMA 200</button>
+          </div>
+        </div>
+
+        <div class="toolbar-right-cluster">
+          <!-- Range Selector (10+ Year History) -->
+          <div class="chart-range-group" id="rangeGroup">
+            <span class="range-group-label">RANGE:</span>
+            <button class="chart-range-btn" data-range="1M" onclick="setChartRange('1M')" title="Zoom to 1 Month">1M</button>
+            <button class="chart-range-btn" data-range="3M" onclick="setChartRange('3M')" title="Zoom to 3 Months">3M</button>
+            <button class="chart-range-btn" data-range="6M" onclick="setChartRange('6M')" title="Zoom to 6 Months">6M</button>
+            <button class="chart-range-btn" data-range="1Y" onclick="setChartRange('1Y')" title="Zoom to 1 Year">1Y</button>
+            <button class="chart-range-btn" data-range="3Y" onclick="setChartRange('3Y')" title="Zoom to 3 Years">3Y</button>
+            <button class="chart-range-btn" data-range="5Y" onclick="setChartRange('5Y')" title="Zoom to 5 Years">5Y</button>
+            <button class="chart-range-btn" data-range="10Y" onclick="setChartRange('10Y')" title="Zoom to 10 Years">10Y</button>
+            <button class="chart-range-btn active" data-range="ALL" onclick="setChartRange('ALL')" title="All Available 10+ Year History">ALL</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pro TradingView Lightweight Charts Canvas Area -->
+      <div class="chart-canvas-inner" id="chartCanvasInner">
+        <div id="lw_chart_container"></div>
+
+      <!-- Live Hover Legend Box -->
+      <div class="chart-legend-box" id="chartLegendBox">
+        <span class="leg-date-badge">📅 <span id="legDate">--</span></span>
+        <span>O: <strong id="legOpen" style="color:var(--chart-text);">--</strong></span>
+        <span>H: <strong id="legHigh" style="color:#10b981;">--</strong></span>
+        <span>L: <strong id="legLow" style="color:#ef4444;">--</strong></span>
+        <span>C: <strong id="legClose" style="color:var(--chart-brand);">--</strong></span>
+        <span>Vol: <strong id="legVol" style="color:var(--chart-text-muted);">--</strong></span>
+        <span id="legOiWrap">OI: <strong id="legOi" style="color:#38bdf8;">--</strong></span>
+        <span id="legEma20Wrap" style="display:none; color:#0284c7;">EMA20: <strong id="legEma20">--</strong></span>
+        <span id="legEma50Wrap" style="display:none; color:#f59e0b;">EMA50: <strong id="legEma50">--</strong></span>
+        <span id="legEma200Wrap" style="display:none; color:#8b5cf6;">EMA200: <strong id="legEma200">--</strong></span>
+      </div>
+
+      <!-- Bottom Range & Status Bar -->
+      <div class="chart-range-bar" id="chartRangeBar">
+        <span id="dataSpanText">📊 Loading historical dataset...</span>
+        <span id="livePulseText">🟢 LIVE FEED • Real-time forming candle active</span>
+      </div>
+    </div>
+    </div>
+
+    <!-- Bottom Secondary Intelligence Deck -->
+    <div class="chart-bottom-deck">
+      <div class="deck-tab-bar">
+        <button id="deckTab1Btn" class="deck-tab-btn active" onclick="switchDeckTab(event, 'tabBuildup')">Derivatives &amp; OI Buildup History</button>
+        <button id="deckTab2Btn" class="deck-tab-btn" onclick="switchDeckTab(event, 'tabCrossDesk')">Cross-Desk Quick Navigation</button>
+      </div>
+
+      <!-- Tab 1: Buildup / Cash Delivery History -->
+      <div id="tabBuildup" class="deck-tab-pane active">
+        <div class="hist-table-wrap">
+          <table class="hist-table">
+            <thead id="histTableHead">
+              <tr>
+                <th>Date</th>
+                <th>Open</th>
+                <th>High</th>
+                <th>Low</th>
+                <th>Close</th>
+                <th>Volume</th>
+                <th>Total OI</th>
+                <th>OI Change</th>
+                <th>Buildup Signal</th>
+              </tr>
+            </thead>
+            <tbody id="histTableBody">
+              <tr><td colspan="9" style="text-align:center; color:#64748b; padding:20px;">Loading historical dataset...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Cross Desk Jump -->
+      <div id="tabCrossDesk" class="deck-tab-pane">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+          <a id="cardJumpChain" href="/option-chain-pro" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">⚡ Option Chain Pro</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Multi-broker live chain, Greeks, PCR &amp; IV skew</span>
+          </a>
+          <a id="cardJumpOi" href="/open-interest/nifty" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">📊 Open Interest Analysis</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Call vs Put distribution, PCR &amp; Max Pain</span>
+          </a>
+          <a id="cardJumpFutures" href="/futures/rollover" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">📑 Futures Rollover Matrix</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Expiry rollover %, 3M/6M averages &amp; velocity</span>
+          </a>
+          <a href="/delivery" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">📦 Cash Delivery Analytics</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Security-wise delivery %, block volume &amp; turnover</span>
+          </a>
+          <a href="/mtf" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">💳 MTF Margin Book</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Leverage haircuts, MTF holding volume &amp; stocks</span>
+          </a>
+          <a href="/breadth-contribution" class="kpi-action-link" style="padding:14px; flex-direction:column; align-items:flex-start; text-decoration:none;">
+            <span style="font-weight:800; font-size:14px;">📉 Market Breadth & Contribution</span>
+            <span style="font-size:11px; color:var(--chart-text-muted); margin-top:4px;">Advance/Decline velocity, 52W high/low ratio</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+      <!-- Institutional Footer with Legal & Compliance Links (Strict 4-Column Layout) -->
+      <footer class="terminal-footer">
+  <div class="footer-layout-wrapper">
+    <!-- Brand Column on the Left with Logo -->
+    <div class="footer-brand-col">
+      <a href="/" class="footer-brand-logo" title="TradersDesk.in • Institutional Quant &amp; Derivatives Terminal">
+        <img src="/tradersdesk_header.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-dark" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('footerBrandFallback').style.display='inline-flex';" />
+        <img src="/tradersdesk_header_light.svg" alt="TradersDesk.in" width="168" height="28" class="inst-brand-logo-img inst-brand-logo-light" style="height:28px !important; width:auto !important; max-height:28px !important;" onerror="this.style.display='none'; document.getElementById('footerBrandFallback').style.display='inline-flex';" />
+        <div class="inst-brand-fallback-text" id="footerBrandFallback" style="display:none; align-items:center; font-size:18px; font-weight:800; letter-spacing:-0.3px;">
+          <span class="fallback-traders">Traders</span><span class="fallback-desk">Desk</span><span style="background:#10b981; color:#030712; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:900; padding:1.5px 5px; border-radius:4px; margin-left:5px;">.in</span>
+        </div>
+      </a>
+      <p class="footer-brand-desc">
+        Institutional-grade quantitative analytics, real-time market breadth, options Greeks &amp; derivatives intelligence terminal for Indian equities and indices.
+      </p>
+      <div class="footer-brand-badges">
+        <span class="p2-badge p2-badge-teal">NSE • BSE • MCX</span>
+        <span class="p2-badge p2-badge-blue">Live Derivatives</span>
+      </div>
+      <div class="footer-system-status">
+        <span class="footer-status-dot"></span>
+        <span>Black-Scholes &bull; Quant Architecture</span>
+      </div>
+    </div>
+
+    <!-- 4-Column Navigation Links Grid -->
+    <div class="footer-four-columns" id="footerFourColumnsGrid">
+      <div class="footer-link-group" data-col="col1">
+        <h4 style="color:#38bdf8;">🏛️ Institutional Desks</h4>
+        <div class="footer-links-list">
+        <a href="/breadth-contribution" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/breadth-contribution', event); }">Breadth &amp; Contribution</a>
+        <a href="/fii-dii" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/fii-dii', event); }">FII &amp; DII Smart Money</a>
+        <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/delivery', event); }">Cash Delivery Absorption</a>
+        <a href="/mtf" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/mtf', event); }">MTF Margin Trading Book</a>
+        <a href="/open-interest/nifty" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/open-interest/nifty', event); }">Open Interest Desk</a>
+        <a href="/dashboard" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/dashboard', event); }">Institutional Dashboard</a>
+        </div>
+      </div>
+      <div class="footer-link-group" data-col="col2">
+        <h4 style="color:#a78bfa;">⚡ Derivatives &amp; Options</h4>
+        <div class="footer-links-list">
+        <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/option-chain-pro', event); }">Upstox Option Chain Pro</a>
+        <a href="/futures/open-interest" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/open-interest', event); }">Future Open Interest &amp; Buildup</a>
+        <a href="/futures/heatmap" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/heatmap', event); }">Futures Sector Heatmap</a>
+        <a href="/futures" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures', event); }">Future Marketwatch Matrix</a>
+        <a href="/straddle" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/straddle', event); }">Straddle Analytics Engine</a>
+        <a href="/call-vs-put-premium" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/call-vs-put-premium', event); }">Call vs Put Premium</a>
+        <a href="/futures/buildup" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/buildup', event); }">Future Buildup Quadrants</a>
+        <a href="/futures/mwpl" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/mwpl', event); }">MWPL &amp; Ban Radar</a>
+        <a href="/futures/rollover" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/rollover', event); }">Historical Rollover Matrix</a>
+        </div>
+      </div>
+      <div class="footer-link-group" data-col="col3">
+        <h4 style="color:#34d399;">📊 Market Analytics &amp; Tools</h4>
+        <div class="footer-links-list">
+        <a href="/breadth-contribution" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/breadth-contribution', event); }">Breadth &amp; Net Contribution</a>
+        <a href="/calendar_studio.html" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/calendar_studio.html', event); }">NSE Trading Holiday Calendar</a>
+        <a href="/fii-dii#oi" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/fii-dii#oi', event); }">Participant OI Matrix</a>
+        <a href="/futures/heatmap" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/heatmap', event); }">F&amp;O Sector Visual Heatmap</a>
+        <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/option-chain-pro', event); }">Real-Time Options Greeks</a>
+        <a href="/delivery" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/delivery', event); }">Stock Delivery Drilldown</a>
+        </div>
+      </div>
+      <div class="footer-link-group" data-col="col4">
+        <h4 style="color:#f59e0b;">🛡️ Regulatory &amp; Compliance</h4>
+        <div class="footer-links-list">
+        <a href="/disclaimer" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/disclaimer', event); }">SEBI Regulatory Disclaimer</a>
+        <a href="/privacy" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/privacy', event); }">Privacy &amp; Data Governance</a>
+        <a href="/terms" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/terms', event); }">Terms of Institutional Service</a>
+        <a href="/about" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/about', event); }">Quantitative Model Methodologies</a>
+        <a href="/contact" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/contact', event); }">Contact &amp; Trader Support</a>
+        <a href="https://www.nseindia.com" target="_blank" rel="noopener">NSE Official Regulatory Archive ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Regulatory & Copyright Row -->
+  <div class="footer-bottom">
+    <div class="footer-copy-text">
+      &copy; 2026 TradersDesk.in &bull; Black-Scholes Mathematically Certified &bull; Real-Time Indian Equities &amp; Derivatives Terminal
+    </div>
+    <div class="footer-sebi-text">
+      SEBI Compliance Notice: Strictly for educational, quantitative research &amp; institutional market analysis only. Not investment advice.
+    </div>
+  </div>
+</footer>
+
+
+  <!-- Mobile Drawer Modal -->
+  <div id="mobileDotMenuModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; backdrop-filter:blur(4px); align-items:flex-end;">
+    <div style="background:var(--chart-card-bg); border-top:1px solid var(--chart-border); border-radius:16px 16px 0 0; width:100%; max-height:85vh; overflow-y:auto; padding:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:16px; font-weight:800;">Terminal Directory</h3>
+        <button type="button" onclick="closeMobileDotMenu()" style="border:none; background:transparent; font-size:20px; cursor:pointer;">✕</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <a href="/" class="kpi-action-link" style="text-decoration:none;">⬛ Dashboard</a>
+        <a href="/chart" class="kpi-action-link" style="text-decoration:none; background:rgba(2,132,199,0.12); color:#0284c7; font-weight:800;">📈 Technical Charts</a>
+        <a href="/futures" class="kpi-action-link" style="text-decoration:none;">📈 Futures Matrix</a>
+        <a href="/open-interest/nifty" class="kpi-action-link" style="text-decoration:none;">📊 Open Interest</a>
+        <a href="/option-chain-pro" class="kpi-action-link" style="text-decoration:none;">⚡ Option Chain Pro</a>
+        <a href="/straddle" class="kpi-action-link" style="text-decoration:none;">📉 Straddle Desk</a>
+        <a href="/breadth-contribution" class="kpi-action-link" style="text-decoration:none;">⚖️ Contribution</a>
+        <a href="/fii-dii" class="kpi-action-link" style="text-decoration:none;">🏛️ FII &amp; DII</a>
+        <a href="/delivery" class="kpi-action-link" style="text-decoration:none;">📦 Delivery</a>
+        <a href="/mtf" class="kpi-action-link" style="text-decoration:none;">💳 MTF Book</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PRO INSTITUTIONAL TRADINGVIEW LIGHTWEIGHT CHARTS
+       ======================================================================== -->
+  <script>
+    let currentSymbol = "NIFTY";
+    let currentTimeframe = "D";
+    let currentRange = "ALL";
+    let currentQuote = null;
+    let lwChart = null;
+    let candleSeries = null;
+    let volumeSeries = null;
+    let lastLoadedBars = [];
+
+    // Technical Indicators State
+    let showEma20 = true;
+    let showEma50 = false;
+    let showEma200 = false;
+    let ema20Series = null;
+    let ema50Series = null;
+    let ema200Series = null;
+
+    // Real-Time Polling Interval ID
+    let liveQuoteInterval = null;
+
+    // Parse URL Params
+    function initFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const symParam = params.get("symbol") || params.get("sym") || params.get("s");
+      if (symParam) currentSymbol = symParam.toUpperCase().trim();
+      const tfParam = params.get("tf") || params.get("interval");
+      if (tfParam) currentTimeframe = tfParam;
+      const rangeParam = params.get("range");
+      if (rangeParam) currentRange = rangeParam.toUpperCase();
+    }
+
+    // Calculate Exponential Moving Average
+    function calculateEMA(bars, period) {
+      if (!bars || bars.length < period) return [];
+      const k = 2 / (period + 1);
+      let sum = 0;
+      for (let i = 0; i < period; i++) {
+        sum += Number(bars[i].close);
+      }
+      let prevEma = sum / period;
+      const result = [];
+      result.push({ time: bars[period - 1].time, value: Math.round(prevEma * 100) / 100 });
+
+      for (let i = period; i < bars.length; i++) {
+        const val = Number(bars[i].close) * k + prevEma * (1 - k);
+        const rounded = Math.round(val * 100) / 100;
+        result.push({ time: bars[i].time, value: rounded });
+        prevEma = val;
+      }
+      return result;
+    }
+
+    // Toggle Technical Overlay Indicators
+    window.toggleIndicator = function(ind) {
+      if (ind === 'ema20') {
+        showEma20 = !showEma20;
+        const btn = document.getElementById('btnEma20');
+        if (btn) btn.classList.toggle('active', showEma20);
+      } else if (ind === 'ema50') {
+        showEma50 = !showEma50;
+        const btn = document.getElementById('btnEma50');
+        if (btn) btn.classList.toggle('active', showEma50);
+      } else if (ind === 'ema200') {
+        showEma200 = !showEma200;
+        const btn = document.getElementById('btnEma200');
+        if (btn) btn.classList.toggle('active', showEma200);
+      }
+      renderProChart();
+    };
+
+    // Range Selector (1M, 3M, 6M, 1Y, 3Y, 5Y, 10Y, ALL)
+    window.setChartRange = function(rangeKey) {
+      currentRange = rangeKey;
+      document.querySelectorAll(".chart-range-btn").forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-range") === rangeKey);
+      });
+
+      if (currentTimeframe !== "D") {
+        changeTimeframe("D");
+        return;
+      }
+      applyRangeZoom(rangeKey);
+    };
+
+    function applyRangeZoom(rangeKey) {
+      if (!lwChart || !lastLoadedBars || lastLoadedBars.length === 0) return;
+
+      const n = lastLoadedBars.length;
+      let barCount = n;
+
+      if (rangeKey === "1M") barCount = 22;
+      else if (rangeKey === "3M") barCount = 66;
+      else if (rangeKey === "6M") barCount = 132;
+      else if (rangeKey === "1Y") barCount = 252;
+      else if (rangeKey === "3Y") barCount = 756;
+      else if (rangeKey === "5Y") barCount = 1260;
+      else if (rangeKey === "10Y" || rangeKey === "ALL") barCount = n;
+
+      if (barCount >= n) {
+        lwChart.timeScale().fitContent();
+        return;
+      }
+
+      const startIndex = Math.max(0, n - barCount);
+      const startBar = lastLoadedBars[startIndex];
+      const endBar = lastLoadedBars[n - 1];
+
+      try {
+        lwChart.timeScale().setVisibleRange({
+          from: startBar.time,
+          to: endBar.time
+        });
+      } catch (e) {
+        lwChart.timeScale().fitContent();
+      }
+    }
+
+    // Format Date string nicely: "Wednesday, 21 Oct 2026"
+    function formatPrettyDate(rawTime) {
+      if (!rawTime) return "--";
+      try {
+        let d;
+        if (typeof rawTime === "number") {
+          d = new Date(rawTime * 1000);
+        } else if (typeof rawTime === "string") {
+          d = new Date(rawTime.includes(" ") ? rawTime.replace(" ", "T") + "+05:30" : rawTime + "T00:00:00+05:30");
+        } else {
+          return String(rawTime);
+        }
+        if (isNaN(d.getTime())) return String(rawTime);
+
+        if (currentTimeframe !== "D") {
+          return d.toLocaleDateString("en-IN", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+          });
+        }
+        return d.toLocaleDateString("en-IN", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          year: "numeric"
+        });
+      } catch (e) {
+        return String(rawTime);
+      }
+    }
+
+    // Render Native TradingView Lightweight Chart
+    function renderProChart() {
+      const container = document.getElementById("lw_chart_container");
+      if (!container) return;
+
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+
+      if (lwChart) {
+        try { lwChart.remove(); } catch(e) {}
+        lwChart = null;
+      }
+      container.innerHTML = "";
+
+      if (typeof LightweightCharts === "undefined") {
+        container.innerHTML = "<div style='display:flex; align-items:center; justify-content:center; height:100%; color:var(--chart-text-muted); font-size:13px;'>⏳ Initializing TradingView Chart...</div>";
+        setTimeout(renderProChart, 100);
+        return;
+      }
+
+      const w = container.clientWidth || 1000;
+      const h = container.clientHeight || 640;
+
+      lwChart = LightweightCharts.createChart(container, {
+        width: w,
+        height: h,
+        layout: {
+          background: { type: 'solid', color: isDark ? '#0f172a' : '#ffffff' },
+          textColor: isDark ? '#cbd5e1' : '#1e293b',
+          fontFamily: "'JetBrains Mono', 'Inter', monospace",
+        },
+        grid: {
+          vertLines: { color: isDark ? '#1e293b' : '#f1f5f9' },
+          horzLines: { color: isDark ? '#1e293b' : '#f1f5f9' },
+        },
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+          borderColor: isDark ? '#334155' : '#cbd5e1',
+          scaleMargins: {
+            top: 0.08,
+            bottom: 0.22,
+          },
+        },
+        timeScale: {
+          borderColor: isDark ? '#334155' : '#cbd5e1',
+          visible: true,
+          borderVisible: true,
+          timeVisible: currentTimeframe !== "D",
+          secondsVisible: false,
+          rightOffset: 12,
+          barSpacing: 8,
+          minBarSpacing: 2,
+        },
+      });
+
+      // 1. Candlestick Series
+      candleSeries = lwChart.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#ef4444',
+        borderVisible: false,
+        wickUpColor: '#10b981',
+        wickDownColor: '#ef4444',
+      });
+
+      // 2. Volume Series (PriceScale 'volume' at bottom 20%)
+      volumeSeries = lwChart.addHistogramSeries({
+        color: '#38bdf8',
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'volume',
+      });
+      lwChart.priceScale('volume').applyOptions({
+        scaleMargins: {
+          top: 0.8,
+          bottom: 0,
+        },
+      });
+
+      // 3. Technical EMA Overlay Lines
+      if (showEma20) {
+        ema20Series = lwChart.addLineSeries({
+          color: '#0284c7',
+          lineWidth: 2,
+          priceScaleId: 'right',
+          title: 'EMA 20',
+        });
+      } else {
+        ema20Series = null;
+      }
+
+      if (showEma50) {
+        ema50Series = lwChart.addLineSeries({
+          color: '#f59e0b',
+          lineWidth: 2,
+          priceScaleId: 'right',
+          title: 'EMA 50',
+        });
+      } else {
+        ema50Series = null;
+      }
+
+      if (showEma200) {
+        ema200Series = lwChart.addLineSeries({
+          color: '#8b5cf6',
+          lineWidth: 2,
+          priceScaleId: 'right',
+          title: 'EMA 200',
+        });
+      } else {
+        ema200Series = null;
+      }
+
+      // Crosshair Hover Handler
+      lwChart.subscribeCrosshairMove(param => {
+        if (!param || !param.time || !param.seriesData || !candleSeries) {
+          // If cursor left canvas, reset to last available bar
+          if (lastLoadedBars.length > 0) {
+            const last = lastLoadedBars[lastLoadedBars.length - 1];
+            updateLegend(last, { value: last.volume }, last.oi);
+          }
+          return;
+        }
+        const cData = param.seriesData.get(candleSeries);
+        const vData = volumeSeries ? param.seriesData.get(volumeSeries) : null;
+        if (cData) {
+          let oiVal = "--";
+          if (param.time) {
+            const found = lastLoadedBars.find(b => b.time === param.time);
+            if (found && found.oi) oiVal = found.oi;
+          }
+          updateLegend(cData, vData, oiVal);
+        }
+      });
+
+      // Window Resize Listener
+      window.addEventListener("resize", () => {
+        if (lwChart && container && container.clientWidth > 0) {
+          lwChart.applyOptions({
+            width: container.clientWidth,
+            height: container.clientHeight
+          });
+        }
+      });
+
+      // Fetch Data
+      loadChartData(currentSymbol, currentTimeframe);
+    }
+
+    // Load Data from Backend
+    async function loadChartData(sym, tf) {
+      const container = document.getElementById("lw_chart_container");
+      try {
+        const res = await fetch(`/api/chart/history?symbol=${encodeURIComponent(sym)}&resolution=${encodeURIComponent(tf)}&range=10y`);
+        const json = await res.json();
+        const bars = json.bars || [];
+        lastLoadedBars = bars;
+        const isFno = json.is_fno;
+
+        if (!bars || bars.length === 0) {
+          if (container) {
+            container.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--chart-text-muted); padding:20px; text-align:center;">
+              <div style="font-size:36px; margin-bottom:10px;">📈</div>
+              <div style="font-weight:700; font-size:15px; color:var(--chart-text);">No Historical Bars Available for ${sym}</div>
+              <div style="font-size:12px; margin-top:6px; max-width:400px; color:var(--chart-text-muted);">Historical data is indexed for all 222+ F&O underlyings, indices, and active NSE equities.</div>
+            </div>`;
+          }
+          return;
+        }
+
+        // Convert to Lightweight Charts format with invariant validation
+        const cBars = [];
+        const vBars = [];
+        const seenTimes = new Set();
+
+        for (let b of bars) {
+          let timeVal = b.time;
+          if (typeof timeVal === "string" && timeVal.includes(" ")) {
+            const iso = timeVal.replace(" ", "T") + "+05:30";
+            const parsed = Date.parse(iso);
+            timeVal = !isNaN(parsed) ? Math.floor(parsed / 1000) : Math.floor(new Date(timeVal).getTime() / 1000);
+          }
+
+          if (timeVal === undefined || timeVal === null || seenTimes.has(timeVal)) continue;
+          seenTimes.add(timeVal);
+
+          const o = Number(b.open) || 0;
+          const c = Number(b.close) || 0;
+          let h = Number(b.high) || Math.max(o, c);
+          let l = Number(b.low) || Math.min(o, c);
+
+          h = Math.max(h, o, c);
+          l = Math.min(l, o, c);
+          if (l <= 0) l = Math.min(o, c) * 0.99;
+
+          cBars.push({ time: timeVal, open: o, high: h, low: l, close: c });
+          vBars.push({
+            time: timeVal,
+            value: Number(b.volume) || 0,
+            color: c >= o ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'
+          });
+        }
+
+        if (typeof cBars[0]?.time === "number") {
+          cBars.sort((a, b) => a.time - b.time);
+          vBars.sort((a, b) => a.time - b.time);
+        } else {
+          cBars.sort((a, b) => String(a.time).localeCompare(String(b.time)));
+          vBars.sort((a, b) => String(a.time).localeCompare(String(b.time)));
+        }
+
+        if (candleSeries && cBars.length > 0) candleSeries.setData(cBars);
+        if (volumeSeries && vBars.length > 0) volumeSeries.setData(vBars);
+
+        if (ema20Series && showEma20 && cBars.length >= 20) {
+          ema20Series.setData(calculateEMA(cBars, 20));
+        }
+        if (ema50Series && showEma50 && cBars.length >= 50) {
+          ema50Series.setData(calculateEMA(cBars, 50));
+        }
+        if (ema200Series && showEma200 && cBars.length >= 200) {
+          ema200Series.setData(calculateEMA(cBars, 200));
+        }
+
+        // Apply range zoom
+        applyRangeZoom(currentRange);
+
+        // Update Legend with last bar
+        if (bars.length > 0) {
+          const last = bars[bars.length - 1];
+          updateLegend(last, { value: last.volume }, last.oi);
+        }
+
+        // Update Bottom Range Bar
+        const spanEl = document.getElementById("dataSpanText");
+        if (spanEl && bars.length > 0) {
+          const firstD = bars[0].time;
+          const lastD = bars[bars.length - 1].time;
+          spanEl.textContent = `📊 Historical Span: ${firstD} to ${lastD} • ${bars.length.toLocaleString("en-IN")} Trading Sessions`;
+        }
+
+        // Render Table (F&O vs Cash)
+        renderIntelligenceTable(bars, json.cash_delivery_history, isFno);
+      } catch (e) {
+        console.error("Load chart data error:", e);
+      }
+    }
+
+    // Update Legend Box
+    function updateLegend(c, v, customOi) {
+      if (!c) return;
+      document.getElementById("legDate").textContent = formatPrettyDate(c.time);
+      document.getElementById("legOpen").textContent = "₹" + Number(c.open || 0).toFixed(2);
+      document.getElementById("legHigh").textContent = "₹" + Number(c.high || 0).toFixed(2);
+      document.getElementById("legLow").textContent = "₹" + Number(c.low || 0).toFixed(2);
+      document.getElementById("legClose").textContent = "₹" + Number(c.close || 0).toFixed(2);
+      document.getElementById("legVol").textContent = v && v.value ? Number(v.value).toLocaleString("en-IN") : (c.volume ? Number(c.volume).toLocaleString("en-IN") : "--");
+
+      const oiWrap = document.getElementById("legOiWrap");
+      if (currentQuote && currentQuote.is_fno === false) {
+        oiWrap.style.display = "none";
+      } else {
+        oiWrap.style.display = "inline";
+        const oiVal = customOi !== undefined ? customOi : (c.oi || "--");
+        document.getElementById("legOi").textContent = typeof oiVal === "number" ? oiVal.toLocaleString("en-IN") : oiVal;
+      }
+    }
+
+    // Fetch Live Quote & Snapshot
+    async function fetchSymbolQuote(sym) {
+      try {
+        const resp = await fetch(`/api/chart/quote?symbol=${encodeURIComponent(sym)}`);
+        const data = await resp.json();
+        if (data && data.quote) {
+          currentQuote = data.quote;
+          renderQuoteKpi(data.quote);
+
+          // Real-time tick update to candle chart
+          if (candleSeries && data.quote.live_bar && currentTimeframe === "D") {
+            const lb = data.quote.live_bar;
+            try {
+              candleSeries.update({
+                time: lb.time,
+                open: Number(lb.open),
+                high: Number(lb.high),
+                low: Number(lb.low),
+                close: Number(lb.close)
+              });
+              if (volumeSeries && lb.volume > 0) {
+                volumeSeries.update({
+                  time: lb.time,
+                  value: Number(lb.volume),
+                  color: Number(lb.close) >= Number(lb.open) ? 'rgba(16, 185, 129, 0.45)' : 'rgba(239, 68, 68, 0.45)'
+                });
+              }
+            } catch (updErr) {}
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching quote:", e);
+      }
+    }
+
+    function renderQuoteKpi(q) {
+      document.getElementById("kpiSymbolText").textContent = q.symbol;
+
+      const badgeEl = document.getElementById("kpiExchangeBadge");
+      if (q.isIndex) {
+        badgeEl.textContent = "NSE INDEX";
+        badgeEl.className = "kpi-symbol-badge";
+      } else if (q.is_fno) {
+        badgeEl.textContent = "NSE F&O DERIVATIVE";
+        badgeEl.className = "kpi-symbol-badge";
+      } else {
+        badgeEl.textContent = "NSE CASH EQUITY";
+        badgeEl.className = "kpi-symbol-badge badge-cash";
+      }
+
+      // LTP Flash & Update
+      const ltpEl = document.getElementById("kpiLtp");
+      const prevLtp = parseFloat(ltpEl.getAttribute("data-val") || "0");
+      const newLtp = q.ltp || 0;
+      ltpEl.textContent = newLtp ? "₹" + newLtp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "₹--";
+      ltpEl.setAttribute("data-val", newLtp);
+
+      if (prevLtp > 0 && newLtp !== prevLtp) {
+        ltpEl.style.color = newLtp > prevLtp ? "#10b981" : "#ef4444";
+        setTimeout(() => { ltpEl.style.color = ""; }, 800);
+      }
+
+      const chgPill = document.getElementById("kpiChangePill");
+      if (q.change !== undefined && q.change_pct !== undefined) {
+        const sign = q.change >= 0 ? "+" : "";
+        chgPill.textContent = `${sign}${q.change.toFixed(2)} (${sign}${q.change_pct.toFixed(2)}%)`;
+        chgPill.className = "kpi-change-pill " + (q.change >= 0 ? "pos" : "neg");
+      }
+
+      document.getElementById("kpiOhl").textContent = `${q.open || '--'} / ${q.high || '--'} / ${q.low || '--'}`;
+      document.getElementById("kpiPrevClose").textContent = q.prev_close ? "₹" + q.prev_close : "₹--";
+      document.getElementById("kpiVolume").textContent = q.volume ? q.volume.toLocaleString("en-IN") : "--";
+
+      // F&O vs Cash UI Adaptation
+      const foBlock = document.getElementById("kpiFoBlock");
+      const cashBlock = document.getElementById("kpiCashBlock");
+      const foActions = document.getElementById("kpiFoActions");
+      const cashActions = document.getElementById("kpiCashActions");
+      const deckTab1 = document.getElementById("deckTab1Btn");
+      const cardChain = document.getElementById("cardJumpChain");
+      const cardOi = document.getElementById("cardJumpOi");
+      const cardFut = document.getElementById("cardJumpFutures");
+
+      if (q.is_fno) {
+        foBlock.style.display = "flex";
+        cashBlock.style.display = "none";
+        foActions.style.display = "flex";
+        cashActions.style.display = "none";
+        deckTab1.textContent = "Derivatives & OI Buildup History";
+
+        if (cardChain) cardChain.style.display = "flex";
+        if (cardOi) cardOi.style.display = "flex";
+        if (cardFut) cardFut.style.display = "flex";
+
+        const bTag = document.getElementById("kpiBuildupTag");
+        bTag.textContent = q.buildup || "Neutral";
+        if (q.buildup === "Long Buildup") bTag.className = "kpi-buildup-tag buildup-long";
+        else if (q.buildup === "Short Buildup") bTag.className = "kpi-buildup-tag buildup-short";
+        else if (q.buildup === "Short Covering") bTag.className = "kpi-buildup-tag buildup-covering";
+        else bTag.className = "kpi-buildup-tag buildup-unwinding";
+
+        document.getElementById("kpiOi").textContent = q.future_oi ? q.future_oi.toLocaleString("en-IN") : "--";
+        document.getElementById("kpiRollover").textContent = q.rollover_pct ? q.rollover_pct.toFixed(1) + "%" : "--%";
+
+        const chainUrl = `/option-chain-pro?symbol=${encodeURIComponent(q.symbol)}`;
+        document.getElementById("btnLinkOptionChain").href = chainUrl;
+        if (cardChain) cardChain.href = chainUrl;
+
+        const oiUrl = `/open-interest/nifty?symbol=${encodeURIComponent(q.symbol)}`;
+        document.getElementById("btnLinkOpenInterest").href = oiUrl;
+        if (cardOi) cardOi.href = oiUrl;
+      } else {
+        // Non-F&O: CASH STOCK
+        foBlock.style.display = "none";
+        cashBlock.style.display = "flex";
+        foActions.style.display = "none";
+        cashActions.style.display = "flex";
+        deckTab1.textContent = "Cash Delivery & Trading History";
+
+        if (cardChain) cardChain.style.display = "none";
+        if (cardOi) cardOi.style.display = "none";
+        if (cardFut) cardFut.style.display = "none";
+
+        const h52 = q.high_52w ? "₹" + q.high_52w.toFixed(2) : "₹--";
+        const l52 = q.low_52w ? "₹" + q.low_52w.toFixed(2) : "₹--";
+        document.getElementById("kpi52wHl").textContent = `${h52} / ${l52}`;
+        document.getElementById("kpiDeliveryPct").textContent = q.delivery_pct ? q.delivery_pct.toFixed(2) + "%" : "--%";
+        document.getElementById("kpiDeliveryQty").textContent = q.delivery_qty ? q.delivery_qty.toLocaleString("en-IN") : "--";
+        document.getElementById("kpiTurnover").textContent = q.turnover_cr ? `₹${q.turnover_cr.toFixed(2)} Cr` : "--";
+      }
+    }
+
+    function renderIntelligenceTable(bars, cashHistory, isFno) {
+      const thead = document.getElementById("histTableHead");
+      const tbody = document.getElementById("histTableBody");
+
+      if (!isFno && cashHistory && cashHistory.length > 0) {
+        // Cash Delivery Table Headers
+        thead.innerHTML = `
+          <tr>
+            <th>Date</th>
+            <th>Open</th>
+            <th>High</th>
+            <th>Low</th>
+            <th>Close</th>
+            <th>Traded Qty</th>
+            <th>Delivery Qty</th>
+            <th>Delivery %</th>
+            <th>Turnover (Cr)</th>
+          </tr>
+        `;
+        const rev = [...cashHistory].reverse().slice(0, 30);
+        tbody.innerHTML = rev.map(r => `
+          <tr>
+            <td><strong>${r.date}</strong></td>
+            <td>₹${Number(r.open).toFixed(2)}</td>
+            <td>₹${Number(r.high).toFixed(2)}</td>
+            <td>₹${Number(r.low).toFixed(2)}</td>
+            <td style="font-weight:700;">₹${Number(r.close).toFixed(2)}</td>
+            <td>${Number(r.volume).toLocaleString("en-IN")}</td>
+            <td style="font-weight:700; color:var(--chart-brand);">${Number(r.delivery_qty).toLocaleString("en-IN")}</td>
+            <td style="font-weight:800; color:#10b981;">${Number(r.delivery_pct).toFixed(2)}%</td>
+            <td>₹${Number(r.turnover_cr).toFixed(2)} Cr</td>
+          </tr>
+        `).join("");
+      } else {
+        // Derivatives & OI Buildup Headers
+        thead.innerHTML = `
+          <tr>
+            <th>Date</th>
+            <th>Open</th>
+            <th>High</th>
+            <th>Low</th>
+            <th>Close</th>
+            <th>Volume</th>
+            <th>Total OI</th>
+            <th>OI Change</th>
+            <th>Buildup Signal</th>
+          </tr>
+        `;
+        const rev = [...bars].reverse().slice(0, 30);
+        tbody.innerHTML = rev.map(b => {
+          let bClass = "buildup-long";
+          if (b.buildup === "Short Buildup") bClass = "buildup-short";
+          else if (b.buildup === "Short Covering") bClass = "buildup-covering";
+          else if (b.buildup === "Long Unwinding") bClass = "buildup-unwinding";
+
+          const oiChgSign = b.oi_change >= 0 ? "+" : "";
+          const oiChgColor = b.oi_change >= 0 ? "#10b981" : "#ef4444";
+
+          return `
+            <tr>
+              <td><strong>${b.time}</strong></td>
+              <td>₹${Number(b.open).toFixed(2)}</td>
+              <td>₹${Number(b.high).toFixed(2)}</td>
+              <td>₹${Number(b.low).toFixed(2)}</td>
+              <td style="font-weight:700;">₹${Number(b.close).toFixed(2)}</td>
+              <td>${Number(b.volume).toLocaleString("en-IN")}</td>
+              <td style="font-weight:700;">${b.oi ? Number(b.oi).toLocaleString("en-IN") : '--'}</td>
+              <td style="color:${oiChgColor}; font-weight:700;">${oiChgSign}${b.oi_change ? Number(b.oi_change).toLocaleString("en-IN") : '--'}</td>
+              <td><span class="kpi-buildup-tag ${bClass}">${b.buildup}</span></td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+
+    // Select Symbol
+    window.selectSymbol = function(sym) {
+      currentSymbol = sym.toUpperCase().trim();
+
+      const url = new URL(window.location);
+      url.searchParams.set("symbol", currentSymbol);
+      window.history.pushState({}, "", url);
+
+      document.querySelectorAll(".chart-chip-btn").forEach(btn => {
+        if (btn.getAttribute("data-sym") === currentSymbol) btn.classList.add("active");
+        else btn.classList.remove("active");
+      });
+
+      const sInput = document.getElementById("symbolSearchInput");
+      if (sInput) sInput.value = "";
+      const sDrop = document.getElementById("searchDropdown");
+      if (sDrop) sDrop.style.display = "none";
+
+      fetchSymbolQuote(currentSymbol);
+      renderProChart();
+
+      // Reset live polling interval
+      if (liveQuoteInterval) clearInterval(liveQuoteInterval);
+      liveQuoteInterval = setInterval(() => {
+        fetchSymbolQuote(currentSymbol);
+      }, 4000);
+    };
+
+    // Change Timeframe
+    window.changeTimeframe = function(tf) {
+      currentTimeframe = tf;
+      document.querySelectorAll(".chart-tf-btn").forEach(btn => {
+        if (btn.getAttribute("data-tf") === tf) btn.classList.add("active");
+        else btn.classList.remove("active");
+      });
+
+      const rangeGrp = document.getElementById("rangeGroup");
+      if (rangeGrp) {
+        rangeGrp.style.opacity = tf === "D" ? "1" : "0.5";
+      }
+
+      renderProChart();
+    };
+
+    // Tab Switcher
+    window.switchDeckTab = function(e, tabId) {
+      document.querySelectorAll(".deck-tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".deck-tab-pane").forEach(p => p.classList.remove("active"));
+      e.target.classList.add("active");
+      const targetPane = document.getElementById(tabId);
+      if (targetPane) targetPane.classList.add("active");
+    };
+
+    // Theme Toggle
+    window.toggleTheme = function() {
+      const current = document.documentElement.getAttribute("data-theme") || "light";
+      const next = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("breadth_theme", next);
+      const icon = document.getElementById("themeToggleIcon");
+      if (icon) icon.textContent = next === "dark" ? "☀️" : "🌙";
+
+      renderProChart();
+    };
+
+    // Live Clock & Market Session State
+    function updateLiveClock() {
+      const now = new Date();
+      const istOptions = { timeZone: "Asia/Kolkata", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" };
+      const clockEl = document.getElementById("instLiveClock");
+      if (clockEl) {
+        clockEl.textContent = now.toLocaleTimeString("en-GB", istOptions) + " IST";
+      }
+
+      // Check IST Day & Time
+      try {
+        const istStr = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+        const istDate = new Date(istStr);
+        const day = istDate.getDay(); // 0 = Sun, 6 = Sat
+        const hours = istDate.getHours();
+        const minutes = istDate.getMinutes();
+        const timeVal = hours * 100 + minutes;
+        const isWeekend = (day === 0 || day === 6);
+        const isMarketHours = !isWeekend && (timeVal >= 915 && timeVal <= 1540);
+
+        const pill = document.getElementById("topMarketStatusPill");
+        const statusText = document.getElementById("marketStatusText");
+        const livePulse = document.getElementById("livePulseText");
+
+        if (isMarketHours) {
+          if (pill) pill.className = "inst-market-pill open";
+          if (statusText) statusText.textContent = "NSE LIVE";
+          if (livePulse) livePulse.innerHTML = "🟢 LIVE FEED • Real-time forming candle active";
+        } else {
+          if (pill) pill.className = "inst-market-pill closed";
+          if (statusText) statusText.textContent = isWeekend ? "NSE CLOSED (WEEKEND)" : "NSE CLOSED";
+          if (livePulse) livePulse.innerHTML = isWeekend ? "🔴 MARKET CLOSED • Weekend (Next session: Monday 09:15 IST)" : "🔴 MARKET CLOSED (Trading ended at 15:30 IST)";
+        }
+      } catch (e) {}
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    // Mobile Drawer
+    window.openMobileDotMenu = function() {
+      const m = document.getElementById("mobileDotMenuModal");
+      if (m) m.style.display = "flex";
+    };
+    window.closeMobileDotMenu = function() {
+      const m = document.getElementById("mobileDotMenuModal");
+      if (m) m.style.display = "none";
+    };
+
+    // Global Search Autocomplete Setup
+    async function initSearch() {
+      const input = document.getElementById("symbolSearchInput");
+      const dropdown = document.getElementById("searchDropdown");
+
+      let debounceTimer = null;
+      input.addEventListener("input", function() {
+        const q = this.value.trim();
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+          if (!q) {
+            dropdown.style.display = "none";
+            return;
+          }
+          try {
+            const res = await fetch(`/api/chart/symbols?q=${encodeURIComponent(q)}`);
+            const json = await res.json();
+            const items = json.symbols || [];
+            if (items.length === 0) {
+              dropdown.innerHTML = `<div style="padding:12px; color:#64748b; font-size:12px;">No matching stock or index found.</div>`;
+              dropdown.style.display = "block";
+              return;
+            }
+            dropdown.innerHTML = items.map(it => `
+              <div class="search-result-item" onclick="selectSymbol('${it.symbol}')">
+                <div>
+                  <span class="search-res-sym">${it.symbol}</span>
+                  <span class="search-res-name">${it.name}</span>
+                </div>
+                <span class="search-res-badge">${it.category}</span>
+              </div>
+            `).join("");
+            dropdown.style.display = "block";
+          } catch (e) {
+            console.error("Search fetch error:", e);
+          }
+        }, 120);
+      });
+
+      document.addEventListener("click", function(e) {
+        if (!e.target.closest(".chart-search-wrap")) {
+          dropdown.style.display = "none";
+        }
+      });
+    }
+
+    // On Load Initializer
+    function initChartApp() {
+      initFromUrl();
+      initSearch();
+      selectSymbol(currentSymbol);
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initChartApp);
+    } else {
+      initChartApp();
+    }
+  </script>
+
+    <!-- ================================
+         MOBILE BOTTOM NAVIGATION DOCK
+         Visible only on mobile <= 768px
+         ================================ -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNavGlobal" aria-label="Mobile Navigation Dock">
+      <a class="mob-nav-item" href="/" title="Dashboard">
+        <span class="mob-nav-icon">&#9889;</span>
+        <span class="mob-nav-label">Options</span>
+      </a>
+      <a class="mob-nav-item" href="/futures" title="Futures">
+        <span class="mob-nav-icon">&#128200;</span>
+        <span class="mob-nav-label">Futures</span>
+      </a>
+      <a class="mob-nav-item mob-nav-search-center" href="/" onclick="event.preventDefault(); if(typeof openGlobalSearch==='function') openGlobalSearch();" title="Search">
+        <span class="mob-nav-icon">&#128269;</span>
+        <span class="mob-nav-label">Search</span>
+      </a>
+      <a class="mob-nav-item" href="/#delivery" title="Delivery">
+        <span class="mob-nav-icon">&#128230;</span>
+        <span class="mob-nav-label">Delivery</span>
+      </a>
+      <a class="mob-nav-item" href="/blog" title="Market Insights">
+        <span class="mob-nav-icon">&#128240;</span>
+        <span class="mob-nav-label">Insights</span>
+      </a>
+    </nav>
+
+    <!-- Mobile Global Search Script (if not already loaded) -->
+    <script>
+    if (typeof openGlobalSearch === 'undefined') {
+      document.querySelectorAll('.mob-nav-search-center').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.location.href = '/?search=1';
+        });
+      });
+    }
+    // Highlight active nav item based on current path
+    (function() {
+      var path = window.location.pathname;
+      document.querySelectorAll('#mobileBottomNavGlobal .mob-nav-item').forEach(function(a) {
+        var href = a.getAttribute('href');
+        if (href && href !== '/' && path.startsWith(href)) {
+          a.classList.add('active');
+        } else if (href === '/' && (path === '/' || path === '')) {
+          a.classList.add('active');
+        }
+      });
+    })();
+    </script>
+<script src="/dynamic_nav.js?v=20261027_v1" defer></script>
+</body>
+</html>

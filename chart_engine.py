@@ -379,8 +379,9 @@ class ChartEngine:
             except Exception:
                 pass
 
-        # 4. Check 52-Week High/Low from cached 10Y bars if available
+        # 4. Check 52-Week High/Low and preserve accurate session Open/High/Low/Volume from cached 10Y bars
         cache_file = os.path.join(CACHE_DIR, f"hist_10y_{sym}.json")
+        today_date_str = datetime.now(IST).strftime("%Y-%m-%d")
         if os.path.exists(cache_file):
             try:
                 with open(cache_file, "r", encoding="utf-8") as f:
@@ -393,6 +394,23 @@ class ChartEngine:
                             quote["high_52w"] = round(max(highs_252), 2)
                         if lows_252:
                             quote["low_52w"] = round(min(lows_252), 2)
+
+                        # Enrich quote with today's real session candle if present in cache
+                        last_b = cached_bars[-1]
+                        if last_b.get("time") == today_date_str:
+                            b_o = float(last_b.get("open") or 0.0)
+                            b_h = float(last_b.get("high") or 0.0)
+                            b_l = float(last_b.get("low") or 0.0)
+                            b_v = int(last_b.get("volume") or 0)
+                            cur_ltp = float(quote.get("ltp") or 0.0)
+                            if b_o > 0 and (quote["open"] == 0.0 or quote["open"] == cur_ltp):
+                                quote["open"] = b_o
+                            if b_h > 0:
+                                quote["high"] = max(b_h, cur_ltp)
+                            if b_l > 0:
+                                quote["low"] = min(b_l, cur_ltp)
+                            if quote["volume"] == 0 and b_v > 0:
+                                quote["volume"] = b_v
             except Exception:
                 pass
 
@@ -566,8 +584,15 @@ class ChartEngine:
                     last_time = daily_bars[-1].get("time", "")
                     now_ts = time.time()
                     file_age = now_ts - mtime
-                    # Mark for refresh if cache is older than 1800s or last candle is older than latest known market session
-                    if file_age > 1800 or (last_time and last_time < "2026-10-30"):
+                    now_dt = datetime.now(IST)
+                    today_str = now_dt.strftime("%Y-%m-%d")
+                    is_weekday = now_dt.weekday() < 5
+                    after_market_open = (now_dt.hour, now_dt.minute) >= (9, 15)
+                    # On trading days after 09:15, ensure today's candle is loaded
+                    if is_weekday and after_market_open:
+                        if last_time < today_str or file_age > 120:
+                            cache_needs_refresh = True
+                    elif file_age > 1800:
                         cache_needs_refresh = True
                 else:
                     cache_needs_refresh = True
@@ -762,23 +787,39 @@ class ChartEngine:
             print(f"[ChartEngine] Error during master FO overlay/infill for {sym}: {exc}")
 
         # 5. Real-time live forming candle stitching (Current Day)
-        # CRITICAL: A forming daily bar must ONLY be stitched during or after trading hours on an active trading day!
-        # On weekends (Saturday/Sunday) and holidays, market is closed and no candle exists for today.
+        # CRITICAL: On active trading days (Mon-Fri after 09:15), today's candle (forming or completed EOD) MUST be displayed!
+        # On weekends (Saturday/Sunday) or pre-market, no bar for today should exist.
         now_dt = datetime.now(IST)
         today_str = now_dt.strftime("%Y-%m-%d")
+        is_weekday = now_dt.weekday() < 5
+        after_market_open = (now_dt.hour, now_dt.minute) >= (9, 15)
 
-        if is_nse_trading_session_active_now():
+        if is_weekday and after_market_open:
             live_quote = self.get_symbol_quote(sym)
-            if live_quote.get("ltp", 0.0) > 0 and live_quote.get("volume", 0) > 0:
-                ltp = float(live_quote["ltp"])
-                o = float(live_quote.get("open") or ltp)
-                h = float(live_quote.get("high") or max(o, ltp))
-                l = float(live_quote.get("low") or min(o, ltp))
-                v = int(live_quote.get("volume") or 0)
-                oi = int(live_quote.get("future_oi") or 0)
+            ltp = float(live_quote.get("ltp") or 0.0)
+            if ltp > 0:
+                # Check intraday bars for accurate session Open, High, Low, Volume
+                today_intraday = []
+                try:
+                    intraday_bars = self._fetch_real_intraday_bars(sym, "5")
+                    today_intraday = [b for b in intraday_bars if str(b.get("time", "")).startswith(today_str)]
+                except Exception:
+                    today_intraday = []
+
+                if today_intraday:
+                    o = float(today_intraday[0].get("open") or ltp)
+                    h = float(max(b.get("high", ltp) for b in today_intraday))
+                    l = float(min(b.get("low", ltp) for b in today_intraday))
+                    v = int(sum(b.get("volume", 0) for b in today_intraday))
+                else:
+                    o = float(live_quote.get("open") or ltp)
+                    h = float(live_quote.get("high") or max(o, ltp))
+                    l = float(live_quote.get("low") or min(o, ltp))
+                    v = int(live_quote.get("volume") or 0)
 
                 h = round(max(h, o, ltp), 2)
                 l = round(min(l, o, ltp), 2)
+                oi = int(live_quote.get("future_oi") or 0)
 
                 live_bar = {
                     "time": today_str,
@@ -793,12 +834,17 @@ class ChartEngine:
                 }
 
                 if daily_bars and daily_bars[-1]["time"] == today_str:
+                    prev_b = daily_bars[-1]
+                    live_bar["open"] = prev_b.get("open") or live_bar["open"]
+                    live_bar["high"] = round(max(prev_b.get("high", live_bar["high"]), live_bar["high"]), 2)
+                    live_bar["low"] = round(min(prev_b.get("low", live_bar["low"]), live_bar["low"]), 2)
+                    if live_bar["volume"] == 0 and prev_b.get("volume", 0) > 0:
+                        live_bar["volume"] = prev_b["volume"]
                     daily_bars[-1] = live_bar
                 else:
                     daily_bars.append(live_bar)
         else:
-            # Market is closed today (Weekend / Holiday / Pre-market):
-            # Ensure no dummy/forming bar for today is present in daily_bars!
+            # Weekend or pre-market before 09:15: ensure no dummy/forming bar for today
             daily_bars = [b for b in daily_bars if b.get("time") != today_str]
 
         # 6. Deduplicate & sort daily bars
