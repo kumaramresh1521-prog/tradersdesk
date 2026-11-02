@@ -1382,7 +1382,8 @@ body.theme-light .contrib-date-input {
   border: 1px solid var(--p2-border);
   padding: 4px 10px;
   border-radius: 6px;
-  height: 34px;
+  min-height: 34px;
+  height: auto;
   box-sizing: border-box;
 }
 
@@ -3796,33 +3797,45 @@ body.white-theme .footer-bottom,
 
 /* Responsive mobile styling for Breadth Contribution top controls */
 @media (max-width: 768px) {
+  .contrib-header-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
   .contrib-top-controls {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
     margin-top: 6px;
+    align-items: stretch;
   }
   .contrib-date-wrap,
   .contrib-ctrl-item,
   .contrib-auto-refresh-wrap,
   .contrib-spot-pill {
-    height: 32px;
-    padding: 2px 8px;
+    min-height: 36px;
+    height: auto;
+    padding: 4px 8px;
     font-size: 11px;
-    flex-shrink: 0;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
   }
   .contrib-auto-refresh-wrap {
     gap: 6px;
-    padding: 2px 8px;
+    padding: 4px 8px;
   }
   .contrib-select,
   .contrib-date-input {
     font-size: 11px;
-    padding: 2px 4px;
+    padding: 3px 6px;
+    max-width: 100%;
   }
   .contrib-mini-select {
-    height: 22px;
+    height: 24px;
     padding: 0 4px;
     font-size: 10.5px;
   }
@@ -3836,10 +3849,12 @@ body.white-theme .footer-bottom,
     max-width: 100%;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    padding: 3px;
+    flex-shrink: 0;
   }
   .contrib-index-btn {
-    padding: 4px 8px;
-    font-size: 10.5px;
+    padding: 5px 10px;
+    font-size: 11px;
     white-space: nowrap;
   }
 }

@@ -25654,10 +25654,7 @@ a.fut-tab-btn[data-feature-flag].feature-active {
   }
 
   .page2-header .inst-nav-row {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: center !important;
-    gap: 8px !important;
+    display: none !important;
   }
 
   .page2-header nav.inst-nav {

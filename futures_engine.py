@@ -758,91 +758,126 @@ def _load_latest_bhavcopy_data(force: bool = False) -> tuple[dict[str, dict], st
         return _BHAVCOPY_CACHE["data"], _BHAVCOPY_CACHE["date"]
 
     fo_dir = Path("cache/fo_bhav")
-    if not fo_dir.exists():
-        return {}, ""
-    csvs = sorted(fo_dir.glob("BhavCopy_NSE_FO_*.csv"), key=lambda p: p.name, reverse=True)
-    if not csvs:
-        return {}, ""
+    csvs = []
+    if fo_dir.exists():
+        csvs = sorted(fo_dir.glob("BhavCopy_NSE_FO_*.csv"), key=lambda p: p.name, reverse=True)
 
-    latest_csv = csvs[0]
     bhav_map = {}
     bhav_date_str = ""
     today = datetime.now().date()
-    try:
-        import csv
-        with open(latest_csv, mode="r", encoding="utf-8", errors="ignore") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                inst_tp = row.get("FinInstrmTp", "")
-                if inst_tp not in ("IDF", "STF"):
-                    continue
-                sym = row.get("TckrSymb", "").strip().upper()
-                xpry_str = row.get("XpryDt", "").strip()
-                if not xpry_str:
-                    continue
+    if csvs:
+        latest_csv = csvs[0]
+        try:
+            import csv
+            with open(latest_csv, mode="r", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    inst_tp = row.get("FinInstrmTp", "")
+                    if inst_tp not in ("IDF", "STF"):
+                        continue
+                    sym = row.get("TckrSymb", "").strip().upper()
+                    xpry_str = row.get("XpryDt", "").strip()
+                    if not xpry_str:
+                        continue
+                    try:
+                        exp_dt = datetime.strptime(xpry_str, "%Y-%m-%d").date()
+                    except Exception:
+                        continue
+                    if exp_dt < today and exp_dt < datetime(2026, 10, 1).date():
+                        continue
+
+                    if not bhav_date_str:
+                        raw_dt = row.get("TradDt", "")
+                        if raw_dt:
+                            try:
+                                bhav_date_str = datetime.strptime(raw_dt, "%Y-%m-%d").strftime("%d-%b-%Y")
+                            except Exception:
+                                bhav_date_str = raw_dt
+
+                    existing = bhav_map.get(sym)
+                    if existing and existing["exp_dt"] <= exp_dt:
+                        continue
+
+                    try:
+                        cls_p = float(row.get("ClsPric") or 0.0)
+                        last_p = float(row.get("LastPric") or cls_p)
+                        prev_cls = float(row.get("PrvsClsgPric") or cls_p)
+                        spot_p = float(row.get("UndrlygPric") or last_p)
+                        oi = float(row.get("OpnIntrst") or 0.0)
+                        oi_chg = float(row.get("ChngInOpnIntrst") or 0.0)
+                        vol = float(row.get("TtlTradgVol") or 0.0)
+                        turnover = float(row.get("TtlTrfVal") or 0.0)
+                        lot = int(row.get("NewBrdLotQty") or 1)
+
+                        price_chg = round(last_p - prev_cls, 2)
+                        price_chg_pct = round((price_chg / prev_cls * 100.0), 2) if prev_cls > 0 else 0.0
+                        prev_oi = oi - oi_chg
+                        oi_chg_pct = round((oi_chg / prev_oi * 100.0), 2) if prev_oi > 0 else 0.0
+
+                        bhav_map[sym] = {
+                            "symbol": sym,
+                            "exp_dt": exp_dt,
+                            "expiry": exp_dt.strftime("%d-%b-%Y"),
+                            "ltp": last_p,
+                            "close": cls_p,
+                            "prevClose": prev_cls,
+                            "priceChange": price_chg,
+                            "priceChangePct": price_chg_pct,
+                            "spotPrice": spot_p,
+                            "oi": oi,
+                            "oiChange": oi_chg,
+                            "oiChangePct": oi_chg_pct,
+                            "volume": vol,
+                            "turnoverCr": round(turnover / 10000000.0, 2),
+                            "lot": lot,
+                            "high": float(row.get("HghPric") or last_p),
+                            "low": float(row.get("LwPric") or last_p),
+                            "date": bhav_date_str
+                        }
+                    except Exception:
+                        pass
+
+            # Sync to data/latest_fo_bhav_master.json for zero-latency fallback
+            try:
+                serializable = {}
+                for s, d in bhav_map.items():
+                    c_dict = dict(d)
+                    if isinstance(c_dict.get("exp_dt"), (datetime, date)):
+                        c_dict["exp_dt"] = str(c_dict["exp_dt"])
+                    serializable[s] = c_dict
+                out_p = Path("data/latest_fo_bhav_master.json")
+                out_p.parent.mkdir(parents=True, exist_ok=True)
+                out_p.write_text(json.dumps({"ok": True, "date": bhav_date_str, "records": serializable}, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+        except Exception as e:
+            logger.error(f"Error loading bhavcopy quotes: {e}")
+
+    # Fallback to committed master JSON if no CSVs or CSV parsing yielded empty
+    if not bhav_map:
+        for json_path in [Path("data/latest_fo_bhav_master.json"), Path("cache/latest_fo_bhav_master.json")]:
+            if json_path.exists():
                 try:
-                    exp_dt = datetime.strptime(xpry_str, "%Y-%m-%d").date()
-                except Exception:
-                    continue
-                if exp_dt < today and exp_dt < datetime(2026, 10, 1).date():
-                    continue
+                    jdata = json.loads(json_path.read_text(encoding="utf-8"))
+                    bhav_date_str = jdata.get("date") or bhav_date_str
+                    raw_recs = jdata.get("records") or {}
+                    for sym, r in raw_recs.items():
+                        c_item = dict(r)
+                        if "exp_dt" in c_item and isinstance(c_item["exp_dt"], str):
+                            try:
+                                c_item["exp_dt"] = datetime.strptime(c_item["exp_dt"], "%Y-%m-%d").date()
+                            except Exception:
+                                pass
+                        bhav_map[sym] = c_item
+                    if bhav_map:
+                        break
+                except Exception as e:
+                    logger.error(f"Error loading bhav master json fallback: {e}")
 
-                if not bhav_date_str:
-                    raw_dt = row.get("TradDt", "")
-                    if raw_dt:
-                        try:
-                            bhav_date_str = datetime.strptime(raw_dt, "%Y-%m-%d").strftime("%d-%b-%Y")
-                        except Exception:
-                            bhav_date_str = raw_dt
-
-                existing = bhav_map.get(sym)
-                if existing and existing["exp_dt"] <= exp_dt:
-                    continue
-
-                try:
-                    cls_p = float(row.get("ClsPric") or 0.0)
-                    last_p = float(row.get("LastPric") or cls_p)
-                    prev_cls = float(row.get("PrvsClsgPric") or cls_p)
-                    spot_p = float(row.get("UndrlygPric") or last_p)
-                    oi = float(row.get("OpnIntrst") or 0.0)
-                    oi_chg = float(row.get("ChngInOpnIntrst") or 0.0)
-                    vol = float(row.get("TtlTradgVol") or 0.0)
-                    turnover = float(row.get("TtlTrfVal") or 0.0)
-                    lot = int(row.get("NewBrdLotQty") or 1)
-
-                    price_chg = round(last_p - prev_cls, 2)
-                    price_chg_pct = round((price_chg / prev_cls * 100.0), 2) if prev_cls > 0 else 0.0
-                    prev_oi = oi - oi_chg
-                    oi_chg_pct = round((oi_chg / prev_oi * 100.0), 2) if prev_oi > 0 else 0.0
-
-                    bhav_map[sym] = {
-                        "symbol": sym,
-                        "exp_dt": exp_dt,
-                        "expiry": exp_dt.strftime("%d-%b-%Y"),
-                        "ltp": last_p,
-                        "close": cls_p,
-                        "prevClose": prev_cls,
-                        "priceChange": price_chg,
-                        "priceChangePct": price_chg_pct,
-                        "spotPrice": spot_p,
-                        "oi": oi,
-                        "oiChange": oi_chg,
-                        "oiChangePct": oi_chg_pct,
-                        "volume": vol,
-                        "turnoverCr": round(turnover / 10000000.0, 2),
-                        "lot": lot,
-                        "high": float(row.get("HghPric") or last_p),
-                        "low": float(row.get("LwPric") or last_p),
-                        "date": bhav_date_str
-                    }
-                except Exception:
-                    pass
-
+    if bhav_map:
         _BHAVCOPY_CACHE["ts"] = now
         _BHAVCOPY_CACHE["data"] = bhav_map
         _BHAVCOPY_CACHE["date"] = bhav_date_str
-    except Exception as e:
-        logger.error(f"Error loading bhavcopy quotes: {e}")
 
     return bhav_map, bhav_date_str
 
@@ -930,12 +965,16 @@ def get_live_kotak_quotes_map(target_symbols: Optional[list] = None) -> dict[str
 
     # 0. Load Scrip Masters
     if not _KOTAK_FO_MAP:
-        try:
-            map_file = Path("cache/kotak_fo_contract_map.json")
+        for map_file in [Path("cache/kotak_fo_contract_map.json"), Path("data/kotak_fo_contract_map.json")]:
             if map_file.exists():
-                _KOTAK_FO_MAP = json.loads(map_file.read_text(encoding="utf-8"))
-                _KOTAK_FO_MAP = _ensure_unexpired_contracts(_KOTAK_FO_MAP)
-        except Exception:
+                try:
+                    _KOTAK_FO_MAP = json.loads(map_file.read_text(encoding="utf-8"))
+                    _KOTAK_FO_MAP = _ensure_unexpired_contracts(_KOTAK_FO_MAP)
+                    if _KOTAK_FO_MAP:
+                        break
+                except Exception:
+                    pass
+        if not _KOTAK_FO_MAP:
             _KOTAK_FO_MAP = {}
 
     if not _KOTAK_CASH_MAP:
@@ -1402,20 +1441,34 @@ def _build_master_futures_records() -> list[dict]:
             dte = 5
         coc = round(basis_pct * (365.0 / dte), 2)
 
+        is_live_fut = bool(fut_q and fut_q.get("ltp") and (float(fut_q.get("oi") or 0) > 0))
+
         # Real OI metrics
-        if is_live_broker and curr_oi > 0:
+        if is_live_fut and curr_oi > 0:
             if sym not in baseline_oi:
-                baseline_oi[sym] = curr_oi
-                new_baseline_needed = True
+                prev_day_oi = 0.0
+                if bhav_q and bhav_q.get("oi"):
+                    b_date = bhav_q.get("date", "")
+                    if b_date == today_str or b_date == now.strftime("%d-%b-%Y"):
+                        prev_day_oi = float(bhav_q.get("oi", 0) - bhav_q.get("oiChange", 0))
+                    else:
+                        prev_day_oi = float(bhav_q.get("oi", 0))
+                if prev_day_oi > 0:
+                    baseline_oi[sym] = prev_day_oi
+                    new_baseline_needed = True
+                else:
+                    baseline_oi[sym] = float(curr_oi)
+                    new_baseline_needed = True
+
             base_sym_oi = baseline_oi.get(sym, curr_oi)
             if base_sym_oi > 0 and curr_oi != base_sym_oi:
                 oi_chg_pct = round(((curr_oi - base_sym_oi) / base_sym_oi) * 100.0, 2)
             elif bhav_q and "oiChangePct" in bhav_q:
-                oi_chg_pct = bhav_q["oiChangePct"]
+                oi_chg_pct = float(bhav_q["oiChangePct"])
             else:
                 oi_chg_pct = 0.0
         elif bhav_q and "oiChangePct" in bhav_q:
-            oi_chg_pct = bhav_q["oiChangePct"]
+            oi_chg_pct = float(bhav_q["oiChangePct"])
         else:
             oi_chg_pct = 0.0
 

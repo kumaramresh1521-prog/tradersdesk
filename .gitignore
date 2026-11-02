@@ -26,8 +26,12 @@ cache/*
 !cache/futures_rollover_official.json
 !cache/latest_fo_bhav_rollover.json
 !cache/real_intraday_NIFTY_5m.json
+!cache/kotak_fo_contract_map.json
+!cache/latest_fo_bhav_master.json
 data/cache/
 !data/cache/real_intraday_NIFTY_5m.json
+!data/latest_fo_bhav_master.json
+!data/kotak_fo_contract_map.json
 !data/mtf/
 !data/mtf/*.json
 !data/mtf_daily_totals.json

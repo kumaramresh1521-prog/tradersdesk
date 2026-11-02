@@ -754,7 +754,7 @@
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
               <span style="color:${color}; font-weight:700;">₹${fmtNum(s.futPrice)} (${sign}${fmtNum(s.priceChangePct)}%)</span>
-              <span style="font-size:10.5px; color:#38bdf8; font-weight:700;">OI: +${fmtNum(s.oiChangePct)}%</span>
+              <span style="font-size:10.5px; color:${s.oiChangePct >= 0 ? '#38bdf8' : '#fb923c'}; font-weight:700;">OI: ${s.oiChangePct > 0 ? '+' : ''}${fmtNum(s.oiChangePct)}%</span>
             </div>
           </div>
         `;
