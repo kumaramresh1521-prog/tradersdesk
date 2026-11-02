@@ -42,6 +42,25 @@
     { id: "calendar", deskKey: "calendar", url: "/calendar_studio.html", title: "NSE Trading Holiday Calendar", subtitle: "Exchange Clearing & Trading Holiday Schedule", icon: "📅", tag: "SCHEDULE" }
   ];
 
+  // Comprehensive 279 F&O Master Universe Set for zero-latency cross-desk recognition
+  const FNO_MASTER_SET = new Set(["360ONE", "ABB", "ABCAPITAL", "ADANIENSOL", "ADANIENT", "ADANIGREEN", "ADANIPORTS", "ADANIPOWER", "ALKEM", "AMBER", "AMBUJACEM", "ANANDRATHI", "ANGELONE", "APLAPOLLO", "APOLLOHOSP", "ASHOKLEY", "ASIANPAINT", "ASTRAL", "ATHERENERG", "AUBANK", "AUROPHARMA", "AXISBANK", "BAJAJ-AUTO", "BAJAJFINSV", "BAJFINANCE", "BANDHANBNK", "BANK NIFTY", "BANKBARODA", "BANKEX", "BANKINDIA", "BANKNIFTY", "BDL", "BEL", "BHARATFORG", "BHARTIARTL", "BHEL", "BIOCON", "BLUESTARCO", "BOSCHLTD", "BPCL", "BRITANNIA", "BSE", "BSE BANKEX", "BSE SENSEX", "CAMS", "CANBK", "CDSL", "CGPOWER", "CHOLAFIN", "CIPLA", "COALINDIA", "COCHINSHIP", "COFORGE", "COLPAL", "CONCOR", "COROMANDEL", "CROMPTON", "CUB", "CUMMINSIND", "DABUR", "DATAPATTNS", "DELHIVERY", "DIVISLAB", "DIXON", "DLF", "DMART", "DRREDDY", "EICHERMOT", "ENRIN", "ETERNAL", "FEDERALBNK", "FINNIFTY", "FORCEMOT", "FORTIS", "GAIL", "GLENMARK", "GMRAIRPORT", "GODFRYPHLP", "GODREJCP", "GODREJPROP", "GRASIM", "GVT&D", "HAL", "HAVELLS", "HCLTECH", "HDFCAMC", "HDFCBANK", "HDFCLIFE", "HEROMOTOCO", "HINDALCO", "HINDPETRO", "HINDUNILVR", "HINDZINC", "HYUNDAI", "ICICIBANK", "ICICIGI", "ICICILIFE", "IDEA", "IDFCFIRSTB", "IEX", "INDHOTEL", "INDIANB", "INDIGO", "INDUSINDBK", "INDUSTOWER", "INFY", "INOXWIND", "IOC", "IREDA", "IRFC", "ITC", "JINDALSTEL", "JIOFIN", "JSWENERGY", "JSWSTEEL", "JUBLFOOD", "KALYANKJIL", "KARURVYSYA", "KAYNES", "KEI", "KFINTECH", "KOTAKBANK", "KPITTECH", "LAURUSLABS", "LICHSGFIN", "LICI", "LODHA", "LT", "LTF", "LTIM", "LTM", "LUPIN", "M&M", "MAHABANK", "MANAPPURAM", "MANKIND", "MARICO", "MARUTI", "MAXHEALTH", "MAZDOCK", "MCX", "MFSL", "MIDCAP SELECT", "MIDCPNIFTY", "MOTHERSON", "MOTILALOFS", "MPHASIS", "MUTHOOTFIN", "NAM-INDIA", "NATIONALUM", "NAUKRI", "NAVINFLUOR", "NBCC", "NESTLEIND", "NHPC", "NIFTY", "NIFTY 50", "NIFTY AUTO", "NIFTY ENERGY", "NIFTY FMCG", "NIFTY IT", "NIFTY METAL", "NIFTY MIDCAP 100", "NIFTY PHARMA", "NIFTYFPI", "NIFTYNXT50", "NMDC", "NTPC", "NYKAA", "OBEROIRLTY", "OFSS", "OIL", "ONGC", "PAGEIND", "PATANJALI", "PAYTM", "PERSISTENT", "PETRONET", "PFC", "PGEL", "PHOENIXLTD", "PIDILITIND", "PIIND", "PNB", "PNBHOUSING", "POLICYBZR", "POLYCAB", "POWERGRID", "POWERINDIA", "PREMIERENE", "PRESTIGE", "RADICO", "RBLBANK", "RECLTD", "RELIANCE", "RVNL", "SAGILITY", "SAIL", "SBICARD", "SBILIFE", "SBIN", "SENSEX", "SHREECEM", "SHRIRAMFIN", "SIEMENS", "SOLARINDS", "SONACOMS", "SRF", "SUNPHARMA", "SUPREMEIND", "SUZLON", "SWIGGY", "SYRMA", "TATACONSUM", "TATAELXSI", "TATAMOTORS", "TATAPOWER", "TATASTEEL", "TCS", "TECHM", "TIINDIA", "TITAN", "TMPV", "TORNTPHARM", "TRENT", "TVSMOTOR", "UJJIVANSFB", "ULTRACEMCO", "UNIONBANK", "UNITDSPR", "UNOMINDA", "UPL", "VBL", "VEDL", "VMM", "VOLTAS", "WAAREEENER", "WIPRO", "YESBANK", "ZOMATO", "ZYDUSLIFE"]);
+  if (typeof window !== "undefined") {
+    window._fnoSymbolsSet = window._fnoSymbolsSet || new Set();
+    FNO_MASTER_SET.forEach(s => {
+      window._fnoSymbolsSet.add(s);
+      window._fnoSymbolsSet.add(s.replace(/[\s-]/g, ''));
+    });
+    if (typeof window.isFnOSymbol !== "function") {
+      window.isFnOSymbol = function(sym) {
+        if (!sym) return false;
+        const u = String(sym).trim().toUpperCase();
+        const c = u.replace(/^NSE_EQ\||^NSE_INDEX\||^BSE_INDEX\|/i, '').replace(/[\s-]/g, '');
+        return FNO_MASTER_SET.has(u) || FNO_MASTER_SET.has(c);
+      };
+    }
+  }
+
+
   // Curated Dictionary of Popular Active NSE Equities (F&O & Cash)
   const CURATED_STOCKS = [
     { symbol: "RELIANCE", name: "Reliance Industries Ltd", sector: "Oil & Gas / Telecom", isFnO: true },
@@ -260,14 +279,16 @@
         const sym = (s.symbol || "").trim().toUpperCase();
         if (sym && !seen.has(sym)) {
           seen.add(sym);
+          const isFno = FNO_MASTER_SET.has(sym) || Boolean(window.isFnOSymbol && window.isFnOSymbol(sym));
           pool.push({
             symbol: sym,
             label: sym,
             name: `${sym} Listed Equity`,
-            sector: "NSE Cash Equities",
+            sector: isFno ? "F&O Derivatives Segment" : "NSE Cash Equities",
             type: "stock",
-            badge: "NSE EQ",
-            badgeClass: "badge-eq",
+            badge: isFno ? "F&O" : "NSE EQ",
+            badgeClass: isFno ? "badge-fno" : "badge-eq",
+            isFnO: isFno,
             close: s.close,
             delivPer: s.delivPer,
             turnoverCr: s.turnoverCr
@@ -306,13 +327,13 @@
     // 5. Curated Stock List (fallback & cold-boot boost)
     CURATED_STOCKS.forEach(stk => {
       const sym = stk.symbol.toUpperCase();
-      const isFno = window.isFnOSymbol ? window.isFnOSymbol(sym) : !!stk.isFnO;
+      const isFno = Boolean(stk.isFnO || FNO_MASTER_SET.has(sym) || (window.isFnOSymbol && window.isFnOSymbol(sym)));
       const existing = pool.find(p => p.symbol === sym);
       if (existing) {
-        if (!existing.sector || existing.sector === "Equities") existing.sector = stk.sector;
+        if (!existing.sector || existing.sector === "Equities" || existing.sector === "NSE Cash Equities") existing.sector = stk.sector;
         if (!existing.name || existing.name.includes("Listed Equity")) existing.name = stk.name;
-        existing.isFnO = isFno;
         if (isFno) {
+          existing.isFnO = true;
           existing.badge = "F&O";
           existing.badgeClass = "badge-fno";
         }
@@ -327,6 +348,29 @@
           badge: isFno ? "F&O" : "NSE EQ",
           badgeClass: isFno ? "badge-fno" : "badge-eq",
           isFnO: isFno
+        });
+      }
+    });
+
+    // 6. Master F&O Universe Seeding (ensures all 224+ active F&O symbols are always discoverable)
+    FNO_MASTER_SET.forEach(sym => {
+      if (sym.includes(" ") || sym.includes("INDEX")) return;
+      const existing = pool.find(p => p.symbol === sym);
+      if (existing) {
+        existing.isFnO = true;
+        existing.badge = "F&O";
+        existing.badgeClass = "badge-fno";
+      } else if (!seen.has(sym)) {
+        seen.add(sym);
+        pool.push({
+          symbol: sym,
+          label: sym,
+          name: `${sym} F&O Active Derivative`,
+          sector: "F&O Derivatives",
+          type: "stock",
+          badge: "F&O",
+          badgeClass: "badge-fno",
+          isFnO: true
         });
       }
     });
@@ -505,7 +549,7 @@
       } else if (isDesk) {
         badgeHtml = `<span class="gs-badge gs-badge-desk">DESK</span>`;
       } else {
-        const isFno = isIndex || Boolean(item.isFnO || (window.isFnOSymbol && window.isFnOSymbol(item.symbol)));
+        const isFno = isIndex || Boolean(item.isFnO || FNO_MASTER_SET.has(item.symbol.toUpperCase()) || (window.isFnOSymbol && window.isFnOSymbol(item.symbol)));
         if (isFno) {
           badgeHtml = `<span class="gs-badge gs-badge-fno">F&amp;O</span>`;
         } else {
@@ -524,7 +568,7 @@
           </div>
         `;
       } else {
-        const isFno = isIndex || Boolean(item.isFnO || (window.isFnOSymbol && window.isFnOSymbol(item.symbol)));
+        const isFno = isIndex || Boolean(item.isFnO || FNO_MASTER_SET.has(item.symbol.toUpperCase()) || (window.isFnOSymbol && window.isFnOSymbol(item.symbol)));
         const optTitle = isIndex ? `Open ${item.symbol} Option Chain Pro` : `Inspect ${item.symbol} Greeks & Strike OI`;
         const delivTitle = isIndex ? `Inspect ${item.symbol} Constituent Delivery Absorption` : `Inspect ${item.symbol} Security Delivery`;
         const mtfTitle = `Check ${item.symbol} Broker Margin Book & Pledged Exposure`;
@@ -636,8 +680,9 @@
     const cleanSym = String(symbol).trim().toUpperCase();
 
     const isIndex = cleanSym.includes("NIFTY") || cleanSym.includes("SENSEX") || cleanSym.includes("BANKEX");
+    const isFnoValid = isIndex || FNO_MASTER_SET.has(cleanSym) || Boolean(window.isFnOSymbol && window.isFnOSymbol(cleanSym));
     if ((desk === "options" || desk === "futures") && !isIndex) {
-      if (window.isFnOSymbol && !window.isFnOSymbol(cleanSym)) {
+      if (!isFnoValid) {
         alert(`"${cleanSym}" is a cash market equity security and is not traded in the F&O derivatives segment.`);
         return;
       }
@@ -750,7 +795,7 @@
     const pool = getSearchPool();
     const item = itemData || pool.find(p => p.symbol === cleanSym) || { symbol: cleanSym, name: cleanSym, sector: "Equities" };
 
-    const isFno = isIndex || Boolean(item.isFnO || (window.isFnOSymbol && window.isFnOSymbol(cleanSym)));
+    const isFno = isIndex || Boolean(item.isFnO || FNO_MASTER_SET.has(cleanSym) || (window.isFnOSymbol && window.isFnOSymbol(cleanSym)));
 
     const symEl = document.getElementById("gHubSymbol");
     const nameEl = document.getElementById("gHubName");
