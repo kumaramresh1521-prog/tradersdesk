@@ -61,7 +61,7 @@ gcloud scheduler jobs create http tradersdesk-market-start \
     --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
 
 echo ""
-echo "[5/5] Creating / Updating Market-Stop Job (04:00 PM IST, Mon-Fri)..."
+echo "[5/6] Creating / Updating Market-Stop Job (04:00 PM IST, Mon-Fri)..."
 gcloud scheduler jobs delete tradersdesk-market-stop --location="$REGION" --quiet >/dev/null 2>&1 || true
 gcloud scheduler jobs create http tradersdesk-market-stop \
     --location="$REGION" \
@@ -74,6 +74,17 @@ gcloud scheduler jobs create http tradersdesk-market-stop \
     --message-body='{"template":{"scaling":{"minInstanceCount":0}}}' \
     --oauth-service-account-email="${SERVICE_ACCOUNT}" \
     --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+
+echo ""
+echo "[6/6] Creating / Updating Market-Hours Background Data Refresher (Every 1 min during 09:15 - 15:40 IST Mon-Fri)..."
+gcloud scheduler jobs delete tradersdesk-market-tick --location="$REGION" --quiet >/dev/null 2>&1 || true
+gcloud scheduler jobs create http tradersdesk-market-tick \
+    --location="$REGION" \
+    --schedule="* 9-15 * * 1-5" \
+    --time-zone="Asia/Kolkata" \
+    --description="TradersDesk: Continuous background data refresh every 1 min during market hours even with 0 visitors" \
+    --uri="https://tradersdesk.in/api/cron/tick" \
+    --http-method=GET
 
 echo ""
 echo "====================================================================="
