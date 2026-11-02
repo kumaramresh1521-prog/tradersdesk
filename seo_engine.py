@@ -21,7 +21,7 @@ ROOT_SEO_CONFIG = ROOT / "seo_config.json"
 ROOT_SEO_ROUTES = ROOT / "seo_routes.json"
 
 NON_INDEXABLE_PATHS = frozenset({
-    "/admin", "/admin.html", "/settings", "/page2", "/page2.html",
+    "/admin", "/admin.html", "/desk-ops-console", "/settings", "/page2", "/page2.html",
     "/scratch", "/calendar_studio", "/calendar_studio.html",
 })
 SITEMAP_EXCLUDED_PATHS = frozenset({

@@ -113,7 +113,7 @@
 
   async function syncDynamicNavigation() {
     try {
-      if (window.location.pathname.startsWith('/admin')) return;
+      if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/desk-ops-console')) return;
 
       const [navRes, flagsRes] = await Promise.all([
         fetch('/api/navigation').catch(() => null),

@@ -1265,5 +1265,17 @@
     "canonical": "https://tradersdesk.in/blog",
     "changefreq": "daily",
     "last_updated": "2026-11-02 07:00:00 IST"
+  },
+  "/desk-ops-console": {
+    "desc": "Executive Desk Operations & Terminal Control Console.",
+    "path": "/desk-ops-console",
+    "title": "TradersDesk | Executive Desk Operations Console",
+    "custom": true,
+    "robots": "noindex, nofollow, noarchive",
+    "category": "tools",
+    "canonical": "https://tradersdesk.in/desk-ops-console",
+    "priority": "0.1",
+    "changefreq": "monthly",
+    "last_updated": "2026-11-02 08:50:00 IST"
   }
 }

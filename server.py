@@ -95,6 +95,23 @@ def get_admin_secret() -> str:
     return raw
 
 
+def get_admin_url_slug() -> str:
+    """Returns the unguessable professional administrative console URL path."""
+    raw = env("ADMIN_URL_SLUG", "").strip().strip('"').strip("'")
+    if raw:
+        return ("/" + raw.strip("/")).lower()
+    cfg_file = DATA_DIR / "admin_config.json"
+    if cfg_file.exists():
+        try:
+            cfg = json.loads(cfg_file.read_text(encoding="utf-8"))
+            slug = str(cfg.get("admin_url_slug", "")).strip()
+            if slug:
+                return ("/" + slug.strip("/")).lower()
+        except Exception:
+            pass
+    return "/desk-ops-console"
+
+
 def _admin_client_identity(handler) -> str:
     cf_ip = handler.headers.get("CF-Connecting-IP", "").strip()
     if cf_ip:
@@ -10060,7 +10077,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         try:
             _st = cms_engine.get_platform_settings().get("maintenance_mode", {})
             if _st.get("enabled", False):
+                _adm_slug = get_admin_url_slug()
                 _is_exempt = (
+                    path.startswith(_adm_slug) or
                     path.startswith("/admin") or
                     path.startswith("/api/admin/") or
                     path in ("/api/feature-flags", "/api/settings", "/api/status") or
@@ -10496,7 +10515,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                         <body><div class="box"><h2>✅ Upstox Auto-Connected!</h2><p style="color:#94a3b8;">Access Token saved to server & cloud vault. Closing window...</p></div>
                         <script>
                         try {{ if (window.opener) window.opener.postMessage({{ type: 'UPSTOX_AUTH_SUCCESS', token: {json.dumps(access_token)} }}, '*'); }} catch(e) {{}}
-                        setTimeout(() => {{ window.close(); window.location.href = '/admin.html'; }}, 1200);
+                        setTimeout(() => {{ window.close(); window.location.href = '{get_admin_url_slug()}'; }}, 1200);
                         </script></body></html>"""
                         body_bytes = html_resp.encode("utf-8")
                         self.send_response(200)
@@ -11090,14 +11109,15 @@ class RequestHandler(BaseHTTPRequestHandler):
             "/technical-chart",
         }
 
+        adm_slug = get_admin_url_slug()
         STATIC_PAGE_ROUTES = {
             "/about": "/about.html",
             "/contact": "/contact.html",
             "/disclaimer": "/disclaimer.html",
             "/privacy": "/privacy.html",
             "/terms": "/terms.html",
-            "/admin": "/admin.html",
-            "/admin/": "/admin.html",
+            adm_slug: "/admin.html",
+            adm_slug + "/": "/admin.html",
         }
 
         REDIRECT_301_MAP = {
@@ -11127,6 +11147,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         }
 
         clean_path = path.rstrip("/") if path != "/" else "/"
+
+        if clean_path in ("/admin", "/admin/", "/admin.html"):
+            return self.send_json(404, {"ok": False, "message": "Not found"})
 
         if clean_path in REDIRECT_301_MAP:
             target = REDIRECT_301_MAP[clean_path]
@@ -12279,7 +12302,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if cached and (now - cached["ts"] < 60.0):
                     data = cached["data"]
 
-            is_admin_page = req_path.rstrip("/") in ("/admin", "/admin.html")
+            is_admin_page = req_path.rstrip("/") in (get_admin_url_slug(), "/admin", "/admin.html")
 
             if data is None:
                 raw_html = file_path.read_text(encoding="utf-8")
@@ -12318,7 +12341,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 send_data = data
                 is_gzipped = False
 
-            is_admin_page = req_path.rstrip("/") in ("/admin", "/admin.html")
+            is_admin_page = req_path.rstrip("/") in (get_admin_url_slug(), "/admin", "/admin.html")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             if is_gzipped:
@@ -12342,6 +12365,8 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def serve_static(self, path: str) -> None:
         clean = urllib.parse.unquote(path).lstrip("/")
+        if clean.lower() in ("admin.html", "admin"):
+            return self.send_json(404, {"ok": False, "message": "Not found"})
         file_path = (PUBLIC_DIR / clean).resolve()
         if not str(file_path).startswith(str(PUBLIC_DIR.resolve())) or not file_path.exists() or not file_path.is_file():
             self.send_json(404, {"ok": False, "message": "Not found"})

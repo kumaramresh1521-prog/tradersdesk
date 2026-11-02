@@ -5,7 +5,7 @@
 (function() {
   async function initAnnouncement() {
     try {
-      if (window.location.pathname.startsWith('/admin')) return;
+      if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/desk-ops-console')) return;
 
       const res = await fetch('/api/settings');
       if (!res.ok) return;
