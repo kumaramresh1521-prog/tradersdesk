@@ -5,7 +5,7 @@
     "title": "TradersDesk | Free Option Chain, Live OI & Derivatives",
     "custom": false,
     "robots": "index, follow",
-    "og_desc": "TradersDesk.in \u2014 Institutional-grade Indian derivatives analytics, real-time Options Chain Pro, Black-Scholes Greeks (Delta, Gamma, Theta, Vega), Max Pain, Multi-Strike OI, Market Breadth & FII/DII Smart Money positioning.",
+    "og_desc": "TradersDesk.in — Institutional-grade Indian derivatives analytics, real-time Options Chain Pro, Black-Scholes Greeks (Delta, Gamma, Theta, Vega), Max Pain, Multi-Strike OI, Market Breadth & FII/DII Smart Money positioning.",
     "category": "dashboard",
     "keywords": "free option chain, live option chain, open interest, nifty option chain, bank nifty option chain, fii dii activity today, tradersdesk",
     "og_title": "TradersDesk.in | Institutional Derivatives, Options Greeks & Market Breadth Terminal",
@@ -60,12 +60,12 @@
     "last_updated": "2026-10-10 08:28:19 IST"
   },
   "/page2": {
-    "desc": "TradersDesk.in \u2014 Global Markets Macro Desk, ATM Options Straddle Real-Time Analytics, FII/DII Positioning, and Breadth &amp; Contribution Suite.",
+    "desc": "TradersDesk.in — Global Markets Macro Desk, ATM Options Straddle Real-Time Analytics, FII/DII Positioning, and Breadth &amp; Contribution Suite.",
     "path": "/page2",
     "title": "Global Markets & Straddles Terminal | TradersDesk",
     "custom": true,
     "robots": "noindex, nofollow, noarchive",
-    "og_desc": "TradersDesk.in \u2014 Global Markets Macro Desk, ATM Options Straddle Real-Time Analytics, FII/DII Positioning, and Breadth &amp; Contribution Suite.",
+    "og_desc": "TradersDesk.in — Global Markets Macro Desk, ATM Options Straddle Real-Time Analytics, FII/DII Positioning, and Breadth &amp; Contribution Suite.",
     "category": "tools",
     "keywords": "page2, tradersdesk, indian stock market, nse analytics",
     "og_title": "TradersDesk.in | Global Markets, Straddles &amp; Institutional Analytics",
@@ -330,12 +330,12 @@
     "last_updated": "2026-10-10 07:00:00 IST"
   },
   "/page2.html": {
-    "desc": "TradersDesk.in \u2014 Global Markets Macro Desk, ATM Options Straddle Real-Time Analytics, FII/DII Positioning, and Breadth &amp; Contribution Suite.",
+    "desc": "TradersDesk.in — Global Markets Macro Desk, ATM Options Straddle Real-Time Analytics, FII/DII Positioning, and Breadth &amp; Contribution Suite.",
     "path": "/page2.html",
     "title": "Global Markets & Straddles Terminal | TradersDesk",
     "custom": true,
     "robots": "noindex, nofollow, noarchive",
-    "og_desc": "TradersDesk.in \u2014 Global Markets Macro Desk, ATM Options Straddle Real-Time Analytics, FII/DII Positioning, and Breadth &amp; Contribution Suite.",
+    "og_desc": "TradersDesk.in — Global Markets Macro Desk, ATM Options Straddle Real-Time Analytics, FII/DII Positioning, and Breadth &amp; Contribution Suite.",
     "category": "tools",
     "keywords": "page2, tradersdesk, indian stock market, nse analytics",
     "og_title": "TradersDesk.in | Global Markets, Straddles &amp; Institutional Analytics",
@@ -480,7 +480,7 @@
     "last_updated": "2026-10-10 07:00:00 IST"
   },
   "/mtf/overview": {
-    "desc": "Macro overview of the \u20b965,000+ Crore Indian margin trading facility industry with aggregate exposure, collateral pledged, and system leverage.",
+    "desc": "Macro overview of the ₹65,000+ Crore Indian margin trading facility industry with aggregate exposure, collateral pledged, and system leverage.",
     "path": "/mtf/overview",
     "title": "SEBI MTF Aggregate Book & Leverage Radar | TradersDesk",
     "custom": false,
@@ -1248,5 +1248,20 @@
     "changefreq": "daily",
     "custom": false,
     "last_updated": "2026-11-01 12:30:34 IST"
+  },
+  "/blog": {
+    "desc": "TradersDesk Blog — In-depth articles on derivatives trading, options strategies, MTF leverage, FII/DII flows, and NSE market breadth analysis.",
+    "path": "/blog",
+    "title": "Options & Derivatives Trading Blog | TradersDesk",
+    "custom": false,
+    "robots": "index, follow",
+    "og_desc": "Expert insights on NSE derivatives, options trading strategies, margin trading (MTF), institutional FII/DII flows, and market breadth from TradersDesk.",
+    "category": "blog",
+    "keywords": "options trading blog, derivatives strategy, mtf blog, fii dii analysis, nse market breadth, tradersdesk blog",
+    "og_title": "TradersDesk Blog — Options, MTF & Smart Money Insights",
+    "priority": "0.8",
+    "canonical": "https://tradersdesk.in/blog",
+    "changefreq": "daily",
+    "last_updated": "2026-11-02 07:00:00 IST"
   }
 }

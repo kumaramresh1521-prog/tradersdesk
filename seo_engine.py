@@ -28,7 +28,7 @@ SITEMAP_EXCLUDED_PATHS = frozenset({
     # Non-canonical duplicate aliases that 301/redirect to their canonical slug
     "/options", "/compare", "/smart-money", "/atm-straddle", "/contribution",
     "/market-breadth", "/delivery-analytics", "/mtf-analytics", "/open-interest",
-    "/fii-dii-derivatives",
+    "/fii-dii-derivatives", "/fii-dii-cash", "/fii-dii/oi",
     "/calendar_studio.html", "/about.html", "/privacy.html", "/terms.html",
     "/disclaimer.html", "/contact.html",
 })

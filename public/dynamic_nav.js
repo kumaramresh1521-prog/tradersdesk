@@ -32,7 +32,7 @@
     "/fii-dii-derivatives": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'derivatives');}",
     "/fii-dii/participant-oi": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'oi');}",
     "/fii-dii/oi": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'oi');}",
-    "/fii-dii#oi": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'oi');},"
+    "/fii-dii#oi": "if(window.instNavClick){return window.instNavClick(event, 'smartmoney', 'oi');}",
     "/delivery": "return window.instNavClick(event, 'delivery')",
     "/mtf": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'overview');}",
     "/mtf/overview": "if(window.instNavClick){return window.instNavClick(event, 'mtf', 'overview');}",
