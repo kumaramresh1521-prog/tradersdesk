@@ -513,8 +513,14 @@ def render_cms_shell(
     if footer_ad:
         body_content = body_content + footer_ad
 
+    clean_head_title = title.strip()
+    if clean_head_title.endswith("| TradersDesk"):
+        clean_head_title = clean_head_title[:-len("| TradersDesk")].strip()
+    elif clean_head_title.endswith("| TradersDesk.in"):
+        clean_head_title = clean_head_title[:-len("| TradersDesk.in")].strip()
+
     replacements = {
-        "<!-- CMS_HEAD_TITLE -->": html.escape(title),
+        "<!-- CMS_HEAD_TITLE -->": html.escape(clean_head_title),
         "<!-- CMS_META_DESC -->": html.escape(description),
         "<!-- CMS_KEYWORDS -->": keywords_tag + ads_header_script,
         "<!-- CMS_ROBOTS -->": html.escape(robots),
@@ -598,11 +604,22 @@ def render_blog_index() -> str:
       </div>
     </div>"""
 
+    blog_meta = {}
+    try:
+        import seo_engine
+        blog_meta = seo_engine.get_seo_meta_for_path("/blog")
+    except Exception:
+        pass
+    b_title = blog_meta.get("title") or "Options & Derivatives Trading Blog — NSE Market Analysis | TradersDesk"
+    b_desc = blog_meta.get("desc") or "In-depth articles on NSE derivatives trading, options strategies (straddle, strangle, spreads), MTF leverage analysis, FII/DII institutional flows, market breadth, and Indian stock market analytics from TradersDesk."
+    b_kw = blog_meta.get("keywords") or "options trading blog india, derivatives strategy nse, mtf trading blog, fii dii analysis blog, nse market analysis"
+
     return render_cms_shell(
-        title="Market Research & Quantitative Insights",
-        description="Comprehensive options trading, market breadth, and F&O derivatives research articles.",
+        title=b_title,
+        description=b_desc,
         body_content=body_html,
-        current_path="/blog"
+        current_path="/blog",
+        keywords=b_kw
     )
 
 

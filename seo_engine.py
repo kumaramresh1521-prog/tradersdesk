@@ -491,6 +491,18 @@ SEO_ROUTES: dict[str, dict[str, str]] = {
         "keywords": "contact tradersdesk, trader support, trading terminal feedback, nse api support",
         "canonical": "https://tradersdesk.in/contact",
     },
+    "/blog": {
+        "title": "Options & Derivatives Trading Blog — NSE Market Analysis | TradersDesk",
+        "desc": "In-depth articles on NSE derivatives trading, options strategies (straddle, strangle, spreads), MTF leverage analysis, FII/DII institutional flows, market breadth, and Indian stock market analytics from TradersDesk.",
+        "keywords": "options trading blog india, derivatives strategy nse, mtf trading blog, fii dii analysis blog, nse market analysis, options straddle strategy, nifty options blog, nse trading insights, indian stock market blog, options greeks explained",
+        "canonical": "https://tradersdesk.in/blog",
+    },
+    "/chart": {
+        "title": "NSE Live Chart & Technical Analysis | TradersDesk",
+        "desc": "Live NSE equity and index charts with technical indicators, candlestick patterns, volume analysis, moving averages, RSI, MACD, and options overlay for informed derivatives trading decisions.",
+        "keywords": "nse live chart, nse stock chart online, nifty chart live, technical analysis nse, candlestick chart nse, nifty 50 chart, banknifty chart, rsi macd nse, options chart india, stock chart tradersdesk",
+        "canonical": "https://tradersdesk.in/chart",
+    },
 }
 
 import time
@@ -1134,50 +1146,49 @@ def get_dynamic_meta_for_path(path: str, snapshot: dict) -> dict:
     """
     Enriches route-specific meta tags dynamically with today's live/EOD figures,
     ensuring search engines index rich keywords, live prices, and institutional figures.
+    Preserves unique, tailored titles & descriptions configured for individual sub-routes.
     """
-    base_meta = get_seo_meta_for_path(path).copy()
+    all_r = load_all_seo_routes()
     clean_p = ("/" + path.strip("/")).lower() if path.strip("/") else "/"
+    base_meta = get_seo_meta_for_path(path).copy()
 
-    nifty_spot = snapshot.get("nifty_spot", 23146.15)
-    nifty_chg = snapshot.get("nifty_change", 148.80)
-    nifty_pct = snapshot.get("nifty_pct", 0.65)
-    sign = "+" if nifty_chg >= 0 else ""
-    nifty_str = f"NIFTY {nifty_spot:,.2f} ({sign}{nifty_chg:.2f} / {sign}{nifty_pct:.2f}%)"
-    date_str = snapshot.get("date", "16-Oct-2026")
-    fii_net = snapshot.get("fii_net_cash", 1165.92)
-    dii_net = snapshot.get("dii_net_cash", -3661.28)
+    # If the route has an exact, tailored entry in SEO catalog, preserve its custom title and desc!
+    has_exact_route = clean_p in all_r and bool(all_r[clean_p].get("title"))
 
-    top_gainers = snapshot.get("top_gainers", [])
-    top_gainers_summary = ", ".join(f"{g['symbol']} (+{g['pct']:.1f}%)" for g in top_gainers[:3]) if top_gainers else "TECHM (+8.0%), WIPRO (+6.7%), TCS (+4.0%)"
+    if not has_exact_route:
+        nifty_spot = snapshot.get("nifty_spot", 23146.15)
+        nifty_chg = snapshot.get("nifty_change", 148.80)
+        nifty_pct = snapshot.get("nifty_pct", 0.65)
+        sign = "+" if nifty_chg >= 0 else ""
+        date_str = snapshot.get("date", "16-Oct-2026")
 
-    if clean_p in ("/", "/dashboard"):
-        base_meta["title"] = f"TradersDesk | NIFTY {nifty_spot:,.0f} ({sign}{nifty_pct:.1f}%) | Derivatives Terminal"
-        base_meta["desc"] = f"Live Indian derivatives terminal: Option Chain Pro with Greeks, Max Pain, PCR, Market Breadth & FII/DII Smart Money flow on NSE ({date_str})."
-    elif clean_p.startswith("/futures"):
-        base_meta["title"] = "Futures Intelligence Desk - Live OI Buildup & Ban Radar | TradersDesk"
-        base_meta["desc"] = f"Track real-time NSE Open Interest buildup, Long & Short unwinding, Cost of Carry, and MWPL Ban radar across all F&O equities ({date_str})."
-    elif clean_p.startswith("/fii") or clean_p.startswith("/smart-money"):
-        base_meta["title"] = "FII DII Smart Money Flow | Participant Derivatives Positioning | TradersDesk"
-        base_meta["desc"] = f"Real-time institutional cash market buying/selling, participant derivatives open interest, and historical flow charts on NSE ({date_str})."
-    elif clean_p.startswith("/call-vs-put-premium") or clean_p.startswith("/call-vs-put"):
-        base_meta["title"] = "Call vs Put Premium - Live CE vs PE Comparison & Decay Skew | TradersDesk"
-        base_meta["desc"] = f"Real-time comparison of Call (CE) vs Put (PE) option leg premiums. Intraday decay spread, volatility skew, and premium imbalance ({date_str})."
-    elif clean_p.startswith("/option") or clean_p.startswith("/straddle"):
-        atm_strike = int(round(nifty_spot / 50.0) * 50)
-        base_meta["title"] = "Option Chain Pro - Live Option Greeks, PCR & Max Pain | TradersDesk"
-        base_meta["desc"] = f"Streaming Option Chain Pro for Nifty & Bank Nifty with real-time Delta, Gamma, Theta, Vega, IV Skew, PCR, and Max Pain strikes ({date_str})."
-    elif clean_p.startswith("/delivery"):
-        base_meta["title"] = "Cash Delivery Analytics - Volume Shocks & Accumulation | TradersDesk"
-        base_meta["desc"] = f"Screen 1800+ NSE & BSE equities for high-conviction delivery percentage spikes (>60%) and institutional accumulation on {date_str}."
-    elif clean_p.startswith("/mtf") or clean_p.startswith("/compare"):
-        base_meta["title"] = "MTF Analytics - Margin Trading Facility Book & Stock Leverage | TradersDesk"
-        base_meta["desc"] = f"Comprehensive Margin Trading Facility (MTF) loan book analytics, category leverage distribution, and SEBI regulatory disclosures ({date_str})."
-    elif clean_p.startswith("/breadth") or clean_p.startswith("/contribution"):
-        base_meta["title"] = "Market Breadth Pro - Point & Figure Advance-Decline Analytics | TradersDesk"
-        base_meta["desc"] = f"Institutional Indian market breadth with Point & Figure (PnF) matrices, advance-decline momentum, and heavyweight point contribution."
-    elif clean_p.startswith("/open-interest") or clean_p.startswith("/oi"):
-        base_meta["title"] = "Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk"
-        base_meta["desc"] = f"Live NSE Open Interest (OI) distribution, strike-by-strike Call vs Put accumulation, Put-Call Ratio (PCR), Max Pain, and key resistance/support levels ({date_str})."
+        if clean_p in ("/", "/dashboard"):
+            base_meta["title"] = f"TradersDesk | NIFTY {nifty_spot:,.0f} ({sign}{nifty_pct:.1f}%) | Derivatives Terminal"
+            base_meta["desc"] = f"Live Indian derivatives terminal: Option Chain Pro with Greeks, Max Pain, PCR, Market Breadth & FII/DII Smart Money flow on NSE ({date_str})."
+        elif clean_p.startswith("/futures"):
+            base_meta["title"] = "Futures Intelligence Desk - Live OI Buildup & Ban Radar | TradersDesk"
+            base_meta["desc"] = f"Track real-time NSE Open Interest buildup, Long & Short unwinding, Cost of Carry, and MWPL Ban radar across all F&O equities ({date_str})."
+        elif clean_p.startswith("/fii") or clean_p.startswith("/smart-money"):
+            base_meta["title"] = "FII DII Smart Money Flow | Participant Derivatives Positioning | TradersDesk"
+            base_meta["desc"] = f"Real-time institutional cash market buying/selling, participant derivatives open interest, and historical flow charts on NSE ({date_str})."
+        elif clean_p.startswith("/call-vs-put-premium") or clean_p.startswith("/call-vs-put"):
+            base_meta["title"] = "Call vs Put Premium - Live CE vs PE Comparison & Decay Skew | TradersDesk"
+            base_meta["desc"] = f"Real-time comparison of Call (CE) vs Put (PE) option leg premiums. Intraday decay spread, volatility skew, and premium imbalance ({date_str})."
+        elif clean_p.startswith("/option") or clean_p.startswith("/straddle"):
+            base_meta["title"] = "Option Chain Pro - Live Option Greeks, PCR & Max Pain | TradersDesk"
+            base_meta["desc"] = f"Streaming Option Chain Pro for Nifty & Bank Nifty with real-time Delta, Gamma, Theta, Vega, IV Skew, PCR, and Max Pain strikes ({date_str})."
+        elif clean_p.startswith("/delivery"):
+            base_meta["title"] = "Cash Delivery Analytics - Volume Shocks & Accumulation | TradersDesk"
+            base_meta["desc"] = f"Screen 1800+ NSE & BSE equities for high-conviction delivery percentage spikes (>60%) and institutional accumulation on {date_str}."
+        elif clean_p.startswith("/mtf") or clean_p.startswith("/compare"):
+            base_meta["title"] = "MTF Analytics - Margin Trading Facility Book & Stock Leverage | TradersDesk"
+            base_meta["desc"] = f"Comprehensive Margin Trading Facility (MTF) loan book analytics, category leverage distribution, and SEBI regulatory disclosures ({date_str})."
+        elif clean_p.startswith("/breadth") or clean_p.startswith("/contribution"):
+            base_meta["title"] = "Market Breadth Pro - Point & Figure Advance-Decline Analytics | TradersDesk"
+            base_meta["desc"] = f"Institutional Indian market breadth with Point & Figure (PnF) matrices, advance-decline momentum, and heavyweight point contribution."
+        elif clean_p.startswith("/open-interest") or clean_p.startswith("/oi"):
+            base_meta["title"] = "Nifty Open Interest Analysis - Live Call vs Put Charts & Max Pain | TradersDesk"
+            base_meta["desc"] = f"Live NSE Open Interest (OI) distribution, strike-by-strike Call vs Put accumulation, Put-Call Ratio (PCR), Max Pain, and key resistance/support levels ({date_str})."
 
     base_meta["og_title"] = base_meta["title"]
     base_meta["og_desc"] = base_meta["desc"]
