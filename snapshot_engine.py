@@ -43,21 +43,35 @@ def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50") -> dict:
             return {}
 
         strikes_list = raw_chain.get("data") or raw_chain.get("strikes") or []
-        # Keep clean, compact strikes representation (essential fields for historical replay)
+        # Store strikes preserving complete schema required by Upstox Option Chain table & greeks
         compact_strikes = []
         for s in strikes_list[:50]:  # Up to 50 active strikes around ATM
             if isinstance(s, dict):
+                sp = float(s.get("strike_price") or s.get("strikePrice") or 0.0)
                 compact_strikes.append({
-                    "strikePrice": s.get("strike_price") or s.get("strikePrice"),
-                    "callLtp": (s.get("call_options") or {}).get("market_data", {}).get("ltp") or s.get("callLtp") or 0.0,
-                    "callOi": (s.get("call_options") or {}).get("market_data", {}).get("oi") or s.get("callOi") or 0,
-                    "callOiChg": (s.get("call_options") or {}).get("market_data", {}).get("oi_change") or s.get("callOiChg") or 0,
-                    "callIv": (s.get("call_options") or {}).get("option_greeks", {}).get("iv") or s.get("callIv") or 0.0,
-                    "putLtp": (s.get("put_options") or {}).get("market_data", {}).get("ltp") or s.get("putLtp") or 0.0,
-                    "putOi": (s.get("put_options") or {}).get("market_data", {}).get("oi") or s.get("putOi") or 0,
-                    "putOiChg": (s.get("put_options") or {}).get("market_data", {}).get("oi_change") or s.get("putOiChg") or 0,
-                    "putIv": (s.get("put_options") or {}).get("option_greeks", {}).get("iv") or s.get("putIv") or 0.0,
-                    "pcr": s.get("pcr") or 0.0,
+                    "strike_price": sp,
+                    "strikePrice": sp,
+                    "pcr": float(s.get("pcr") or 0.0),
+                    "expiry": s.get("expiry") or raw_chain.get("expiry"),
+                    "call_options": s.get("call_options") or {
+                        "market_data": {
+                            "ltp": float(s.get("callLtp") or 0.0),
+                            "oi": int(s.get("callOi") or 0),
+                            "oi_change": int(s.get("callOiChg") or 0),
+                            "volume": int(s.get("callVolume") or 0),
+                        },
+                        "option_greeks": s.get("callGreeks") or {"iv": float(s.get("callIv") or 0.0)},
+                    },
+                    "put_options": s.get("put_options") or {
+                        "market_data": {
+                            "ltp": float(s.get("putLtp") or 0.0),
+                            "oi": int(s.get("putOi") or 0),
+                            "oi_change": int(s.get("putOiChg") or 0),
+                            "volume": int(s.get("putVolume") or 0),
+                        },
+                        "option_greeks": s.get("putGreeks") or {"iv": float(s.get("putIv") or 0.0)},
+                    },
+                    "quant_metrics": s.get("quant_metrics", {}),
                 })
 
         return {
@@ -119,7 +133,7 @@ def build_straddle_snapshot() -> dict:
 
 
 def build_smart_money_snapshot(trade_date: str) -> dict:
-    """Gathers FII/DII cash net flow and participant OI matrix."""
+    """Gathers FII/DII cash net flow, derivatives flow, and participant OI matrix."""
     try:
         from server import build_smart_money
         sm = build_smart_money({"date": trade_date})
@@ -127,11 +141,15 @@ def build_smart_money_snapshot(trade_date: str) -> dict:
             return {}
         return {
             "date": sm.get("date") or trade_date,
-            "gameplan": sm.get("gameplan", {}),
-            "summaryKpis": sm.get("summaryKpis", {}),
+            "asOf": sm.get("asOf") or trade_date,
             "cashFlow": sm.get("cashFlow", {}),
-            "participantMatrix": sm.get("participantMatrix", {}) or sm.get("openInterest", {}),
-            "dailyTrend": (sm.get("dailyTrend") or sm.get("fiiOiTrend") or [])[-10:],
+            "derivativesFlow": sm.get("derivativesFlow", {}),
+            "participants": sm.get("participants", []),
+            "fiiMetrics": sm.get("fiiMetrics", {}),
+            "trapRadar": sm.get("trapRadar", {}),
+            "gameplan": sm.get("gameplan", {}),
+            "majorIndicesDelivery": sm.get("majorIndicesDelivery", {}),
+            "history": (sm.get("history") or [])[-15:],
         }
     except Exception as e:
         print(f"[SnapshotEngine] Smart money snapshot error: {e}")
@@ -201,23 +219,33 @@ def build_mtf_snapshot(trade_date: str) -> dict:
 
 
 def build_breadth_snapshot(trade_date: str) -> dict:
-    """Gathers market breadth and advance/decline stats for core indices."""
+    """Gathers market breadth, point contribution, and advance/decline stats across 14 market universes."""
     res = {}
     try:
-        from server import fetch_index_symbols
-        for idx in ("nifty50", "banknifty", "sensex", "finnifty", "niftyit", "niftyauto"):
+        from server import get_cached_breadth_contribution
+        target_universes = [
+            "nifty50", "banknifty", "finnifty", "sensex", "midcpnifty",
+            "niftyit", "niftyauto", "niftypharma", "niftymetal", "niftyfmcg",
+            "niftyenergy", "niftymidcap100", "niftynext50"
+        ]
+        for idx in target_universes:
             try:
-                rows, _, _, _ = fetch_index_symbols(idx)
-                if rows:
-                    adv = sum(1 for r in rows if float(r.get("pChange") or r.get("changePct") or 0) > 0)
-                    dec = sum(1 for r in rows if float(r.get("pChange") or r.get("changePct") or 0) < 0)
-                    tot = len(rows)
-                    b_pct = round((adv / tot) * 100, 2) if tot > 0 else 50.0
+                data = get_cached_breadth_contribution(idx, trade_date)
+                if data and isinstance(data, dict):
+                    s = data.get("summary") or {}
+                    b = data.get("breadthSummary") or {}
                     res[idx] = {
-                        "total": tot,
-                        "advancers": adv,
-                        "decliners": dec,
-                        "breadthPct": b_pct,
+                        "universe": idx,
+                        "label": (data.get("indexInfo") or {}).get("name") or idx.upper(),
+                        "netPoints": s.get("netPoints", 0.0),
+                        "supportingPoints": s.get("supportingPoints", 0.0),
+                        "draggingPoints": s.get("draggingPoints", 0.0),
+                        "advancers": s.get("supportingCount", 0),
+                        "decliners": s.get("draggingCount", 0),
+                        "total": s.get("totalStocks", 0),
+                        "breadthPct": b.get("latestBreadth") or s.get("supportRatioPct") or 50.0,
+                        "openBreadth": b.get("openBreadth", 50.0),
+                        "breadthChange": b.get("change", 0.0),
                     }
             except Exception:
                 pass
