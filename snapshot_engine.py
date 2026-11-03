@@ -85,23 +85,26 @@ def build_straddle_snapshot() -> dict:
     """Builds clean ATM Straddle & Strangle snapshot for NIFTY & BANK NIFTY."""
     res = {}
     try:
-        from server import compute_straddle_data
+        from server import get_straddle_chart_response
         for idx in ("NIFTY", "BANKNIFTY"):
             try:
-                st = compute_straddle_data(idx)
-                if st and isinstance(st, dict):
+                st = get_straddle_chart_response({"symbol": idx})
+                if st and isinstance(st, dict) and st.get("ok"):
+                    latest = st.get("latest") or {}
                     res[idx.lower()] = {
                         "symbol": idx,
-                        "spotPrice": st.get("spot_price") or st.get("spot"),
-                        "atmStrike": st.get("atm_strike"),
-                        "combinedPremium": st.get("combined_premium") or st.get("straddle_price"),
-                        "callLtp": st.get("call_ltp"),
-                        "putLtp": st.get("put_ltp"),
-                        "decayPoints": st.get("decay_points") or 0.0,
-                        "iv": st.get("atm_iv") or st.get("iv") or 13.5,
-                        "rangeLower": st.get("expected_low") or st.get("range_lower"),
-                        "rangeUpper": st.get("expected_high") or st.get("range_upper"),
+                        "spotPrice": latest.get("spot"),
+                        "atmStrike": latest.get("straddle_strike") or st.get("atm_strike"),
+                        "combinedPremium": latest.get("straddle_price"),
+                        "callLtp": latest.get("ce_price"),
+                        "putLtp": latest.get("pe_price"),
+                        "decayPoints": latest.get("decay_pts") or 0.0,
+                        "decayPct": latest.get("decay_pct") or 0.0,
+                        "iv": (latest.get("greeks") or {}).get("iv") or 13.5,
+                        "rangeLower": latest.get("lower_breakeven"),
+                        "rangeUpper": latest.get("upper_breakeven"),
                         "expiry": st.get("expiry"),
+                        "greeks": latest.get("greeks", {}),
                     }
             except Exception:
                 pass
