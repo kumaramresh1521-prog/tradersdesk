@@ -20726,8 +20726,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             return self.send_json(200, build_breadth(payload))
 
         if path == "/api/smart-money":
-
-            return self.send_json(200, build_smart_money({}))
+            query = urllib.parse.parse_qs(parsed.query)
+            date_param = (query.get("date") or [""])[0]
+            return self.send_json(200, build_smart_money({"date": date_param} if date_param else {}))
 
         if path == "/api/delivery-analytics":
 
