@@ -20337,6 +20337,37 @@ class RequestHandler(BaseHTTPRequestHandler):
 
             return self.send_json(200, res_summary)
 
+        if path == "/api/cron/eod-snapshot":
+            import snapshot_engine
+            def _async_snap():
+                try:
+                    snapshot_engine.capture_and_save_eod_snapshot()
+                except Exception as _e:
+                    print(f"[Cron] EOD Snapshot error: {_e}")
+            threading.Thread(target=_async_snap, daemon=True, name="CronEodSnapshot").start()
+            return self.send_json(200, {
+                "ok": True,
+                "message": "EOD 90-days snapshot capture and auto-purge triggered asynchronously.",
+                "timestamp": now_ist().strftime("%Y-%m-%d %H:%M:%S IST")
+            })
+
+        if path.startswith("/api/market-snapshot"):
+            import snapshot_engine
+            query = urllib.parse.parse_qs(parsed.query)
+            t_date = (query.get("date") or [""])[0].strip() or snapshot_engine.get_ist_today_str()
+            snap = snapshot_engine.get_snapshot(t_date)
+            if snap:
+                return self.send_json(200, {"ok": True, "date": t_date, "snapshot": snap})
+            return self.send_json(404, {"ok": False, "message": f"No snapshot found for date {t_date}", "date": t_date})
+
+        if path == "/api/market-snapshots-calendar":
+            import snapshot_engine
+            query = urllib.parse.parse_qs(parsed.query)
+            days_str = (query.get("days") or ["90"])[0].strip()
+            days = int(days_str) if days_str.isdigit() else 90
+            cal = snapshot_engine.get_calendar(days=days)
+            return self.send_json(200, {"ok": True, "calendar": cal, "total": len(cal)})
+
 
 
         # Institutional Maintenance Mode Gatekeeper
@@ -21061,7 +21092,43 @@ class RequestHandler(BaseHTTPRequestHandler):
 
             expiry = query.get("expiry_date", query.get("expiry", [""]))[0]
 
+            trade_date = (query.get("trade_date") or query.get("date") or [""])[0].strip()
+
             refresh = query.get("refresh", ["false"])[0].lower() in ("true", "1")
+
+            if trade_date and trade_date != "today":
+                import snapshot_engine
+                snap = snapshot_engine.get_snapshot(trade_date)
+                if snap and snap.get("options_data") and snap["options_data"].get("strikes"):
+                    opt = snap["options_data"]
+                    return self.send_json(200, {
+                        "ok": True,
+                        "isLive": False,
+                        "isHistorical": True,
+                        "source": "Supabase Historical EOD Snapshot",
+                        "message": f"Historical EOD Snapshot for {trade_date}",
+                        "tradeDate": trade_date,
+                        "instrumentKey": inst_key,
+                        "underlying": "NIFTY 50",
+                        "spotPrice": opt.get("spotPrice"),
+                        "dayChange": 0.0,
+                        "dayChangePct": 0.0,
+                        "expiry": opt.get("expiry", expiry),
+                        "availableExpiries": opt.get("availableExpiries", []),
+                        "pcr": opt.get("pcr"),
+                        "maxPain": opt.get("maxPain"),
+                        "atmStrike": opt.get("atmStrike"),
+                        "atmStraddle": opt.get("atmStraddle"),
+                        "indiaVix": opt.get("indiaVix"),
+                        "totalCeOi": opt.get("totalCeOi"),
+                        "totalPeOi": opt.get("totalPeOi"),
+                        "totalCeOiChange": opt.get("totalCeOiChange"),
+                        "totalPeOiChange": opt.get("totalPeOiChange"),
+                        "data": opt.get("strikes", []),
+                        "marketOpen": False,
+                        "isMarketClosed": True,
+                        "lastUpdated": f"{trade_date} 15:30:00",
+                    })
 
             return self.send_json(200, upstox_engine.get_option_chain(inst_key, expiry_date=expiry, force_refresh=refresh))
 
@@ -22119,7 +22186,13 @@ class RequestHandler(BaseHTTPRequestHandler):
 
             active_b = brokers.get_active_broker_name(env)
 
-
+            snapshots_count = 0
+            try:
+                import snapshot_engine
+                cal = snapshot_engine.get_calendar(days=90)
+                snapshots_count = len(cal) if cal else 0
+            except Exception:
+                pass
 
             return self.send_json(200, {
 
@@ -22142,6 +22215,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 "supabaseConfigured": sb_cfg["isConfigured"],
 
                 "supabaseUrl": sb_cfg["url"][:16] + "..." if sb_cfg["url"] else "Not configured",
+
+                "snapshotsCount": snapshots_count,
 
             })
 
@@ -23337,7 +23412,43 @@ class RequestHandler(BaseHTTPRequestHandler):
 
                 expiry = payload.get("expiry_date", payload.get("expiry", ""))
 
+                trade_date = str(payload.get("trade_date", payload.get("date", ""))).strip()
+
                 refresh = bool(payload.get("refresh") or payload.get("forceRefresh"))
+
+                if trade_date and trade_date != "today":
+                    import snapshot_engine
+                    snap = snapshot_engine.get_snapshot(trade_date)
+                    if snap and snap.get("options_data") and snap["options_data"].get("strikes"):
+                        opt = snap["options_data"]
+                        return self.send_json(200, {
+                            "ok": True,
+                            "isLive": False,
+                            "isHistorical": True,
+                            "source": "Supabase Historical EOD Snapshot",
+                            "message": f"Historical EOD Snapshot for {trade_date}",
+                            "tradeDate": trade_date,
+                            "instrumentKey": inst_key,
+                            "underlying": "NIFTY 50",
+                            "spotPrice": opt.get("spotPrice"),
+                            "dayChange": 0.0,
+                            "dayChangePct": 0.0,
+                            "expiry": opt.get("expiry", expiry),
+                            "availableExpiries": opt.get("availableExpiries", []),
+                            "pcr": opt.get("pcr"),
+                            "maxPain": opt.get("maxPain"),
+                            "atmStrike": opt.get("atmStrike"),
+                            "atmStraddle": opt.get("atmStraddle"),
+                            "indiaVix": opt.get("indiaVix"),
+                            "totalCeOi": opt.get("totalCeOi"),
+                            "totalPeOi": opt.get("totalPeOi"),
+                            "totalCeOiChange": opt.get("totalCeOiChange"),
+                            "totalPeOiChange": opt.get("totalPeOiChange"),
+                            "data": opt.get("strikes", []),
+                            "marketOpen": False,
+                            "isMarketClosed": True,
+                            "lastUpdated": f"{trade_date} 15:30:00",
+                        })
 
                 return self.send_json(200, upstox_engine.get_option_chain(inst_key, expiry_date=expiry, force_refresh=refresh))
 
@@ -24211,6 +24322,15 @@ class RequestHandler(BaseHTTPRequestHandler):
                     return self.send_json(200, run_system_diagnostics(force=True))
                 except Exception as _diag_err:
                     return self.send_json(200, {"ok": True, "overallStatus": "HEALTHY", "score": "7/7 Passed", "timestamp": now_ist().strftime("%d-%b-%Y %H:%M:%S IST"), "totalLatencyMs": 5.0, "checks": []})
+
+            if parsed.path == "/api/admin/eod-snapshot":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                t_date = str(payload.get("date", "")).strip()
+                import snapshot_engine
+                res = snapshot_engine.capture_and_save_eod_snapshot(t_date)
+                return self.send_json(200, res)
 
             if parsed.path == "/api/admin/verify":
 

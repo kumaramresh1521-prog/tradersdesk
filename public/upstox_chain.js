@@ -7,6 +7,7 @@
   const state = {
     instrumentKey: 'NSE_INDEX|Nifty 50',
     expiryDate: '',
+    tradeDate: 'today', // 'today' (live) or 'YYYY-MM-DD' (historical EOD snapshot)
     strikeRange: 10, // ±10 strikes around ATM by default (controlled via ⚙️ Settings)
     viewMode: 'default', // 'default' (Image 1 layout) | 'greeks' | 'oi' | 'straddle'
     activeTab: 'chain', // 'chain' | 'force' | 'maxpain' | 'oidist' | 'greeks'
@@ -235,6 +236,7 @@
         body: JSON.stringify({
           instrument_key: state.instrumentKey,
           expiry_date: state.expiryDate,
+          trade_date: state.tradeDate,
           forceRefresh: force,
         }),
       });
@@ -260,7 +262,11 @@
 
       // Update status tag
       if (statusEl) {
-        if (data.marketOpen === false || data.isMarketClosed === true) {
+        if (data.isHistorical) {
+          statusEl.className = 'upstox-badge-live is-closed';
+          statusEl.innerHTML = `🏛️ <span>Historical EOD (${data.tradeDate || state.tradeDate})</span>`;
+          statusEl.title = `Historical EOD market snapshot for ${data.tradeDate || state.tradeDate} loaded from Supabase`;
+        } else if (data.marketOpen === false || data.isMarketClosed === true) {
           statusEl.className = 'upstox-badge-live is-closed';
           statusEl.innerHTML = '⏸️ <span>Market Closed • Data Frozen</span>';
           statusEl.title = 'Exchange closed. Displaying closing settlement snapshot. Auto-refresh paused.';
@@ -273,13 +279,13 @@
         }
       }
 
-      // Freeze Auto-Refresh when Market is Closed (Prevents unnecessary background polling & flickering)
-      if (data.marketOpen === false || data.isMarketClosed === true) {
+      // Freeze Auto-Refresh when Market is Closed or viewing Historical EOD Snapshot
+      if (data.isHistorical || state.tradeDate !== 'today' || data.marketOpen === false || data.isMarketClosed === true) {
         if (state.timerId) {
           clearInterval(state.timerId);
           state.timerId = null;
         }
-        if (!state.marketClosedCheckTimer) {
+        if (!data.isHistorical && state.tradeDate === 'today' && !state.marketClosedCheckTimer) {
           state.marketClosedCheckTimer = setInterval(() => {
             fetchChain(false);
           }, 60000); // 1-minute slow check
@@ -296,7 +302,9 @@
 
       const updEl = document.getElementById('upstoxLastUpdated');
       if (updEl) {
-        if (data.marketOpen === false || data.isMarketClosed === true) {
+        if (data.isHistorical) {
+          updEl.textContent = `${data.tradeDate || state.tradeDate} 15:30 EOD Snapshot`;
+        } else if (data.marketOpen === false || data.isMarketClosed === true) {
           updEl.textContent = `${data.lastUpdated || '15:30:00'} (Frozen)`;
         } else {
           updEl.textContent = data.lastUpdated || new Date().toLocaleTimeString();
@@ -3758,6 +3766,35 @@
     }
   }
 
+  async function loadSnapshotDates() {
+    try {
+      const isDirectHttp = window.location.protocol.startsWith('http') && (window.location.port === '8000' || window.location.port === '');
+      const baseUrl = isDirectHttp ? '' : 'http://127.0.0.1:8000';
+      const res = await fetch(`${baseUrl}/api/market-snapshots-calendar?days=90`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const sel = document.getElementById('upstoxSessionDateSelect');
+      if (!sel) return;
+
+      const currentVal = sel.value || 'today';
+      sel.innerHTML = '<option value="today">🟢 Today (Live)</option>';
+
+      if (data && data.calendar && Array.isArray(data.calendar)) {
+        data.calendar.forEach(row => {
+          const d = typeof row === 'string' ? row : (row.trade_date || row.date);
+          if (!d) return;
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = `🏛️ ${d} (EOD)`;
+          sel.appendChild(opt);
+        });
+      }
+      sel.value = currentVal;
+    } catch (err) {
+      console.warn('Failed to load snapshot calendar:', err);
+    }
+  }
+
   function getInstrumentMeta(key) {
     if (!securitiesMasterData) return null;
     const all = [...(securitiesMasterData.indices || []), ...(securitiesMasterData.stocks || [])];
@@ -4159,6 +4196,28 @@
     // 1c. Init Interactive Searchable Combobox
     initComboboxEvents();
 
+    // 2a. Historical EOD Session Date Select
+    const selSessionDate = document.getElementById('upstoxSessionDateSelect');
+    if (selSessionDate) {
+      selSessionDate.addEventListener('change', e => {
+        state.tradeDate = e.target.value;
+        const selAuto = document.getElementById('upstoxAutoRefreshSelect');
+        if (state.tradeDate !== 'today') {
+          if (state.timerId) {
+            clearInterval(state.timerId);
+            state.timerId = null;
+          }
+          if (selAuto) selAuto.value = '0';
+        } else {
+          if (selAuto && selAuto.value !== '0') {
+            const sec = parseInt(selAuto.value, 10) || 5;
+            if (!state.timerId) state.timerId = setInterval(() => fetchChain(false), sec * 1000);
+          }
+        }
+        fetchChain(true);
+      });
+    }
+
     // 2. Expiry Select
     const selExp = document.getElementById('upstoxExpirySelect');
     if (selExp) {
@@ -4317,6 +4376,7 @@
     _upstoxInitialized = true;
     initListeners();
     loadSecuritiesMaster();
+    loadSnapshotDates();
     fetchChain(false);
     if (window._desiredChainView) {
       const pending = window._desiredChainView;

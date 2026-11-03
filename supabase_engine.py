@@ -476,8 +476,8 @@ def sync_all_admin_configs_from_cloud(data_dir: Path | None = None) -> dict:
     CONFIG_FILE_MAP = {
         "footer_links": "footer_links.json",
         "navigation_master": "navigation.json",
-        "cms_pages": "pages.json",
-        "cms_posts": "posts.json",
+        "cms_pages": "cms_pages.json",
+        "cms_posts": "cms_posts.json",
         "platform_settings": "platform_settings.json",
         "feature_flags": "feature_flags.json",
         "ads_config": "ads_config.json",
@@ -517,9 +517,9 @@ def sync_all_admin_configs_from_cloud(data_dir: Path | None = None) -> dict:
                         try:
                             target_file.write_text(json.dumps(v, indent=2, ensure_ascii=False), encoding="utf-8")
                             synced_from_cloud.append(k)
-                            if k == "footer_links":
+                            if k in ("footer_links", "seo_config", "seo_routes"):
                                 try:
-                                    (ROOT / "footer_links.json").write_text(json.dumps(v, indent=2, ensure_ascii=False), encoding="utf-8")
+                                    (ROOT / f"{k}.json").write_text(json.dumps(v, indent=2, ensure_ascii=False), encoding="utf-8")
                                 except Exception:
                                     pass
                         except Exception as e:
@@ -548,4 +548,120 @@ def sync_all_admin_configs_from_cloud(data_dir: Path | None = None) -> dict:
     except Exception as e:
         print(f"[Supabase Sync] Cloud sync warning: {e}")
         return {"ok": False, "error": str(e)}
+
+
+# =====================================================================
+# 90-DAYS DAILY MARKET & TOOLS SNAPSHOTS
+# =====================================================================
+
+def save_market_daily_snapshot(trade_date: str, snapshot_data: dict) -> dict:
+    """
+    Saves or updates daily market snapshot for trade_date in Supabase table market_daily_snapshots.
+    Payload keys: options_data, straddle_data, open_interest_data, call_vs_put_data,
+                  smart_money_data, delivery_data, mtf_data, breadth_data
+    """
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return {"ok": False, "message": "Supabase not configured"}
+
+    url = f"{cfg['url']}/rest/v1/market_daily_snapshots"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+
+    payload = {
+        "trade_date": trade_date.strip(),
+        "options_data": snapshot_data.get("options_data", {}),
+        "straddle_data": snapshot_data.get("straddle_data", {}),
+        "open_interest_data": snapshot_data.get("open_interest_data", {}),
+        "call_vs_put_data": snapshot_data.get("call_vs_put_data", {}),
+        "smart_money_data": snapshot_data.get("smart_money_data", {}),
+        "delivery_data": snapshot_data.get("delivery_data", {}),
+        "mtf_data": snapshot_data.get("mtf_data", {}),
+        "breadth_data": snapshot_data.get("breadth_data", {}),
+        "updated_at": "now()"
+    }
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+    try:
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=req_headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return {"ok": True, "message": f"Snapshot for {trade_date} saved to Supabase."}
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+
+
+def load_market_daily_snapshot(trade_date: str) -> dict | None:
+    """Loads full market snapshot for a specific trade date from Supabase."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return None
+    url = f"{cfg['url']}/rest/v1/market_daily_snapshots?trade_date=eq.{trade_date.strip()}&select=*"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Accept": "application/json"
+    }
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="GET")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            raw = resp.read().decode("utf-8")
+            items = json.loads(raw or "[]")
+            if items and isinstance(items, list) and len(items) > 0:
+                return items[0]
+    except Exception:
+        pass
+    return None
+
+
+def load_market_snapshots_calendar(days: int = 90) -> list[str]:
+    """Returns list of available trade_date strings in market_daily_snapshots sorted descending."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return []
+    url = f"{cfg['url']}/rest/v1/market_daily_snapshots?select=trade_date&order=trade_date.desc&limit={days}"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Accept": "application/json"
+    }
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="GET")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            raw = resp.read().decode("utf-8")
+            items = json.loads(raw or "[]")
+            if isinstance(items, list):
+                return [item["trade_date"] for item in items if item.get("trade_date")]
+    except Exception:
+        pass
+    return []
+
+
+def purge_old_market_snapshots(retention_days: int = 90) -> dict:
+    """
+    Deletes snapshots older than retention_days.
+    PostgREST filter: trade_date=lt.(current_date - retention_days)
+    """
+    from datetime import datetime, timedelta, timezone
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return {"ok": False, "message": "Supabase not configured"}
+
+    cutoff_date = (datetime.now(timezone.utc) - timedelta(days=retention_days)).strftime("%Y-%m-%d")
+    url = f"{cfg['url']}/rest/v1/market_daily_snapshots?trade_date=lt.{cutoff_date}"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+    }
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="DELETE")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return {"ok": True, "message": f"Purged snapshots older than {cutoff_date}"}
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
 

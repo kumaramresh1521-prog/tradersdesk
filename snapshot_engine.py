@@ -1,0 +1,337 @@
+"""
+snapshot_engine.py
+TradersDesk 90-Days Daily Market & Tools Snapshot Engine
+Captures, persists to Supabase, queries, and purges daily snapshots across:
+- Options (Option Chain Pro, Call vs Put, Multi-Strike OI)
+- Straddle / Strangle Matrix (ATM Straddle, Decay, IV, Range)
+- Smart Money (FII / DII Cash Net Flow & Participant OI)
+- Delivery Desk Analytics (High Delivery %, Volume Surge Toppers)
+- MTF Margin Financing Desk
+- Market Breadth & Contribution
+"""
+
+from __future__ import annotations
+import json
+import time
+from datetime import datetime, date, timedelta, timezone
+from typing import Any, Dict, List, Optional
+from pathlib import Path
+
+import supabase_engine
+
+ROOT = Path(__file__).resolve().parent
+
+# Local in-memory cache for ultra-fast repeated loads (0ms latency)
+_SNAPSHOT_CACHE: Dict[str, Dict[str, Any]] = {}
+_SNAPSHOT_CACHE_TS: Dict[str, float] = {}
+_CACHE_TTL = 300.0  # 5 minutes in-memory cache
+
+
+def get_ist_today_str() -> str:
+    """Returns today's date in IST as YYYY-MM-DD."""
+    utc_now = datetime.now(timezone.utc)
+    ist_now = utc_now + timedelta(hours=5, minutes=30)
+    return ist_now.strftime("%Y-%m-%d")
+
+
+def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50") -> dict:
+    """Builds clean options snapshot including strikes, PCR, Max Pain, and Greeks."""
+    try:
+        import upstox_engine
+        raw_chain = upstox_engine.get_option_chain(underlying)
+        if not raw_chain or not isinstance(raw_chain, dict):
+            return {}
+
+        strikes_list = raw_chain.get("data") or raw_chain.get("strikes") or []
+        # Keep clean, compact strikes representation (essential fields for historical replay)
+        compact_strikes = []
+        for s in strikes_list[:50]:  # Up to 50 active strikes around ATM
+            if isinstance(s, dict):
+                compact_strikes.append({
+                    "strikePrice": s.get("strike_price") or s.get("strikePrice"),
+                    "callLtp": (s.get("call_options") or {}).get("market_data", {}).get("ltp") or s.get("callLtp") or 0.0,
+                    "callOi": (s.get("call_options") or {}).get("market_data", {}).get("oi") or s.get("callOi") or 0,
+                    "callOiChg": (s.get("call_options") or {}).get("market_data", {}).get("oi_change") or s.get("callOiChg") or 0,
+                    "callIv": (s.get("call_options") or {}).get("option_greeks", {}).get("iv") or s.get("callIv") or 0.0,
+                    "putLtp": (s.get("put_options") or {}).get("market_data", {}).get("ltp") or s.get("putLtp") or 0.0,
+                    "putOi": (s.get("put_options") or {}).get("market_data", {}).get("oi") or s.get("putOi") or 0,
+                    "putOiChg": (s.get("put_options") or {}).get("market_data", {}).get("oi_change") or s.get("putOiChg") or 0,
+                    "putIv": (s.get("put_options") or {}).get("option_greeks", {}).get("iv") or s.get("putIv") or 0.0,
+                    "pcr": s.get("pcr") or 0.0,
+                })
+
+        return {
+            "underlying": underlying,
+            "spotPrice": raw_chain.get("spotPrice") or raw_chain.get("spot"),
+            "expiry": raw_chain.get("expiry"),
+            "availableExpiries": (raw_chain.get("availableExpiries") or [])[:6],
+            "pcr": raw_chain.get("pcr"),
+            "maxPain": raw_chain.get("maxPain"),
+            "atmStrike": raw_chain.get("atmStrike"),
+            "atmStraddle": raw_chain.get("atmStraddle"),
+            "indiaVix": raw_chain.get("indiaVix"),
+            "totalCeOi": raw_chain.get("totalCeOi"),
+            "totalPeOi": raw_chain.get("totalPeOi"),
+            "totalCeOiChange": raw_chain.get("totalCeOiChange"),
+            "totalPeOiChange": raw_chain.get("totalPeOiChange"),
+            "strikes": compact_strikes,
+        }
+    except Exception as e:
+        print(f"[SnapshotEngine] Options snapshot error: {e}")
+        return {}
+
+
+def build_straddle_snapshot() -> dict:
+    """Builds clean ATM Straddle & Strangle snapshot for NIFTY & BANK NIFTY."""
+    res = {}
+    try:
+        from server import compute_straddle_data
+        for idx in ("NIFTY", "BANKNIFTY"):
+            try:
+                st = compute_straddle_data(idx)
+                if st and isinstance(st, dict):
+                    res[idx.lower()] = {
+                        "symbol": idx,
+                        "spotPrice": st.get("spot_price") or st.get("spot"),
+                        "atmStrike": st.get("atm_strike"),
+                        "combinedPremium": st.get("combined_premium") or st.get("straddle_price"),
+                        "callLtp": st.get("call_ltp"),
+                        "putLtp": st.get("put_ltp"),
+                        "decayPoints": st.get("decay_points") or 0.0,
+                        "iv": st.get("atm_iv") or st.get("iv") or 13.5,
+                        "rangeLower": st.get("expected_low") or st.get("range_lower"),
+                        "rangeUpper": st.get("expected_high") or st.get("range_upper"),
+                        "expiry": st.get("expiry"),
+                    }
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[SnapshotEngine] Straddle snapshot error: {e}")
+    return res
+
+
+def build_smart_money_snapshot(trade_date: str) -> dict:
+    """Gathers FII/DII cash net flow and participant OI matrix."""
+    try:
+        from server import build_smart_money
+        sm = build_smart_money({"date": trade_date})
+        if not sm or not isinstance(sm, dict):
+            return {}
+        return {
+            "date": sm.get("date") or trade_date,
+            "gameplan": sm.get("gameplan", {}),
+            "summaryKpis": sm.get("summaryKpis", {}),
+            "cashFlow": sm.get("cashFlow", {}),
+            "participantMatrix": sm.get("participantMatrix", {}) or sm.get("openInterest", {}),
+            "dailyTrend": (sm.get("dailyTrend") or sm.get("fiiOiTrend") or [])[-10:],
+        }
+    except Exception as e:
+        print(f"[SnapshotEngine] Smart money snapshot error: {e}")
+        return {}
+
+
+def build_delivery_snapshot(trade_date: str) -> dict:
+    """Gathers top delivery percentage and volume surge stocks."""
+    try:
+        from server import build_delivery_analytics
+        deliv = build_delivery_analytics({"date": trade_date})
+        if not deliv or not isinstance(deliv, dict):
+            return {}
+        stocks = deliv.get("stocks") or []
+        # Compact top 60 stocks sorted by delivery turnover / %
+        top_stocks = []
+        for s in stocks[:60]:
+            if isinstance(s, dict):
+                top_stocks.append({
+                    "symbol": s.get("symbol"),
+                    "close": s.get("close") or s.get("ltp"),
+                    "changePct": s.get("changePct") or s.get("pChg"),
+                    "deliveryPct": s.get("deliveryPct"),
+                    "avgDeliveryPct": s.get("avgDeliveryPct") or s.get("avg5dDelivPct"),
+                    "deliveryQty": s.get("deliveryQty"),
+                    "deliveryTurnoverCr": s.get("deliveryTurnoverCr"),
+                    "surgeRatio": s.get("surgeRatio") or s.get("volumeSurgeX"),
+                    "signal": s.get("signal") or s.get("category"),
+                })
+        return {
+            "date": deliv.get("date") or trade_date,
+            "summary": deliv.get("summary", {}),
+            "topStocks": top_stocks,
+        }
+    except Exception as e:
+        print(f"[SnapshotEngine] Delivery snapshot error: {e}")
+        return {}
+
+
+def build_mtf_snapshot(trade_date: str) -> dict:
+    """Gathers MTF margin financing snapshot."""
+    try:
+        from server import build_mtf
+        mtf = build_mtf({"date": trade_date})
+        if not mtf or not isinstance(mtf, dict):
+            return {}
+        screened = mtf.get("stockScreener") or mtf.get("stocks") or []
+        top_mtf = []
+        for s in screened[:50]:
+            if isinstance(s, dict):
+                top_mtf.append({
+                    "symbol": s.get("symbol"),
+                    "financedAmountCr": s.get("financedAmountCr") or s.get("marginFundedCr"),
+                    "changeCr": s.get("changeCr"),
+                    "changePct": s.get("changePct"),
+                    "category": s.get("category"),
+                })
+        return {
+            "asOf": mtf.get("asOf") or trade_date,
+            "summary": mtf.get("summary", {}),
+            "dailyTotals": (mtf.get("dailyTotals") or [])[-10:],
+            "topFundedStocks": top_mtf,
+        }
+    except Exception as e:
+        print(f"[SnapshotEngine] MTF snapshot error: {e}")
+        return {}
+
+
+def build_breadth_snapshot(trade_date: str) -> dict:
+    """Gathers market breadth and advance/decline stats for core indices."""
+    res = {}
+    try:
+        from server import fetch_index_symbols
+        for idx in ("nifty50", "banknifty", "sensex", "finnifty", "niftyit", "niftyauto"):
+            try:
+                rows, _, _, _ = fetch_index_symbols(idx)
+                if rows:
+                    adv = sum(1 for r in rows if float(r.get("pChange") or r.get("changePct") or 0) > 0)
+                    dec = sum(1 for r in rows if float(r.get("pChange") or r.get("changePct") or 0) < 0)
+                    tot = len(rows)
+                    b_pct = round((adv / tot) * 100, 2) if tot > 0 else 50.0
+                    res[idx] = {
+                        "total": tot,
+                        "advancers": adv,
+                        "decliners": dec,
+                        "breadthPct": b_pct,
+                    }
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[SnapshotEngine] Breadth snapshot error: {e}")
+    return res
+
+
+def build_daily_market_snapshot(trade_date: str = "") -> dict:
+    """
+    Compiles complete multi-tool snapshot dictionary for a given trade date.
+    Returns:
+    {
+      "trade_date": "YYYY-MM-DD",
+      "options_data": {...},
+      "straddle_data": {...},
+      "open_interest_data": {...},
+      "call_vs_put_data": {...},
+      "smart_money_data": {...},
+      "delivery_data": {...},
+      "mtf_data": {...},
+      "breadth_data": {...}
+    }
+    """
+    t_date = trade_date.strip() or get_ist_today_str()
+
+    options_snap = build_options_snapshot()
+    straddle_snap = build_straddle_snapshot()
+    smart_money_snap = build_smart_money_snapshot(t_date)
+    delivery_snap = build_delivery_snapshot(t_date)
+    mtf_snap = build_mtf_snapshot(t_date)
+    breadth_snap = build_breadth_snapshot(t_date)
+
+    # Call vs Put & Open Interest summaries derived cleanly from options
+    call_vs_put_snap = {
+        "pcr": options_snap.get("pcr"),
+        "totalCallOi": options_snap.get("totalCeOi"),
+        "totalPutOi": options_snap.get("totalPeOi"),
+        "callOiChange": options_snap.get("totalCeOiChange"),
+        "putOiChange": options_snap.get("totalPeOiChange"),
+        "sentiment": "BULLISH" if (options_snap.get("pcr") or 0) > 1.05 else ("BEARISH" if (options_snap.get("pcr") or 0) < 0.85 else "NEUTRAL"),
+    }
+    oi_snap = {
+        "maxPain": options_snap.get("maxPain"),
+        "atmStrike": options_snap.get("atmStrike"),
+        "indiaVix": options_snap.get("indiaVix"),
+        "strikesSummary": options_snap.get("strikes", [])[:20],
+    }
+
+    return {
+        "trade_date": t_date,
+        "options_data": options_snap,
+        "straddle_data": straddle_snap,
+        "open_interest_data": oi_snap,
+        "call_vs_put_data": call_vs_put_snap,
+        "smart_money_data": smart_money_snap,
+        "delivery_data": delivery_snap,
+        "mtf_data": mtf_snap,
+        "breadth_data": breadth_snap,
+    }
+
+
+def capture_and_save_eod_snapshot(target_date: str = "") -> dict:
+    """
+    Main EOD Routine:
+    1. Compiles full multi-tool snapshot.
+    2. Upserts to Supabase table market_daily_snapshots.
+    3. Purges records older than 90 days.
+    """
+    t0 = time.time()
+    t_date = target_date.strip() or get_ist_today_str()
+    print(f"[SnapshotEngine] Compiling EOD snapshot for {t_date}...")
+
+    snapshot = build_daily_market_snapshot(t_date)
+    save_res = supabase_engine.save_market_daily_snapshot(t_date, snapshot)
+
+    # Auto-Purge older than 90 days
+    purge_res = supabase_engine.purge_old_market_snapshots(retention_days=90)
+
+    # Invalidate in-memory cache
+    _SNAPSHOT_CACHE[t_date] = snapshot
+    _SNAPSHOT_CACHE_TS[t_date] = time.time()
+
+    elapsed_ms = round((time.time() - t0) * 1000, 1)
+    print(f"[SnapshotEngine] Snapshot for {t_date} finished in {elapsed_ms}ms. Save: {save_res.get('ok')}, Purge: {purge_res.get('ok')}")
+
+    return {
+        "ok": save_res.get("ok", False),
+        "trade_date": t_date,
+        "latencyMs": elapsed_ms,
+        "saveResult": save_res,
+        "purgeResult": purge_res,
+    }
+
+
+def get_snapshot(trade_date: str) -> Optional[dict]:
+    """
+    Read-Through Cache:
+    1. Returns from memory cache (0ms).
+    2. If miss, loads from Supabase and caches in memory.
+    """
+    t_date = trade_date.strip()
+    if not t_date:
+        return None
+
+    now = time.time()
+    if t_date in _SNAPSHOT_CACHE and (now - _SNAPSHOT_CACHE_TS.get(t_date, 0)) < _CACHE_TTL:
+        return _SNAPSHOT_CACHE[t_date]
+
+    # Load from Supabase
+    snap = supabase_engine.load_market_daily_snapshot(t_date)
+    if snap:
+        _SNAPSHOT_CACHE[t_date] = snap
+        _SNAPSHOT_CACHE_TS[t_date] = now
+        return snap
+    return None
+
+
+def get_calendar(days: int = 90) -> list[str]:
+    """Returns list of all available historical snapshot dates in the last 90 days."""
+    dates = supabase_engine.load_market_snapshots_calendar(days)
+    today_str = get_ist_today_str()
+    if today_str not in dates:
+        dates.insert(0, today_str)
+    return dates
