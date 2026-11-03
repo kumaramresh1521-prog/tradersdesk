@@ -2983,6 +2983,187 @@ if (suiteKey === "callVsPut") {
   }
 
 
+  // Global In-Memory and Session Breadth Caches for Instant (0ms) Universe Switching
+  const _BREADTH_CACHE_MAP = window._BREADTH_CACHE_MAP || {};
+
+  function renderBreadthContributionUI(data, targetIdx, effInterval) {
+    if (!data) return;
+    contribDataCache = data;
+    contribTimeline = data.timeline || [];
+
+    const univSelect = document.getElementById("contribUniverseSelect");
+    if (univSelect && univSelect.value !== targetIdx) {
+      univSelect.value = targetIdx;
+    }
+    const idxBtns = document.querySelectorAll("#contribIndexGroup .contrib-index-btn");
+    idxBtns.forEach(btn => btn.classList.toggle("active", btn.getAttribute("data-index") === targetIdx));
+
+    const intervalSelect = document.getElementById("contribIntervalSelect");
+    if (intervalSelect && intervalSelect.value !== effInterval) {
+      intervalSelect.value = effInterval;
+    }
+
+    // Update Date elements without overwriting user's explicit selection
+    const displayDate = data.displayDate || "22-Sep-2026";
+    const dateInput = document.getElementById("contribDateInput");
+    if (dateInput) {
+      if (!isExplicitContribDate) {
+        dateInput.value = data.requestedDate || data.date || currentContribDate;
+      } else {
+        dateInput.value = currentContribDate;
+      }
+    }
+
+    // Update date badge based on market status
+    const dateBadge = document.getElementById("contribDateDisplayBadge");
+    if (dateBadge) {
+      if (data.isHoliday) {
+        dateBadge.textContent = "🏛️ Holiday";
+        dateBadge.className = "p2-badge p2-badge-amber";
+      } else if (data.isMarketClosed) {
+        dateBadge.textContent = "🔴 Market Closed";
+        dateBadge.className = "p2-badge p2-badge-red";
+      } else {
+        dateBadge.textContent = "🟢 Live (09:15 - 15:40)";
+        dateBadge.className = "p2-badge p2-badge-teal";
+      }
+    }
+
+    // Update Market Status Notice Banner
+    const noticeBanner = document.getElementById("contribMarketNoticeBanner");
+    const noticeText = document.getElementById("contribMarketNoticeText");
+    if (noticeBanner && noticeText) {
+      if (data.holidayNotice) {
+        noticeText.textContent = data.holidayNotice;
+        noticeBanner.style.display = "flex";
+      } else if (data.requestedDate && data.date && data.requestedDate !== data.date) {
+        noticeText.textContent = `🔴 Market was closed on ${data.requestedDate} • Showing Completed Session of ${data.displayDate || data.date}`;
+        noticeBanner.style.display = "flex";
+      } else {
+        noticeBanner.style.display = "none";
+      }
+    }
+
+    // Update spot pill & titles
+    const idxInfo = data.indexInfo || {};
+    const spotVal = document.getElementById("contribSpotVal");
+    const spotChg = document.getElementById("contribSpotChg");
+    const spotTitle = document.getElementById("contribSpotTitle");
+    const niftyTitle = document.getElementById("niftyChartTitle");
+    const breadthTitle = document.getElementById("contribBreadthTitle");
+    const breadthMeta = document.getElementById("contribBreadthMeta");
+    const niftyMeta = document.getElementById("contribNiftyMeta");
+
+    if (spotTitle) spotTitle.textContent = idxInfo.name || targetIdx.toUpperCase();
+    if (breadthTitle) breadthTitle.textContent = `Intraday Breadth (${displayDate})`;
+    if (niftyTitle) niftyTitle.textContent = `${idxInfo.name || targetIdx.toUpperCase()} Spot Chart (${displayDate})`;
+    if (spotVal) spotVal.textContent = Number(idxInfo.spot || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const p2BadgeBreadth = document.getElementById("p2SpotBadge");
+    if (p2BadgeBreadth && idxInfo.spot) {
+      p2BadgeBreadth.textContent = `${idxInfo.name || targetIdx.toUpperCase()} SPOT: ₹` + Number(idxInfo.spot).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    if (spotChg) {
+      const isUp = (idxInfo.change || 0) >= 0;
+      const sign = isUp ? "+" : "";
+      spotChg.className = `spot-chg ${isUp ? 'text-green' : 'text-red'}`;
+      spotChg.textContent = `${sign}${idxInfo.change || 0} (${sign}${idxInfo.changePct || 0}%)`;
+    }
+
+    const summary = data.summary || {};
+    const intervalMap = {
+      "ONE_MINUTE": "1m",
+      "THREE_MINUTE": "3m",
+      "FIVE_MINUTE": "5m",
+      "TEN_MINUTE": "10m",
+      "FIFTEEN_MINUTE": "15m",
+      "THIRTY_MINUTE": "30m",
+      "ONE_DAY": "Day"
+    };
+    const intDisplay = intervalMap[effInterval] || effInterval;
+    const bSum = data.breadthSummary || {};
+    const totalScrips = (summary && summary.totalStocks) ? summary.totalStocks : (bSum.totalSymbols || 50);
+
+    if (breadthMeta) {
+      breadthMeta.textContent = `${idxInfo.name || targetIdx.toUpperCase()} | ${intDisplay} | ${totalScrips}/${totalScrips} scrips`;
+    }
+    if (niftyMeta) {
+      niftyMeta.textContent = `${idxInfo.name || targetIdx.toUpperCase()} | ${intDisplay} | Spot & VWAP`;
+    }
+
+    // Update Breadth Header Metrics Bar (Matching Page 1 exactly)
+    const latestBreadthEl = document.getElementById("contribLatestBreadth");
+    const openBreadthEl = document.getElementById("contribOpenBreadth");
+    const breadthChgEl = document.getElementById("contribBreadthChange");
+    const changeMetricEl = document.getElementById("contribChangeMetric");
+    const xoCountEl = document.getElementById("contribXoCount");
+
+    if (latestBreadthEl) latestBreadthEl.textContent = bSum.latestBreadth !== undefined ? `${Number(bSum.latestBreadth).toFixed(2)}%` : "--";
+    if (openBreadthEl) openBreadthEl.textContent = bSum.openBreadth !== undefined ? `${Number(bSum.openBreadth).toFixed(2)}%` : "--";
+    if (breadthChgEl) {
+      const chg = bSum.change !== undefined ? bSum.change : bSum.breadthChange;
+      const sign = (chg || 0) >= 0 ? "+" : "";
+      breadthChgEl.textContent = chg !== undefined ? `${sign}${Number(chg).toFixed(2)} pts` : "--";
+      if (changeMetricEl) {
+        changeMetricEl.classList.toggle("positive", Number(chg) >= 0);
+        changeMetricEl.classList.toggle("negative", Number(chg) < 0);
+      }
+    }
+    if (xoCountEl) xoCountEl.textContent = `${bSum.x || 0} / ${bSum.o || 0}`;
+
+    // Update Index Spot Header Metrics Bar
+    const niftySpotValEl = document.getElementById("contribNiftySpotVal");
+    const niftyChgValEl = document.getElementById("contribNiftyChgVal");
+    const niftyChgMetricEl = document.getElementById("contribNiftyChgMetric");
+    if (niftySpotValEl) niftySpotValEl.textContent = Number(idxInfo.spot || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (niftyChgValEl) {
+      const isUp = (idxInfo.change || 0) >= 0;
+      const sign = isUp ? "+" : "";
+      niftyChgValEl.textContent = `${sign}${Number(idxInfo.change || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${sign}${idxInfo.changePct || 0}%)`;
+      if (niftyChgMetricEl) {
+        niftyChgMetricEl.classList.toggle("positive", isUp);
+        niftyChgMetricEl.classList.toggle("negative", !isUp);
+      }
+    }
+
+    // Update Summary Card & Split Bar
+    const netBadge = document.getElementById("contribNetPtsBadge");
+    const splitDrag = document.getElementById("contribSplitBarDrag");
+    const splitSupport = document.getElementById("contribSplitBarSupport");
+    const dragPtsLabel = document.getElementById("contribDragPtsLabel");
+    const supportPtsLabel = document.getElementById("contribSupportPtsLabel");
+
+    if (netBadge) {
+      const isNetPos = (summary.netPoints || 0) >= 0;
+      const sign = isNetPos ? "+" : "";
+      netBadge.className = `contrib-net-badge ${isNetPos ? 'text-green' : 'text-red'}`;
+      netBadge.textContent = `Net ${sign}${summary.netPoints || 0} pts`;
+    }
+
+    const dragPct = summary.dragRatioPct || 34.9;
+    const supportPct = summary.supportRatioPct || 65.1;
+
+    if (splitDrag) {
+      splitDrag.style.width = `${dragPct}%`;
+      splitDrag.title = `Decliners dragging ${dragPct}% (${summary.draggingPoints} pts)`;
+    }
+    if (splitSupport) {
+      splitSupport.style.width = `${supportPct}%`;
+      splitSupport.title = `Advancers supporting ${supportPct}% (+${summary.supportingPoints} pts)`;
+    }
+
+    if (dragPtsLabel) dragPtsLabel.textContent = `${summary.draggingPoints || 0}`;
+    if (supportPtsLabel) supportPtsLabel.textContent = `+${summary.supportingPoints || 0}`;
+
+    // Render Tables
+    renderContributionTables();
+
+    // Render Dual Synchronized Charts (Exact Page 1 Breadth Styling)
+    requestAnimationFrame(() => {
+      renderIntradayBreadthChart(contribTimeline);
+      renderIntradayIndexChart(contribTimeline, idxInfo);
+    });
+  }
+
   async function loadBreadthContributionSuite(indexKey = null, dateStr = null, intervalVal = null, isRefresh = false) {
     const targetIdx = indexKey || currentContribIndex || "nifty50";
     const effDate = dateStr || currentContribDate || _todayStr;
@@ -2991,9 +3172,29 @@ if (suiteKey === "callVsPut") {
     currentContribDate = effDate;
     currentContribInterval = effInterval;
 
+    const cacheKey = `${targetIdx}__${effDate}__${effInterval}`;
     const reqSeq = ++_contribRequestSeq;
 
-    // Instant Visual Feedback on ALL Interactions
+    // Fast In-Memory & Session Storage Lookup
+    let cached = _BREADTH_CACHE_MAP[cacheKey];
+    if (!cached) {
+      try {
+        const raw = sessionStorage.getItem("td_breadth_" + cacheKey);
+        if (raw) {
+          cached = JSON.parse(raw);
+          _BREADTH_CACHE_MAP[cacheKey] = cached;
+        }
+      } catch (_) {}
+    }
+
+    // INSTANT 0ms Display: If saved data exists, render it immediately without waiting!
+    let hadCached = false;
+    if (cached) {
+      hadCached = true;
+      renderBreadthContributionUI(cached, targetIdx, effInterval);
+    }
+
+    // Visual Feedback Controls
     const dateBadge = document.getElementById("contribDateDisplayBadge");
     const contribRefBtn = document.getElementById("contribRefreshBtn");
     const refIcon = document.getElementById("contribRefreshIcon");
@@ -3002,20 +3203,21 @@ if (suiteKey === "callVsPut") {
     const univSelect = document.getElementById("contribUniverseSelect");
     const idxBtns = document.querySelectorAll("#contribIndexGroup .contrib-index-btn");
 
-    if (spotTitle) spotTitle.textContent = targetIdx.toUpperCase();
+    if (spotTitle && !hadCached) spotTitle.textContent = targetIdx.toUpperCase();
     if (univSelect && univSelect.value !== targetIdx) univSelect.value = targetIdx;
     idxBtns.forEach(btn => btn.classList.toggle("active", btn.getAttribute("data-index") === targetIdx));
 
     if (refIcon) refIcon.classList.add("contrib-spinning");
-    if (refLabel) refLabel.textContent = isRefresh ? "Refreshing..." : "Loading...";
+    if (refLabel) refLabel.textContent = isRefresh ? "Refreshing..." : (hadCached ? "Syncing..." : "Loading...");
     if (contribRefBtn) contribRefBtn.disabled = true;
 
-    if (dateBadge) {
+    if (dateBadge && !hadCached) {
       dateBadge.textContent = "⏳ Loading " + targetIdx.toUpperCase() + "...";
       dateBadge.className = "p2-badge p2-badge-teal";
     }
 
     try {
+      // Lazy load strictly on demand for the clicked universe only (prevents running all 14 universes simultaneously)
       const url = `/api/index-breadth-contribution?index=${encodeURIComponent(targetIdx)}&date=${encodeURIComponent(effDate)}&interval=${encodeURIComponent(effInterval)}${isRefresh ? '&refresh=true' : ''}`;
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -3025,178 +3227,28 @@ if (suiteKey === "callVsPut") {
       // Ignore if a newer request was dispatched while waiting
       if (reqSeq !== _contribRequestSeq) return;
 
-      contribDataCache = data;
-      contribTimeline = data.timeline || [];
+      // Save to memory cache map and sessionStorage for instant 0ms restoration
+      _BREADTH_CACHE_MAP[cacheKey] = data;
+      try {
+        sessionStorage.setItem("td_breadth_" + cacheKey, JSON.stringify(data));
+      } catch (_) {}
 
-      // Sync Controls with returned data
-      if (univSelect && univSelect.value !== targetIdx) {
-        univSelect.value = targetIdx;
-      }
-      const intervalSelect = document.getElementById("contribIntervalSelect");
-      if (intervalSelect && intervalSelect.value !== effInterval) {
-        intervalSelect.value = effInterval;
-      }
-
-      // Update Date elements without overwriting user's explicit selection
-      const displayDate = data.displayDate || "22-Sep-2026";
-      const dateInput = document.getElementById("contribDateInput");
-      if (dateInput) {
-        if (!isExplicitContribDate) {
-          dateInput.value = data.requestedDate || data.date || effDate;
-        } else {
-          dateInput.value = currentContribDate;
-        }
-      }
-
-      // Update date badge based on market status
-      if (dateBadge) {
-        if (data.isHoliday) {
-          dateBadge.textContent = "🏛️ Holiday";
-          dateBadge.className = "p2-badge p2-badge-amber";
-        } else if (data.isMarketClosed) {
-          dateBadge.textContent = "🔴 Market Closed";
-          dateBadge.className = "p2-badge p2-badge-red";
-        } else {
-          dateBadge.textContent = "🟢 Live (09:15 - 15:40)";
-          dateBadge.className = "p2-badge p2-badge-teal";
-        }
-      }
-
-      // Update Market Status Notice Banner
-      const noticeBanner = document.getElementById("contribMarketNoticeBanner");
-      const noticeText = document.getElementById("contribMarketNoticeText");
-      if (noticeBanner && noticeText) {
-        if (data.holidayNotice) {
-          noticeText.textContent = data.holidayNotice;
-          noticeBanner.style.display = "flex";
-        } else if (data.requestedDate && data.date && data.requestedDate !== data.date) {
-          noticeText.textContent = `🔴 Market was closed on ${data.requestedDate} • Showing Completed Session of ${data.displayDate || data.date}`;
-          noticeBanner.style.display = "flex";
-        } else {
-          noticeBanner.style.display = "none";
-        }
-      }
-
-      // Update spot pill
-      const idxInfo = data.indexInfo || {};
-      const spotVal = document.getElementById("contribSpotVal");
-      const spotChg = document.getElementById("contribSpotChg");
-      const niftyTitle = document.getElementById("niftyChartTitle");
-      const breadthTitle = document.getElementById("contribBreadthTitle");
-      const breadthMeta = document.getElementById("contribBreadthMeta");
-      const niftyMeta = document.getElementById("contribNiftyMeta");
-
-      if (spotTitle) spotTitle.textContent = idxInfo.name || targetIdx.toUpperCase();
-      if (breadthTitle) breadthTitle.textContent = `Intraday Breadth (${displayDate})`;
-      if (niftyTitle) niftyTitle.textContent = `${idxInfo.name || targetIdx.toUpperCase()} Spot Chart (${displayDate})`;
-      if (spotVal) spotVal.textContent = Number(idxInfo.spot || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const p2BadgeBreadth = document.getElementById("p2SpotBadge");
-      if (p2BadgeBreadth && idxInfo.spot) {
-        p2BadgeBreadth.textContent = `${idxInfo.name || targetIdx.toUpperCase()} SPOT: ₹` + Number(idxInfo.spot).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
-      if (spotChg) {
-        const isUp = (idxInfo.change || 0) >= 0;
-        const sign = isUp ? "+" : "";
-        spotChg.className = `spot-chg ${isUp ? 'text-green' : 'text-red'}`;
-        spotChg.textContent = `${sign}${idxInfo.change || 0} (${sign}${idxInfo.changePct || 0}%)`;
-      }
-
-      const summary = data.summary || {};
-      const intervalMap = {
-        "ONE_MINUTE": "1m",
-        "THREE_MINUTE": "3m",
-        "FIVE_MINUTE": "5m",
-        "TEN_MINUTE": "10m",
-        "FIFTEEN_MINUTE": "15m",
-        "THIRTY_MINUTE": "30m",
-        "ONE_DAY": "Day"
-      };
-      const intDisplay = intervalMap[effInterval] || effInterval;
-      const bSum = data.breadthSummary || {};
-      const totalScrips = (summary && summary.totalStocks) ? summary.totalStocks : (bSum.totalSymbols || 50);
-
-      if (breadthMeta) {
-        breadthMeta.textContent = `${idxInfo.name || targetIdx.toUpperCase()} | ${intDisplay} | ${totalScrips}/${totalScrips} scrips`;
-      }
-      if (niftyMeta) {
-        niftyMeta.textContent = `${idxInfo.name || targetIdx.toUpperCase()} | ${intDisplay} | Spot & VWAP`;
-      }
-
-      // Update Breadth Header Metrics Bar (Matching Page 1 exactly)
-      const latestBreadthEl = document.getElementById("contribLatestBreadth");
-      const openBreadthEl = document.getElementById("contribOpenBreadth");
-      const breadthChgEl = document.getElementById("contribBreadthChange");
-      const changeMetricEl = document.getElementById("contribChangeMetric");
-      const xoCountEl = document.getElementById("contribXoCount");
-
-      if (latestBreadthEl) latestBreadthEl.textContent = bSum.latestBreadth !== undefined ? `${Number(bSum.latestBreadth).toFixed(2)}%` : "--";
-      if (openBreadthEl) openBreadthEl.textContent = bSum.openBreadth !== undefined ? `${Number(bSum.openBreadth).toFixed(2)}%` : "--";
-      if (breadthChgEl) {
-        const chg = bSum.change !== undefined ? bSum.change : bSum.breadthChange;
-        const sign = (chg || 0) >= 0 ? "+" : "";
-        breadthChgEl.textContent = chg !== undefined ? `${sign}${Number(chg).toFixed(2)} pts` : "--";
-        if (changeMetricEl) {
-          changeMetricEl.classList.toggle("positive", Number(chg) >= 0);
-          changeMetricEl.classList.toggle("negative", Number(chg) < 0);
-        }
-      }
-      if (xoCountEl) xoCountEl.textContent = `${bSum.x || 0} / ${bSum.o || 0}`;
-
-      // Update Index Spot Header Metrics Bar
-      const niftySpotValEl = document.getElementById("contribNiftySpotVal");
-      const niftyChgValEl = document.getElementById("contribNiftyChgVal");
-      const niftyChgMetricEl = document.getElementById("contribNiftyChgMetric");
-      if (niftySpotValEl) niftySpotValEl.textContent = Number(idxInfo.spot || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      if (niftyChgValEl) {
-        const isUp = (idxInfo.change || 0) >= 0;
-        const sign = isUp ? "+" : "";
-        niftyChgValEl.textContent = `${sign}${Number(idxInfo.change || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${sign}${idxInfo.changePct || 0}%)`;
-        if (niftyChgMetricEl) {
-          niftyChgMetricEl.classList.toggle("positive", isUp);
-          niftyChgMetricEl.classList.toggle("negative", !isUp);
-        }
-      }
-
-      // Update Summary Card & Split Bar
-      const netBadge = document.getElementById("contribNetPtsBadge");
-      const splitDrag = document.getElementById("contribSplitBarDrag");
-      const splitSupport = document.getElementById("contribSplitBarSupport");
-      const dragPtsLabel = document.getElementById("contribDragPtsLabel");
-      const supportPtsLabel = document.getElementById("contribSupportPtsLabel");
-
-      if (netBadge) {
-        const isNetPos = (summary.netPoints || 0) >= 0;
-        const sign = isNetPos ? "+" : "";
-        netBadge.className = `contrib-net-badge ${isNetPos ? 'text-green' : 'text-red'}`;
-        netBadge.textContent = `Net ${sign}${summary.netPoints || 0} pts`;
-      }
-
-      const dragPct = summary.dragRatioPct || 34.9;
-      const supportPct = summary.supportRatioPct || 65.1;
-
-      if (splitDrag) {
-        splitDrag.style.width = `${dragPct}%`;
-        splitDrag.title = `Decliners dragging ${dragPct}% (${summary.draggingPoints} pts)`;
-      }
-      if (splitSupport) {
-        splitSupport.style.width = `${supportPct}%`;
-        splitSupport.title = `Advancers supporting ${supportPct}% (+${summary.supportingPoints} pts)`;
-      }
-
-      if (dragPtsLabel) dragPtsLabel.textContent = `${summary.draggingPoints || 0}`;
-      if (supportPtsLabel) supportPtsLabel.textContent = `+${summary.supportingPoints || 0}`;
-
-      // Render Tables
-      renderContributionTables();
-
-      // Render Dual Synchronized Charts (Exact Page 1 Breadth Styling)
-      requestAnimationFrame(() => {
-        renderIntradayBreadthChart(contribTimeline);
-        renderIntradayIndexChart(contribTimeline, idxInfo);
-      });
+      // Smoothly update UI with newly verified live market ticks
+      renderBreadthContributionUI(data, targetIdx, effInterval);
 
     } catch (err) {
       if (reqSeq !== _contribRequestSeq) return;
+
+      // SAFETY: If we already showed cached data, KEEP it on screen! Never wipe the canvas or tables.
+      if (hadCached) {
+        if (dateBadge) {
+          dateBadge.textContent = "🟢 Live (Saved Cache)";
+          dateBadge.className = "p2-badge p2-badge-teal";
+        }
+        console.warn("Retaining saved breadth data for " + targetIdx + " due to network delay:", err);
+        return;
+      }
+
       contribDataCache = null;
       contribTimeline = [];
       const msg = err.message || "Verified breadth and index data are unavailable.";

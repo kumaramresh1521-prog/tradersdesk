@@ -696,10 +696,14 @@
   // --- Sub-Tab 3: Future Buildup Quadrants & Institutional Movers ---
   async function loadBuildupView(forceRefresh = false) {
     try {
+      if (state.buildupData && !forceRefresh) {
+        renderQuadrants(state.buildupData);
+      }
       const url = forceRefresh ? `/api/futures/buildup?refresh=true&_t=${Date.now()}` : '/api/futures/buildup';
       const resB = await fetch(url);
       if (resB.ok) {
         const dataB = await resB.json();
+        state.buildupData = dataB;
         renderQuadrants(dataB);
       }
       // Also render High-Velocity Market Movers & Buzzers in Buildup view
@@ -719,12 +723,16 @@
   // --- Sub-Tab 4: Dedicated Visual Heatmap View ---
   async function loadHeatmapView(forceRefresh = false) {
     try {
+      if (state.heatmapData && !forceRefresh) {
+        renderHeatmap(state.heatmapData);
+      }
       const url = forceRefresh 
         ? `/api/futures/heatmap?sector=${state.sector}&refresh=true&_t=${Date.now()}` 
         : `/api/futures/heatmap?sector=${state.sector}`;
       const resH = await fetch(url);
       if (resH.ok) {
         const dataH = await resH.json();
+        state.heatmapData = dataH;
         renderHeatmap(dataH);
       }
     } catch (err) {

@@ -3312,25 +3312,49 @@ setInterval(updateTotpTimer, 1000);
 
 
 
-async function runBreadth(options = {}) {
+const _APP_BREADTH_CACHE = window._APP_BREADTH_CACHE || {};
 
-  if (isLoading) return;
+async function runBreadth(options = {}) {
 
   const fastRefresh = Boolean(options.fastRefresh);
 
+  const payload = payloadFromForm();
+
+  payload.fastRefresh = fastRefresh;
+
+  const cacheKey = `${payload.universe || 'nifty50'}_${payload.date || ''}_${payload.interval || ''}_${payload.chartMode || ''}`;
+
+  let hadCached = false;
+  if (!fastRefresh && _APP_BREADTH_CACHE[cacheKey]) {
+    hadCached = true;
+    const cData = _APP_BREADTH_CACHE[cacheKey];
+    latestData = cData;
+    updateSummary(cData);
+    drawChart(cData.timeline || []);
+    if (cData.sectorBreadth && cData.sectorBreadth.length) {
+      renderSectorHeatmap(cData.sectorBreadth);
+    }
+    if (els.adCanvas) {
+      resizeAdCanvases();
+      drawAdChart(cData.timeline || []);
+    }
+    if (els.niftyAdCanvas) {
+      resizeNiftyAdCanvas();
+      drawNiftyAdChart(cData.timeline || []);
+    }
+  }
+
+  if (isLoading) return;
+
   setBusy(true, fastRefresh ? "refresh" : "run");
 
-  setRefreshState(fastRefresh ? "Refreshing..." : "Running...");
+  setRefreshState(fastRefresh ? "Refreshing..." : (hadCached ? "Updating..." : "Running..."));
 
   setMessage([]);
 
   hideTooltip();
 
   try {
-
-    const payload = payloadFromForm();
-
-    payload.fastRefresh = fastRefresh;
 
     const res = await fetch("/api/breadth", {
 
@@ -3349,6 +3373,8 @@ async function runBreadth(options = {}) {
       throw new Error(data.message || "Breadth request failed");
 
     }
+
+    _APP_BREADTH_CACHE[cacheKey] = data;
 
     latestData = data;
 
@@ -3399,6 +3425,12 @@ async function runBreadth(options = {}) {
     loadNifty({ fastRefresh: true });
 
   } catch (error) {
+
+    if (hadCached) {
+      console.warn("Using cached breadth data due to sync/network delay:", error);
+      setRefreshState("Ready (Cached)");
+      return;
+    }
 
     latestData = null;
 
@@ -6462,7 +6494,13 @@ let smHistoryHoverIdx = null;
 
 
 
+let _smLastLoadedTs = 0;
+
 async function loadSmartMoneyData(requestedDate = "", forceRefresh = false) {
+  // In-memory 0ms retention when switching tabs
+  if (_poiLoaded && _poiData && !forceRefresh && (Date.now() - _smLastLoadedTs < 60000) && (!requestedDate || requestedDate === "")) {
+    return;
+  }
 
   const smBtn = els.smRefreshBtn;
 
@@ -6541,6 +6579,8 @@ async function loadSmartMoneyData(requestedDate = "", forceRefresh = false) {
     _poiData = data;
 
     _poiLoaded = true;
+
+    _smLastLoadedTs = Date.now();
 
 
 
@@ -9318,11 +9358,17 @@ let delivSortDir = "desc";
 
 
 
+let _delivLastLoadedTs = 0;
+
 async function loadDeliveryAnalytics(dateStr) {
+  // In-memory 0ms retention when switching tabs
+  if (delivDataGlobal && (Date.now() - _delivLastLoadedTs < 60000) && (!dateStr || dateStr === "")) {
+    return;
+  }
 
   try {
 
-    if (els.delivStatusBadge) {
+    if (els.delivStatusBadge && !delivDataGlobal) {
 
       els.delivStatusBadge.textContent = "⏳ Fetching NSE Delivery Data...";
 
@@ -9369,6 +9415,8 @@ async function loadDeliveryAnalytics(dateStr) {
 
 
     delivDataGlobal = data;
+
+    _delivLastLoadedTs = Date.now();
 
     delivDataGlobal.allStocks = (data.stocks || []).slice();
 
@@ -11381,11 +11429,18 @@ function mtaFmt(str) { return formatMtfDate(str); }
 
 // ── Main data loader ─────────────────────────────────────────────────────────
 
+let _mtfLastLoadedTs = 0;
+
 async function loadMtfData(options = {}) {
 
   const forceRefresh  = Boolean(options.forceRefresh);
 
   const selectedDate  = options.date || (els.mtfSessionSelect ? els.mtfSessionSelect.value : '');
+
+  // In-memory 0ms retention when switching tabs
+  if (mtaData && !forceRefresh && (Date.now() - _mtfLastLoadedTs < 60000) && (!selectedDate || selectedDate === 'auto')) {
+    return;
+  }
 
   const statusEl      = document.getElementById('mtaAsOfStatus');
 
@@ -11430,6 +11485,8 @@ async function loadMtfData(options = {}) {
     if (data && data.ok) {
 
       mtaData = data;
+
+      _mtfLastLoadedTs = Date.now();
 
       if (data.dailyTotals && Array.isArray(data.dailyTotals)) {
 
