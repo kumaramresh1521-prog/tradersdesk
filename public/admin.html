@@ -3913,8 +3913,8 @@
               </td>
               <td>
                 <div style="display:flex; flex-wrap:wrap; gap:5px;">
-                  <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(16,185,129,0.15); color:#34d399; border-color:rgba(16,185,129,0.3);">⚡ Opts (${s.options_count || 0})</span>
-                  <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(244,63,94,0.15); color:#fb7185; border-color:rgba(244,63,94,0.3);">🎯 Strd (${s.straddle_nifty_decay != null ? s.straddle_nifty_decay + '%' : 'Saved'})</span>
+                  <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(16,185,129,0.15); color:#34d399; border-color:rgba(16,185,129,0.3);">⚡ Opts (${s.options_instruments_count ? s.options_instruments_count + ' Inst' : (s.options_count || 0) + ' Str'})</span>
+                  <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(244,63,94,0.15); color:#fb7185; border-color:rgba(244,63,94,0.3);">🎯 Strd (${s.straddle_symbols_count ? s.straddle_symbols_count + ' Idx' : (s.straddle_nifty_decay != null ? s.straddle_nifty_decay + '%' : 'Saved')})</span>
                   <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(59,130,246,0.15); color:#60a5fa; border-color:rgba(59,130,246,0.3);">💼 FII/DII (${s.smart_money_participants || 0}P)</span>
                   <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(245,158,11,0.15); color:#fbbf24; border-color:rgba(245,158,11,0.3);">🚚 Deliv (${s.delivery_stocks_count || 0})</span>
                   <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(168,85,247,0.15); color:#c084fc; border-color:rgba(168,85,247,0.3);">💳 MTF (${s.mtf_stocks_count || 0})</span>
@@ -3975,19 +3975,26 @@
           bodyEl.innerHTML = `
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
               <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.08); padding:12px; border-radius:8px;">
-                <h4 style="margin:0 0 8px 0; color:#38bdf8; font-size:13px;">⚡ Option Chain Pro &amp; PCR</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <h4 style="margin:0; color:#38bdf8; font-size:13px;">⚡ Option Chain Pro &amp; PCR</h4>
+                  <span style="font-size:11px; color:#34d399; background:rgba(16,185,129,0.12); padding:2px 6px; border-radius:4px;">${(opt.instrument_keys || Object.keys(opt.instruments || {})).filter(k => k.includes('|')).length || 1} Instruments</span>
+                </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
                   <div>Spot: <strong style="color:#fff;">₹${opt.spotPrice || '--'}</strong></div>
                   <div>PCR: <strong style="color:#34d399;">${opt.pcr || '--'}</strong></div>
                   <div>Max Pain: <strong style="color:#f59e0b;">${opt.maxPain || '--'}</strong></div>
                   <div>India VIX: <strong style="color:#fb7185;">${opt.indiaVix || '--'}</strong></div>
                   <div>ATM Straddle: <strong style="color:#fff;">₹${opt.atmStraddle || '--'}</strong></div>
-                  <div>Archived Strikes: <strong style="color:#38bdf8;">${(opt.strikes || []).length} strikes</strong></div>
+                  <div>Nifty Strikes: <strong style="color:#38bdf8;">${(opt.strikes || []).length} strikes</strong></div>
                 </div>
+                ${opt.instruments ? `<div style="margin-top:8px; font-size:11px; color:#94a3b8; border-top:1px dashed rgba(255,255,255,0.08); padding-top:6px;">Multi-Instrument: <strong style="color:#e2e8f0;">${(opt.instrument_keys || []).map(k => k.split('|')[1]).join(', ') || '6 Indices + 10 Liquid Stocks'}</strong></div>` : ''}
               </div>
 
               <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.08); padding:12px; border-radius:8px;">
-                <h4 style="margin:0 0 8px 0; color:#fb7185; font-size:13px;">🎯 ATM Straddle Desk (370-min Curve)</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <h4 style="margin:0; color:#fb7185; font-size:13px;">🎯 ATM Straddle Desk (370-min Curve)</h4>
+                  <span style="font-size:11px; color:#fb7185; background:rgba(244,63,94,0.12); padding:2px 6px; border-radius:4px;">${Object.keys(strd).filter(k => k.toLowerCase() === k).length || 2} Indices</span>
+                </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
                   <div>Nifty Strike: <strong style="color:#fff;">${(strd.nifty || {}).atmStrike || '--'}</strong></div>
                   <div>Straddle LTP: <strong style="color:#fb7185;">₹${(strd.nifty || {}).combinedPremium || '--'}</strong></div>
@@ -3996,6 +4003,7 @@
                   <div>Bank Nifty Strike: <strong style="color:#fff;">${(strd.banknifty || {}).atmStrike || '--'}</strong></div>
                   <div>Bank Nifty LTP: <strong style="color:#fb7185;">₹${(strd.banknifty || {}).combinedPremium || '--'}</strong></div>
                 </div>
+                <div style="margin-top:8px; font-size:11px; color:#94a3b8; border-top:1px dashed rgba(255,255,255,0.08); padding-top:6px;">All Dropdown Indices: <strong style="color:#e2e8f0;">${Object.keys(strd).filter(k => k.toLowerCase() === k).map(k => k.toUpperCase()).join(', ')}</strong></div>
               </div>
             </div>
 

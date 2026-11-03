@@ -693,6 +693,8 @@ def load_market_snapshots_summary_list(days: int = 90) -> list[dict]:
                 oi = item.get("open_interest_data") or {}
                 cvp = item.get("call_vs_put_data") or {}
 
+                strd_lower_keys = [k for k in strd.keys() if k.islower()]
+                opt_inst_keys = opt.get("instrument_keys") or [k for k in (opt.get("instruments") or {}).keys() if "|" in k] or ([opt.get("underlying") or "NIFTY"] if opt.get("strikes") else [])
                 res.append({
                     "trade_date": item.get("trade_date"),
                     "created_at": item.get("created_at"),
@@ -700,6 +702,9 @@ def load_market_snapshots_summary_list(days: int = 90) -> list[dict]:
                     "spot_price": opt.get("spotPrice"),
                     "pcr": opt.get("pcr"),
                     "options_count": len(opt.get("strikes", [])),
+                    "options_instruments_count": len(opt_inst_keys),
+                    "straddle_symbols_count": len(strd_lower_keys),
+                    "straddle_symbols": [k.upper() for k in strd_lower_keys],
                     "straddle_nifty_decay": (strd.get("nifty") or {}).get("decayPct"),
                     "straddle_nifty_ltp": (strd.get("nifty") or {}).get("combinedPremium"),
                     "straddle_points_count": len((strd.get("nifty") or {}).get("points", [])),

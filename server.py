@@ -20809,28 +20809,66 @@ class RequestHandler(BaseHTTPRequestHandler):
             return self.send_json(200, get_cached_breadth_contribution(idx, date_param, interval=interval, force_refresh=force))
 
         if path == "/api/open-interest" or path.startswith("/api/open-interest/"):
-
             query = urllib.parse.parse_qs(parsed.query)
-
             sym = query.get("symbol", [None])[0]
-
             if not sym and path.startswith("/api/open-interest/"):
-
                 sym = path.split("/api/open-interest/")[1].strip("/").upper()
-
             if not sym:
-
                 sym = "NIFTY"
-
             exp = query.get("expiry", [None])[0]
-
             try:
-
                 s_range = int(query.get("range", query.get("strike_range", [10]))[0])
-
             except Exception:
-
                 s_range = 10
+
+            date_param = (query.get("date") or query.get("trade_date") or [""])[0].strip()
+            today_ist = now_ist().strftime("%Y-%m-%d")
+            if date_param and date_param != today_ist and date_param != "today":
+                try:
+                    import snapshot_engine
+                    snap = snapshot_engine.get_snapshot(date_param)
+                    if snap and snap.get("open_interest_data"):
+                        oi_data = snap["open_interest_data"]
+                        instruments = oi_data.get("instruments", {})
+                        sym_u = sym.upper()
+                        inst_match = (
+                            instruments.get(sym_u)
+                            or instruments.get(f"NSE_INDEX|{sym_u}")
+                            or instruments.get(f"NSE_EQ|{sym_u}")
+                            or instruments.get(f"BSE_INDEX|{sym_u}")
+                        )
+                        if not inst_match and snap.get("options_data", {}).get("instruments"):
+                            inst_match = snap["options_data"]["instruments"].get(sym_u) or snap["options_data"]["instruments"].get(f"NSE_INDEX|{sym_u}") or snap["options_data"]["instruments"].get(f"NSE_EQ|{sym_u}")
+                        if not inst_match and sym_u in ("NIFTY", "NIFTY 50", "NSE_INDEX|NIFTY 50"):
+                            inst_match = oi_data
+
+                        if inst_match:
+                            tot_call = inst_match.get("totalCeOi") or 0
+                            tot_put = inst_match.get("totalPeOi") or 0
+                            pcr_val = float(inst_match.get("pcr") or 1.0)
+                            return self.send_json(200, {
+                                "ok": True,
+                                "symbol": sym_u,
+                                "isHistorical": True,
+                                "tradeDate": date_param,
+                                "spot": inst_match.get("spotPrice"),
+                                "spotPrice": inst_match.get("spotPrice"),
+                                "spot_price": inst_match.get("spotPrice"),
+                                "atm_strike": inst_match.get("atmStrike"),
+                                "atmStrike": inst_match.get("atmStrike"),
+                                "pcr": pcr_val,
+                                "overall_pcr": pcr_val,
+                                "max_pain": inst_match.get("maxPain"),
+                                "maxPainStrike": inst_match.get("maxPain"),
+                                "total_call_oi": tot_call,
+                                "total_put_oi": tot_put,
+                                "total_call_change": inst_match.get("totalCeOiChange") or 0,
+                                "total_put_change": inst_match.get("totalPeOiChange") or 0,
+                                "strikes": inst_match.get("strikesSummary") or inst_match.get("strikes", []),
+                                "as_of": f"{date_param} 15:30:00 IST",
+                            })
+                except Exception as ex:
+                    print(f"[Server] Historical OI lookup error: {ex}")
 
             return self.send_json(200, open_interest_engine.get_open_interest_data(sym, exp, s_range))
 
@@ -21139,36 +21177,49 @@ class RequestHandler(BaseHTTPRequestHandler):
             if trade_date and trade_date != "today":
                 import snapshot_engine
                 snap = snapshot_engine.get_snapshot(trade_date)
-                if snap and snap.get("options_data") and snap["options_data"].get("strikes"):
-                    opt = snap["options_data"]
-                    return self.send_json(200, {
-                        "ok": True,
-                        "isLive": False,
-                        "isHistorical": True,
-                        "source": "Supabase Historical EOD Snapshot",
-                        "message": f"Historical EOD Snapshot for {trade_date}",
-                        "tradeDate": trade_date,
-                        "instrumentKey": inst_key,
-                        "underlying": "NIFTY 50",
-                        "spotPrice": opt.get("spotPrice"),
-                        "dayChange": 0.0,
-                        "dayChangePct": 0.0,
-                        "expiry": opt.get("expiry", expiry),
-                        "availableExpiries": opt.get("availableExpiries", []),
-                        "pcr": opt.get("pcr"),
-                        "maxPain": opt.get("maxPain"),
-                        "atmStrike": opt.get("atmStrike"),
-                        "atmStraddle": opt.get("atmStraddle"),
-                        "indiaVix": opt.get("indiaVix"),
-                        "totalCeOi": opt.get("totalCeOi"),
-                        "totalPeOi": opt.get("totalPeOi"),
-                        "totalCeOiChange": opt.get("totalCeOiChange"),
-                        "totalPeOiChange": opt.get("totalPeOiChange"),
-                        "data": opt.get("strikes", []),
-                        "marketOpen": False,
-                        "isMarketClosed": True,
-                        "lastUpdated": f"{trade_date} 15:30:00",
-                    })
+                if snap and snap.get("options_data"):
+                    options_data = snap["options_data"]
+                    instruments = options_data.get("instruments", {})
+                    # Look up by full key, uppercase, or stripped symbol
+                    opt = (
+                        instruments.get(inst_key)
+                        or instruments.get(inst_key.upper())
+                        or instruments.get(inst_key.split("|")[-1].strip().upper())
+                    )
+                    if not opt and (inst_key in ("NSE_INDEX|Nifty 50", "NIFTY", "NIFTY 50", "nifty") or not instruments):
+                        opt = options_data
+
+                    if opt and (opt.get("strikes") or opt.get("data")):
+                        strikes_data = opt.get("strikes") or opt.get("data") or []
+                        und_name = opt.get("underlying") or inst_key.split("|")[-1]
+                        return self.send_json(200, {
+                            "ok": True,
+                            "isLive": False,
+                            "isHistorical": True,
+                            "source": "Supabase Historical EOD Snapshot",
+                            "message": f"Historical EOD Snapshot for {trade_date}",
+                            "tradeDate": trade_date,
+                            "instrumentKey": opt.get("instrumentKey") or inst_key,
+                            "underlying": und_name,
+                            "spotPrice": opt.get("spotPrice"),
+                            "dayChange": 0.0,
+                            "dayChangePct": 0.0,
+                            "expiry": opt.get("expiry", expiry),
+                            "availableExpiries": opt.get("availableExpiries", []),
+                            "pcr": opt.get("pcr"),
+                            "maxPain": opt.get("maxPain"),
+                            "atmStrike": opt.get("atmStrike"),
+                            "atmStraddle": opt.get("atmStraddle"),
+                            "indiaVix": opt.get("indiaVix"),
+                            "totalCeOi": opt.get("totalCeOi"),
+                            "totalPeOi": opt.get("totalPeOi"),
+                            "totalCeOiChange": opt.get("totalCeOiChange"),
+                            "totalPeOiChange": opt.get("totalPeOiChange"),
+                            "data": strikes_data,
+                            "marketOpen": False,
+                            "isMarketClosed": True,
+                            "lastUpdated": f"{trade_date} 15:30:00",
+                        })
 
             return self.send_json(200, upstox_engine.get_option_chain(inst_key, expiry_date=expiry, force_refresh=refresh))
 
@@ -22868,28 +22919,66 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, get_cached_breadth_contribution(idx, date_param, interval=interval, force_refresh=force))
 
             if parsed.path == "/api/open-interest" or parsed.path.startswith("/api/open-interest/"):
-
                 payload = self.read_body()
-
                 sym = payload.get("symbol")
-
                 if not sym and parsed.path.startswith("/api/open-interest/"):
-
                     sym = parsed.path.split("/api/open-interest/")[1].strip("/").upper()
-
                 if not sym:
-
                     sym = "NIFTY"
-
                 exp = payload.get("expiry")
-
                 try:
-
                     s_range = int(payload.get("range", payload.get("strike_range", 10)))
-
                 except Exception:
-
                     s_range = 10
+
+                date_param = str(payload.get("date", payload.get("trade_date", ""))).strip()
+                today_ist = now_ist().strftime("%Y-%m-%d")
+                if date_param and date_param != today_ist and date_param != "today":
+                    try:
+                        import snapshot_engine
+                        snap = snapshot_engine.get_snapshot(date_param)
+                        if snap and snap.get("open_interest_data"):
+                            oi_data = snap["open_interest_data"]
+                            instruments = oi_data.get("instruments", {})
+                            sym_u = sym.upper()
+                            inst_match = (
+                                instruments.get(sym_u)
+                                or instruments.get(f"NSE_INDEX|{sym_u}")
+                                or instruments.get(f"NSE_EQ|{sym_u}")
+                                or instruments.get(f"BSE_INDEX|{sym_u}")
+                            )
+                            if not inst_match and snap.get("options_data", {}).get("instruments"):
+                                inst_match = snap["options_data"]["instruments"].get(sym_u) or snap["options_data"]["instruments"].get(f"NSE_INDEX|{sym_u}") or snap["options_data"]["instruments"].get(f"NSE_EQ|{sym_u}")
+                            if not inst_match and sym_u in ("NIFTY", "NIFTY 50", "NSE_INDEX|NIFTY 50"):
+                                inst_match = oi_data
+
+                            if inst_match:
+                                tot_call = inst_match.get("totalCeOi") or 0
+                                tot_put = inst_match.get("totalPeOi") or 0
+                                pcr_val = float(inst_match.get("pcr") or 1.0)
+                                return self.send_json(200, {
+                                    "ok": True,
+                                    "symbol": sym_u,
+                                    "isHistorical": True,
+                                    "tradeDate": date_param,
+                                    "spot": inst_match.get("spotPrice"),
+                                    "spotPrice": inst_match.get("spotPrice"),
+                                    "spot_price": inst_match.get("spotPrice"),
+                                    "atm_strike": inst_match.get("atmStrike"),
+                                    "atmStrike": inst_match.get("atmStrike"),
+                                    "pcr": pcr_val,
+                                    "overall_pcr": pcr_val,
+                                    "max_pain": inst_match.get("maxPain"),
+                                    "maxPainStrike": inst_match.get("maxPain"),
+                                    "total_call_oi": tot_call,
+                                    "total_put_oi": tot_put,
+                                    "total_call_change": inst_match.get("totalCeOiChange") or 0,
+                                    "total_put_change": inst_match.get("totalPeOiChange") or 0,
+                                    "strikes": inst_match.get("strikesSummary") or inst_match.get("strikes", []),
+                                    "as_of": f"{date_param} 15:30:00 IST",
+                                })
+                    except Exception as ex:
+                        print(f"[Server] Historical OI lookup error: {ex}")
 
                 return self.send_json(200, open_interest_engine.get_open_interest_data(sym, exp, s_range))
 
@@ -23486,36 +23575,49 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if trade_date and trade_date != "today":
                     import snapshot_engine
                     snap = snapshot_engine.get_snapshot(trade_date)
-                    if snap and snap.get("options_data") and snap["options_data"].get("strikes"):
-                        opt = snap["options_data"]
-                        return self.send_json(200, {
-                            "ok": True,
-                            "isLive": False,
-                            "isHistorical": True,
-                            "source": "Supabase Historical EOD Snapshot",
-                            "message": f"Historical EOD Snapshot for {trade_date}",
-                            "tradeDate": trade_date,
-                            "instrumentKey": inst_key,
-                            "underlying": "NIFTY 50",
-                            "spotPrice": opt.get("spotPrice"),
-                            "dayChange": 0.0,
-                            "dayChangePct": 0.0,
-                            "expiry": opt.get("expiry", expiry),
-                            "availableExpiries": opt.get("availableExpiries", []),
-                            "pcr": opt.get("pcr"),
-                            "maxPain": opt.get("maxPain"),
-                            "atmStrike": opt.get("atmStrike"),
-                            "atmStraddle": opt.get("atmStraddle"),
-                            "indiaVix": opt.get("indiaVix"),
-                            "totalCeOi": opt.get("totalCeOi"),
-                            "totalPeOi": opt.get("totalPeOi"),
-                            "totalCeOiChange": opt.get("totalCeOiChange"),
-                            "totalPeOiChange": opt.get("totalPeOiChange"),
-                            "data": opt.get("strikes", []),
-                            "marketOpen": False,
-                            "isMarketClosed": True,
-                            "lastUpdated": f"{trade_date} 15:30:00",
-                        })
+                    if snap and snap.get("options_data"):
+                        options_data = snap["options_data"]
+                        instruments = options_data.get("instruments", {})
+                        # Look up by full key, uppercase, or stripped symbol
+                        opt = (
+                            instruments.get(inst_key)
+                            or instruments.get(inst_key.upper())
+                            or instruments.get(inst_key.split("|")[-1].strip().upper())
+                        )
+                        if not opt and (inst_key in ("NSE_INDEX|Nifty 50", "NIFTY", "NIFTY 50", "nifty") or not instruments):
+                            opt = options_data
+
+                        if opt and (opt.get("strikes") or opt.get("data")):
+                            strikes_data = opt.get("strikes") or opt.get("data") or []
+                            und_name = opt.get("underlying") or inst_key.split("|")[-1]
+                            return self.send_json(200, {
+                                "ok": True,
+                                "isLive": False,
+                                "isHistorical": True,
+                                "source": "Supabase Historical EOD Snapshot",
+                                "message": f"Historical EOD Snapshot for {trade_date}",
+                                "tradeDate": trade_date,
+                                "instrumentKey": opt.get("instrumentKey") or inst_key,
+                                "underlying": und_name,
+                                "spotPrice": opt.get("spotPrice"),
+                                "dayChange": 0.0,
+                                "dayChangePct": 0.0,
+                                "expiry": opt.get("expiry", expiry),
+                                "availableExpiries": opt.get("availableExpiries", []),
+                                "pcr": opt.get("pcr"),
+                                "maxPain": opt.get("maxPain"),
+                                "atmStrike": opt.get("atmStrike"),
+                                "atmStraddle": opt.get("atmStraddle"),
+                                "indiaVix": opt.get("indiaVix"),
+                                "totalCeOi": opt.get("totalCeOi"),
+                                "totalPeOi": opt.get("totalPeOi"),
+                                "totalCeOiChange": opt.get("totalCeOiChange"),
+                                "totalPeOiChange": opt.get("totalPeOiChange"),
+                                "data": strikes_data,
+                                "marketOpen": False,
+                                "isMarketClosed": True,
+                                "lastUpdated": f"{trade_date} 15:30:00",
+                            })
 
                 return self.send_json(200, upstox_engine.get_option_chain(inst_key, expiry_date=expiry, force_refresh=refresh))
 

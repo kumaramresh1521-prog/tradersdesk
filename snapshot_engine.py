@@ -34,78 +34,146 @@ def get_ist_today_str() -> str:
     return ist_now.strftime("%Y-%m-%d")
 
 
+# Target instruments for full EOD options snapshot: 6 Major Indices + 10 Liquid F&O Heavyweights
+PRIMARY_OPTIONS_INSTRUMENTS = [
+    # 6 Core Major Indices
+    {"key": "NSE_INDEX|Nifty 50", "aliases": ["NIFTY", "NIFTY 50", "nifty"]},
+    {"key": "NSE_INDEX|Nifty Bank", "aliases": ["BANKNIFTY", "NIFTY BANK", "banknifty"]},
+    {"key": "NSE_INDEX|Nifty Fin Service", "aliases": ["FINNIFTY", "FIN NIFTY", "finnifty"]},
+    {"key": "NSE_INDEX|NIFTY MID SELECT", "aliases": ["MIDCPNIFTY", "MIDCAP NIFTY", "midcpnifty"]},
+    {"key": "BSE_INDEX|SENSEX", "aliases": ["SENSEX", "sensex"]},
+    {"key": "BSE_INDEX|BANKEX", "aliases": ["BANKEX", "bankex"]},
+    # Top 10 Liquid F&O Market Heavyweights
+    {"key": "NSE_EQ|RELIANCE", "aliases": ["RELIANCE", "reliance"]},
+    {"key": "NSE_EQ|HDFCBANK", "aliases": ["HDFCBANK", "hdfcbank"]},
+    {"key": "NSE_EQ|ICICIBANK", "aliases": ["ICICIBANK", "icicibank"]},
+    {"key": "NSE_EQ|SBIN", "aliases": ["SBIN", "sbin"]},
+    {"key": "NSE_EQ|TCS", "aliases": ["TCS", "tcs"]},
+    {"key": "NSE_EQ|INFY", "aliases": ["INFY", "infy"]},
+    {"key": "NSE_EQ|TATAMOTORS", "aliases": ["TATAMOTORS", "tatamotors"]},
+    {"key": "NSE_EQ|BHARTIARTL", "aliases": ["BHARTIARTL", "bhartiartl"]},
+    {"key": "NSE_EQ|ITC", "aliases": ["ITC", "itc"]},
+    {"key": "NSE_EQ|LT", "aliases": ["LT", "lt"]},
+]
+
+
+def _compact_option_chain(raw_chain: dict, instrument_key: str) -> dict:
+    """Extracts compact, high-density strikes and greeks for a single instrument option chain."""
+    if not raw_chain or not isinstance(raw_chain, dict):
+        return {}
+
+    strikes_list = raw_chain.get("data") or raw_chain.get("strikes") or []
+    compact_strikes = []
+    for s in strikes_list[:40]:  # Up to 40 active strikes around ATM
+        if isinstance(s, dict):
+            sp = float(s.get("strike_price") or s.get("strikePrice") or 0.0)
+            compact_strikes.append({
+                "strike_price": sp,
+                "strikePrice": sp,
+                "pcr": float(s.get("pcr") or 0.0),
+                "expiry": s.get("expiry") or raw_chain.get("expiry"),
+                "call_options": s.get("call_options") or {
+                    "market_data": {
+                        "ltp": float(s.get("callLtp") or 0.0),
+                        "oi": int(s.get("callOi") or 0),
+                        "oi_change": int(s.get("callOiChg") or 0),
+                        "volume": int(s.get("callVolume") or 0),
+                    },
+                    "option_greeks": s.get("callGreeks") or {"iv": float(s.get("callIv") or 0.0)},
+                },
+                "put_options": s.get("put_options") or {
+                    "market_data": {
+                        "ltp": float(s.get("putLtp") or 0.0),
+                        "oi": int(s.get("putOi") or 0),
+                        "oi_change": int(s.get("putOiChg") or 0),
+                        "volume": int(s.get("putVolume") or 0),
+                    },
+                    "option_greeks": s.get("putGreeks") or {"iv": float(s.get("putIv") or 0.0)},
+                },
+                "quant_metrics": s.get("quant_metrics", {}),
+            })
+
+    und_name = raw_chain.get("underlying") or instrument_key.split("|")[-1]
+    return {
+        "instrumentKey": raw_chain.get("instrumentKey") or instrument_key,
+        "underlying": und_name,
+        "spotPrice": raw_chain.get("spotPrice") or raw_chain.get("spot"),
+        "expiry": raw_chain.get("expiry"),
+        "availableExpiries": (raw_chain.get("availableExpiries") or [])[:6],
+        "pcr": raw_chain.get("pcr"),
+        "maxPain": raw_chain.get("maxPain"),
+        "atmStrike": raw_chain.get("atmStrike"),
+        "atmStraddle": raw_chain.get("atmStraddle"),
+        "indiaVix": raw_chain.get("indiaVix"),
+        "totalCeOi": raw_chain.get("totalCeOi"),
+        "totalPeOi": raw_chain.get("totalPeOi"),
+        "totalCeOiChange": raw_chain.get("totalCeOiChange"),
+        "totalPeOiChange": raw_chain.get("totalPeOiChange"),
+        "strikes": compact_strikes,
+    }
+
+
 def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50") -> dict:
-    """Builds clean options snapshot including strikes, PCR, Max Pain, and Greeks."""
+    """
+    Builds clean options snapshot with multi-instrument coverage:
+    - 6 core major indices (NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX)
+    - Top liquid F&O stocks (RELIANCE, HDFCBANK, ICICIBANK, SBIN, TCS, INFY, TATAMOTORS, BHARTIARTL, ITC, LT)
+    Maintains 100% backward compatibility by keeping Nifty 50 at root, while providing 'instruments' map.
+    """
     try:
         import upstox_engine
-        raw_chain = upstox_engine.get_option_chain(underlying)
-        if not raw_chain or not isinstance(raw_chain, dict):
-            return {}
-
-        strikes_list = raw_chain.get("data") or raw_chain.get("strikes") or []
-        # Store strikes preserving complete schema required by Upstox Option Chain table & greeks
-        compact_strikes = []
-        for s in strikes_list[:50]:  # Up to 50 active strikes around ATM
-            if isinstance(s, dict):
-                sp = float(s.get("strike_price") or s.get("strikePrice") or 0.0)
-                compact_strikes.append({
-                    "strike_price": sp,
-                    "strikePrice": sp,
-                    "pcr": float(s.get("pcr") or 0.0),
-                    "expiry": s.get("expiry") or raw_chain.get("expiry"),
-                    "call_options": s.get("call_options") or {
-                        "market_data": {
-                            "ltp": float(s.get("callLtp") or 0.0),
-                            "oi": int(s.get("callOi") or 0),
-                            "oi_change": int(s.get("callOiChg") or 0),
-                            "volume": int(s.get("callVolume") or 0),
-                        },
-                        "option_greeks": s.get("callGreeks") or {"iv": float(s.get("callIv") or 0.0)},
-                    },
-                    "put_options": s.get("put_options") or {
-                        "market_data": {
-                            "ltp": float(s.get("putLtp") or 0.0),
-                            "oi": int(s.get("putOi") or 0),
-                            "oi_change": int(s.get("putOiChg") or 0),
-                            "volume": int(s.get("putVolume") or 0),
-                        },
-                        "option_greeks": s.get("putGreeks") or {"iv": float(s.get("putIv") or 0.0)},
-                    },
-                    "quant_metrics": s.get("quant_metrics", {}),
-                })
-
-        return {
-            "underlying": underlying,
-            "spotPrice": raw_chain.get("spotPrice") or raw_chain.get("spot"),
-            "expiry": raw_chain.get("expiry"),
-            "availableExpiries": (raw_chain.get("availableExpiries") or [])[:6],
-            "pcr": raw_chain.get("pcr"),
-            "maxPain": raw_chain.get("maxPain"),
-            "atmStrike": raw_chain.get("atmStrike"),
-            "atmStraddle": raw_chain.get("atmStraddle"),
-            "indiaVix": raw_chain.get("indiaVix"),
-            "totalCeOi": raw_chain.get("totalCeOi"),
-            "totalPeOi": raw_chain.get("totalPeOi"),
-            "totalCeOiChange": raw_chain.get("totalCeOiChange"),
-            "totalPeOiChange": raw_chain.get("totalPeOiChange"),
-            "strikes": compact_strikes,
-        }
     except Exception as e:
-        print(f"[SnapshotEngine] Options snapshot error: {e}")
+        print(f"[SnapshotEngine] upstox_engine import error: {e}")
         return {}
+
+    instruments_map = {}
+    primary_snap = {}
+
+    for inst in PRIMARY_OPTIONS_INSTRUMENTS:
+        key = inst["key"]
+        try:
+            raw = upstox_engine.get_option_chain(key)
+            if raw and isinstance(raw, dict) and (raw.get("ok") or raw.get("spotPrice") or raw.get("data") or raw.get("strikes")):
+                compact = _compact_option_chain(raw, key)
+                instruments_map[key] = compact
+
+                # Also map by actual normalized key if different (e.g. Upstox ISIN for stocks)
+                actual_k = compact.get("instrumentKey")
+                if actual_k and actual_k != key:
+                    instruments_map[actual_k] = compact
+
+                # Also map aliases for instant lookup
+                for alias in inst.get("aliases", []):
+                    instruments_map[alias] = compact
+                    instruments_map[alias.lower()] = compact
+
+                if key == "NSE_INDEX|Nifty 50":
+                    primary_snap = compact
+        except Exception as e:
+            print(f"[SnapshotEngine] Failed fetching option chain for {key}: {e}")
+
+    # Fallback if primary wasn't captured
+    if not primary_snap and instruments_map:
+        primary_snap = next(iter(instruments_map.values()))
+
+    res = dict(primary_snap)
+    res["instruments"] = instruments_map
+    res["instrument_keys"] = [inst["key"] for inst in PRIMARY_OPTIONS_INSTRUMENTS if inst["key"] in instruments_map]
+    return res
 
 
 def build_straddle_snapshot() -> dict:
-    """Builds clean ATM Straddle & Strangle snapshot for NIFTY & BANK NIFTY including full intraday points."""
+    """Builds clean ATM Straddle & Strangle snapshot for all 6 dropdown indices including full 370-min intraday points."""
     res = {}
     try:
         from server import get_straddle_chart_response
-        for idx in ("NIFTY", "BANKNIFTY"):
+        indices = ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX")
+        for idx in indices:
             try:
                 st = get_straddle_chart_response({"symbol": idx})
                 if st and isinstance(st, dict) and st.get("ok"):
                     latest = st.get("latest") or {}
-                    res[idx.lower()] = {
+                    st_data = {
                         "symbol": idx,
                         "spotPrice": latest.get("spot"),
                         "atmStrike": latest.get("straddle_strike") or st.get("atm_strike"),
@@ -125,8 +193,10 @@ def build_straddle_snapshot() -> dict:
                         "latest": latest,
                         "points": st.get("points", []),
                     }
-            except Exception:
-                pass
+                    res[idx.lower()] = st_data
+                    res[idx.upper()] = st_data
+            except Exception as ex_idx:
+                print(f"[SnapshotEngine] Straddle snapshot error for {idx}: {ex_idx}")
     except Exception as e:
         print(f"[SnapshotEngine] Straddle snapshot error: {e}")
     return res
@@ -279,7 +349,22 @@ def build_daily_market_snapshot(trade_date: str = "") -> dict:
     mtf_snap = build_mtf_snapshot(t_date)
     breadth_snap = build_breadth_snapshot(t_date)
 
-    # Call vs Put & Open Interest summaries derived cleanly from options
+    # Call vs Put multi-instrument snapshot
+    cvp_instruments = {}
+    for k, inst in (options_snap.get("instruments") or {}).items():
+        if "|" in k:
+            pcr_val = float(inst.get("pcr") or 0.0)
+            cvp_instruments[k] = {
+                "underlying": inst.get("underlying") or k,
+                "spotPrice": inst.get("spotPrice"),
+                "pcr": pcr_val,
+                "totalCallOi": inst.get("totalCeOi"),
+                "totalPutOi": inst.get("totalPeOi"),
+                "callOiChange": inst.get("totalCeOiChange"),
+                "putOiChange": inst.get("totalPeOiChange"),
+                "sentiment": "BULLISH" if pcr_val > 1.05 else ("BEARISH" if pcr_val < 0.85 else "NEUTRAL"),
+            }
+
     call_vs_put_snap = {
         "pcr": options_snap.get("pcr"),
         "totalCallOi": options_snap.get("totalCeOi"),
@@ -287,12 +372,32 @@ def build_daily_market_snapshot(trade_date: str = "") -> dict:
         "callOiChange": options_snap.get("totalCeOiChange"),
         "putOiChange": options_snap.get("totalPeOiChange"),
         "sentiment": "BULLISH" if (options_snap.get("pcr") or 0) > 1.05 else ("BEARISH" if (options_snap.get("pcr") or 0) < 0.85 else "NEUTRAL"),
+        "instruments": cvp_instruments,
     }
+
+    # Open Interest multi-instrument snapshot
+    oi_instruments = {}
+    for k, inst in (options_snap.get("instruments") or {}).items():
+        if "|" in k:
+            oi_instruments[k] = {
+                "underlying": inst.get("underlying") or k,
+                "spotPrice": inst.get("spotPrice"),
+                "pcr": inst.get("pcr"),
+                "maxPain": inst.get("maxPain"),
+                "atmStrike": inst.get("atmStrike"),
+                "totalCeOi": inst.get("totalCeOi"),
+                "totalPeOi": inst.get("totalPeOi"),
+                "totalCeOiChange": inst.get("totalCeOiChange"),
+                "totalPeOiChange": inst.get("totalPeOiChange"),
+                "strikesSummary": (inst.get("strikes") or [])[:20],
+            }
+
     oi_snap = {
         "maxPain": options_snap.get("maxPain"),
         "atmStrike": options_snap.get("atmStrike"),
         "indiaVix": options_snap.get("indiaVix"),
         "strikesSummary": options_snap.get("strikes", [])[:20],
+        "instruments": oi_instruments,
     }
 
     return {

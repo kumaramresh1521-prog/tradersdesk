@@ -482,5 +482,27 @@
     "liquid": 0.0,
     "securities": 2198,
     "source": "Official NSE Regulatory Archive"
+  },
+  {
+    "date": "2026-10-30",
+    "dt": "30 Oct",
+    "nse": 144107.5,
+    "bse": 0.0,
+    "combined": 144107.5,
+    "fresh": 0.0,
+    "liquid": 0.0,
+    "securities": 2194,
+    "source": "Official NSE Regulatory Archive"
+  },
+  {
+    "date": "2026-11-02",
+    "dt": "02 Nov",
+    "nse": 145033.01,
+    "bse": 0.0,
+    "combined": 145033.01,
+    "fresh": 0.0,
+    "liquid": 0.0,
+    "securities": 2219,
+    "source": "Official NSE Regulatory Archive"
   }
 ]
