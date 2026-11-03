@@ -1,75 +1,75 @@
 {
-  "enabled": false,
-  "adsense_client_id": "",
-  "test_mode": false,
-  "auto_ads": false,
   "slots": {
-    "dashboard_top": {
+    "blog_mid": {
+      "label": "Blog In-Article Mid Banner",
+      "format": "square",
       "enabled": false,
-      "label": "Dashboard Top Leaderboard",
-      "description": "728x90 leaderboard banner at top of Dashboard",
-      "format": "horizontal",
       "slot_id": "",
-      "custom_html": "",
-      "banner_image": "",
+      "banner_alt": "Trading Strategy Feature",
       "banner_link": "",
-      "banner_alt": "Market Analytics Banner"
-    },
-    "dashboard_native": {
-      "enabled": false,
-      "label": "Dashboard Content Native Banner",
-      "description": "Responsive native display banner between dashboard cards",
-      "format": "responsive",
-      "slot_id": "",
       "custom_html": "",
-      "banner_image": "",
-      "banner_link": "",
-      "banner_alt": "Trading Insights Banner"
+      "description": "300x250 medium rectangle or in-feed banner inside article",
+      "banner_image": ""
     },
     "blog_top": {
-      "enabled": false,
       "label": "Blog Article Top Leaderboard",
-      "description": "728x90 or fluid banner above article content",
       "format": "horizontal",
-      "slot_id": "",
-      "custom_html": "",
-      "banner_image": "",
-      "banner_link": "",
-      "banner_alt": "Educational Blog Sponsor"
-    },
-    "blog_mid": {
       "enabled": false,
-      "label": "Blog In-Article Mid Banner",
-      "description": "300x250 medium rectangle or in-feed banner inside article",
-      "format": "square",
       "slot_id": "",
-      "custom_html": "",
-      "banner_image": "",
+      "banner_alt": "Educational Blog Sponsor",
       "banner_link": "",
-      "banner_alt": "Trading Strategy Feature"
+      "custom_html": "",
+      "description": "728x90 or fluid banner above article content",
+      "banner_image": ""
     },
     "blog_bottom": {
-      "enabled": false,
       "label": "Blog Article Footer Banner",
-      "description": "Responsive display banner at end of blog post",
       "format": "responsive",
+      "enabled": false,
       "slot_id": "",
-      "custom_html": "",
-      "banner_image": "",
+      "banner_alt": "Market Tools Promotion",
       "banner_link": "",
-      "banner_alt": "Market Tools Promotion"
+      "custom_html": "",
+      "description": "Responsive display banner at end of blog post",
+      "banner_image": ""
+    },
+    "dashboard_top": {
+      "label": "Dashboard Top Leaderboard",
+      "format": "horizontal",
+      "enabled": false,
+      "slot_id": "",
+      "banner_alt": "Market Analytics Banner",
+      "banner_link": "",
+      "custom_html": "",
+      "description": "728x90 leaderboard banner at top of Dashboard",
+      "banner_image": ""
     },
     "footer_banner": {
-      "enabled": false,
       "label": "Sitewide Footer / Bottom Banner",
-      "description": "728x90 or fluid banner placed above site footer",
       "format": "horizontal",
+      "enabled": false,
       "slot_id": "",
-      "custom_html": "",
-      "banner_image": "",
+      "banner_alt": "Platform Ad",
       "banner_link": "",
-      "banner_alt": "Platform Ad"
+      "custom_html": "",
+      "description": "728x90 or fluid banner placed above site footer",
+      "banner_image": ""
+    },
+    "dashboard_native": {
+      "label": "Dashboard Content Native Banner",
+      "format": "responsive",
+      "enabled": false,
+      "slot_id": "",
+      "banner_alt": "Trading Insights Banner",
+      "banner_link": "",
+      "custom_html": "",
+      "description": "Responsive native display banner between dashboard cards",
+      "banner_image": ""
     }
   },
-  "updated_at": "2026-11-01 21:30:00 IST"
+  "enabled": false,
+  "auto_ads": false,
+  "test_mode": false,
+  "updated_at": "2026-11-01 21:30:00 IST",
+  "adsense_client_id": ""
 }

@@ -145,9 +145,24 @@ def get_navigation() -> Dict[str, Any]:
     if NAV_FILE.exists():
         try:
             with open(NAV_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                d = json.load(f)
+                if isinstance(d, dict) and d.get("items"):
+                    return d
         except Exception:
             pass
+    try:
+        import supabase_engine
+        cloud_nav = supabase_engine.load_app_config_from_supabase("navigation_master")
+        if isinstance(cloud_nav, dict) and cloud_nav.get("items"):
+            try:
+                DATA_DIR.mkdir(parents=True, exist_ok=True)
+                with open(NAV_FILE, "w", encoding="utf-8") as f:
+                    json.dump(cloud_nav, f, indent=2)
+            except Exception:
+                pass
+            return cloud_nav
+    except Exception:
+        pass
     return {"updatedAt": datetime.utcnow().isoformat() + "Z", "items": []}
 
 def save_navigation(data: Any) -> bool:
@@ -392,7 +407,7 @@ DEFAULT_FOOTER_DATA = {
 }
 
 def get_footer_links_data() -> dict:
-    """Loads footer configuration from data/footer_links.json, repository root, or defaults."""
+    """Loads footer configuration from data/footer_links.json, Supabase cloud, repository root, or defaults."""
     if FOOTER_FILE.exists():
         try:
             with open(FOOTER_FILE, "r", encoding="utf-8") as f:
@@ -401,6 +416,19 @@ def get_footer_links_data() -> dict:
                     return d
         except Exception:
             pass
+    try:
+        import supabase_engine
+        cloud_d = supabase_engine.load_app_config_from_supabase("footer_links")
+        if isinstance(cloud_d, dict) and cloud_d.get("columns"):
+            try:
+                DATA_DIR.mkdir(parents=True, exist_ok=True)
+                with open(FOOTER_FILE, "w", encoding="utf-8") as f:
+                    json.dump(cloud_d, f, indent=2)
+            except Exception:
+                pass
+            return cloud_d
+    except Exception:
+        pass
     rf = ROOT_DIR / "footer_links.json"
     if rf.exists():
         try:
@@ -499,9 +527,24 @@ def list_pages() -> List[Dict[str, Any]]:
     if PAGES_FILE.exists():
         try:
             with open(PAGES_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                pages = json.load(f)
+                if pages:
+                    return pages
         except Exception:
             pass
+    try:
+        import supabase_engine
+        cloud_pages = supabase_engine.load_app_config_from_supabase("cms_pages")
+        if isinstance(cloud_pages, list):
+            try:
+                DATA_DIR.mkdir(parents=True, exist_ok=True)
+                with open(PAGES_FILE, "w", encoding="utf-8") as f:
+                    json.dump(cloud_pages, f, indent=2)
+            except Exception:
+                pass
+            return cloud_pages
+    except Exception:
+        pass
     return []
 
 def get_page(slug: str) -> Optional[Dict[str, Any]]:
@@ -552,6 +595,11 @@ def delete_page(slug: str) -> bool:
     try:
         with open(PAGES_FILE, "w", encoding="utf-8") as f:
             json.dump(pages, f, indent=2)
+        try:
+            import supabase_engine
+            supabase_engine.save_app_config_to_supabase("cms_pages", pages)
+        except Exception:
+            pass
         return True
     except Exception:
         return False
@@ -562,20 +610,34 @@ def delete_page(slug: str) -> bool:
 # ==============================================================================
 
 def list_posts(published_only: bool = True) -> List[Dict[str, Any]]:
+    posts = []
     if POSTS_FILE.exists():
         try:
             with open(POSTS_FILE, "r", encoding="utf-8") as f:
                 posts = json.load(f)
-                if published_only:
-                    return [
-                        p for p in posts 
-                        if p.get("published") is not False 
-                        and (p.get("status") or "published").lower() != "draft"
-                    ]
-                return posts
         except Exception:
             pass
-    return []
+    if not posts:
+        try:
+            import supabase_engine
+            cloud_posts = supabase_engine.load_app_config_from_supabase("cms_posts")
+            if isinstance(cloud_posts, list):
+                posts = cloud_posts
+                try:
+                    DATA_DIR.mkdir(parents=True, exist_ok=True)
+                    with open(POSTS_FILE, "w", encoding="utf-8") as f:
+                        json.dump(cloud_posts, f, indent=2)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    if published_only:
+        return [
+            p for p in posts 
+            if p.get("published") is not False 
+            and (p.get("status") or "published").lower() != "draft"
+        ]
+    return posts
 
 def get_post(slug: str) -> Optional[Dict[str, Any]]:
     clean_slug = slug.strip().lstrip("/").lower()
@@ -625,6 +687,11 @@ def delete_post(post_id: str) -> bool:
     try:
         with open(POSTS_FILE, "w", encoding="utf-8") as f:
             json.dump(posts, f, indent=2)
+        try:
+            import supabase_engine
+            supabase_engine.save_app_config_to_supabase("cms_posts", posts)
+        except Exception:
+            pass
         return True
     except Exception:
         return False
@@ -795,6 +862,20 @@ def get_ads_config() -> dict:
                 return json.load(f)
     except Exception:
         pass
+    try:
+        import supabase_engine
+        cloud_ads = supabase_engine.load_app_config_from_supabase("ads_config")
+        if isinstance(cloud_ads, dict):
+            try:
+                p = DATA_DIR / "ads_config.json"
+                p.parent.mkdir(parents=True, exist_ok=True)
+                with open(p, "w", encoding="utf-8") as f:
+                    json.dump(cloud_ads, f, indent=2)
+            except Exception:
+                pass
+            return cloud_ads
+    except Exception:
+        pass
     return {"enabled": False, "slots": {}}
 
 def build_cms_ad_slot(slot_key: str, label: str = "Sponsored Advertisement", margin: str = "24px 0") -> str:
@@ -921,6 +1002,14 @@ def get_platform_settings() -> Dict[str, Any]:
         }
     }
     if not SETTINGS_FILE.exists():
+        try:
+            import supabase_engine
+            cloud_s = supabase_engine.load_app_config_from_supabase("platform_settings")
+            if isinstance(cloud_s, dict):
+                save_platform_settings(cloud_s)
+                return cloud_s
+        except Exception:
+            pass
         save_platform_settings(default_settings)
         return default_settings
     try:
@@ -935,11 +1024,16 @@ def get_platform_settings() -> Dict[str, Any]:
         return default_settings
 
 def save_platform_settings(settings: Dict[str, Any]) -> bool:
-    """Saves platform settings to disk."""
+    """Saves platform settings to disk and Supabase cloud."""
     try:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(settings, f, indent=2, ensure_ascii=False)
+        try:
+            import supabase_engine
+            supabase_engine.save_app_config_to_supabase("platform_settings", settings)
+        except Exception:
+            pass
         return True
     except Exception:
         return False

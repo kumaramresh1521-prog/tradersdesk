@@ -456,3 +456,94 @@ def delete_angel_session_from_supabase() -> bool:
         pass
     return False
 
+
+def sync_all_admin_configs_from_cloud(data_dir: Path | None = None) -> dict:
+    """
+    Called on container boot (e.g. in Cloud Run / Docker / Local startup).
+    Pulls all persistent admin configurations from Supabase app_config table
+    and synchronizes them down to data/*.json so container restarts/scaling
+    never lose admin settings.
+    Also uploads any missing local configs to Supabase if not yet present in the cloud.
+    """
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return {"ok": False, "message": "Supabase not configured"}
+
+    if data_dir is None:
+        data_dir = ROOT / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    CONFIG_FILE_MAP = {
+        "footer_links": "footer_links.json",
+        "navigation_master": "navigation.json",
+        "cms_pages": "pages.json",
+        "cms_posts": "posts.json",
+        "platform_settings": "platform_settings.json",
+        "feature_flags": "feature_flags.json",
+        "ads_config": "ads_config.json",
+        "seo_config": "seo_config.json",
+        "seo_routes": "seo_routes.json",
+        "deleted_seo_routes": "deleted_seo_routes.json",
+    }
+
+    url = f"{cfg['url']}/rest/v1/app_config?select=key,value,updated_at"
+    key_token = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key_token,
+        "Authorization": f"Bearer {key_token}",
+        "Accept": "application/json"
+    }
+
+    synced_from_cloud = []
+    seeded_to_cloud = []
+
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="GET")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            raw = resp.read().decode("utf-8")
+            items = json.loads(raw or "[]")
+            cloud_keys = set()
+            if isinstance(items, list):
+                for item in items:
+                    k = item.get("key")
+                    v = item.get("value")
+                    if not k or v is None:
+                        continue
+                    cloud_keys.add(k)
+                    if k in CONFIG_FILE_MAP:
+                        target_file = data_dir / CONFIG_FILE_MAP[k]
+                        try:
+                            target_file.write_text(json.dumps(v, indent=2, ensure_ascii=False), encoding="utf-8")
+                            synced_from_cloud.append(k)
+                            if k == "footer_links":
+                                try:
+                                    (ROOT / "footer_links.json").write_text(json.dumps(v, indent=2, ensure_ascii=False), encoding="utf-8")
+                                except Exception:
+                                    pass
+                        except Exception as e:
+                            print(f"[Supabase Sync] Error writing {target_file}: {e}")
+
+            # Check if any local configs are missing in Supabase and upload them
+            for k, filename in CONFIG_FILE_MAP.items():
+                if k not in cloud_keys:
+                    local_file = data_dir / filename
+                    if local_file.exists():
+                        try:
+                            content_json = json.loads(local_file.read_text(encoding="utf-8"))
+                            if content_json:
+                                save_app_config_to_supabase(k, content_json)
+                                seeded_to_cloud.append(k)
+                        except Exception as e:
+                            print(f"[Supabase Sync] Error uploading {k} to cloud: {e}")
+
+        summary = f"[Supabase Sync] Synced {len(synced_from_cloud)} configs from cloud. Seeded {len(seeded_to_cloud)} to cloud."
+        print(summary)
+        return {
+            "ok": True,
+            "synced_from_cloud": synced_from_cloud,
+            "seeded_to_cloud": seeded_to_cloud
+        }
+    except Exception as e:
+        print(f"[Supabase Sync] Cloud sync warning: {e}")
+        return {"ok": False, "error": str(e)}
+

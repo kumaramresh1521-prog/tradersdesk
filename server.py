@@ -230,34 +230,51 @@ DEFAULT_FEATURE_FLAGS = {
     "futures_future_vs_oi": False,
 }
 
-def get_feature_flags() -> dict:
-    if not FEATURE_FLAGS_FILE.exists():
-        try:
-            DATA_DIR.mkdir(parents=True, exist_ok=True)
-            write_json(FEATURE_FLAGS_FILE, DEFAULT_FEATURE_FLAGS)
-        except Exception:
-            return dict(DEFAULT_FEATURE_FLAGS)
-    try:
-        flags = read_json(FEATURE_FLAGS_FILE, DEFAULT_FEATURE_FLAGS)
-        merged = dict(DEFAULT_FEATURE_FLAGS)
-        if isinstance(flags, dict):
-            merged.update(flags)
-        return merged
-    except Exception:
-        return dict(DEFAULT_FEATURE_FLAGS)
-
-def save_feature_flags(flags: dict) -> bool:
-    cur = get_feature_flags()
-    if isinstance(flags, dict):
-        for k, v in flags.items():
-            cur[k] = bool(v)
-    try:
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        return write_json(FEATURE_FLAGS_FILE, cur)
-    except Exception as exc:
-        logger.error("Failed saving feature flags: %s", exc)
-        return False
-
+def get_feature_flags() -> dict:
+    if not FEATURE_FLAGS_FILE.exists():
+        try:
+            cloud_flags = supabase_engine.load_app_config_from_supabase("feature_flags")
+            if isinstance(cloud_flags, dict):
+                merged = dict(DEFAULT_FEATURE_FLAGS)
+                merged.update(cloud_flags)
+                DATA_DIR.mkdir(parents=True, exist_ok=True)
+                write_json(FEATURE_FLAGS_FILE, merged)
+                return merged
+        except Exception:
+            pass
+        try:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            write_json(FEATURE_FLAGS_FILE, DEFAULT_FEATURE_FLAGS)
+        except Exception:
+            return dict(DEFAULT_FEATURE_FLAGS)
+    try:
+        flags = read_json(FEATURE_FLAGS_FILE, DEFAULT_FEATURE_FLAGS)
+        merged = dict(DEFAULT_FEATURE_FLAGS)
+        if isinstance(flags, dict):
+            merged.update(flags)
+        return merged
+    except Exception:
+        return dict(DEFAULT_FEATURE_FLAGS)
+
+
+def save_feature_flags(flags: dict) -> bool:
+    cur = get_feature_flags()
+    if isinstance(flags, dict):
+        for k, v in flags.items():
+            cur[k] = bool(v)
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        ok = write_json(FEATURE_FLAGS_FILE, cur)
+        try:
+            supabase_engine.save_app_config_to_supabase("feature_flags", cur)
+        except Exception:
+            pass
+        return ok
+    except Exception as exc:
+        logger.error("Failed saving feature flags: %s", exc)
+        return False
+
+
 INSTRUMENT_URLS = [
     "https://margincalculator.angelone.in/OpenAPI_File/files/OpenAPIScripMaster.json",
     "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json",
@@ -10745,16 +10762,28 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
             return self.send_json(200, {"ok": True, "posts": cms_engine.list_posts(published_only=False)})
 
-        if path == "/api/ads-config":
-            ads_path = Path("data/ads_config.json")
-            if ads_path.exists():
-                try:
-                    with open(ads_path, "r", encoding="utf-8") as af:
-                        return self.send_json(200, {"ok": True, "config": json.load(af)})
-                except Exception:
-                    pass
-            return self.send_json(200, {"ok": True, "config": {"enabled": False, "slots": {}}})
-
+        if path == "/api/ads-config":
+            ads_path = Path("data/ads_config.json")
+            if ads_path.exists():
+                try:
+                    with open(ads_path, "r", encoding="utf-8") as af:
+                        return self.send_json(200, {"ok": True, "config": json.load(af)})
+                except Exception:
+                    pass
+            try:
+                cloud_ads = supabase_engine.load_app_config_from_supabase("ads_config")
+                if isinstance(cloud_ads, dict):
+                    try:
+                        ads_path.parent.mkdir(parents=True, exist_ok=True)
+                        with open(ads_path, "w", encoding="utf-8") as af:
+                            json.dump(cloud_ads, af, indent=2)
+                    except Exception:
+                        pass
+                    return self.send_json(200, {"ok": True, "config": cloud_ads})
+            except Exception:
+                pass
+            return self.send_json(200, {"ok": True, "config": {"enabled": False, "slots": {}}})
+
         if path == "/api/feature-flags":
             return self.send_json(200, {"ok": True, "flags": get_feature_flags()})
 
@@ -11970,6 +11999,11 @@ class RequestHandler(BaseHTTPRequestHandler):
                 with open(ads_path, "w", encoding="utf-8") as af:
                     json.dump(cfg, af, indent=2)
 
+                try:
+                    supabase_engine.save_app_config_to_supabase("ads_config", cfg)
+                except Exception:
+                    pass
+
                 log_system_event("SUCCESS", "MONETIZATION", "Ads configuration updated successfully.")
                 return self.send_json(200, {"ok": True, "message": "Ads configuration updated successfully.", "config": cfg})
 
@@ -12485,6 +12519,10 @@ def start_market_hours_background_poller() -> None:
 
 def main() -> None:
     ensure_cache()
+    try:
+        supabase_engine.sync_all_admin_configs_from_cloud(DATA_DIR)
+    except Exception as exc:
+        logger.warning("Supabase admin config startup sync error: %s", exc)
     threading.Thread(target=lambda: build_indices_overview({}), daemon=True).start()
     threading.Thread(target=_warm_breadth_contributions_worker, daemon=True).start()
     fii_dii_engine.start_fii_dii_background_worker()

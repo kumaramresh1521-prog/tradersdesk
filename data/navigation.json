@@ -1,0 +1,391 @@
+{
+  "items": [
+    {
+      "id": "nav_dashboard",
+      "url": "/",
+      "icon": "⬛",
+      "badge": "",
+      "label": "Dashboard",
+      "active": true,
+      "badgeColor": "",
+      "hasDropdown": false
+    },
+    {
+      "id": "nav_futures",
+      "url": "/futures",
+      "icon": "📈",
+      "badge": "",
+      "label": "Futures Dashboard",
+      "active": true,
+      "columns": [
+        {
+          "items": [
+            {
+              "id": "sub_fut_marketwatch",
+              "url": "/futures",
+              "icon": "📊",
+              "badge": "",
+              "title": "Future Marketwatch",
+              "active": true,
+              "subtitle": "Active contracts matrix, LTP, OI & volume leaders",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_fut_oi",
+              "url": "/futures/open-interest",
+              "icon": "📈",
+              "badge": "",
+              "title": "Future Open Interest",
+              "active": true,
+              "subtitle": "Multi-panel EOD & Live chart, delivery % & option chain",
+              "badgeColor": "teal"
+            },
+            {
+              "id": "sub_fut_buildup",
+              "url": "/futures/buildup",
+              "icon": "🧭",
+              "badge": "",
+              "title": "Buildup Quadrants",
+              "active": true,
+              "subtitle": "Long/short buildup & institutional unwinding flows",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_fut_heatmap",
+              "url": "/futures/heatmap",
+              "icon": "🗺️",
+              "badge": "",
+              "title": "Futures Heatmap",
+              "active": true,
+              "subtitle": "Sectoral visual heat & momentum distribution map",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_fut_intraday",
+              "url": "/futures/future-intraday",
+              "icon": "⚡",
+              "badge": "",
+              "title": "Future Intraday",
+              "active": false,
+              "subtitle": "5-Min Price vs OI divergence, VWAP & Basis (7 Indices)",
+              "badgeColor": "teal",
+              "featureFlag": "futures_future_intraday"
+            }
+          ],
+          "header": "📊 Trading & Open Interest"
+        },
+        {
+          "items": [
+            {
+              "id": "sub_fut_indices",
+              "url": "/futures/indices",
+              "icon": "📐",
+              "badge": "",
+              "title": "Index Term Structure",
+              "active": true,
+              "subtitle": "Cash-futures basis, cost of carry & term curve",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_fut_mwpl",
+              "url": "/futures/mwpl",
+              "icon": "🚫",
+              "badge": "",
+              "title": "MWPL & Ban Radar",
+              "active": true,
+              "subtitle": "Market-Wide Position Limit tracker & ban alerts",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_fut_rollover",
+              "url": "/futures/rollover",
+              "icon": "🔄",
+              "badge": "",
+              "title": "Futures Rollover Matrix",
+              "active": true,
+              "subtitle": "Expiry rollover %, 3M/6M averages & historical velocity",
+              "badgeColor": "teal"
+            },
+            {
+              "id": "sub_fut_vsoi",
+              "url": "/futures/future-vs-oi",
+              "icon": "🎯",
+              "badge": "",
+              "title": "Future vs Open Interest",
+              "active": false,
+              "subtitle": "Dual-axis divergence analysis & historical replay tools",
+              "badgeColor": "teal",
+              "featureFlag": "futures_future_vs_oi"
+            }
+          ],
+          "header": "⚡ Market Structure & Risk"
+        }
+      ],
+      "badgeColor": "",
+      "hasDropdown": true
+    },
+    {
+      "id": "nav_options",
+      "url": "/option-chain-pro",
+      "icon": "⚡",
+      "badge": "",
+      "label": "Options",
+      "active": true,
+      "columns": [
+        {
+          "items": [
+            {
+              "id": "sub_opt_chain",
+              "url": "/option-chain-pro",
+              "icon": "⚡",
+              "badge": "",
+              "title": "Option Chain Pro",
+              "active": true,
+              "subtitle": "Live multi-broker chain, Greeks, PCR & IV skew",
+              "badgeColor": "teal"
+            },
+            {
+              "id": "sub_opt_oi",
+              "url": "/open-interest/nifty",
+              "icon": "📊",
+              "badge": "",
+              "title": "Open Interest Analysis",
+              "active": true,
+              "subtitle": "Live Call vs Put distribution, PCR & Max Pain strike",
+              "badgeColor": "blue"
+            },
+            {
+              "id": "sub_opt_breadth",
+              "url": "/breadth-contribution",
+              "icon": "⚖️",
+              "badge": "",
+              "title": "Breadth & Net Contribution",
+              "active": true,
+              "subtitle": "Intraday breadth advance/decline & stock point impact",
+              "badgeColor": "cyan"
+            }
+          ],
+          "header": "⚡ Option Chains & OI Analytics"
+        },
+        {
+          "items": [
+            {
+              "id": "sub_opt_straddle",
+              "url": "/straddle",
+              "icon": "📉",
+              "badge": "",
+              "title": "ATM Straddle",
+              "active": true,
+              "subtitle": "Live combined CE+PE straddle & synthetic curve",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_opt_call_put",
+              "url": "/call-vs-put-premium",
+              "icon": "⚔️",
+              "badge": "",
+              "title": "Call vs Put Premium",
+              "active": true,
+              "subtitle": "Live CE vs PE comparison, strike skew & pricing imbalance",
+              "badgeColor": "cyan"
+            }
+          ],
+          "header": "📉 Straddle & Options Analysis"
+        }
+      ],
+      "highlight": true,
+      "badgeColor": "",
+      "hasDropdown": true
+    },
+    {
+      "id": "nav_charts",
+      "url": "/chart",
+      "icon": "📈",
+      "badge": "",
+      "label": "Charts",
+      "active": true,
+      "badgeColor": "teal",
+      "hasDropdown": false
+    },
+    {
+      "id": "nav_fiidii",
+      "url": "/fii-dii/cash",
+      "icon": "🏛️",
+      "badge": "",
+      "label": "FII / DII Desk",
+      "active": true,
+      "columns": [
+        {
+          "items": [
+            {
+              "id": "sub_fii_cash",
+              "url": "/fii-dii/cash",
+              "icon": "💵",
+              "badge": "",
+              "title": "FII / DII Cash Market",
+              "active": true,
+              "subtitle": "Daily net buy/sell flow, monthly & yearly trends",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_fii_fno",
+              "url": "/fii-dii/derivatives",
+              "icon": "⚡",
+              "badge": "",
+              "title": "FII / DII Derivatives",
+              "active": true,
+              "subtitle": "Index futures, stock futures & turnover breakdown",
+              "badgeColor": "teal"
+            },
+            {
+              "id": "sub_fii_matrix",
+              "url": "/fii-dii/participant-oi",
+              "icon": "📋",
+              "badge": "",
+              "title": "Participant OI Matrix",
+              "active": true,
+              "subtitle": "Client, DII, FII & Pro open interest positioning",
+              "badgeColor": ""
+            }
+          ],
+          "header": "Institutional Flow & Positioning"
+        }
+      ],
+      "badgeColor": "",
+      "hasDropdown": true
+    },
+    {
+      "id": "nav_delivery",
+      "url": "/delivery",
+      "icon": "📦",
+      "badge": "",
+      "label": "Delivery Desk",
+      "active": true,
+      "badgeColor": "",
+      "hasDropdown": false
+    },
+    {
+      "id": "nav_mtf",
+      "url": "/mtf",
+      "icon": "💳",
+      "badge": "",
+      "label": "MTF Desk",
+      "active": true,
+      "columns": [
+        {
+          "items": [
+            {
+              "id": "sub_mtf_overview",
+              "url": "/mtf",
+              "icon": "📊",
+              "badge": "",
+              "title": "MTF Overview & Total Book",
+              "active": true,
+              "subtitle": "Consolidated NSE + BSE margin book & daily exposures",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_mtf_topstocks",
+              "url": "/mtf/topstocks",
+              "icon": "🔥",
+              "badge": "HOT",
+              "title": "Top 50 MTF Stocks",
+              "active": true,
+              "subtitle": "Active securities, funded value & leverage concentration",
+              "badgeColor": "rose"
+            },
+            {
+              "id": "sub_mtf_retail",
+              "url": "/mtf/retail",
+              "icon": "👥",
+              "badge": "",
+              "title": "Retail vs Institutional",
+              "active": true,
+              "subtitle": "Speculative retail margin vs institutional absorption",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_mtf_movers",
+              "url": "/mtf/movers",
+              "icon": "⚡",
+              "badge": "",
+              "title": "Movers & Squeeze Radar",
+              "active": true,
+              "subtitle": "High MTF expansion & margin short squeeze alerts",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_mtf_sectors",
+              "url": "/mtf/sectors",
+              "icon": "🏗️",
+              "badge": "",
+              "title": "Sector Breakdown",
+              "active": true,
+              "subtitle": "Capital distribution across Banking, IT, Auto & Power",
+              "badgeColor": ""
+            }
+          ],
+          "header": "📊 MTF Books & Stock Screener"
+        },
+        {
+          "items": [
+            {
+              "id": "sub_mtf_trend",
+              "url": "/mtf/trend",
+              "icon": "📈",
+              "badge": "",
+              "title": "Historical Book Trend",
+              "active": true,
+              "subtitle": "Multi-month growth trajectory & market credit cycles",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_mtf_broker",
+              "url": "/mtf/brokers",
+              "icon": "🏢",
+              "badge": "",
+              "title": "Broker Leverage Desk",
+              "active": true,
+              "subtitle": "Official broker interest rates, margin haircuts & tenures",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_mtf_global",
+              "url": "/mtf/global",
+              "icon": "🌐",
+              "badge": "",
+              "title": "Global Market Lens",
+              "active": true,
+              "subtitle": "Macro cross-border margin financing dynamics",
+              "badgeColor": ""
+            },
+            {
+              "id": "sub_mtf_calculator",
+              "url": "/mtf/calculator",
+              "icon": "🧮",
+              "badge": "CALC",
+              "title": "MTF Margin Calculator",
+              "active": true,
+              "subtitle": "Real-time interest cost, capital required & buffer",
+              "badgeColor": "teal"
+            },
+            {
+              "id": "sub_mtf_compare",
+              "url": "/mtf/compare",
+              "icon": "⚖️",
+              "badge": "",
+              "title": "Stock Compare Desk",
+              "active": true,
+              "subtitle": "Side-by-side MTF debt comparison & risk profiling",
+              "badgeColor": ""
+            }
+          ],
+          "header": "🛠️ Leverage Tools & Intel"
+        }
+      ],
+      "badgeColor": "",
+      "hasDropdown": true
+    }
+  ],
+  "updatedAt": "2026-11-03T00:50:04.630441Z"
+}

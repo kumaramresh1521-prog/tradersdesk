@@ -3,189 +3,171 @@
   "columns": [
     {
       "id": "col1",
-      "title": "🏛️ Institutional Desks",
       "links": [
         {
-          "label": "Breadth & Contribution",
           "url": "/breadth-contribution",
           "type": "inst",
+          "label": "Breadth & Contribution",
           "target": "breadth"
         },
         {
-          "label": "FII & DII Smart Money",
           "url": "/fii-dii",
           "type": "inst",
+          "label": "FII & DII Smart Money",
           "target": "smartMoney"
         },
         {
-          "label": "Cash Delivery Absorption",
           "url": "/delivery",
           "type": "inst",
+          "label": "Cash Delivery Absorption",
           "target": "delivery"
         },
         {
-          "label": "MTF Margin Trading Book",
           "url": "/mtf",
           "type": "inst",
+          "label": "MTF Margin Trading Book",
           "target": "mtf"
         },
         {
-          "label": "Open Interest Desk",
           "url": "/open-interest/nifty",
           "type": "link",
+          "label": "Open Interest Desk",
           "target": "_self"
         },
         {
-          "label": "Institutional Dashboard",
           "url": "/dashboard",
           "type": "inst",
+          "label": "Institutional Dashboard",
           "target": "dashboard"
         }
-      ]
+      ],
+      "title": "🏛️ Institutional Desks"
     },
     {
       "id": "col2",
-      "title": "⚡ Derivatives & Options",
       "links": [
         {
-          "label": "Upstox Option Chain Pro",
           "url": "/option-chain-pro",
           "type": "inst",
+          "label": "Upstox Option Chain Pro",
           "target": "upstoxChain"
         },
         {
-          "label": "Future Open Interest & Buildup",
           "url": "/futures/open-interest",
           "type": "inst",
+          "label": "Future Open Interest & Buildup",
           "target": "futures:openInterest"
         },
         {
-          "label": "Futures Sector Heatmap",
           "url": "/futures/heatmap",
           "type": "inst",
+          "label": "Futures Sector Heatmap",
           "target": "futures:heatmap"
         },
         {
-          "label": "Future Marketwatch Matrix",
-          "url": "/futures",
-          "type": "inst",
-          "target": "futures:matrix"
-        },
-        {
-          "label": "Straddle Analytics Engine",
           "url": "/straddle",
           "type": "link",
+          "label": "Straddle Analytics ",
           "target": "_self"
         },
         {
-          "label": "Call vs Put Premium",
-          "url": "/call-vs-put-premium",
-          "type": "link",
-          "target": "_self"
-        },
-        {
-          "label": "Future Buildup Quadrants",
           "url": "/futures/buildup",
           "type": "inst",
+          "label": "Future Buildup Quadrants",
           "target": "futures:buildup"
         },
         {
-          "label": "MWPL & Ban Radar",
           "url": "/futures/mwpl",
           "type": "inst",
+          "label": "MWPL & Ban stock",
           "target": "futures:mwpl"
-        },
-        {
-          "label": "Historical Rollover Matrix",
-          "url": "/futures/rollover",
-          "type": "link",
-          "target": "_self"
         }
-      ]
+      ],
+      "title": "⚡ Derivatives & Options"
     },
     {
       "id": "col3",
-      "title": "📊 Market Analytics & Tools",
       "links": [
         {
-          "label": "Breadth & Net Contribution",
           "url": "/breadth-contribution",
           "type": "link",
+          "label": "Breadth & Net Contribution",
           "target": "_self"
         },
         {
-          "label": "NSE Trading Holiday Calendar",
           "url": "/calendar_studio.html",
           "type": "link",
+          "label": "NSE Trading Holiday Calendar",
           "target": "_self"
         },
         {
-          "label": "Participant OI Matrix",
           "url": "/fii-dii#oi",
           "type": "inst",
+          "label": "Participant OI Matrix",
           "target": "smartMoney:oi"
         },
         {
-          "label": "F&O Sector Visual Heatmap",
           "url": "/futures/heatmap",
           "type": "inst",
+          "label": "F&O Sector Visual Heatmap",
           "target": "futures:heatmap"
         },
         {
-          "label": "Real-Time Options Greeks",
           "url": "/option-chain-pro",
           "type": "inst",
+          "label": "Real-Time Options Greeks",
           "target": "upstoxChain"
         },
         {
-          "label": "Stock Delivery Drilldown",
           "url": "/delivery",
           "type": "inst",
+          "label": "Stock Delivery Drilldown",
           "target": "delivery"
         }
-      ]
+      ],
+      "title": "📊 Market Analytics & Tools"
     },
     {
       "id": "col4",
-      "title": "🛡️ Regulatory & Compliance",
       "links": [
         {
-          "label": "SEBI Regulatory Disclaimer",
           "url": "/disclaimer",
           "type": "link",
+          "label": "SEBI Regulatory Disclaimer",
           "target": "_self"
         },
         {
-          "label": "Privacy & Data Governance",
           "url": "/privacy",
           "type": "link",
+          "label": "Privacy & Data Governance",
           "target": "_self"
         },
         {
-          "label": "Terms of Institutional Service",
           "url": "/terms",
           "type": "link",
+          "label": "Terms of Institutional Service",
           "target": "_self"
         },
         {
-          "label": "Quantitative Model Methodologies",
           "url": "/about",
           "type": "link",
+          "label": "Quantitative Model Methodologies",
           "target": "_self"
         },
         {
-          "label": "Contact & Trader Support",
           "url": "/contact",
           "type": "link",
+          "label": "Contact & Trader Support",
           "target": "_self"
         },
         {
-          "label": "NSE Official Regulatory Archive ↗",
           "url": "https://www.nseindia.com",
           "type": "link",
+          "label": "NSE Official Regulatory Archive ↗",
           "target": "_blank"
         }
-      ]
+      ],
+      "title": "🛡️ Regulatory & Compliance"
     }
   ]
 }

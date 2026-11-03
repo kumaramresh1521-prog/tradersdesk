@@ -1,15 +1,15 @@
 {
-  "maintenance_mode": {
-    "enabled": false,
-    "title": "Scheduled Maintenance & Settlement",
-    "message": "Market Data & Analytics Terminal is undergoing scheduled settlement processing. Live streaming and analysis will resume shortly."
-  },
   "announcement_bar": {
-    "enabled": false,
+    "text": "",
     "type": "info",
     "badge": "LIVE",
-    "text": "",
-    "link_text": "",
-    "link_url": ""
+    "enabled": false,
+    "link_url": "",
+    "link_text": ""
+  },
+  "maintenance_mode": {
+    "title": "Scheduled Maintenance & Settlement",
+    "enabled": false,
+    "message": "Market Data & Analytics Terminal is undergoing scheduled settlement processing. Live streaming and analysis will resume shortly."
   }
 }
