@@ -3237,6 +3237,8 @@ def build_breadth(payload: dict) -> dict:
     universe = str(payload.get("universe") or "nifty50").lower().strip()
     interval = str(payload.get("interval") or "ONE_MINUTE").upper().strip()
     chart_mode = str(payload.get("chartMode") or "carry").lower().strip()
+    if chart_mode not in {"current", "carry", "previous_current"}:
+        chart_mode = "carry"
     pnf_basis = str(payload.get("pnfBasis") or "hl").lower().strip()
     box_pct = str(payload.get("boxPercent") or "1.0").strip()
     data_src = str(payload.get("dataSource") or "angel").strip()
@@ -3312,13 +3314,75 @@ def build_breadth(payload: dict) -> dict:
         except Exception:
             pass
 
-    # Synchronous initial build with concurrency semaphore
-    with _BREADTH_SEMAPHORE:
-        fresh = _build_breadth_internal(payload)
-        if fresh and fresh.get("ok"):
-            with _BREADTH_CACHE_LOCK:
-                _BREADTH_SNAPSHOT_CACHE[cache_key] = {"ts": time.time(), "payload": fresh}
-        return fresh
+    # Fast Fallback: Check if ANY valid cached breadth snapshot exists on disk for this universe
+    fallback_files = sorted(
+        CACHE_DIR.glob(f"breadth_full_{universe}_*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True
+    )
+    for fb_path in fallback_files[:3]:
+        try:
+            fb_res = read_json(fb_path, {})
+            if fb_res.get("ok") and len(fb_res.get("timeline", [])) > 5:
+                with _BREADTH_CACHE_LOCK:
+                    _BREADTH_SNAPSHOT_CACHE[cache_key] = {"ts": time.time(), "payload": fb_res}
+                with _BREADTH_CACHE_LOCK:
+                    can_spawn_fb = cache_key not in _BREADTH_UPDATING_KEYS
+                    if can_spawn_fb:
+                        _BREADTH_UPDATING_KEYS.add(cache_key)
+                if can_spawn_fb:
+                    def _fb_bg_worker():
+                        try:
+                            with _BREADTH_SEMAPHORE:
+                                fresh = _build_breadth_internal(payload)
+                                if fresh and fresh.get("ok"):
+                                    with _BREADTH_CACHE_LOCK:
+                                        _BREADTH_SNAPSHOT_CACHE[cache_key] = {"ts": time.time(), "payload": fresh}
+                        finally:
+                            with _BREADTH_CACHE_LOCK:
+                                _BREADTH_UPDATING_KEYS.discard(cache_key)
+                    threading.Thread(target=_fb_bg_worker, daemon=True).start()
+                return fb_res
+        except Exception:
+            pass
+
+    # Bounded background execution: Never hold the HTTP request handler thread for more than 3.0s
+    with _BREADTH_CACHE_LOCK:
+        can_spawn_cold = cache_key not in _BREADTH_UPDATING_KEYS
+        if can_spawn_cold:
+            _BREADTH_UPDATING_KEYS.add(cache_key)
+
+    if can_spawn_cold:
+        def _cold_compute():
+            try:
+                with _BREADTH_SEMAPHORE:
+                    calc = _build_breadth_internal(payload)
+                    if calc and calc.get("ok"):
+                        with _BREADTH_CACHE_LOCK:
+                            _BREADTH_SNAPSHOT_CACHE[cache_key] = {"ts": time.time(), "payload": calc}
+            except Exception as e:
+                logger.warning("Breadth compute error for %s: %s", cache_key, e)
+            finally:
+                with _BREADTH_CACHE_LOCK:
+                    _BREADTH_UPDATING_KEYS.discard(cache_key)
+
+        t = threading.Thread(target=_cold_compute, daemon=True)
+        t.start()
+        # Wait up to 3.0 seconds for quick in-memory/fast-path completion
+        t.join(timeout=3.0)
+
+        with _BREADTH_CACHE_LOCK:
+            if cache_key in _BREADTH_SNAPSHOT_CACHE:
+                return _BREADTH_SNAPSHOT_CACHE[cache_key]["payload"]
+
+    return {
+        "ok": True,
+        "dataSource": "sample",
+        "isSimulated": True,
+        "universe": universe,
+        "timeline": [],
+        "message": "Breadth calculation in progress, please refresh momentarily."
+    }
 
 
 CALENDAR_SPREAD_CACHE: dict[str, dict] = {}
@@ -9355,8 +9419,49 @@ def get_cached_breadth_contribution(idx: str, date_param: str, interval: str = "
                 except Exception:
                     pass
 
-    # 3. Cold start or forced refresh: compute synchronously
-    return _compute_breadth_contribution_task(norm_idx, effective_date, norm_interval)
+    # 3. Fast fallback: check any previous cached breadth contribution for this index on disk
+    recent_contrib_files = sorted(
+        CACHE_DIR.glob(f"breadth_contrib_{norm_idx}_*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True
+    )
+    for fb_path in recent_contrib_files[:3]:
+        try:
+            with open(fb_path, "r", encoding="utf-8") as df:
+                disk_data = json.load(df)
+                if disk_data.get("ok") and disk_data.get("timeline") and len(disk_data["timeline"]) > 0:
+                    _BREADTH_CONTRIB_CACHE[cache_key] = {"data": disk_data, "_cached_at": time.time() - 3600}
+                    with _BREADTH_RECOMPUTE_LOCK:
+                        if cache_key not in _BREADTH_RECOMPUTING and resolved_cache_key not in _BREADTH_RECOMPUTING:
+                            _BREADTH_RECOMPUTING.add(cache_key)
+                            _BREADTH_RECOMPUTING.add(resolved_cache_key)
+                            threading.Thread(
+                                target=_compute_breadth_contribution_task,
+                                args=(norm_idx, effective_date, norm_interval),
+                                daemon=True,
+                            ).start()
+                    return disk_data
+        except Exception:
+            pass
+
+    # 4. True cold start (zero disk cache): kick off async compute and return immediately (< 2ms) to prevent HTTP 503
+    with _BREADTH_RECOMPUTE_LOCK:
+        if cache_key not in _BREADTH_RECOMPUTING and resolved_cache_key not in _BREADTH_RECOMPUTING:
+            _BREADTH_RECOMPUTING.add(cache_key)
+            _BREADTH_RECOMPUTING.add(resolved_cache_key)
+            threading.Thread(
+                target=_compute_breadth_contribution_task,
+                args=(norm_idx, effective_date, norm_interval),
+                daemon=True,
+            ).start()
+    return {
+        "ok": True,
+        "index": norm_idx,
+        "date": effective_date,
+        "interval": norm_interval,
+        "timeline": [],
+        "message": "Initializing live breadth contribution. Please refresh in a moment."
+    }
 
 
 def sanitize_for_json(obj):
@@ -10117,7 +10222,11 @@ class RequestHandler(BaseHTTPRequestHandler):
                 date_val = now_dt.strftime("%Y-%m-%d")
                 try:
                     threading.Thread(target=trigger_background_indices_update, args=(date_val,), daemon=True).start()
-                    threading.Thread(target=_warm_breadth_contributions_worker, daemon=True).start()
+                    with _WARM_BREADTH_LOCK:
+                        warming_active = _IS_WARMING_BREADTH
+                        last_warm_t = _LAST_WARM_BREADTH_TIME
+                    if not warming_active and (time.time() - last_warm_t >= 45.0):
+                        threading.Thread(target=_warm_breadth_contributions_worker, daemon=True, name="CronTickBreadthWarm").start()
                     res_summary["action"] = "triggered_market_ingestion"
                 except Exception as ex:
                     res_summary["error"] = str(ex)
@@ -10277,8 +10386,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                 "endDate": query.get("endDate", query.get("date", [""]))[0],
                 "universe": query.get("universe", ["nifty50"])[0],
                 "interval": query.get("interval", ["ONE_MINUTE"])[0],
-                "chartMode": query.get("chartMode", ["percent"])[0],
-                "warmupSessions": int(query.get("warmupSessions", ["5"])[0]),
+                "chartMode": query.get("chartMode", ["carry"])[0],
+                "warmupSessions": int(query.get("warmupSessions", ["1"])[0]),
                 "dataSource": query.get("dataSource", ["broker"])[0],
                 "allowSimulated": query.get("allowSimulated", ["false"])[0],
             }
@@ -10310,7 +10419,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             query = urllib.parse.parse_qs(parsed.query)
             force = query.get("refresh", ["false"])[0].lower() in ("1", "true")
             return self.send_json(200, build_fii_dii_cash({"refresh": force}))
-        if path == "/api/fii-derivatives-flow":
+        if path in ("/api/fii-derivatives-flow", "/api/fii-derivatives"):
             try:
                 import fii_dii_engine
                 return self.send_json(200, fii_dii_engine.get_fii_derivatives_flow())
@@ -12506,19 +12615,35 @@ class RequestHandler(BaseHTTPRequestHandler):
             pass
 
 
+_WARM_BREADTH_LOCK = threading.Lock()
+_IS_WARMING_BREADTH = False
+_LAST_WARM_BREADTH_TIME = 0.0
+
+
 def _warm_breadth_contributions_worker() -> None:
-    time.sleep(2)
-    eff_d = resolve_market_session_date(now_ist().strftime("%Y-%m-%d"))
-    all_uvs = [
-        "nifty50", "sensex", "banknifty", "finnifty", "midcpnifty",
-        "niftyit", "niftyauto", "niftypharma", "niftymetal", "niftyfmcg",
-        "niftyenergy", "niftymidcap100", "niftynext50", "nifty500"
-    ]
-    for u in all_uvs:
-        try:
-            get_cached_breadth_contribution(u, eff_d, "ONE_MINUTE", False)
-        except Exception:
-            pass
+    global _IS_WARMING_BREADTH, _LAST_WARM_BREADTH_TIME
+    with _WARM_BREADTH_LOCK:
+        now_ts = time.time()
+        if _IS_WARMING_BREADTH or (now_ts - _LAST_WARM_BREADTH_TIME < 45.0):
+            return
+        _IS_WARMING_BREADTH = True
+
+    try:
+        if not is_market_open():
+            return
+        eff_d = resolve_market_session_date(now_ist().strftime("%Y-%m-%d"))
+        # Benchmark liquid indices only; never run 500-stock loops in background workers
+        core_uvs = ["nifty50", "banknifty", "sensex", "finnifty", "midcpnifty"]
+        for u in core_uvs:
+            try:
+                get_cached_breadth_contribution(u, eff_d, "ONE_MINUTE", False)
+                time.sleep(0.5)
+            except Exception as e:
+                logger.debug("Warm breadth error for %s: %s", u, e)
+    finally:
+        with _WARM_BREADTH_LOCK:
+            _LAST_WARM_BREADTH_TIME = time.time()
+            _IS_WARMING_BREADTH = False
 
 def start_market_hours_background_poller() -> None:
     """
@@ -12544,10 +12669,12 @@ def start_market_hours_background_poller() -> None:
 
 def main() -> None:
     ensure_cache()
-    try:
-        supabase_engine.sync_all_admin_configs_from_cloud(DATA_DIR)
-    except Exception as exc:
-        logger.warning("Supabase admin config startup sync error: %s", exc)
+    # Asynchronous cloud config sync: server binds port 8000 instantly (< 50ms) without waiting on network
+    threading.Thread(
+        target=lambda: supabase_engine.sync_all_admin_configs_from_cloud(DATA_DIR),
+        daemon=True,
+        name="SupabaseStartupSync"
+    ).start()
     threading.Thread(target=lambda: build_indices_overview({}), daemon=True).start()
     threading.Thread(target=_warm_breadth_contributions_worker, daemon=True).start()
     fii_dii_engine.start_fii_dii_background_worker()
