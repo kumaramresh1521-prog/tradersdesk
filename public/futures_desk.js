@@ -212,7 +212,7 @@
   // --- Benchmark Index Ribbon ---
   async function loadBenchmarkRibbon(forceRefresh = false) {
     try {
-      const url = forceRefresh ? `/api/futures/dashboard?refresh=true&_t=${Date.now()}` : '/api/futures/dashboard';
+      const url = forceRefresh ? `/api/futures/dashboard?refresh=true&_t=${Date.now()}` : `/api/futures/dashboard?_t=${Date.now()}`;
       const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();
@@ -574,8 +574,8 @@
       });
       if (forceRefresh) {
         q.append('refresh', 'true');
-        q.append('_t', Date.now());
       }
+      q.append('_t', Date.now());
 
       const res = await fetch(`/api/futures/screener?${q.toString()}`);
       if (!res.ok) return;
@@ -2732,28 +2732,24 @@
     }
 
     state.countdownSec = seconds;
-    if (cdText) cdText.textContent = state.countdownSec + 's';
+    if (cdText) cdText.textContent = isMarketOpen ? (state.countdownSec + 's') : (`EOD (${state.countdownSec}s)`);
 
     state.countdownTimer = setInterval(() => {
       // Pause if browser tab is hidden/minimized
       if (document.hidden) return;
 
-      // Check Indian market hours (Mon-Fri 09:15 to 15:35 IST)
+      // Check Indian market hours (Mon-Fri 09:15 to 15:40 IST)
       const now = new Date();
       const utc = now.getTime() + now.getTimezoneOffset() * 60000;
       const ist = new Date(utc + 3600000 * 5.5);
       const day = ist.getDay();
       const mins = ist.getHours() * 60 + ist.getMinutes();
-      const isMarketOpen = (day >= 1 && day <= 5) && (mins >= 555 && mins <= 935);
-
-      if (!isMarketOpen) {
-        if (cdText) cdText.textContent = 'EOD Mode';
-        return;
-      }
+      const isMarketOpen = (day >= 1 && day <= 5) && (mins >= 555 && mins <= 940);
+      const cycleSec = isMarketOpen ? seconds : Math.max(30, seconds * 5);
 
       state.countdownSec -= 1;
       if (state.countdownSec <= 0) {
-        state.countdownSec = seconds;
+        state.countdownSec = cycleSec;
         refreshCurrentSubTab();
         if (badge) {
           badge.classList.remove('tick-flash-up');
@@ -2762,7 +2758,7 @@
           setTimeout(() => badge.classList.remove('tick-flash-up'), 800);
         }
       }
-      if (cdText) cdText.textContent = state.countdownSec + 's';
+      if (cdText) cdText.textContent = isMarketOpen ? (state.countdownSec + 's') : (`EOD (${state.countdownSec}s)`);
     }, 1000);
   }
 

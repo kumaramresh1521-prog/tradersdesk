@@ -21,6 +21,7 @@ import json
 import logging
 import math
 import os
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -1036,9 +1037,14 @@ def get_live_kotak_quotes_map(target_symbols: Optional[list] = None) -> dict[str
 
     # 2. Fetch All F&O Futures & Equity Cash via Kotak Securities Neo API
     ckey = os.getenv("KOTAK_CONSUMER_KEY", "").strip()
-    sid = (os.getenv("KOTAK_VIEW_TOKEN") or os.getenv("KOTAK_ACCESS_TOKEN") or os.getenv("KOTAK_SID") or "").strip()
+    kotak_candidates = [
+        os.getenv("KOTAK_ACCESS_TOKEN", "").strip(),
+        os.getenv("KOTAK_VIEW_TOKEN", "").strip(),
+        os.getenv("KOTAK_SID", "").strip()
+    ]
+    sid = next((c for c in kotak_candidates if c and is_jwt_token_valid(c)), "")
     kotak_fetched = 0
-    if ckey and sid and is_jwt_token_valid(sid):
+    if ckey and sid:
         tokens_to_fetch = []
         fo_tok_to_sym = {}
         cm_tok_to_sym = {}
@@ -1296,7 +1302,7 @@ def get_live_kotak_quotes_map(target_symbols: Optional[list] = None) -> dict[str
     return quotes_res
 
 
-def _build_master_futures_records() -> list[dict]:
+def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
     """
     Constructs high-fidelity records for all F&O universe symbols with real-time
     Kotak Securities Neo API and Angel SmartAPI exchange quotes, basis, OI, and buildup,
@@ -1304,7 +1310,7 @@ def _build_master_futures_records() -> list[dict]:
     """
     now = datetime.now()
     records = []
-    live_quotes = get_live_kotak_quotes_map()
+    live_quotes = get_live_kotak_quotes_map() if allow_network else (_LIVE_QUOTES_CACHE.get("data") or {})
     bhav_map, bhav_date_str = _load_latest_bhavcopy_data()
 
     # Load baseline OI cache for real OI Change calculation
@@ -1574,31 +1580,51 @@ def _build_master_futures_records() -> list[dict]:
     return records
 
 
+_MASTER_REFRESH_LOCK = threading.Lock()
+_MASTER_BACKGROUND_RUNNING = False
+
+def _async_refresh_master_worker():
+    global _MASTER_BACKGROUND_RUNNING
+    try:
+        recs = _build_master_futures_records(allow_network=True)
+        if recs:
+            _FUTURES_CACHE["master"] = recs
+            _FUTURES_CACHE["master_ts"] = time.time()
+            logger.info(f"[Futures] Background master quote refresh completed ({len(recs)} contracts).")
+    except Exception as e:
+        logger.debug(f"[Futures] Background master refresh error: {e}")
+    finally:
+        _MASTER_BACKGROUND_RUNNING = False
+
 def get_futures_master(force_refresh: bool = False) -> list[dict]:
+    global _MASTER_BACKGROUND_RUNNING
     now = time.time()
-    if not force_refresh and "master" in _FUTURES_CACHE:
-        if (now - _FUTURES_CACHE["master_ts"]) < _CACHE_TTL:
-            return _FUTURES_CACHE["master"]
+    cached_master = _FUTURES_CACHE.get("master")
+    master_age = now - _FUTURES_CACHE.get("master_ts", 0)
 
-    if force_refresh:
-        invalidate_caches()
-        # If it is after market close (15:35+ IST) on a weekday and we don't have today's Bhavcopy, attempt sync
-        try:
-            now_dt = datetime.now()
-            today_date = now_dt.date()
-            if now_dt.weekday() < 5 and (now_dt.hour >= 16 or (now_dt.hour == 15 and now_dt.minute >= 35)):
-                fo_dir = Path("cache/fo_bhav")
-                today_csv = fo_dir / f"BhavCopy_NSE_FO_{today_date.strftime('%Y%m%d')}.csv"
-                if not today_csv.exists() or today_csv.stat().st_size < 100000:
-                    import fo_bhavcopy_engine
-                    fo_bhavcopy_engine.sync_latest_fo_bhavcopy(days_back=2, force_today=True)
-        except Exception as e:
-            logger.debug(f"Bhavcopy auto-sync check on force_refresh: {e}")
+    # 1. Warm cache hit: return immediately (< 0.1ms)
+    if cached_master and not force_refresh and master_age < _CACHE_TTL:
+        return cached_master
 
-    recs = _build_master_futures_records()
-    _FUTURES_CACHE["master"] = recs
-    _FUTURES_CACHE["master_ts"] = now
-    return recs
+    # 2. Stale cache exists: return cached data immediately (< 0.1ms) and refresh in background
+    if cached_master:
+        if not _MASTER_BACKGROUND_RUNNING and _MASTER_REFRESH_LOCK.acquire(blocking=False):
+            _MASTER_BACKGROUND_RUNNING = True
+            threading.Thread(target=_async_refresh_master_worker, daemon=True).start()
+        return cached_master
+
+    # 3. Cold start: build instant baseline from Bhavcopy / disk master in < 5ms without blocking
+    initial_recs = _build_master_futures_records(allow_network=False)
+    if initial_recs:
+        _FUTURES_CACHE["master"] = initial_recs
+        _FUTURES_CACHE["master_ts"] = now
+
+    # Trigger background live quote refresh immediately
+    if not _MASTER_BACKGROUND_RUNNING and _MASTER_REFRESH_LOCK.acquire(blocking=False):
+        _MASTER_BACKGROUND_RUNNING = True
+        threading.Thread(target=_async_refresh_master_worker, daemon=True).start()
+
+    return _FUTURES_CACHE.get("master") or initial_recs or []
 
 
 _DASHBOARD_CACHE = {"ts": 0.0, "data": None}
@@ -1668,7 +1694,7 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
         "timestamp": now_dt.strftime("%H:%M:%S"),
         "date": today_display,
         "asOfDate": as_of_date,
-        "activeExpiry": "27-Oct-2026",
+        "activeExpiry": (records[0].get("expiry") if records and records[0].get("expiry") else "26-Nov-2026"),
         "tickSeq": int(time.time() / 3),
         "totalTurnoverCr": round(total_turnover, 2),
         "totalOiCr": round(total_oi_cr, 2),

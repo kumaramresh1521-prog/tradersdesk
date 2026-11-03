@@ -226,37 +226,68 @@ def _get_near_contract_from_bhavcopy(symbol: str, target_date: Optional[str] = N
     """
     Finds the near-month contract from the latest Bhavcopy dated strictly BEFORE or ON target_date.
     Properly selects the contract with the earliest XpryDt >= TradDt.
+    Seamlessly falls back to data/latest_fo_bhav_master.json when CSV directory is absent (Cloud Run).
     """
-    if not FO_BHAV_DIR.exists():
-        return None
-
-    csvs = sorted(FO_BHAV_DIR.glob("BhavCopy_NSE_FO_*.csv"), reverse=True)
-    if not csvs:
-        return None
+    csvs = []
+    if FO_BHAV_DIR.exists():
+        csvs = sorted(FO_BHAV_DIR.glob("BhavCopy_NSE_FO_*.csv"), reverse=True)
 
     chosen_csv = None
-    if target_date:
-        for p in csvs:
-            d_str = p.stem.replace("BhavCopy_NSE_FO_", "")
-            if d_str <= target_date:
-                chosen_csv = p
-                break
-    if not chosen_csv:
-        chosen_csv = csvs[0]
+    if csvs:
+        if target_date:
+            for p in csvs:
+                d_str = p.stem.replace("BhavCopy_NSE_FO_", "")
+                if d_str <= target_date:
+                    chosen_csv = p
+                    break
+        if not chosen_csv:
+            chosen_csv = csvs[0]
 
     near_contract = None
-    try:
-        with open(chosen_csv, mode="r", encoding="utf-8", errors="ignore") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row.get("TckrSymb") == symbol and row.get("FinInstrmTp") in ("IDF", "STF"):
-                    exp = row.get("XpryDt", "")
-                    trad_dt = row.get("TradDt", "")
-                    if exp >= trad_dt:
-                        if not near_contract or exp < near_contract.get("XpryDt", ""):
-                            near_contract = row
-    except Exception:
-        pass
+    if chosen_csv:
+        try:
+            with open(chosen_csv, mode="r", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row.get("TckrSymb") == symbol and row.get("FinInstrmTp") in ("IDF", "STF"):
+                        exp = row.get("XpryDt", "")
+                        trad_dt = row.get("TradDt", "")
+                        if exp >= trad_dt:
+                            if not near_contract or exp < near_contract.get("XpryDt", ""):
+                                near_contract = row
+        except Exception:
+            pass
+
+    # Cloud Run Fallback: committed master JSON
+    if not near_contract:
+        for json_path in [ROOT / "data" / "latest_fo_bhav_master.json", CACHE_DIR / "latest_fo_bhav_master.json"]:
+            if json_path.exists():
+                try:
+                    jdata = json.loads(json_path.read_text(encoding="utf-8"))
+                    recs = jdata.get("records") or {}
+                    if symbol in recs:
+                        r = recs[symbol]
+                        near_contract = {
+                            "OpnIntrst": r.get("oi"),
+                            "ChngInOpnIntrst": r.get("oiChange"),
+                            "ClsPric": r.get("close"),
+                            "LastPric": r.get("ltp"),
+                            "PrvsClsgPric": r.get("prevClose"),
+                            "OpnPric": r.get("prevClose"),
+                            "HghPric": r.get("high"),
+                            "LwPric": r.get("low"),
+                            "UndrlygPric": r.get("spotPrice"),
+                            "TtlTradgVol": r.get("volume"),
+                            "TtlTrfVal": (r.get("turnoverCr", 0.0) * 1e7),
+                            "NewBrdLotQty": r.get("lot"),
+                            "XpryDt": r.get("expiry"),
+                            "TradDt": r.get("date"),
+                            "TckrSymb": symbol
+                        }
+                        break
+                except Exception:
+                    pass
+
     return near_contract
 
 _YF_CANDLE_CACHE = {}
