@@ -665,3 +665,72 @@ def purge_old_market_snapshots(retention_days: int = 90) -> dict:
     except Exception as e:
         return {"ok": False, "message": str(e)}
 
+
+def load_market_snapshots_summary_list(days: int = 90) -> list[dict]:
+    """Returns summarized snapshot metadata for Admin Panel tracking table."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return []
+    url = f"{cfg['url']}/rest/v1/market_daily_snapshots?select=trade_date,created_at,updated_at,options_data,straddle_data,open_interest_data,call_vs_put_data,smart_money_data,delivery_data,mtf_data,breadth_data&order=trade_date.desc&limit={days}"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Accept": "application/json"
+    }
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="GET")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            items = json.loads(resp.read().decode("utf-8") or "[]")
+            res = []
+            for item in items:
+                opt = item.get("options_data") or {}
+                strd = item.get("straddle_data") or {}
+                sm = item.get("smart_money_data") or {}
+                deliv = item.get("delivery_data") or {}
+                mtf = item.get("mtf_data") or {}
+                brd = item.get("breadth_data") or {}
+                oi = item.get("open_interest_data") or {}
+                cvp = item.get("call_vs_put_data") or {}
+
+                res.append({
+                    "trade_date": item.get("trade_date"),
+                    "created_at": item.get("created_at"),
+                    "updated_at": item.get("updated_at"),
+                    "spot_price": opt.get("spotPrice"),
+                    "pcr": opt.get("pcr"),
+                    "options_count": len(opt.get("strikes", [])),
+                    "straddle_nifty_decay": (strd.get("nifty") or {}).get("decayPct"),
+                    "straddle_nifty_ltp": (strd.get("nifty") or {}).get("combinedPremium"),
+                    "straddle_points_count": len((strd.get("nifty") or {}).get("points", [])),
+                    "smart_money_participants": len(sm.get("participants", [])),
+                    "fii_net_cr": ((sm.get("cashFlow") or {}).get("daily") or [{}])[0].get("fiiNet") if isinstance((sm.get("cashFlow") or {}).get("daily"), list) and (sm.get("cashFlow") or {}).get("daily") else None,
+                    "delivery_stocks_count": len(deliv.get("topStocks", [])),
+                    "mtf_stocks_count": len(mtf.get("topFundedStocks", [])),
+                    "breadth_universes_count": len(brd),
+                })
+            return res
+    except Exception as e:
+        print(f"[Supabase] load_market_snapshots_summary_list error: {e}")
+        return []
+
+
+def delete_market_snapshot(trade_date: str) -> dict:
+    """Deletes a single snapshot by trade_date from Supabase."""
+    cfg = get_supabase_config()
+    if not cfg["isConfigured"]:
+        return {"ok": False, "message": "Supabase not configured"}
+    t_date = trade_date.strip()
+    url = f"{cfg['url']}/rest/v1/market_daily_snapshots?trade_date=eq.{t_date}"
+    key = cfg["serviceRoleKey"] or cfg["anonKey"]
+    req_headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+    }
+    try:
+        req = urllib.request.Request(url, headers=req_headers, method="DELETE")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return {"ok": True, "message": f"Snapshot for {t_date} deleted from Supabase."}
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+

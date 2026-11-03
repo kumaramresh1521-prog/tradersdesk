@@ -22269,6 +22269,33 @@ class RequestHandler(BaseHTTPRequestHandler):
             except Exception as _diag_err:
                 return self.send_json(200, {"ok": True, "overallStatus": "HEALTHY", "score": "7/7 Passed", "timestamp": now_ist().strftime("%d-%b-%Y %H:%M:%S IST"), "totalLatencyMs": 5.0, "checks": []})
 
+        if path == "/api/admin/snapshots-summary":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            query = urllib.parse.parse_qs(parsed.query)
+            days = int((query.get("days") or ["90"])[0]) if (query.get("days") or ["90"])[0].isdigit() else 90
+            snaps = supabase_engine.load_market_snapshots_summary_list(days)
+            return self.send_json(200, {
+                "ok": True,
+                "count": len(snaps),
+                "snapshots": snaps,
+                "retentionDays": 90,
+                "autoPurgeActive": True,
+            })
+
+        if path == "/api/admin/snapshot-detail":
+            if not check_admin_request(self):
+                return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+            query = urllib.parse.parse_qs(parsed.query)
+            t_date = (query.get("date") or [""])[0].strip()
+            if not t_date:
+                return self.send_json(400, {"ok": False, "message": "Date parameter required"})
+            import snapshot_engine
+            snap = snapshot_engine.get_snapshot(t_date)
+            if snap:
+                return self.send_json(200, {"ok": True, "date": t_date, "snapshot": snap})
+            return self.send_json(404, {"ok": False, "message": f"Snapshot for {t_date} not found"})
+
 
 
         if path == "/api/admin/error-logs":
@@ -24369,6 +24396,16 @@ class RequestHandler(BaseHTTPRequestHandler):
                 t_date = str(payload.get("date", "")).strip()
                 import snapshot_engine
                 res = snapshot_engine.capture_and_save_eod_snapshot(t_date)
+                return self.send_json(200, res)
+
+            if parsed.path == "/api/admin/snapshot-delete":
+                if not check_admin_request(self):
+                    return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
+                payload = self.read_body()
+                t_date = str(payload.get("date", "")).strip()
+                if not t_date:
+                    return self.send_json(400, {"ok": False, "message": "Date parameter required"})
+                res = supabase_engine.delete_market_snapshot(t_date)
                 return self.send_json(200, res)
 
             if parsed.path == "/api/admin/verify":

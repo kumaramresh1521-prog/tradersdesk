@@ -1701,25 +1701,82 @@
             </div>
           </div>
 
-          <div class="adm-card" style="border: 1px solid rgba(14, 165, 233, 0.4);">
-            <div class="adm-card-header" style="display:flex; justify-content:space-between; align-items:center;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <h3 style="margin:0; color:#38bdf8;">🏛️ 90-Days Market Snapshots (Supabase Archive)</h3>
-              </div>
-              <span id="statSnapshotsBadge" style="padding:4px 10px; border-radius:4px; font-size:11px; font-weight:700; background:rgba(14, 165, 233, 0.15); color:#38bdf8;">ARCHIVE ACTIVE</span>
-            </div>
-            <div style="font-size:13px; color:var(--adm-muted); line-height:1.6; margin-top:8px;">
-              <p>Persists complete daily EOD market sessions for <strong>Options, Straddle, OI, Call vs Put, Smart Money (FII/DII), Delivery, MTF &amp; Breadth</strong> with automated 90-day retention.</p>
-              <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(15, 23, 42, 0.5); padding:10px 14px; border-radius:6px; margin-top:10px; border:1px solid rgba(255,255,255,0.06);">
+          <div class="adm-card" style="border: 1px solid rgba(14, 165, 233, 0.4); margin-top:20px;">
+            <div class="adm-card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:22px;">🏛️</span>
                 <div>
-                  <span style="font-size:12px; color:#94a3b8;">Archived Sessions:</span>
-                  <strong id="statSnapshotsCount" style="font-size:15px; color:#f8fafc; margin-left:6px;">1</strong>
-                  <span style="font-size:11px; color:#64748b; margin-left:4px;">(Last 90 Days)</span>
+                  <h3 style="margin:0; color:#38bdf8; font-size:16px;">90-Days Market Snapshots Tracking Console</h3>
+                  <small style="color:var(--adm-muted); font-size:11px;">Automated EOD multi-tool snapshots persisted in Supabase with rolling 90-day retention</small>
                 </div>
-                <button type="button" class="btn-adm-primary" id="btnManualEodSnapshot" onclick="triggerManualEodSnapshot()" style="background:#0284c7; padding:6px 12px; font-size:12px; border-radius:5px; font-weight:700;">
-                  📸 Capture Today's Snapshot Now
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" class="btn-adm-primary" id="btnManualEodSnapshot" onclick="triggerManualEodSnapshot()" style="background:#0284c7; padding:6px 14px; font-size:12px; border-radius:5px; font-weight:700; display:inline-flex; align-items:center; gap:6px;">
+                  <span>📸</span> <span id="btnManualEodSnapshotText">Capture Today's Snapshot Now</span>
+                </button>
+                <button type="button" class="seo-pill-btn" onclick="loadSnapshotsSummaryTable()" title="Refresh snapshots list" style="padding:6px 12px; font-size:12px;">
+                  🔄 Refresh
                 </button>
               </div>
+            </div>
+
+            <!-- Operational Status Strip -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-top:14px; padding:12px; background:rgba(15, 23, 42, 0.6); border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+              <div>
+                <span style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Archived Sessions</span>
+                <div style="margin-top:4px; display:flex; align-items:baseline; gap:4px;">
+                  <strong id="statSnapshotsCount" style="font-size:20px; color:#38bdf8;">1</strong>
+                  <span style="font-size:12px; color:#64748b;">/ 90 Days</span>
+                </div>
+              </div>
+              <div>
+                <span style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Storage Retention</span>
+                <div style="margin-top:4px;">
+                  <span style="color:#10b981; font-weight:700; font-size:13px;">🛡️ Rolling 90-Days</span>
+                  <div style="font-size:10.5px; color:#64748b;">Auto-pruning active</div>
+                </div>
+              </div>
+              <div>
+                <span style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Automated Cron</span>
+                <div style="margin-top:4px;">
+                  <span style="color:#f59e0b; font-weight:700; font-size:13px;">⏱️ Daily 15:35 IST</span>
+                  <div style="font-size:10.5px; color:#64748b;">EOD Snapshot Worker</div>
+                </div>
+              </div>
+              <div>
+                <span style="font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Cloud Database</span>
+                <div style="margin-top:4px;">
+                  <span id="statSnapshotsDbBadge" style="color:#34d399; font-weight:700; font-size:13px;">● Supabase Connected</span>
+                  <div style="font-size:10.5px; color:#64748b;">market_daily_snapshots</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter search bar -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:12px; color:#94a3b8; font-weight:600;">Saved Daily Archives:</span>
+                <span id="statSnapshotsBadgeCount" class="nav-badge count" style="background:#0284c7; color:#fff; font-size:11px; padding:2px 8px; border-radius:10px;">1 Dates</span>
+              </div>
+              <input type="text" id="inputFilterSnapshots" placeholder="🔍 Filter date (YYYY-MM-DD)..." oninput="filterSnapshotsTable(this.value)" style="background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:5px 10px; border-radius:5px; font-size:12px; width:220px;" />
+            </div>
+
+            <!-- Table of Archived Sessions -->
+            <div class="seo-table-wrap" style="max-height:360px; overflow-y:auto; border:1px solid rgba(255,255,255,0.06); border-radius:6px;">
+              <table class="seo-table" id="tblSnapshotsArchive">
+                <thead>
+                  <tr>
+                    <th style="width:130px;">SESSION DATE</th>
+                    <th style="width:170px;">NIFTY CLOSE &amp; PCR</th>
+                    <th>TOOLS ARCHIVE COVERAGE (8 MODULES)</th>
+                    <th style="width:160px;">LAST SAVED</th>
+                    <th style="width:130px; text-align:right;">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodySnapshotsArchive">
+                  <tr><td colspan="5" style="text-align:center; padding:25px; color:#64748b;">⏳ Loading Supabase snapshots...</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
@@ -3472,6 +3529,26 @@
       </div>
     </div>
 
+    <!-- Modal: Snapshot Inspector -->
+    <div id="modalSnapshotInspect" class="adm-modal-overlay">
+      <div class="adm-modal-box" style="max-width:860px; width:95%; max-height:90vh; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.1);">
+          <div>
+            <h3 style="margin:0; font-size:17px; font-weight:800; color:#fff;" id="modalSnapshotInspectTitle">🏛️ Snapshot Inspector</h3>
+            <span style="font-size:12px; color:#94a3b8;" id="modalSnapshotInspectSub">Session breakdown</span>
+          </div>
+          <button type="button" class="seo-pill-btn" onclick="closeSnapshotInspectModal()" style="padding:4px 10px;">✕ Close</button>
+        </div>
+        <div id="modalSnapshotInspectBody" style="padding:16px 0; overflow-y:auto; flex:1; font-size:13px; line-height:1.6; color:#cbd5e1;">
+          <!-- Populated dynamically via JS -->
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1);">
+          <button type="button" class="btn-adm-primary" id="btnCopySnapshotJson" onclick="copySnapshotJson()" style="padding:6px 14px; font-size:12px;">📋 Copy Full JSON</button>
+          <button type="button" class="seo-pill-btn" onclick="closeSnapshotInspectModal()" style="padding:6px 14px; font-size:12px;">Close</button>
+        </div>
+      </div>
+    </div>
+
     <!-- =========================================================================
          UNIFIED CONSOLE JAVASCRIPT LOGIC
          ========================================================================= -->
@@ -3780,16 +3857,223 @@
             if (snapCntEl && data.snapshotsCount !== undefined) {
               snapCntEl.textContent = data.snapshotsCount;
             }
+            loadSnapshotsSummaryTable();
           }
         } catch(e) {}
       }
 
+      let _allSnapshotsData = [];
+      let _currentInspectJson = null;
+
+      async function loadSnapshotsSummaryTable() {
+        const tbody = document.getElementById('tbodySnapshotsArchive');
+        if (!tbody) return;
+        try {
+          const res = await fetch('/api/admin/snapshots-summary?days=90', { headers: getAuthHeaders() });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const d = await res.json();
+          _allSnapshotsData = d.snapshots || [];
+
+          const cntEl = document.getElementById('statSnapshotsCount');
+          if (cntEl) cntEl.textContent = d.count || 0;
+          const badgeCnt = document.getElementById('statSnapshotsBadgeCount');
+          if (badgeCnt) badgeCnt.textContent = `${d.count || 0} Dates`;
+
+          renderSnapshotsTable(_allSnapshotsData);
+        } catch (err) {
+          console.error('Failed to load snapshots summary table:', err);
+          if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#ef4444;">Failed to load snapshots: ${err.message}</td></tr>`;
+          }
+        }
+      }
+
+      function renderSnapshotsTable(list) {
+        const tbody = document.getElementById('tbodySnapshotsArchive');
+        if (!tbody) return;
+        if (!list || list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:25px; color:#64748b;">No archived snapshots found in Supabase. Click "Capture Today's Snapshot Now" to record session.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(s => {
+          const dt = s.trade_date || '--';
+          const spot = s.spot_price ? `₹${Number(s.spot_price).toLocaleString('en-IN')}` : '--';
+          const pcr = s.pcr ? `PCR ${s.pcr}` : '';
+          const updated = s.updated_at ? new Date(s.updated_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle:'short', timeStyle:'short' }) + ' IST' : '--';
+
+          return `
+            <tr>
+              <td>
+                <span style="font-weight:700; color:#38bdf8; font-family:'JetBrains Mono',monospace;">📅 ${dt}</span>
+              </td>
+              <td>
+                <div style="font-weight:700; color:#f8fafc;">${spot}</div>
+                <div style="font-size:11px; color:#94a3b8;">${pcr}</div>
+              </td>
+              <td>
+                <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                  <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(16,185,129,0.15); color:#34d399; border-color:rgba(16,185,129,0.3);">⚡ Opts (${s.options_count || 0})</span>
+                  <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(244,63,94,0.15); color:#fb7185; border-color:rgba(244,63,94,0.3);">🎯 Strd (${s.straddle_nifty_decay != null ? s.straddle_nifty_decay + '%' : 'Saved'})</span>
+                  <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(59,130,246,0.15); color:#60a5fa; border-color:rgba(59,130,246,0.3);">💼 FII/DII (${s.smart_money_participants || 0}P)</span>
+                  <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(245,158,11,0.15); color:#fbbf24; border-color:rgba(245,158,11,0.3);">🚚 Deliv (${s.delivery_stocks_count || 0})</span>
+                  <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(168,85,247,0.15); color:#c084fc; border-color:rgba(168,85,247,0.3);">💳 MTF (${s.mtf_stocks_count || 0})</span>
+                  <span class="seo-pill-btn" style="padding:2px 6px; font-size:10px; background:rgba(14,165,233,0.15); color:#38bdf8; border-color:rgba(14,165,233,0.3);">🌐 Brd (${s.breadth_universes_count || 0}U)</span>
+                </div>
+              </td>
+              <td style="font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;">
+                ${updated}
+              </td>
+              <td style="text-align:right;">
+                <div style="display:inline-flex; gap:6px;">
+                  <button type="button" class="seo-pill-btn" style="padding:4px 8px; font-size:11px; color:#38bdf8; border-color:rgba(56,189,248,0.4);" onclick="openSnapshotInspectModal('${dt}')" title="Inspect full details">🔍 Inspect</button>
+                  <button type="button" class="seo-pill-btn" style="padding:4px 8px; font-size:11px; color:#f87171; border-color:rgba(239,68,68,0.4);" onclick="deleteSnapshotItem('${dt}')" title="Delete snapshot">🗑️</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function filterSnapshotsTable(query) {
+        const q = (query || '').trim().toLowerCase();
+        if (!q) {
+          renderSnapshotsTable(_allSnapshotsData);
+          return;
+        }
+        const filtered = _allSnapshotsData.filter(s => (s.trade_date || '').toLowerCase().includes(q));
+        renderSnapshotsTable(filtered);
+      }
+
+      async function openSnapshotInspectModal(date) {
+        const modal = document.getElementById('modalSnapshotInspect');
+        const titleEl = document.getElementById('modalSnapshotInspectTitle');
+        const subEl = document.getElementById('modalSnapshotInspectSub');
+        const bodyEl = document.getElementById('modalSnapshotInspectBody');
+        if (!modal) return;
+
+        titleEl.textContent = `🏛️ Snapshot Inspector: ${date}`;
+        subEl.textContent = 'Loading live snapshot from Supabase...';
+        bodyEl.innerHTML = '<div style="text-align:center; padding:30px; color:#94a3b8;">⏳ Fetching complete 8-tool snapshot payload from Supabase...</div>';
+        modal.style.display = 'flex';
+
+        try {
+          const res = await fetch(`/api/admin/snapshot-detail?date=${date}`, { headers: getAuthHeaders() });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          _currentInspectJson = data.snapshot;
+          subEl.textContent = `Verified 8-tool archive for ${date} (Saved in Supabase)`;
+
+          const s = data.snapshot || {};
+          const opt = s.options_data || {};
+          const strd = s.straddle_data || {};
+          const sm = s.smart_money_data || {};
+          const deliv = s.delivery_data || {};
+          const mtf = s.mtf_data || {};
+          const brd = s.breadth_data || {};
+
+          bodyEl.innerHTML = `
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+              <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.08); padding:12px; border-radius:8px;">
+                <h4 style="margin:0 0 8px 0; color:#38bdf8; font-size:13px;">⚡ Option Chain Pro &amp; PCR</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+                  <div>Spot: <strong style="color:#fff;">₹${opt.spotPrice || '--'}</strong></div>
+                  <div>PCR: <strong style="color:#34d399;">${opt.pcr || '--'}</strong></div>
+                  <div>Max Pain: <strong style="color:#f59e0b;">${opt.maxPain || '--'}</strong></div>
+                  <div>India VIX: <strong style="color:#fb7185;">${opt.indiaVix || '--'}</strong></div>
+                  <div>ATM Straddle: <strong style="color:#fff;">₹${opt.atmStraddle || '--'}</strong></div>
+                  <div>Archived Strikes: <strong style="color:#38bdf8;">${(opt.strikes || []).length} strikes</strong></div>
+                </div>
+              </div>
+
+              <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.08); padding:12px; border-radius:8px;">
+                <h4 style="margin:0 0 8px 0; color:#fb7185; font-size:13px;">🎯 ATM Straddle Desk (370-min Curve)</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+                  <div>Nifty Strike: <strong style="color:#fff;">${(strd.nifty || {}).atmStrike || '--'}</strong></div>
+                  <div>Straddle LTP: <strong style="color:#fb7185;">₹${(strd.nifty || {}).combinedPremium || '--'}</strong></div>
+                  <div>Theta Decay: <strong style="color:#10b981;">${(strd.nifty || {}).decayPoints || 0} pts (${(strd.nifty || {}).decayPct || 0}%)</strong></div>
+                  <div>Chart Points: <strong style="color:#38bdf8;">${((strd.nifty || {}).points || []).length} mins</strong></div>
+                  <div>Bank Nifty Strike: <strong style="color:#fff;">${(strd.banknifty || {}).atmStrike || '--'}</strong></div>
+                  <div>Bank Nifty LTP: <strong style="color:#fb7185;">₹${(strd.banknifty || {}).combinedPremium || '--'}</strong></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+              <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.08); padding:12px; border-radius:8px;">
+                <h4 style="margin:0 0 8px 0; color:#60a5fa; font-size:13px;">💼 Smart Money (FII / DII &amp; Participants)</h4>
+                <div style="font-size:12px; line-height:1.7;">
+                  <div>FII Cash: <strong style="color:${(sm.cashFlow?.daily?.[0]?.fiiNet || 0) >= 0 ? '#34d399' : '#f87171'};">₹${sm.cashFlow?.daily?.[0]?.fiiNet || 0} Cr</strong> | DII Cash: <strong style="color:${(sm.cashFlow?.daily?.[0]?.diiNet || 0) >= 0 ? '#34d399' : '#f87171'};">₹${sm.cashFlow?.daily?.[0]?.diiNet || 0} Cr</strong></div>
+                  <div>Participant Breakdown: <strong style="color:#fff;">${(sm.participants || []).length} Client Segments (FII, DII, Pro, Client, Total)</strong></div>
+                  <div>FII Long Ratio: <strong style="color:#fbbf24;">${sm.fiiMetrics?.longPct || sm.fiiMetrics?.fiiLongRatio || '--'}%</strong> (${sm.fiiMetrics?.zone || 'Active'})</div>
+                </div>
+              </div>
+
+              <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.08); padding:12px; border-radius:8px;">
+                <h4 style="margin:0 0 8px 0; color:#34d399; font-size:13px;">🚚 Delivery Desk &amp; 💳 MTF Margin Desk</h4>
+                <div style="font-size:12px; line-height:1.7;">
+                  <div>Top Delivery Surge Stocks: <strong style="color:#fff;">${(deliv.topStocks || []).length} High-Surge Stocks</strong></div>
+                  <div>MTF Margin Book: <strong style="color:#c084fc;">₹${mtf.summary?.bookCrore || mtf.summary?.book || '--'} Cr</strong></div>
+                  <div>MTF Funded Stocks: <strong style="color:#fff;">${(mtf.topFundedStocks || []).length} Leverage Stocks</strong></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:rgba(15,23,42,0.8); border:1px solid rgba(255,255,255,0.08); padding:12px; border-radius:8px; margin-bottom:14px;">
+              <h4 style="margin:0 0 8px 0; color:#c084fc; font-size:13px;">🌐 Market Breadth (13 Universes Advance/Decline)</h4>
+              <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:11px;">
+                ${Object.keys(brd).map(u => {
+                  const b = brd[u] || {};
+                  return `<span style="background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.08);">
+                    <strong>${b.label || u.toUpperCase()}</strong>: Adv: <span style="color:#34d399;">${b.advancers || 0}</span> / Dec: <span style="color:#f87171;">${b.decliners || 0}</span> (Net: <span style="color:${(b.netPoints || 0) >= 0 ? '#34d399' : '#f87171'};">${(b.netPoints || 0) >= 0 ? '+' : ''}${b.netPoints || 0}</span>)
+                  </span>`;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        } catch (err) {
+          bodyEl.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">❌ Failed to load snapshot details: ${err.message}</div>`;
+        }
+      }
+
+      function closeSnapshotInspectModal() {
+        const modal = document.getElementById('modalSnapshotInspect');
+        if (modal) modal.style.display = 'none';
+      }
+
+      function copySnapshotJson() {
+        if (!_currentInspectJson) return;
+        navigator.clipboard.writeText(JSON.stringify(_currentInspectJson, null, 2))
+          .then(() => showAdmAlert('✅ Snapshot JSON copied to clipboard!', 'success'))
+          .catch(() => showAdmAlert('❌ Failed to copy to clipboard', 'error'));
+      }
+
+      async function deleteSnapshotItem(date) {
+        if (!confirm(`Are you sure you want to permanently delete the snapshot for ${date}?`)) return;
+        try {
+          const res = await fetch('/api/admin/snapshot-delete', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ date: date }),
+          });
+          const d = await res.json();
+          if (d.ok) {
+            showAdmAlert(`✅ Snapshot for ${date} deleted from Supabase.`, 'success');
+            loadSnapshotsSummaryTable();
+            loadTelemetry();
+          } else {
+            showAdmAlert(`❌ Failed to delete snapshot: ${d.message || d.error}`, 'error');
+          }
+        } catch (err) {
+          showAdmAlert(`❌ Error deleting snapshot: ${err.message}`, 'error');
+        }
+      }
+
       async function triggerManualEodSnapshot() {
         const btn = document.getElementById('btnManualEodSnapshot');
-        if (btn) {
-          btn.disabled = true;
-          btn.textContent = '⏳ Capturing Snapshot...';
-        }
+        const txt = document.getElementById('btnManualEodSnapshotText');
+        if (btn) btn.disabled = true;
+        if (txt) txt.textContent = 'Capturing Full 8-Tool EOD Snapshot...';
         try {
           const res = await fetch('/api/admin/eod-snapshot', {
             method: 'POST',
@@ -3797,18 +4081,17 @@
           });
           const d = await res.json();
           if (d.ok) {
-            showAdmAlert(`✅ Snapshot captured & saved to Supabase successfully for ${d.trade_date || 'today'}! Purged: ${d.purged_count || 0}`, 'success');
-            loadSystemHealth();
+            showAdmAlert(`✅ Full EOD Snapshot captured & saved to Supabase successfully for ${d.trade_date || 'today'}! Purged: ${d.purged_count || 0}`, 'success');
+            loadSnapshotsSummaryTable();
+            loadTelemetry();
           } else {
             showAdmAlert(`❌ Failed to capture snapshot: ${d.message || d.error}`, 'error');
           }
         } catch (e) {
           showAdmAlert(`❌ Error capturing snapshot: ${e.message}`, 'error');
         } finally {
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = "📸 Capture Today's Snapshot Now";
-          }
+          if (btn) btn.disabled = false;
+          if (txt) txt.textContent = "Capture Today's Snapshot Now";
         }
       }
 
