@@ -484,6 +484,8 @@ def sync_all_admin_configs_from_cloud(data_dir: Path | None = None) -> dict:
         "seo_config": "seo_config.json",
         "seo_routes": "seo_routes.json",
         "deleted_seo_routes": "deleted_seo_routes.json",
+        "admin_pin": "admin_pin.json",
+        "admin_config": "admin_config.json",
     }
 
     url = f"{cfg['url']}/rest/v1/app_config?select=key,value,updated_at"

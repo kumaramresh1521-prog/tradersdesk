@@ -88,10 +88,22 @@ log_system_event("SUCCESS", "KOTAK", "Kotak Neo F&O scrip master operational wit
 log_system_event("INFO", "ANGEL", "Angel One SmartAPI session bridge active for benchmark index feeds.")
 
 
+_DYNAMIC_ADMIN_PIN = None
+
 def get_admin_secret() -> str:
+    global _DYNAMIC_ADMIN_PIN
+    if _DYNAMIC_ADMIN_PIN:
+        return _DYNAMIC_ADMIN_PIN
+    pin_file = DATA_DIR / "admin_pin.json"
+    if pin_file.exists():
+        try:
+            d = json.loads(pin_file.read_text(encoding="utf-8"))
+            if isinstance(d, dict) and d.get("admin_pin"):
+                _DYNAMIC_ADMIN_PIN = str(d["admin_pin"]).strip()
+                return _DYNAMIC_ADMIN_PIN
+        except Exception:
+            pass
     raw = env("ADMIN_SECRET_KEY", "").strip().strip('"').strip("'")
-    # Never provide a known fallback. A missing production secret must lock the
-    # admin surface instead of silently making it publicly guessable.
     return raw
 
 
@@ -10749,6 +10761,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             page = cms_engine.get_page(slug)
             return self.send_json(200 if page else 404, {"ok": bool(page), "page": page})
 
+        if path == "/api/pages":
+            return self.send_json(200, {"ok": True, "pages": cms_engine.list_pages()})
+
         if path == "/api/blog/posts":
             return self.send_json(200, {"ok": True, "posts": cms_engine.list_posts(published_only=True)})
 
@@ -12229,7 +12244,17 @@ class RequestHandler(BaseHTTPRequestHandler):
                 new_pin = payload.get("newPin", "").strip()
                 if not new_pin or len(new_pin) < 6:
                     return self.send_json(400, {"ok": False, "message": "PIN must be at least 6 characters long."})
+                global _DYNAMIC_ADMIN_PIN
+                _DYNAMIC_ADMIN_PIN = new_pin
+                os.environ["ADMIN_SECRET_KEY"] = new_pin
                 save_dotenv({"ADMIN_SECRET_KEY": new_pin})
+                try:
+                    pin_data = {"admin_pin": new_pin, "updated_at": now_ist().strftime("%Y-%m-%d %H:%M:%S IST")}
+                    DATA_DIR.mkdir(parents=True, exist_ok=True)
+                    (DATA_DIR / "admin_pin.json").write_text(json.dumps(pin_data, indent=2), encoding="utf-8")
+                    supabase_engine.save_app_config_to_supabase("admin_pin", pin_data)
+                except Exception as exc:
+                    logger.warning("Failed saving admin_pin to cloud: %s", exc)
                 log_system_event("SUCCESS", "SECURITY", "Master Administrator Secret PIN updated.")
                 return self.send_json(200, {"ok": True, "message": "Admin Secret PIN updated successfully!"})
 

@@ -1361,7 +1361,20 @@
           transition: left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
           z-index: 999;
         }
-        .admin-sidebar.mob-open {
+        
+      .admin-sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        z-index: 998;
+      }
+      .admin-sidebar-backdrop.active {
+        display: block;
+      }
+.admin-sidebar.mob-open {
           left: 0;
         }
         .adm-mob-toggle {
@@ -1416,7 +1429,8 @@
     </div>
 
     <!-- 2. Admin Dashboard Layout -->
-    <div class="admin-layout" id="adminLayout" style="display:none;">
+        <div id="adminSidebarBackdrop" class="admin-sidebar-backdrop" onclick="toggleAdminMobileSidebar()"></div>
+<div class="admin-layout" id="adminLayout" style="display:none;">
       
       <!-- Left Sidebar -->
       <aside class="admin-sidebar" id="adminSidebar">
@@ -3649,6 +3663,8 @@
         if (sb && sb.classList.contains('mob-open')) {
           sb.classList.remove('mob-open');
         }
+        const admBd = document.getElementById('adminSidebarBackdrop');
+        if (admBd) admBd.classList.remove('active');
 
         if (tabName === 'telemetry') {
           loadTelemetry();
@@ -3664,6 +3680,11 @@
         }
         if (tabName === 'seo') {
           loadSeoConfig();
+          loadSeoRoutes();
+          try { loadDynamicSeoStatus(); } catch(e) {}
+        }
+        if (tabName === 'commands') {
+          loadTelemetry();
         }
         if (tabName === 'features') {
           loadAdminFeatureFlags();
@@ -4317,7 +4338,7 @@
         }
 
         // If gVerify contains script tags, strip them cleanly
-        if (gVerify.includes('<script') || gVerify.includes('googletagmanager')) {
+        if (gVerify.includes('<' + 'script') || gVerify.includes('googletagmanager')) {
           gVerify = gVerify.replace(/<[^>]+>/g, '').trim();
           document.getElementById('admSeoGoogleVerify').value = gVerify;
         }
@@ -4359,7 +4380,7 @@
       }
 
       async function loadSeoRoutes() {
-        const tbody = document.getElementById('seoRoutesTableBody');
+        const tbody = document.getElementById('tbodySeoRoutes');
         try {
           const res = await fetch('/api/admin/seo-routes', { headers: getAuthHeaders() });
           if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -5874,10 +5895,10 @@
 
         const menu = _navMasterData.items[mIdx];
         if (!menu.columns || menu.columns.length === 0) {
-          menu.columns = [{ title: "Links", items: [] }];
+          menu.columns = [{ header: "Links", title: "Links", items: [] }];
         }
         if (!menu.columns[cIdx]) {
-          menu.columns[cIdx] = { title: "Links", items: [] };
+          menu.columns[cIdx] = { header: "Links", title: "Links", items: [] };
         }
         if (!menu.columns[cIdx].items) {
           menu.columns[cIdx].items = [];
@@ -6576,7 +6597,11 @@
 
       function toggleAdminMobileSidebar() {
         const sb = document.getElementById('adminSidebar');
-        if (sb) sb.classList.toggle('mob-open');
+        const bd = document.getElementById('adminSidebarBackdrop');
+        if (sb) {
+          const isOpen = sb.classList.toggle('mob-open');
+          if (bd) bd.classList.toggle('active', isOpen);
+        }
       }
 
       function filterSidebarTabs(query) {

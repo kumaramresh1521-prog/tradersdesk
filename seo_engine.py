@@ -822,6 +822,61 @@ def auto_discover_pages() -> tuple[list[dict], int]:
                     all_r[clean_rp] = new_item
                     discovered.append(new_item)
     
+    # Also auto-discover dynamic CMS pages and published blog posts
+    try:
+        import cms_engine
+        for page in cms_engine.list_pages():
+            slug = page.get("slug", "").strip().lstrip("/")
+            if slug:
+                rp = f"/{slug}"
+                if rp not in all_r:
+                    title = page.get("metaTitle") or page.get("title") or slug.title()
+                    desc = page.get("metaDescription") or f"{title} on TradersDesk."
+                    new_item = {
+                        "path": rp,
+                        "title": f"{title} | TradersDesk" if "TradersDesk" not in title else title,
+                        "desc": desc,
+                        "keywords": page.get("keywords") or f"{slug}, tradersdesk",
+                        "canonical": f"https://tradersdesk.in{rp}",
+                        "og_title": title,
+                        "og_desc": desc,
+                        "robots": page.get("robots") or "index, follow",
+                        "category": "pages",
+                        "priority": "0.7",
+                        "changefreq": "weekly",
+                        "custom": True,
+                        "last_updated": time.strftime("%Y-%m-%d %H:%M:%S IST")
+                    }
+                    all_r[rp] = new_item
+                    discovered.append(new_item)
+
+        for post in cms_engine.list_posts(published_only=True):
+            slug = post.get("slug", "").strip().lstrip("/")
+            if slug:
+                rp = f"/blog/{slug}"
+                if rp not in all_r:
+                    title = post.get("metaTitle") or post.get("title") or slug.title()
+                    desc = post.get("excerpt") or f"{title} on TradersDesk blog."
+                    new_item = {
+                        "path": rp,
+                        "title": f"{title} | TradersDesk Blog" if "TradersDesk" not in title else title,
+                        "desc": desc,
+                        "keywords": post.get("keywords") or f"{slug}, trading, tradersdesk",
+                        "canonical": f"https://tradersdesk.in{rp}",
+                        "og_title": title,
+                        "og_desc": desc,
+                        "robots": "index, follow",
+                        "category": "blog",
+                        "priority": "0.8",
+                        "changefreq": "monthly",
+                        "custom": True,
+                        "last_updated": time.strftime("%Y-%m-%d %H:%M:%S IST")
+                    }
+                    all_r[rp] = new_item
+                    discovered.append(new_item)
+    except Exception as exc:
+        pass
+
     if discovered:
         save_all_seo_routes(all_r)
     return discovered, len(all_r)

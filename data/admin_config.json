@@ -1,6 +1,6 @@
 {
-  "admin_url_slug": "/desk-ops-console",
-  "block_default_admin": true,
   "description": "Professional secure administrative control console URL. Unguessable and shielded from public crawlers.",
-  "last_updated": "2026-11-02 08:50:00 IST"
+  "last_updated": "2026-11-02 08:50:00 IST",
+  "admin_url_slug": "/desk-ops-console",
+  "block_default_admin": true
 }

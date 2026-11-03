@@ -305,8 +305,9 @@ def render_navigation_html(current_path: str = "/") -> str:
             out.append(f'  <div class="inst-dropdown {col_class}{is_single}">')
             for col, active_subs in active_columns:
                 out.append('    <div class="inst-dropdown-col">')
-                if col.get("header"):
-                    out.append(f'      <span class="inst-dropdown-header">{html.escape(col["header"])}</span>')
+                header_text = col.get("header") or col.get("title") or ""
+                if header_text:
+                    out.append(f'      <span class="inst-dropdown-header">{html.escape(header_text)}</span>')
                 for sub in active_subs:
                     sub_url = sub.get("url", "#")
                     flag_attr = f' data-feature-flag="{html.escape(sub["featureFlag"])}"' if sub.get("featureFlag") else ""
