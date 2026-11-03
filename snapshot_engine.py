@@ -82,7 +82,7 @@ def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50") -> dict:
 
 
 def build_straddle_snapshot() -> dict:
-    """Builds clean ATM Straddle & Strangle snapshot for NIFTY & BANK NIFTY."""
+    """Builds clean ATM Straddle & Strangle snapshot for NIFTY & BANK NIFTY including full intraday points."""
     res = {}
     try:
         from server import get_straddle_chart_response
@@ -105,6 +105,11 @@ def build_straddle_snapshot() -> dict:
                         "rangeUpper": latest.get("upper_breakeven"),
                         "expiry": st.get("expiry"),
                         "greeks": latest.get("greeks", {}),
+                        "available_expiries": st.get("available_expiries", []),
+                        "available_strikes": st.get("available_strikes", []),
+                        "strikes_data": st.get("strikes_data", {}),
+                        "latest": latest,
+                        "points": st.get("points", []),
                     }
             except Exception:
                 pass

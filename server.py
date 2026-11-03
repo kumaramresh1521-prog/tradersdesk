@@ -19724,6 +19724,45 @@ def get_straddle_chart_response(params: dict) -> dict:
 
     is_historical = bool(effective_dt and effective_dt != today_ist_str)
 
+    if is_historical:
+        try:
+            import snapshot_engine
+            snap = snapshot_engine.get_snapshot(effective_dt)
+            if snap and snap.get("straddle_data") and snap["straddle_data"].get(idx_upper.lower()):
+                st_snap = snap["straddle_data"][idx_upper.lower()]
+                if st_snap.get("points") and len(st_snap["points"]) > 0:
+                    return {
+                        "ok": True,
+                        "symbol": idx_upper,
+                        "category": cat,
+                        "date": effective_dt,
+                        "expiry": st_snap.get("expiry") or exp or effective_dt,
+                        "is_historical": True,
+                        "dte": st_snap.get("dte", 0),
+                        "available_expiries": st_snap.get("available_expiries", [{"label": st_snap.get("expiry", effective_dt), "value": st_snap.get("expiry", effective_dt)}]),
+                        "available_strikes": st_snap.get("available_strikes", [st_snap.get("atmStrike")]),
+                        "strikes_data": st_snap.get("strikes_data", {}),
+                        "selected_strike": strike or st_snap.get("atmStrike"),
+                        "atm_strike": st_snap.get("atmStrike"),
+                        "latest": st_snap.get("latest") or {
+                            "spot": st_snap.get("spotPrice"),
+                            "straddle_price": st_snap.get("combinedPremium"),
+                            "straddle_strike": st_snap.get("atmStrike"),
+                            "ce_price": st_snap.get("callLtp"),
+                            "pe_price": st_snap.get("putLtp"),
+                            "decay_pts": st_snap.get("decayPoints"),
+                            "decay_pct": st_snap.get("decayPct"),
+                            "lower_breakeven": st_snap.get("rangeLower"),
+                            "upper_breakeven": st_snap.get("rangeUpper"),
+                            "greeks": st_snap.get("greeks", {}),
+                        },
+                        "points_count": len(st_snap.get("points", [])),
+                        "points": st_snap.get("points", []),
+                        "source": "Supabase EOD Snapshot",
+                    }
+        except Exception as _snap_err:
+            logger.warning("[Straddle] Historical snapshot check note: %s", _snap_err)
+
 
 
     def _compute_straddle_now():
