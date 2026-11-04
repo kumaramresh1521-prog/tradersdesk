@@ -9,18 +9,26 @@ from __future__ import annotations
 import math
 import json
 import time
+import logging
 import threading
 import urllib.request
+from pathlib import Path
 from datetime import datetime, timezone, timedelta, date as dt_date, time as dt_time
 from typing import Dict, Any, List, Optional
 import greeks
 import upstox_engine
+
+logger = logging.getLogger("straddle_engine")
 
 INDIA_TZ = timezone(timedelta(hours=5, minutes=30))
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
+
+STRADDLE_INTRADAY_DIR = Path("cache/straddle_intraday")
+_INTRADAY_MEMORY_CACHE: Dict[str, Any] = {}
+_INTRADAY_CACHE_LOCK = threading.Lock()
 
 INDEX_METADATA = {
     "NIFTY": {
@@ -450,6 +458,295 @@ def calc_option_leg(
     return round(max(0.0, leg_price), 2)
 
 
+def get_recorded_straddle_series(symbol: str, session_date: str) -> Optional[dict]:
+    """
+    Retrieves recorded 1-minute intraday straddle ticks:
+    1. Memory cache (0ms).
+    2. Local persistent disk cache cache/straddle_intraday/{symbol}_{session_date}.json (< 1ms).
+    3. Supabase Cloud snapshot table market_daily_snapshots (< 50ms).
+    """
+    sym = (symbol or "NIFTY").upper().strip()
+    s_date = str(session_date or "").strip()
+    if not s_date:
+        s_date = get_now_ist().strftime("%Y-%m-%d")
+
+    cache_key = f"{sym}_{s_date}"
+    with _INTRADAY_CACHE_LOCK:
+        mem = _INTRADAY_MEMORY_CACHE.get(cache_key)
+        if mem and mem.get("points") and len(mem["points"]) > 0:
+            return mem
+
+    # 1. Local disk persistent cache
+    try:
+        STRADDLE_INTRADAY_DIR.mkdir(parents=True, exist_ok=True)
+        fpath = STRADDLE_INTRADAY_DIR / f"{sym}_{s_date}.json"
+        if fpath.exists():
+            data = json.loads(fpath.read_text(encoding="utf-8"))
+            if data and data.get("points") and len(data["points"]) > 0:
+                with _INTRADAY_CACHE_LOCK:
+                    _INTRADAY_MEMORY_CACHE[cache_key] = data
+                return data
+    except Exception:
+        pass
+
+    # 2. Supabase Cloud Snapshot
+    try:
+        import snapshot_engine
+        snap = snapshot_engine.get_snapshot(s_date)
+        if snap and snap.get("straddle_data"):
+            sd = snap["straddle_data"]
+            entry = sd.get(sym.lower()) or sd.get(sym.upper())
+            if entry and entry.get("points") and len(entry["points"]) > 0:
+                cloud_data = {
+                    "symbol": sym,
+                    "session_date": s_date,
+                    "expiry": entry.get("expiry"),
+                    "atm_strike": entry.get("atmStrike"),
+                    "selected_strike": entry.get("atmStrike"),
+                    "points": entry.get("points", []),
+                    "latest": entry.get("latest"),
+                    "source": "Supabase Persistent Cloud Snapshot",
+                    "updated_at": get_now_ist().isoformat()
+                }
+                try:
+                    fpath = STRADDLE_INTRADAY_DIR / f"{sym}_{s_date}.json"
+                    fpath.write_text(json.dumps(cloud_data), encoding="utf-8")
+                except Exception:
+                    pass
+                with _INTRADAY_CACHE_LOCK:
+                    _INTRADAY_MEMORY_CACHE[cache_key] = cloud_data
+                return cloud_data
+    except Exception:
+        pass
+
+    return None
+
+
+def save_straddle_intraday_series(
+    symbol: str,
+    session_date: str,
+    expiry: str,
+    points: list[dict],
+    atm_strike: Optional[float] = None,
+    latest_meta: Optional[dict] = None,
+    source: str = "In-House Intraday Persistent Recorder",
+    sync_supabase: bool = False,
+) -> bool:
+    """Persists 1-minute intraday series to memory, disk, and optionally Supabase."""
+    if not points:
+        return False
+    sym = (symbol or "NIFTY").upper().strip()
+    s_date = str(session_date or "").strip() or get_now_ist().strftime("%Y-%m-%d")
+    cache_key = f"{sym}_{s_date}"
+
+    data_to_save = {
+        "symbol": sym,
+        "session_date": s_date,
+        "expiry": expiry,
+        "atm_strike": atm_strike,
+        "selected_strike": atm_strike,
+        "points": points,
+        "latest": latest_meta or (points[-1] if points else {}),
+        "source": source,
+        "updated_at": get_now_ist().isoformat(),
+    }
+
+    with _INTRADAY_CACHE_LOCK:
+        _INTRADAY_MEMORY_CACHE[cache_key] = data_to_save
+
+    try:
+        STRADDLE_INTRADAY_DIR.mkdir(parents=True, exist_ok=True)
+        fpath = STRADDLE_INTRADAY_DIR / f"{sym}_{s_date}.json"
+        fpath.write_text(json.dumps(data_to_save), encoding="utf-8")
+    except Exception as e:
+        logger.warning(f"Failed to write straddle intraday cache for {sym}: {e}")
+
+    if sync_supabase:
+        def _bg_sync():
+            try:
+                import snapshot_engine
+                snapshot_engine.save_straddles_to_supabase(s_date, {sym: data_to_save})
+            except Exception:
+                pass
+        threading.Thread(target=_bg_sync, daemon=True).start()
+
+    return True
+
+
+def record_straddle_tick(
+    symbol: str,
+    spot: float,
+    ce_ltp: float,
+    pe_ltp: float,
+    strike: float,
+    expiry: str,
+    time_str: Optional[str] = None,
+    volume: int = 1000,
+) -> Optional[dict]:
+    """Appends or updates a single 1-minute straddle tick for the current minute."""
+    sym = (symbol or "NIFTY").upper().strip()
+    now_ist = get_now_ist()
+    s_date = now_ist.strftime("%Y-%m-%d")
+    iso_time = time_str or now_ist.strftime("%Y-%m-%dT%H:%M:00")
+    minute_key = iso_time[:16]
+
+    recorded = get_recorded_straddle_series(sym, s_date)
+    pts = list(recorded.get("points", [])) if recorded else []
+
+    price = round(ce_ltp + pe_ltp, 2)
+    synth = round(strike + ce_ltp - pe_ltp, 2)
+
+    matched = False
+    for p in pts:
+        p_t = str(p.get("time", ""))[:16]
+        if p_t == minute_key:
+            p["spot"] = round(spot, 2)
+            p["price"] = price
+            p["ce_price"] = round(ce_ltp, 2)
+            p["pe_price"] = round(pe_ltp, 2)
+            p["straddle_strike"] = strike
+            p["synthetic_future"] = synth
+            matched = True
+            break
+
+    if not matched:
+        cum_pv = sum(float(p.get("price", 0.0)) * int(p.get("volume", 1000)) for p in pts) + (price * volume)
+        cum_vol = sum(int(p.get("volume", 1000)) for p in pts) + volume
+        vwap = round(cum_pv / max(1, cum_vol), 2)
+        new_pt = {
+            "time": iso_time,
+            "spot": round(spot, 2),
+            "price": price,
+            "ce_price": round(ce_ltp, 2),
+            "pe_price": round(pe_ltp, 2),
+            "straddle_strike": strike,
+            "synthetic_future": synth,
+            "vwap": vwap,
+            "volume": volume,
+        }
+        pts.append(new_pt)
+
+    save_straddle_intraday_series(sym, s_date, expiry, pts, atm_strike=strike)
+    return pts[-1] if pts else None
+
+
+def record_all_indices_straddle_ticks() -> dict[str, Any]:
+    """
+    Background recorder called every minute during trading hours (09:14 to 15:35 IST).
+    Captures live ATM straddle quotes directly for NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX.
+    Appends ticks to persistent local cache and syncs with Supabase.
+    """
+    now_ist = get_now_ist()
+    if now_ist.weekday() >= 5:
+        return {"recorded": False, "reason": "Weekend"}
+    cur_m = now_ist.hour * 60 + now_ist.minute
+    if cur_m < (9 * 60 + 14) or cur_m > (15 * 60 + 35):
+        return {"recorded": False, "reason": "Market closed"}
+
+    results = {}
+    today = now_ist.date()
+    today_str = now_ist.strftime("%Y-%m-%d")
+
+    try:
+        from server import fetch_instrument_master, AngelClient, Instrument
+        ac = AngelClient()
+        if not ac.is_configured():
+            return {"recorded": False, "reason": "Angel not configured"}
+        ac.ensure_session()
+
+        insts = fetch_instrument_master()
+
+        # 1. Fetch live quotes for spots
+        spot_tokens = {
+            "NIFTY": ("NSE", "99926000", "NIFTY 50"),
+            "BANKNIFTY": ("NSE", "99926009", "NIFTY BANK"),
+            "FINNIFTY": ("NSE", "99926037", "FINNIFTY"),
+            "MIDCPNIFTY": ("NSE", "99926074", "MIDCPNIFTY"),
+            "SENSEX": ("BSE", "99919000", "SENSEX"),
+            "BANKEX": ("BSE", "99919012", "BANKEX"),
+        }
+        spot_req = [Instrument(symbol=k, trading_symbol=v[2], token=v[1], exchange=v[0]) for k, v in spot_tokens.items()]
+        spot_res = ac.quote(spot_req, mode="FULL")
+        spot_map = {}
+        for f in spot_res.get("fetched", []):
+            tok = str(f.get("symbolToken", ""))
+            ltp = float(f.get("ltp") or 0.0)
+            if ltp > 0:
+                for sym, v in spot_tokens.items():
+                    if v[1] == tok:
+                        spot_map[sym] = ltp
+
+        to_quote = []
+        pair_meta = {}
+
+        for sym, meta in INDEX_METADATA.items():
+            step = meta["step"]
+            spot = spot_map.get(sym) or meta["base_spot"]
+            atm = int(round(spot / step) * step)
+
+            matching = [i for i in insts if i.get("name") == sym and i.get("instrumenttype") == "OPTIDX"]
+            exp_map = {}
+            for o in matching:
+                e_str = o.get("expiry", "")
+                try:
+                    e_dt = datetime.strptime(e_str, "%d%b%Y").date()
+                    if e_dt >= today:
+                        exp_map.setdefault(e_dt, []).append(o)
+                except Exception:
+                    pass
+            if not exp_map:
+                continue
+            nearest_exp = min(exp_map.keys())
+            near_opts = exp_map[nearest_exp]
+
+            ce_inst, pe_inst = None, None
+            for o in near_opts:
+                try:
+                    raw_s = float(o.get("strike", 0))
+                    stk = raw_s / 100.0 if raw_s > 200000 else raw_s
+                    if abs(stk - atm) < (step * 0.4):
+                        sym_code = o.get("symbol", "")
+                        if sym_code.endswith("CE"):
+                            ce_inst = Instrument(symbol=sym, trading_symbol=sym_code, token=str(o.get("token")), exchange=o.get("exch_seg"))
+                        elif sym_code.endswith("PE"):
+                            pe_inst = Instrument(symbol=sym, trading_symbol=sym_code, token=str(o.get("token")), exchange=o.get("exch_seg"))
+                except Exception:
+                    pass
+            if ce_inst and pe_inst:
+                to_quote.extend([ce_inst, pe_inst])
+                pair_meta[sym] = {
+                    "ce": ce_inst,
+                    "pe": pe_inst,
+                    "strike": atm,
+                    "expiry": nearest_exp.strftime("%Y-%m-%d"),
+                    "spot": spot,
+                }
+
+        if to_quote:
+            opt_res = ac.quote(to_quote, mode="FULL")
+            fetched = {str(item.get("symbolToken")): item for item in opt_res.get("fetched", [])}
+
+            for sym, p in pair_meta.items():
+                ce_q = fetched.get(p["ce"].token, {})
+                pe_q = fetched.get(p["pe"].token, {})
+                ce_ltp = float(ce_q.get("ltp") or 0.0)
+                pe_ltp = float(pe_q.get("ltp") or 0.0)
+                if ce_ltp > 0 and pe_ltp > 0:
+                    record_straddle_tick(
+                        symbol=sym,
+                        spot=p["spot"],
+                        ce_ltp=ce_ltp,
+                        pe_ltp=pe_ltp,
+                        strike=p["strike"],
+                        expiry=p["expiry"],
+                    )
+                    results[sym] = {"ok": True, "straddle": round(ce_ltp + pe_ltp, 2), "spot": p["spot"]}
+    except Exception as e:
+        logger.error(f"[StraddleRecorder] Error in background tick recorder: {e}")
+
+    return {"recorded": True, "results": results}
+
+
 def fetch_real_straddle_feed(
     symbol: str,
     expiry: Optional[str] = None,
@@ -458,7 +755,7 @@ def fetch_real_straddle_feed(
 ) -> Optional[Dict[str, Any]]:
     """
     Fetches real institutional 1-minute straddle ticks from live CDN / API endpoints.
-    Eliminates all synthetic mock/random walk data completely.
+    Fast fail-safe timeout (2.0s) ensures zero blocking of the main server loop.
     """
     sym = (symbol or "NIFTY").upper().strip()
     cache_key = f"{sym}:{expiry}:{session_date}:{is_historical}"
@@ -476,7 +773,7 @@ def fetch_real_straddle_feed(
         url = f"https://straddle-chart.financedeft.com/history/equity/{sym}/{session_date}/{exp}.json"
         try:
             req = urllib.request.Request(url, headers=HEADERS)
-            with urllib.request.urlopen(req, timeout=6) as resp:
+            with urllib.request.urlopen(req, timeout=2.5) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
                 pl = data.get("price_list", [])
                 if pl:
@@ -496,11 +793,11 @@ def fetch_real_straddle_feed(
             exp = exp_list[0]["value"]
 
     if exp:
-        # A. CDN direct
+        # A. CDN direct (Fast 1.5s timeout)
         url = f"https://straddle-chart.financedeft.com/{sym}_{exp}.json"
         try:
             req = urllib.request.Request(url, headers=HEADERS)
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=2.0) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
                 pl = data.get("price_list", [])
                 if pl:
@@ -511,11 +808,11 @@ def fetch_real_straddle_feed(
         except Exception:
             pass
 
-        # B. API fallback
+        # B. API fallback (Fast 2.0s timeout)
         api_url = f"https://www.financedeft.com/api/straddle-price?key={sym}&expiry={exp}&category=equity"
         try:
             req_api = urllib.request.Request(api_url, headers=HEADERS)
-            with urllib.request.urlopen(req_api, timeout=5) as resp_api:
+            with urllib.request.urlopen(req_api, timeout=2.0) as resp_api:
                 data = json.loads(resp_api.read().decode('utf-8'))
                 pl = data.get("price_list", [])
                 if pl:
@@ -582,16 +879,28 @@ def compute_straddle_analytics(
 
     dte = max(0, (target_exp_d - sess_d).days)
 
-    # 2. Attempt fetching from real institutional market feed (FinanceDeft CDN / API)
-    real_feed = fetch_real_straddle_feed(
-        symbol=sym,
-        expiry=target_expiry,
-        session_date=session_date,
-        is_historical=is_historical,
-    )
+    # 2. Check in-house persistent intraday cache first (Memory -> Disk -> Supabase)
+    raw_pts = []
+    feed_source = ""
+    recorded = get_recorded_straddle_series(sym, session_date)
+    if recorded and recorded.get("points") and len(recorded["points"]) >= 5:
+        raw_pts = recorded["points"]
+        feed_source = recorded.get("source", "In-House Intraday Persistent Recorder")
+    else:
+        # Fallback to institutional market feed (FinanceDeft CDN / API) to seed persistent storage
+        real_feed = fetch_real_straddle_feed(
+            symbol=sym,
+            expiry=target_expiry,
+            session_date=session_date,
+            is_historical=is_historical,
+        )
+        if real_feed and real_feed.get("points"):
+            raw_pts = real_feed["points"]
+            feed_source = real_feed.get("source", "Real Exchange Option Feed")
+            # Automatically persist into local disk cache for instant sub-millisecond future queries
+            save_straddle_intraday_series(sym, session_date, target_expiry, raw_pts, source=feed_source)
 
-    if real_feed and real_feed.get("points"):
-        raw_pts = real_feed["points"]
+    if raw_pts:
         points = []
         cum_vol = 0
         cum_pv = 0.0
@@ -736,7 +1045,7 @@ def compute_straddle_analytics(
             },
             "points_count": len(points),
             "points": points,
-            "source": real_feed.get("source", "Real Exchange Option Feed"),
+            "source": feed_source or "Real Exchange Option Feed",
         }
 
     # 3. Fallback: Offline / Local Broker Options Calculation

@@ -976,8 +976,8 @@ def _record_and_get_intraday_timeline(ikey: str, target_expiry: str, spot: float
                     s_val = round(spot * ratio, 2)
                 s_pct = (c_close - ref_min) / ref_span
             else:
-                s_pct = frac
-                s_val = round(spot * (0.996 + 0.004 * frac), 2)
+                # No real candle data for this minute — skip point (no synthetic interpolation)
+                continue
 
             # Smooth PCR tracking market sentiment to closing PCR
             p_val = round(max(0.35, pcr * (0.68 + 0.22 * frac + 0.10 * s_pct)), 2)

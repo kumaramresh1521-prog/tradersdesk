@@ -202,6 +202,21 @@ def build_straddle_snapshot() -> dict:
     return res
 
 
+def save_straddles_to_supabase(trade_date: str, straddles_dict: dict) -> dict:
+    """Merges straddles directly into Supabase market_daily_snapshots without slow dependencies."""
+    try:
+        import supabase_engine
+        existing = supabase_engine.load_market_daily_snapshot(trade_date) or {}
+        st_data = dict(existing.get("straddle_data", {}))
+        for k, v in straddles_dict.items():
+            st_data[k.lower()] = v
+            st_data[k.upper()] = v
+        existing["straddle_data"] = st_data
+        return supabase_engine.save_market_daily_snapshot(trade_date, existing)
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+
+
 def build_smart_money_snapshot(trade_date: str) -> dict:
     """Gathers FII/DII cash net flow, derivatives flow, and participant OI matrix."""
     try:

@@ -1235,6 +1235,13 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
     except Exception as e:
         logger.debug(f"Error loading mwpl_map: {e}")
 
+    # Load real rollover % map for accurate rolloverPct (not synthetic formula)
+    _real_rollover_map_inst = {}
+    try:
+        _real_rollover_map_inst = get_real_contract_rollover_map()
+    except Exception as _rro_e:
+        logger.debug(f"Error loading real rollover map: {_rro_e}")
+
     new_baseline_needed = False
 
     # Merge symbols: FO_UNIVERSE + any remaining active contracts in _KOTAK_FO_MAP
@@ -1448,7 +1455,7 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
             "dayHigh": day_high,
             "dayLow": day_low,
             "vwap": vwap,
-            "rolloverPct": round(min(95.0, max(50.0, 72.0 + (basis_pct * 5.0))), 1),
+            "rolloverPct": round(float(_real_rollover_map_inst.get(sym) or 0.0), 2),
             "oiContracts": oi_contracts,
             "openInterest": curr_oi,
             "oiChangePct": oi_chg_pct,
@@ -1466,10 +1473,7 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
             "ivChange": iv_change,
             "ivChangePct": iv_change_pct,
             "isLiveBroker": is_live_broker,
-            "sparkline": [
-                round(prev_close + (fut_price - prev_close) * (i / 9.0), 2)
-                for i in range(10)
-            ],
+            "sparkline": [],  # Synthetic sparkline removed — UI builds from real candle data
         }
         records.append(rec)
 
