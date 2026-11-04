@@ -385,17 +385,7 @@
       ],
       "badgeColor": "",
       "hasDropdown": true
-    },
-    {
-      "id": "nav_blog",
-      "url": "/blog",
-      "icon": "✍️",
-      "badge": "",
-      "label": "Market Insights",
-      "active": true,
-      "badgeColor": "teal",
-      "hasDropdown": false
     }
   ],
-  "updatedAt": "2026-11-04T02:13:33.476851Z"
+  "updatedAt": "2026-11-04T02:38:34.665107Z"
 }

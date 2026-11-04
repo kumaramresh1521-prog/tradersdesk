@@ -5069,39 +5069,46 @@ def build_index_option_chain(
 
 
 
+_INSTRUMENT_MASTER_MEM_CACHE: list[dict] = []
+_INSTRUMENT_MASTER_LOCK = threading.Lock()
+
 def fetch_instrument_master() -> list[dict]:
+    global _INSTRUMENT_MASTER_MEM_CACHE
+    if _INSTRUMENT_MASTER_MEM_CACHE:
+        return _INSTRUMENT_MASTER_MEM_CACHE
 
-    cache_path = CACHE_DIR / "openapi_scrip_master.json"
+    with _INSTRUMENT_MASTER_LOCK:
+        if _INSTRUMENT_MASTER_MEM_CACHE:
+            return _INSTRUMENT_MASTER_MEM_CACHE
 
-    cached = read_json(cache_path, {})
+        cache_path = CACHE_DIR / "openapi_scrip_master.json"
+        cached = read_json(cache_path, {})
+        if cached.get("rows") and time.time() - cached.get("cached_at", 0) < 86400:
+            _INSTRUMENT_MASTER_MEM_CACHE = cached["rows"]
+            return _INSTRUMENT_MASTER_MEM_CACHE
 
-    if cached.get("rows") and time.time() - cached.get("cached_at", 0) < 86400:
+        errors = []
+        for url in INSTRUMENT_URLS:
+            try:
+                text = http_text(url, timeout=45)
+                raw_rows = json.loads(text)
+                if isinstance(raw_rows, list) and raw_rows:
+                    filtered_rows = [
+                        r for r in raw_rows
+                        if (r.get("exch_seg") == "NSE" and str(r.get("symbol", "")).endswith("-EQ"))
+                        or (r.get("exch_seg") in ("NFO", "BFO") and r.get("instrumenttype") == "OPTIDX")
+                    ]
+                    write_json(cache_path, {"cached_at": time.time(), "source": url, "rows": filtered_rows})
+                    _INSTRUMENT_MASTER_MEM_CACHE = filtered_rows
+                    return filtered_rows
+            except Exception as exc:
+                errors.append(str(exc))
 
-        return cached["rows"]
+        if cached.get("rows"):
+            _INSTRUMENT_MASTER_MEM_CACHE = cached["rows"]
+            return _INSTRUMENT_MASTER_MEM_CACHE
 
-
-
-    errors = []
-
-    for url in INSTRUMENT_URLS:
-
-        try:
-
-            text = http_text(url, timeout=90)
-
-            rows = json.loads(text)
-
-            if isinstance(rows, list) and rows:
-
-                write_json(cache_path, {"cached_at": time.time(), "source": url, "rows": rows})
-
-                return rows
-
-        except Exception as exc:
-
-            errors.append(str(exc))
-
-    raise RuntimeError("Could not fetch Angel instrument master: " + " | ".join(errors))
+        raise RuntimeError("Could not fetch Angel instrument master: " + " | ".join(errors))
 
 
 
@@ -17289,7 +17296,11 @@ def _compute_indices_overview_worker(date_value: str) -> dict:
 
 
 
-            opt_qmap = quote_map_by_token(client.quote(all_opt_insts, mode="FULL"))
+            try:
+                opt_qmap = quote_map_by_token(client.quote(all_opt_insts, mode="FULL"))
+            except Exception as _q_err:
+                logger.warning("Options quote in indices overview note: %s", _q_err)
+                opt_qmap = {}
 
 
 
@@ -17903,15 +17914,14 @@ def build_indices_overview(payload: dict) -> dict:
 
 
 
-    # Cold start: compute once
-
-    data = _compute_indices_overview_worker(date_val)
-
-    _INDICES_OVERVIEW_CACHE["data"] = data
-
-    _INDICES_OVERVIEW_CACHE["timestamp"] = time.time()
-
-    return data
+    # Cold start: compute once with single-flight mutex
+    with _WARM_BREADTH_LOCK:
+        if _INDICES_OVERVIEW_CACHE.get("data") and not force:
+            return _INDICES_OVERVIEW_CACHE["data"]
+        data = _compute_indices_overview_worker(date_val)
+        _INDICES_OVERVIEW_CACHE["data"] = data
+        _INDICES_OVERVIEW_CACHE["timestamp"] = time.time()
+        return data
 
 _BREADTH_CONTRIB_CACHE = {}
 
