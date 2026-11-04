@@ -578,6 +578,9 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
     # Convert all sessions to uniform dicts
     cleaned_sessions = []
     from chart_engine import NSE_FIXED_HOLIDAYS, NSE_CALENDAR_HOLIDAYS
+    now_dt = datetime.now()
+    today_str = now_dt.strftime("%Y%m%d")
+
     for s_item in timeline_sessions:
         dt_str = s_item.get("date", "")
         try:
@@ -587,6 +590,21 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
             display_dt = d_obj.strftime("%d-%b-%Y")
         except Exception:
             display_dt = s_item.get("dt", dt_str)
+
+        # Exact official NSE Security Delivery percentage & volume (matches Delivery Desk 1:1)
+        deliv_rec = _get_delivery_for_symbol_date(sym, dt_str)
+        if deliv_rec and "dv" in deliv_rec and deliv_rec["dv"] is not None:
+            dv = round(float(deliv_rec["dv"]), 1)
+            deliv_qty = int(deliv_rec["deliv_qty"]) if deliv_rec.get("deliv_qty") is not None else None
+        else:
+            dv = None
+            deliv_qty = None
+
+        # STRICT EOD REQUIREMENT:
+        # If the session date is today, only include it when official EOD delivery data has arrived.
+        # Intraday/real-time sessions are NEVER shown on the day-wise chart.
+        if dt_str == today_str and dv is None:
+            continue
 
         c = float(s_item.get("c", 0))
         o = float(s_item.get("o", c))
@@ -624,15 +642,6 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
             else:
                 iv = 14.5 if is_idx else 32.0
 
-        # Exact official NSE Security Delivery percentage & volume (matches Delivery Desk 1:1)
-        deliv_rec = _get_delivery_for_symbol_date(sym, dt_str)
-        if deliv_rec and "dv" in deliv_rec and deliv_rec["dv"] is not None:
-            dv = round(float(deliv_rec["dv"]), 1)
-            deliv_qty = int(deliv_rec["deliv_qty"]) if deliv_rec.get("deliv_qty") is not None else None
-        else:
-            dv = None
-            deliv_qty = None
-
         cleaned_sessions.append({
             "date": dt_str,
             "dt": display_dt,
@@ -650,66 +659,9 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
             "pcr": round(pcr, 2),
         })
 
-    # 3. Append Current Live Session if market is live or today's quote is updated
-    try:
-        import futures_engine
-        master_list = futures_engine._FUTURES_CACHE.get("master")
-        if not master_list:
-            master_list = futures_engine.get_futures_master(force_refresh=False)
-        master_list = master_list or []
-        m_rec = next((r for r in master_list if r.get("symbol") == sym), None)
-        if m_rec and m_rec.get("futPrice", 0) > 0:
-            now_dt = datetime.now()
-            today_str = now_dt.strftime("%Y%m%d")
-            from chart_engine import is_nse_trading_session_active_now
-            is_trading_active = is_nse_trading_session_active_now()
-
-            live_fut = float(m_rec.get("futPrice") or m_rec.get("ltp"))
-            live_spot = float(m_rec.get("spotPrice") or live_fut)
-            live_basis = float(m_rec.get("basis") or (live_fut - live_spot))
-            live_h = float(m_rec.get("dayHigh") or live_fut)
-            live_l = float(m_rec.get("dayLow") or live_fut)
-            live_o = float(m_rec.get("prevClose") or live_fut)
-            live_v = int(float(m_rec.get("volumeContracts") or m_rec.get("volume") or 0))
-            live_oi = int(float(m_rec.get("openInterest") or m_rec.get("oiContracts") or 0))
-            live_iv = float(m_rec.get("iv") or (14.5 if is_idx else 32.0))
-
-            if is_trading_active and cleaned_sessions and cleaned_sessions[-1]["date"] != today_str:
-                # Today's delivery is pending NSE EOD bhavcopy publication (usually after 18:00 IST)
-                today_deliv = _get_delivery_for_symbol_date(sym, today_str)
-                if today_deliv and today_deliv.get("dv") is not None:
-                    live_dv = round(float(today_deliv["dv"]), 1)
-                    live_deliv_qty = int(today_deliv.get("deliv_qty", 0))
-                else:
-                    live_dv = None
-                    live_deliv_qty = None
-                cleaned_sessions.append({
-                    "date": today_str,
-                    "dt": now_dt.strftime("%d-%b-%Y"),
-                    "o": round(live_o, 2),
-                    "h": round(live_h, 2),
-                    "l": round(live_l, 2),
-                    "c": round(live_spot, 2),
-                    "fut_c": round(live_fut, 2),
-                    "basis": round(live_basis, 2),
-                    "v": live_v,
-                    "oi": live_oi,
-                    "iv": round(live_iv, 2),
-                    "dv": live_dv,
-                    "deliv_qty": live_deliv_qty,
-                    "pcr": round(float(m_rec.get("pcr") or 1.0), 2),
-                })
-            elif is_trading_active and cleaned_sessions and cleaned_sessions[-1]["date"] == today_str:
-                # Update today's bar with live tick
-                cleaned_sessions[-1]["c"] = round(live_spot, 2)
-                cleaned_sessions[-1]["fut_c"] = round(live_fut, 2)
-                cleaned_sessions[-1]["basis"] = round(live_basis, 2)
-                cleaned_sessions[-1]["h"] = round(max(cleaned_sessions[-1]["h"], live_fut), 2)
-                cleaned_sessions[-1]["l"] = round(min(cleaned_sessions[-1]["l"], live_fut), 2)
-                if m_rec.get("openInterest"):
-                    cleaned_sessions[-1]["oi"] = int(m_rec.get("openInterest"))
-    except Exception as e:
-        pass
+    # 3. Strictly Day-Wise EOD Only:
+    # Real-time / intraday ticks are NOT appended to the day-wise chart.
+    # Today's session is only displayed when official EOD delivery data has arrived at the end of the day.
 
     # 4. Indicators Calculation (SMA20, SMA50, Bollinger Bands, RSI14, Buildup)
     N = len(cleaned_sessions)
