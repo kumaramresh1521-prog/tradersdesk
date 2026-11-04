@@ -333,22 +333,22 @@
 
           <!-- 2. FUTURES DASHBOARD (MAIN MENU WITH SUBMENUS) -->
           <div class="inst-nav-item has-dropdown">
-            <a href="/futures" class="inst-nav-btn" id="navFutures" onclick="return window.instNavClick(event, 'futures', 'matrix')">
+            <a href="/futures" class="inst-nav-btn" id="navFutures" onclick="return window.instNavClick(event, 'futures', 'buildup')">
               <span class="inst-nav-icon">📈</span> <span class="nav-label">Futures Dashboard</span>
               <span class="inst-nav-arrow">▾</span>
             </a>
                         <div class="inst-dropdown inst-dropdown-md">
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">📊 Trading &amp; Open Interest</span>
-                <!-- Submenu 1: Future Marketwatch -->
-                <a href="/futures" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'matrix');}">
+                <!-- Submenu 1: Futures Dashboard -->
+                <a href="/futures" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'buildup');}">
                   <span class="dd-icon">📊</span>
                   <div class="dd-text">
-                    <span class="dd-title">Future Marketwatch</span>
-                    <span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span>
+                    <span class="dd-title">Futures Dashboard</span>
+                    <span class="dd-sub">Long/short buildup quadrants &amp; institutional unwinding flows</span>
                   </div>
                 </a>
-                <!-- Submenu 2: Future Open Interest -->
+<!-- Submenu 2: Future Open Interest -->
                 <a href="/futures/open-interest" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'openInterest');}">
                   <span class="dd-icon">📈</span>
                   <div class="dd-text">
@@ -375,28 +375,12 @@
               </div>
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">⚡ Market Structure &amp; Risk</span>
-                <!-- Submenu 5: Future Buildup -->
-                <a href="/futures/buildup" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'buildup');}">
-                  <span class="dd-icon">🧭</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Buildup Quadrants</span>
-                    <span class="dd-sub">Long/short buildup &amp; institutional unwinding flows</span>
-                  </div>
-                </a>
                 <!-- Submenu 6: Future Heatmap -->
                 <a href="/futures/heatmap" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'heatmap');}">
                   <span class="dd-icon">🗺️</span>
                   <div class="dd-text">
                     <span class="dd-title">Futures Heatmap</span>
                     <span class="dd-sub">Sectoral visual heat &amp; momentum distribution map</span>
-                  </div>
-                </a>
-                <!-- Submenu 7: Future Index Term Structure -->
-                <a href="/futures/indices" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'indices');}">
-                  <span class="dd-icon">📐</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Index Term Structure</span>
-                    <span class="dd-sub">Cash-futures basis, cost of carry &amp; term curve</span>
                   </div>
                 </a>
                 <!-- Submenu 8: MWPL and Ban Radar -->
@@ -1071,17 +1055,17 @@
               <span class="fut-brand-icon" id="futDeskBrandIcon">📊</span>
               <div>
                 <h2 class="fut-heading">
-                  <span id="futDeskHeadingText">FUTURE MARKETWATCH</span>
-                  <span id="futUniverseCountBadge" class="fut-count-pill">200 CONTRACTS</span>
+                  <span id="futDeskHeadingText">FUTURES DASHBOARD</span>
+                  <span id="futUniverseCountBadge" class="fut-count-pill">4 QUADRANTS</span>
                   <span id="futSessionDateBadge" class="fut-count-pill" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">EOD • LATEST SESSION</span>
                 </h2>
-                <p class="fut-subheading" id="futDeskSubheading">Live institutional matrix, cash-futures spread, cost of carry &amp; open interest analytics for all NSE F&amp;O contracts.</p>
+                <p class="fut-subheading" id="futDeskSubheading">Real-time institutional momentum classification: Long Buildup, Short Buildup, Short Covering &amp; Long Unwinding.</p>
               </div>
             </div>
 
             <div class="fut-controls-group">
               <!-- Search Input (Dedicated for Marketwatch) -->
-              <div class="fut-search-box" id="futSearchBoxWrapper">
+              <div class="fut-search-box" id="futSearchBoxWrapper" style="display:none;">
                 <span class="fut-search-icon">🔍</span>
                 <input type="text" id="futSearchInput" placeholder="Filter symbol (e.g. NIFTY, RELIANCE, SBIN)..." autocomplete="off" />
               </div>
@@ -1104,101 +1088,9 @@
           </div>
 
           <!-- ================================================================
-               VIEW 1: FUTURE MARKETWATCH (ALL F&O CONTRACTS)
+               VIEW 1: FUTURES DASHBOARD (4 BUILDUP QUADRANTS)
                ================================================================ -->
-          <div id="futView_matrix" class="fut-view-panel">
-            <!-- Dedicated Filter Ribbon for Marketwatch -->
-            <div class="fut-nav-container" style="margin-bottom:14px;">
-
-              <!-- Flow / Signal Presets -->
-              <div class="fut-signal-ribbon" id="futSignalPills">
-                <span class="fut-sig-label">Institutional Flow:</span>
-                <button type="button" class="fut-sig-pill active" data-signal="ALL">All Flows</button>
-                <button type="button" class="fut-sig-pill lb" data-signal="LB">🟢 Long Buildup (<span id="countLb">--</span>)</button>
-                <button type="button" class="fut-sig-pill sb" data-signal="SB">🔴 Short Buildup (<span id="countSb">--</span>)</button>
-                <button type="button" class="fut-sig-pill sc" data-signal="SC">🔵 Short Covering (<span id="countSc">--</span>)</button>
-                <button type="button" class="fut-sig-pill lu" data-signal="LU">🟡 Long Unwinding (<span id="countLu">--</span>)</button>
-                <button type="button" class="fut-sig-pill prem" data-signal="PREMIUM">💎 High Premium</button>
-                <button type="button" class="fut-sig-pill disc" data-signal="DISCOUNT">📉 Discount / Arbitrage</button>
-              </div>
-            </div>
-
-            <!-- Macro Summary Ribbon -->
-            <div class="fut-macro-bar">
-              <div class="fut-mb-item">
-                <span class="fmb-lbl">F&amp;O Turnover</span>
-                <span class="fmb-val" id="futKpiTurnover" style="color:#60a5fa;">--</span>
-              </div>
-              <div class="fut-mb-sep"></div>
-              <div class="fut-mb-item">
-                <span class="fmb-lbl">Total Market OI</span>
-                <span class="fmb-val" id="futKpiOi" style="color:#f8fafc;">--</span>
-              </div>
-              <div class="fut-mb-sep"></div>
-              <div class="fut-mb-item" style="flex:1; min-width:240px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px;">
-                  <span class="fmb-lbl">Institutional Sentiment Bar</span>
-                  <span id="futBuildupCountText"></span>
-                </div>
-                <div id="futBuildupRatioBar" class="fut-ratio-bar"></div>
-              </div>
-            </div>
-            <!-- Master Table -->
-            <div class="fut-table-wrap">
-              <table class="fut-table" id="futMatrixTable">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th class="sortable" data-sort="symbol">Symbol</th>
-                    <th>Sector</th>
-                    <th style="text-align:right;" class="sortable" data-sort="spotPrice">Spot (₹)</th>
-                    <th style="text-align:right;" class="sortable" data-sort="futPrice">Futures LTP (₹)</th>
-                    <th style="text-align:right;" class="sortable" data-sort="priceChangePct">Chg %</th>
-                    <th style="text-align:right;" class="sortable" data-sort="basis">Basis Spread</th>
-                    <th style="text-align:right;" class="sortable" data-sort="coc">CoC % p.a.</th>
-                    <th style="text-align:right;" class="sortable" data-sort="oiContracts">Open Interest</th>
-                    <th style="text-align:right;" class="sortable" data-sort="oiChangePct">OI Chg %</th>
-                    <th style="text-align:right;" class="sortable" data-sort="oiValueCr">OI Value (₹ Cr)</th>
-                    <th style="text-align:center;">Day Range (L - H)</th>
-                    <th style="text-align:center;" class="sortable" data-sort="buildupCode">Institutional Buildup</th>
-                    <th style="text-align:right;" class="sortable" data-sort="mwplPct">MWPL %</th>
-                  </tr>
-                </thead>
-                <tbody id="futMatrixTableBody">
-                  <!-- Populated dynamically with all 200 contracts -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- ================================================================
-               VIEW 2: INDEX TERM STRUCTURE & BASIS
-               ================================================================ -->
-          <div id="futView_indices" class="fut-view-panel" style="display:none;">
-            <!-- Live Benchmark Index Cards Grid -->
-            <div style="margin-bottom:18px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span style="font-size:12px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px;">⚡ Live Benchmark Index Futures &amp; Cash Basis Spread</span>
-                <span style="font-size:11px; color:#64748b;">Exchange Quotes &bull; NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY</span>
-              </div>
-              <div class="fut-index-grid" id="futIndexCardsGrid" style="display:grid;">
-                <!-- Dynamically populated with high-fidelity index cards -->
-              </div>
-            </div>
-
-            <div style="margin-bottom:12px; margin-top:20px;">
-              <h4 style="margin:0 0 4px 0; font-size:14px; font-weight:800; color:var(--text-primary, #f8fafc);">📈 Major Index Futures &amp; Term Structure Hub</h4>
-              <p style="margin:0; font-size:12px; color:#94a3b8;">Comprehensive Cash-Futures Basis, Cost of Carry, and Rollover analysis for all benchmark indices.</p>
-            </div>
-            <div class="fut-indices-detail-container" id="futIndicesDetailGrid">
-              <!-- Detailed Index Term Structure Cards -->
-            </div>
-          </div>
-
-          <!-- ================================================================
-               VIEW 3: FUTURE BUILDUP (4 QUADRANTS)
-               ================================================================ -->
-          <div id="futView_buildup" class="fut-view-panel" style="display:none;">
+          <div id="futView_buildup" class="fut-view-panel">
             <!-- Institutional Macro Sentiment Bar for Buildup -->
             <div class="fut-macro-bar" style="margin-bottom:16px;">
               <div class="fut-mb-item">
@@ -5776,7 +5668,7 @@
         <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/option-chain-pro', event); }">Upstox Option Chain Pro</a>
         <a href="/futures/open-interest" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/open-interest', event); }">Future Open Interest &amp; Buildup</a>
         <a href="/futures/heatmap" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/heatmap', event); }">Futures Sector Heatmap</a>
-        <a href="/futures" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures', event); }">Future Marketwatch Matrix</a>
+        <a href="/futures" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures', event); }">Futures Dashboard</a>
         <a href="/straddle" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/straddle', event); }">Straddle Analytics Engine</a>
         <a href="/call-vs-put-premium" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/call-vs-put-premium', event); }">Call vs Put Premium</a>
         <a href="/futures/buildup" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/buildup', event); }">Future Buildup Quadrants</a>
@@ -5884,7 +5776,7 @@
               <a href="/futures" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'matrix')">
                 <span class="dot-sub-icon">📈</span>
                 <div class="dot-sub-text">
-                  <div class="dot-sub-title">Future Marketwatch</div>
+                  <div class="dot-sub-title">Futures Dashboard</div>
                   <div class="dot-sub-desc">Active contracts matrix, LTP, OI &amp; leaders</div>
                 </div>
               </a>

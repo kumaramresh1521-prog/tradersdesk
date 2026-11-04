@@ -11,7 +11,7 @@
 
 (function () {
   const state = {
-    activeSubTab: 'matrix',
+    activeSubTab: 'buildup',
     sector: 'ALL',
     signal: 'ALL',
     search: '',
@@ -72,31 +72,10 @@
 
   // Metadata for each dedicated Futures Desk view
   const DESK_VIEW_META = {
-    matrix: {
-      title: "FUTURE MARKETWATCH",
-      countBadge: "200 CONTRACTS",
-      icon: "📊",
-      desc: "Live institutional matrix, cash-futures spread, cost of carry & open interest analytics for all NSE F&O contracts.",
-      showSearch: true
-    },
-    indices: {
-      title: "INDEX TERM STRUCTURE & BASIS",
-      countBadge: "7 INDICES",
-      icon: "📈",
-      desc: "Cash-futures basis spread, cost of carry & multi-expiry rollover term structure for benchmark indices.",
-      showSearch: false
-    },
-    openInterest: {
-      title: "FUTURE OPEN INTEREST & BUILDUP",
-      countBadge: "260+ CONTRACTS",
-      icon: "⚡",
-      desc: "Interactive EOD & real-time multi-panel futures chart, open interest buildup dynamics & option chain max pain.",
-      showSearch: false
-    },
     buildup: {
-      title: "FUTURE BUILDUP QUADRANTS",
+      title: "FUTURES DASHBOARD",
       countBadge: "4 QUADRANTS",
-      icon: "⚡",
+      icon: "📊",
       desc: "Real-time institutional momentum classification: Long Buildup, Short Buildup, Short Covering & Long Unwinding.",
       showSearch: false
     },
@@ -140,24 +119,24 @@
   // --- Sub-Tab Switching (Strict View Isolation) ---
   function switchSubTab(tabName) {
     // Aliases for compatibility
-    if (tabName === 'dashboard' || tabName === 'screener' || tabName === 'marketwatch') tabName = 'matrix';
-    if (tabName === 'termstructure' || tabName === 'basis') tabName = 'indices';
+    if (!tabName || tabName === 'dashboard' || tabName === 'screener' || tabName === 'marketwatch' || tabName === 'matrix' || tabName === 'indices' || tabName === 'termstructure' || tabName === 'basis') tabName = 'buildup';
+    
     if (tabName === 'openinterest' || tabName === 'open-interest' || tabName === 'oi' || tabName === 'future-oi' || tabName === 'future-open-interest') tabName = 'openInterest';
     if (tabName === 'intraday' || tabName === 'future-intraday' || tabName === 'futintraday') tabName = 'futureIntraday';
     if (tabName === 'future-vs-oi' || tabName === 'price-vs-oi' || tabName === 'futurevsoi' || tabName === 'pvo') tabName = 'futureVsOi';
 
     // Feature Flags Check: If subview is toggled OFF in Admin Panel, gracefully fallback to matrix
     if (tabName === 'futureIntraday' && window._featureFlags && window._featureFlags.futures_future_intraday === false) {
-      tabName = 'matrix';
+      tabName = 'buildup';
     }
     if (tabName === 'futureVsOi' && window._featureFlags && window._featureFlags.futures_future_vs_oi === false) {
-      tabName = 'matrix';
+      tabName = 'buildup';
     }
 
     state.activeSubTab = tabName;
 
     // Dynamically update header command bar for the active tool
-    const meta = DESK_VIEW_META[tabName] || DESK_VIEW_META.matrix;
+    const meta = DESK_VIEW_META[tabName] || DESK_VIEW_META.buildup;
     const headingEl = document.getElementById('futDeskHeadingText');
     if (headingEl) headingEl.textContent = meta.title;
     const iconEl = document.getElementById('futDeskBrandIcon');
@@ -173,7 +152,7 @@
       btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    const views = ['matrix', 'openInterest', 'futureIntraday', 'futureVsOi', 'indices', 'buildup', 'heatmap', 'mwpl', 'rollover'];
+    const views = ['buildup', 'openInterest', 'futureIntraday', 'futureVsOi', 'heatmap', 'mwpl', 'rollover'];
     views.forEach(v => {
       const el = document.getElementById(`futView_${v}`);
       if (el) {
@@ -186,7 +165,7 @@
     // Sync clean URL when navigating within Futures Desk
     try {
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/futures")) {
-        const futSubUrl = tabName === "matrix" ? "/futures" : (tabName === "openInterest" ? "/futures/open-interest" : (tabName === "futureIntraday" ? "/futures/future-intraday" : (tabName === "futureVsOi" ? "/futures/future-vs-oi" : `/futures/${tabName}`)));
+        const futSubUrl = tabName === "buildup" ? "/futures" : (tabName === "openInterest" ? "/futures/open-interest" : (tabName === "futureIntraday" ? "/futures/future-intraday" : (tabName === "futureVsOi" ? "/futures/future-vs-oi" : `/futures/${tabName}`)));
         if (window.location.pathname !== futSubUrl && typeof history !== "undefined" && history.pushState) {
           history.pushState({ desk: "futures", subview: tabName }, document.title, futSubUrl);
         }

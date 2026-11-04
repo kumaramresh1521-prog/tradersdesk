@@ -25241,7 +25241,7 @@ function getUrlForDesk(key, subview) {
 
     if (subview === "rollover") return "/futures/rollover";
 
-    if (subview === "matrix" || subview === "marketwatch") return "/futures/marketwatch";
+    if (subview === "matrix" || subview === "marketwatch" || subview === "indices" || subview === "buildup") return "/futures";
 
     return "/futures";
 
@@ -25518,7 +25518,7 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
 
       if (window.futuresDesk && typeof window.futuresDesk.switchSubTab === "function") {
 
-        window.futuresDesk.switchSubTab(subview || "matrix");
+        window.futuresDesk.switchSubTab(subview || "buildup");
 
       } else {
 
@@ -25526,7 +25526,7 @@ function instNav(key, subview, updateHistory = true, shouldScroll = false) {
 
           if (window.futuresDesk && typeof window.futuresDesk.switchSubTab === "function") {
 
-            window.futuresDesk.switchSubTab(subview || "matrix");
+            window.futuresDesk.switchSubTab(subview || "buildup");
 
           }
 

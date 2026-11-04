@@ -160,15 +160,15 @@
                       <div class="inst-dropdown inst-dropdown-md">
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">📊 Trading &amp; Open Interest</span>
-                <!-- Submenu 1: Future Marketwatch -->
-                <a href="/futures" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'matrix');}">
+                <!-- Submenu 1: Futures Dashboard -->
+                <a href="/futures" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'buildup');}">
                   <span class="dd-icon">📊</span>
                   <div class="dd-text">
-                    <span class="dd-title">Future Marketwatch</span>
-                    <span class="dd-sub">Active contracts matrix, LTP, OI &amp; volume leaders</span>
+                    <span class="dd-title">Futures Dashboard</span>
+                    <span class="dd-sub">Long/short buildup quadrants &amp; institutional unwinding flows</span>
                   </div>
                 </a>
-                <!-- Submenu 2: Future Open Interest -->
+<!-- Submenu 2: Future Open Interest -->
                 <a href="/futures/open-interest" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'openInterest');}">
                   <span class="dd-icon">📈</span>
                   <div class="dd-text">
@@ -195,28 +195,12 @@
               </div>
               <div class="inst-dropdown-col">
                 <span class="inst-dropdown-header">⚡ Market Structure &amp; Risk</span>
-                <!-- Submenu 5: Future Buildup -->
-                <a href="/futures/buildup" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'buildup');}">
-                  <span class="dd-icon">🧭</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Buildup Quadrants</span>
-                    <span class="dd-sub">Long/short buildup &amp; institutional unwinding flows</span>
-                  </div>
-                </a>
                 <!-- Submenu 6: Future Heatmap -->
                 <a href="/futures/heatmap" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'heatmap');}">
                   <span class="dd-icon">🗺️</span>
                   <div class="dd-text">
                     <span class="dd-title">Futures Heatmap</span>
                     <span class="dd-sub">Sectoral visual heat &amp; momentum distribution map</span>
-                  </div>
-                </a>
-                <!-- Submenu 7: Future Index Term Structure -->
-                <a href="/futures/indices" class="inst-dd-item" onclick="if(window.instNavClick){return window.instNavClick(event, 'futures', 'indices');}">
-                  <span class="dd-icon">📐</span>
-                  <div class="dd-text">
-                    <span class="dd-title">Index Term Structure</span>
-                    <span class="dd-sub">Cash-futures basis, cost of carry &amp; term curve</span>
                   </div>
                 </a>
                 <!-- Submenu 8: MWPL and Ban Radar -->
@@ -1276,7 +1260,7 @@
         <a href="/option-chain-pro" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/option-chain-pro', event); }">Upstox Option Chain Pro</a>
         <a href="/futures/open-interest" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/open-interest', event); }">Future Open Interest &amp; Buildup</a>
         <a href="/futures/heatmap" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/heatmap', event); }">Futures Sector Heatmap</a>
-        <a href="/futures" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures', event); }">Future Marketwatch Matrix</a>
+        <a href="/futures" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures', event); }">Futures Dashboard</a>
         <a href="/straddle" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/straddle', event); }">Straddle Analytics Engine</a>
         <a href="/call-vs-put-premium" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/call-vs-put-premium', event); }">Call vs Put Premium</a>
         <a href="/futures/buildup" onclick="if(typeof navigateDesk==='function'){ return navigateDesk('', '', '/futures/buildup', event); }">Future Buildup Quadrants</a>
@@ -1378,11 +1362,11 @@
               <span class="dot-section-title">Futures Dashboard</span>
             </div>
             <div class="dot-sub-grid">
-              <!-- Sub 1: Future Marketwatch -->
+              <!-- Sub 1: Futures Dashboard -->
               <a href="/futures" class="dot-sub-item" onclick="return window.dotNavClick(event, 'futures', 'matrix')">
                 <span class="dot-sub-icon">📈</span>
                 <div class="dot-sub-text">
-                  <div class="dot-sub-title">Future Marketwatch</div>
+                  <div class="dot-sub-title">Futures Dashboard</div>
                   <div class="dot-sub-desc">Active contracts matrix, LTP, OI &amp; leaders</div>
                 </div>
               </a>
