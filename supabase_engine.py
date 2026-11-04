@@ -516,17 +516,6 @@ def sync_all_admin_configs_from_cloud(data_dir: Path | None = None) -> dict:
                     if k in CONFIG_FILE_MAP:
                         target_file = data_dir / CONFIG_FILE_MAP[k]
                         try:
-                            # Safeguard: Do not wipe non-empty local file with empty cloud list/dict
-                            if (v == [] or v == {}) and target_file.exists():
-                                try:
-                                    local_existing = json.loads(target_file.read_text(encoding="utf-8"))
-                                    if local_existing:
-                                        save_app_config_to_supabase(k, local_existing)
-                                        seeded_to_cloud.append(k)
-                                        continue
-                                except Exception:
-                                    pass
-
                             target_file.write_text(json.dumps(v, indent=2, ensure_ascii=False), encoding="utf-8")
                             synced_from_cloud.append(k)
 
