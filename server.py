@@ -20795,18 +20795,76 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, {"ok": True, "quality": "cached", "indices": [], "fiiStats": {}, "participantVol": []})
 
         if path == "/api/index-breadth-contribution":
-
             query = urllib.parse.parse_qs(parsed.query)
-
             idx = query.get("index", query.get("symbol", query.get("universe", ["nifty50"])))[0]
-
-            date_param = query.get("date", [""])[0] or now_ist().strftime("%Y-%m-%d")
-
+            date_param = (query.get("date") or query.get("trade_date") or [""])[0].strip() or now_ist().strftime("%Y-%m-%d")
             interval = query.get("interval", ["ONE_MINUTE"])[0]
-
             force = query.get("refresh", ["false"])[0].lower() in ("1", "true")
 
-            return self.send_json(200, get_cached_breadth_contribution(idx, date_param, interval=interval, force_refresh=force))
+            today_str = now_ist().strftime("%Y-%m-%d")
+            if date_param and date_param != today_str and date_param != "today":
+                try:
+                    import snapshot_engine
+                    snap = snapshot_engine.get_snapshot(date_param)
+                    if snap and snap.get("breadth_data"):
+                        brd_map = snap["breadth_data"]
+                        idx_norm = idx.lower().replace(" ", "").replace("_", "")
+                        b_entry = brd_map.get(idx_norm)
+                        if b_entry and (b_entry.get("timeline") or b_entry.get("summary")):
+                            return self.send_json(200, {
+                                "ok": True,
+                                "isHistorical": True,
+                                "source": "Supabase EOD Snapshot",
+                                "indexKey": idx_norm,
+                                "universe": idx_norm,
+                                "interval": interval,
+                                "date": date_param,
+                                "displayDate": date_param,
+                                "isMarketClosed": True,
+                                "isHoliday": False,
+                                "indexInfo": b_entry.get("indexInfo") or {"name": b_entry.get("label", idx_norm.upper())},
+                                "breadthSummary": b_entry.get("breadthSummary") or {
+                                    "latestBreadth": b_entry.get("breadthPct"),
+                                    "openBreadth": b_entry.get("openBreadth"),
+                                    "change": b_entry.get("breadthChange"),
+                                    "total": b_entry.get("total", 50),
+                                },
+                                "summary": b_entry.get("summary") or {
+                                    "netPoints": b_entry.get("netPoints", 0.0),
+                                    "supportingPoints": b_entry.get("supportingPoints", 0.0),
+                                    "draggingPoints": b_entry.get("draggingPoints", 0.0),
+                                    "supportingCount": b_entry.get("advancers", 0),
+                                    "draggingCount": b_entry.get("decliners", 0),
+                                    "totalStocks": b_entry.get("total", 50),
+                                },
+                                "draggingDown": b_entry.get("draggingDown", []),
+                                "supportingUp": b_entry.get("supportingUp", []),
+                                "timeline": b_entry.get("timeline", []),
+                            })
+                except Exception as ex:
+                    print(f"[Server] Supabase breadth fallback error: {ex}")
+
+            res = get_cached_breadth_contribution(idx, date_param, interval=interval, force_refresh=force)
+            if res and res.get("ok") and not res.get("timeline"):
+                try:
+                    import snapshot_engine
+                    snap = snapshot_engine.get_snapshot(date_param)
+                    if snap and snap.get("breadth_data"):
+                        idx_norm = idx.lower().replace(" ", "").replace("_", "")
+                        b_entry = snap["breadth_data"].get(idx_norm)
+                        if b_entry and b_entry.get("timeline"):
+                            res["timeline"] = b_entry["timeline"]
+                            if not res.get("summary"):
+                                res["summary"] = b_entry.get("summary")
+                            if not res.get("breadthSummary"):
+                                res["breadthSummary"] = b_entry.get("breadthSummary")
+                            if not res.get("draggingDown"):
+                                res["draggingDown"] = b_entry.get("draggingDown", [])
+                            if not res.get("supportingUp"):
+                                res["supportingUp"] = b_entry.get("supportingUp", [])
+                except Exception:
+                    pass
+            return self.send_json(200, res)
 
         if path == "/api/open-interest" or path.startswith("/api/open-interest/"):
             query = urllib.parse.parse_qs(parsed.query)
@@ -22905,18 +22963,76 @@ class RequestHandler(BaseHTTPRequestHandler):
                 return self.send_json(200, build_fii_dii_cash(payload))
 
             if parsed.path == "/api/index-breadth-contribution":
-
                 payload = self.read_body()
-
                 idx = payload.get("index", payload.get("symbol", payload.get("universe", "nifty50")))
-
-                date_param = payload.get("date") or now_ist().strftime("%Y-%m-%d")
-
+                date_param = str(payload.get("date", payload.get("trade_date", ""))).strip() or now_ist().strftime("%Y-%m-%d")
                 interval = payload.get("interval") or "ONE_MINUTE"
-
                 force = bool(payload.get("refresh") or payload.get("fastRefresh"))
 
-                return self.send_json(200, get_cached_breadth_contribution(idx, date_param, interval=interval, force_refresh=force))
+                today_str = now_ist().strftime("%Y-%m-%d")
+                if date_param and date_param != today_str and date_param != "today":
+                    try:
+                        import snapshot_engine
+                        snap = snapshot_engine.get_snapshot(date_param)
+                        if snap and snap.get("breadth_data"):
+                            brd_map = snap["breadth_data"]
+                            idx_norm = idx.lower().replace(" ", "").replace("_", "")
+                            b_entry = brd_map.get(idx_norm)
+                            if b_entry and (b_entry.get("timeline") or b_entry.get("summary")):
+                                return self.send_json(200, {
+                                    "ok": True,
+                                    "isHistorical": True,
+                                    "source": "Supabase EOD Snapshot",
+                                    "indexKey": idx_norm,
+                                    "universe": idx_norm,
+                                    "interval": interval,
+                                    "date": date_param,
+                                    "displayDate": date_param,
+                                    "isMarketClosed": True,
+                                    "isHoliday": False,
+                                    "indexInfo": b_entry.get("indexInfo") or {"name": b_entry.get("label", idx_norm.upper())},
+                                    "breadthSummary": b_entry.get("breadthSummary") or {
+                                        "latestBreadth": b_entry.get("breadthPct"),
+                                        "openBreadth": b_entry.get("openBreadth"),
+                                        "change": b_entry.get("breadthChange"),
+                                        "total": b_entry.get("total", 50),
+                                    },
+                                    "summary": b_entry.get("summary") or {
+                                        "netPoints": b_entry.get("netPoints", 0.0),
+                                        "supportingPoints": b_entry.get("supportingPoints", 0.0),
+                                        "draggingPoints": b_entry.get("draggingPoints", 0.0),
+                                        "supportingCount": b_entry.get("advancers", 0),
+                                        "draggingCount": b_entry.get("decliners", 0),
+                                        "totalStocks": b_entry.get("total", 50),
+                                    },
+                                    "draggingDown": b_entry.get("draggingDown", []),
+                                    "supportingUp": b_entry.get("supportingUp", []),
+                                    "timeline": b_entry.get("timeline", []),
+                                })
+                    except Exception as ex:
+                        print(f"[Server] Supabase breadth fallback error: {ex}")
+
+                res = get_cached_breadth_contribution(idx, date_param, interval=interval, force_refresh=force)
+                if res and res.get("ok") and not res.get("timeline"):
+                    try:
+                        import snapshot_engine
+                        snap = snapshot_engine.get_snapshot(date_param)
+                        if snap and snap.get("breadth_data"):
+                            idx_norm = idx.lower().replace(" ", "").replace("_", "")
+                            b_entry = snap["breadth_data"].get(idx_norm)
+                            if b_entry and b_entry.get("timeline"):
+                                res["timeline"] = b_entry["timeline"]
+                                if not res.get("summary"):
+                                    res["summary"] = b_entry.get("summary")
+                                if not res.get("breadthSummary"):
+                                    res["breadthSummary"] = b_entry.get("breadthSummary")
+                                if not res.get("draggingDown"):
+                                    res["draggingDown"] = b_entry.get("draggingDown", [])
+                                if not res.get("supportingUp"):
+                                    res["supportingUp"] = b_entry.get("supportingUp", [])
+                    except Exception:
+                        pass
+                return self.send_json(200, res)
 
             if parsed.path == "/api/open-interest" or parsed.path.startswith("/api/open-interest/"):
                 payload = self.read_body()

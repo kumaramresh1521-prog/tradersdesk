@@ -2087,7 +2087,7 @@ if (suiteKey === "callVsPut") {
   let isExplicitContribDate = false;
   let currentContribInterval = "ONE_MINUTE";
   let currentContribAutoRefresh = true;
-  let currentContribRefreshInterval = 60; // default 60s
+  let currentContribRefreshInterval = 10; // default 10s for real-time live market updates
   let currentContribSector = "ALL";
   let currentContribSearch = "";
   let contribDataCache = null;
@@ -2254,7 +2254,7 @@ if (suiteKey === "callVsPut") {
       }
       if (!currentContribAutoRefresh) return;
 
-      const intervalMs = (currentContribRefreshInterval || 60) * 1000;
+      const intervalMs = (currentContribRefreshInterval || 10) * 1000;
       window._contribAutoRefreshTimer = setInterval(() => {
         const isContribActive = (typeof currentSuite !== "undefined" && currentSuite === "contribution") ||
                                 (document.getElementById("p2SectionBreadthContribution")?.style.display !== "none");
@@ -2262,7 +2262,7 @@ if (suiteKey === "callVsPut") {
           const isToday = !isExplicitContribDate && (!currentContribDate || currentContribDate === _todayStr);
           const isMarketOpenNow = contribDataCache ? (!contribDataCache.isMarketClosed && !contribDataCache.isHoliday) : true;
           if (isToday && isMarketOpenNow) {
-            loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, false);
+            loadBreadthContributionSuite(currentContribIndex, currentContribDate, currentContribInterval, true);
           }
         }
       }, intervalMs);

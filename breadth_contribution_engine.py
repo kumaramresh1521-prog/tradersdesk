@@ -119,6 +119,25 @@ def format_indian_date(date_str: str) -> str:
         return date_str
 
 
+BENCHMARKS = {
+    "nifty50": {"name": "NIFTY 50", "spot": 22600.00, "change": -87.65, "pct": -0.39},
+    "sensex": {"name": "BSE SENSEX", "spot": 73123.83, "change": -125.56, "pct": -0.17},
+    "banknifty": {"name": "BANK NIFTY", "spot": 54287.35, "change": -638.35, "pct": -1.16},
+    "finnifty": {"name": "FINNIFTY", "spot": 24403.00, "change": -254.70, "pct": -1.03},
+    "midcpnifty": {"name": "MIDCAP SELECT", "spot": 13033.05, "change": -282.15, "pct": -2.12},
+    "bankex": {"name": "BSE BANKEX", "spot": 61086.71, "change": -679.29, "pct": -1.10},
+    "niftyit": {"name": "NIFTY IT", "spot": 31995.50, "change": -85.75, "pct": -0.27},
+    "niftyauto": {"name": "NIFTY AUTO", "spot": 24862.30, "change": -149.20, "pct": -0.60},
+    "niftypharma": {"name": "NIFTY PHARMA", "spot": 25329.45, "change": -267.20, "pct": -1.04},
+    "niftymetal": {"name": "NIFTY METAL", "spot": 11478.20, "change": -320.15, "pct": -2.71},
+    "niftyfmcg": {"name": "NIFTY FMCG", "spot": 42680.70, "change": -424.75, "pct": -0.99},
+    "niftyenergy": {"name": "NIFTY ENERGY", "spot": 34520.05, "change": -581.40, "pct": -1.66},
+    "niftymidcap100": {"name": "NIFTY MIDCAP 100", "spot": 55800.65, "change": -1263.30, "pct": -2.21},
+    "niftynext50": {"name": "NIFTY NEXT 50", "spot": 65828.60, "change": -1525.55, "pct": -2.26},
+    "nifty500": {"name": "NIFTY 500", "spot": 21427.60, "change": -268.95, "pct": -1.24},
+}
+
+
 def _recalculate_contributions(
     raw_stocks: List[Dict],
     base_index_val: float,

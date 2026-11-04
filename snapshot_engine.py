@@ -305,8 +305,13 @@ def build_breadth_snapshot(trade_date: str) -> dict:
                     s = data.get("summary") or {}
                     b = data.get("breadthSummary") or {}
                     res[idx] = {
+                        "ok": True,
                         "universe": idx,
+                        "indexKey": data.get("indexKey") or idx,
                         "label": (data.get("indexInfo") or {}).get("name") or idx.upper(),
+                        "indexInfo": data.get("indexInfo") or {},
+                        "summary": s,
+                        "breadthSummary": b,
                         "netPoints": s.get("netPoints", 0.0),
                         "supportingPoints": s.get("supportingPoints", 0.0),
                         "draggingPoints": s.get("draggingPoints", 0.0),
@@ -316,6 +321,9 @@ def build_breadth_snapshot(trade_date: str) -> dict:
                         "breadthPct": b.get("latestBreadth") or s.get("supportRatioPct") or 50.0,
                         "openBreadth": b.get("openBreadth", 50.0),
                         "breadthChange": b.get("change", 0.0),
+                        "draggingDown": data.get("draggingDown", [])[:20],
+                        "supportingUp": data.get("supportingUp", [])[:20],
+                        "timeline": data.get("timeline", []),
                     }
             except Exception:
                 pass
