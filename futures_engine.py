@@ -1035,166 +1035,68 @@ def get_live_kotak_quotes_map(target_symbols: Optional[list] = None) -> dict[str
     except Exception as e:
         logger.debug(f"Angel live quote fetch skipped: {e}")
 
-    # 2. Fetch All F&O Futures & Equity Cash via Kotak Securities Neo API
-    ckey = os.getenv("KOTAK_CONSUMER_KEY", "").strip()
-    kotak_candidates = [
-        os.getenv("KOTAK_ACCESS_TOKEN", "").strip(),
-        os.getenv("KOTAK_VIEW_TOKEN", "").strip(),
-        os.getenv("KOTAK_SID", "").strip()
-    ]
-    sid = next((c for c in kotak_candidates if c and is_jwt_token_valid(c)), "")
-    kotak_fetched = 0
-    if ckey and sid:
-        tokens_to_fetch = []
-        fo_tok_to_sym = {}
-        cm_tok_to_sym = {}
+        # 2. Fetch All F&O Futures via Angel One SmartAPI (Direct NFO Live Exchange Feed)
+    try:
+        from server import AngelClient, Instrument
+        ac = AngelClient()
+        if ac.is_configured():
+            ac.ensure_session()
+            angel_map = get_angel_fo_map()
+            if angel_map:
+                if target_set:
+                    all_syms = [s for s in target_set]
+                else:
+                    all_syms = [item["symbol"] for item in FO_UNIVERSE]
+                    for extra_sym in angel_map.keys():
+                        if extra_sym not in all_syms:
+                            all_syms.append(extra_sym)
 
-        # Collect nse_fo and nse_cm tokens (filtered if target_symbols requested)
-        for sym, c_info in _KOTAK_FO_MAP.items():
-            if target_set and sym not in target_set:
-                continue
-            fo_tok = c_info.get("token")
-            if fo_tok:
-                tokens_to_fetch.append(f"nse_fo|{fo_tok}")
-                fo_tok_to_sym[str(fo_tok)] = sym
+                inst_list = []
+                tok_to_sym = {}
+                for sym in all_syms:
+                    f_info = angel_map.get(sym)
+                    if f_info and f_info.get("token"):
+                        tok = str(f_info["token"])
+                        tok_to_sym[tok] = sym
+                        inst_list.append(Instrument(
+                            symbol=sym,
+                            trading_symbol=f_info.get("symbol", f"{sym}FUT"),
+                            token=tok,
+                            exchange="NFO"
+                        ))
 
-            cm_tok = _KOTAK_CASH_MAP.get(sym)
-            if cm_tok:
-                tokens_to_fetch.append(f"nse_cm|{cm_tok}")
-                cm_tok_to_sym[str(cm_tok)] = sym
+                def _fetch_angel_chunk(chunk):
+                    try:
+                        return ac.quote(chunk, mode="FULL")
+                    except Exception:
+                        return {}
 
-        headers = {
-            "Authorization": ckey,
-            "neo-fin-key": "neotradeapi",
-            "Sid": sid,
-            "User-Agent": "neo-api-client/2.0.0"
-        }
-
-        def _fetch_kotak_chunk(chunk):
-            sym_str = ",".join(chunk)
-            url = f"https://mis.kotaksecurities.com/script-details/1.0/quotes/neosymbol/{sym_str}/all"
-            try:
-                req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req, timeout=6) as r:
-                    d, _ = _safe_parse_kotak_response(r.read())
-                    return d if isinstance(d, list) else []
-            except Exception:
-                return []
-
-        chunks = [tokens_to_fetch[i : i + 30] for i in range(0, len(tokens_to_fetch), 30)]
-        try:
-            with ThreadPoolExecutor(max_workers=8) as pool:
-                results = pool.map(_fetch_kotak_chunk, chunks)
-            for chunk_data in results:
-                for q in chunk_data:
-                    exch = str(q.get("exchange") or "")
-                    t = str(q.get("exchange_token") or "")
-                    ltp = float(q.get("ltp") or 0.0)
-                    chg = float(q.get("change") or 0.0)
-                    chg_pct = float(q.get("per_change") or q.get("net_change") or 0.0)
-                    ohlc = q.get("ohlc") or {}
-
-                    if exch == "nse_fo":
-                        sym = fo_tok_to_sym.get(t) or str(q.get("display_symbol", "")).replace("26SEPFUT", "").replace("26OCTFUT", "").replace("26NOVFUT", "").strip()
+                chunks = [inst_list[c_idx:c_idx + 50] for c_idx in range(0, min(len(inst_list), 250), 50)]
+                with ThreadPoolExecutor(max_workers=min(len(chunks), 5)) as pool:
+                    results = pool.map(_fetch_angel_chunk, chunks)
+                for a_res in results:
+                    for f in a_res.get("fetched", []):
+                        tok = str(f.get("symbolToken") or "")
+                        sym = tok_to_sym.get(tok)
+                        ltp = float(f.get("ltp") or 0.0)
                         if sym and ltp > 0:
-                            kotak_fetched += 1
+                            chg = float(f.get("netChange") or 0.0)
+                            pct = float(f.get("percentChange") or 0.0)
                             quotes_res[f"FUT:{sym}"] = {
                                 "ltp": ltp,
                                 "change": chg,
-                                "changePct": chg_pct,
-                                "open": float(ohlc.get("open") or ltp),
-                                "high": float(ohlc.get("high") or ltp),
-                                "low": float(ohlc.get("low") or ltp),
-                                "close": float(ohlc.get("close") or (ltp - chg)),
-                                "volume": int(float(q.get("last_volume") or q.get("volume") or 0)),
-                                "oi": int(float(q.get("open_int") or q.get("open_interest") or 0)),
-                                "vwap": float(q.get("avg_cost") or ltp),
-                                "source": "KOTAK_FO"
+                                "changePct": pct,
+                                "open": float(f.get("open") or ltp),
+                                "high": float(f.get("high") or ltp),
+                                "low": float(f.get("low") or ltp),
+                                "close": float(f.get("close") or (ltp - chg)),
+                                "volume": int(float(f.get("tradeVolume") or 0)),
+                                "oi": int(float(f.get("opnInterest") or 0)),
+                                "vwap": float(f.get("avgPrice") or ltp),
+                                "source": "ANGEL_NFO"
                             }
-                    elif exch == "nse_cm":
-                        sym = cm_tok_to_sym.get(t) or str(q.get("display_symbol", "")).replace("-EQ", "").strip()
-                        if sym and ltp > 0:
-                            kotak_fetched += 1
-                            quotes_res[f"SPOT:{sym}"] = {
-                                "ltp": ltp,
-                                "change": chg,
-                                "changePct": chg_pct,
-                                "open": float(ohlc.get("open") or ltp),
-                                "high": float(ohlc.get("high") or ltp),
-                                "low": float(ohlc.get("low") or ltp),
-                                "close": float(q.get("close_price") or ohlc.get("close") or (ltp - chg)),
-                                "source": "KOTAK_CM"
-                            }
-                            if sym not in quotes_res:
-                                quotes_res[sym] = quotes_res[f"SPOT:{sym}"]
-        except Exception as e:
-            logger.debug(f"Kotak batch fetch error: {e}")
-
-    # 3. Angel One SmartAPI Fallback for NFO (Exchange Live Feed)
-    now_dt = datetime.now()
-    is_market_hours = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
-    if kotak_fetched == 0 and (is_market_hours or target_set):
-        try:
-            from server import AngelClient, Instrument
-            ac = AngelClient()
-            if ac.is_configured():
-                ac.ensure_session()
-                angel_map = get_angel_fo_map()
-                if angel_map:
-                    if target_set:
-                        all_syms = [s for s in target_set]
-                    else:
-                        all_syms = [item["symbol"] for item in FO_UNIVERSE]
-                        for extra_sym in _KOTAK_FO_MAP.keys():
-                            if extra_sym not in all_syms:
-                                all_syms.append(extra_sym)
-
-                    inst_list = []
-                    tok_to_sym = {}
-                    for sym in all_syms:
-                        f_info = angel_map.get(sym)
-                        if f_info and f_info.get("token"):
-                            tok = str(f_info["token"])
-                            tok_to_sym[tok] = sym
-                            inst_list.append(Instrument(
-                                symbol=sym,
-                                trading_symbol=f_info.get("symbol", f"{sym}FUT"),
-                                token=tok,
-                                exchange="NFO"
-                            ))
-
-                    def _fetch_angel_chunk(chunk):
-                        try:
-                            return ac.quote(chunk, mode="FULL")
-                        except Exception:
-                            return {}
-
-                    chunks = [inst_list[c_idx:c_idx + 50] for c_idx in range(0, min(len(inst_list), 250), 50)]
-                    with ThreadPoolExecutor(max_workers=min(len(chunks), 5)) as pool:
-                        results = pool.map(_fetch_angel_chunk, chunks)
-                    for a_res in results:
-                        for f in a_res.get("fetched", []):
-                            tok = str(f.get("symbolToken") or "")
-                            sym = tok_to_sym.get(tok)
-                            ltp = float(f.get("ltp") or 0.0)
-                            if sym and ltp > 0:
-                                chg = float(f.get("netChange") or 0.0)
-                                pct = float(f.get("percentChange") or 0.0)
-                                quotes_res[f"FUT:{sym}"] = {
-                                    "ltp": ltp,
-                                    "change": chg,
-                                    "changePct": pct,
-                                    "open": float(f.get("open") or ltp),
-                                    "high": float(f.get("high") or ltp),
-                                    "low": float(f.get("low") or ltp),
-                                    "close": float(f.get("close") or (ltp - chg)),
-                                    "volume": int(float(f.get("tradeVolume") or 0)),
-                                    "oi": int(float(f.get("opnInterest") or 0)),
-                                    "vwap": float(f.get("avgPrice") or ltp),
-                                    "source": "ANGEL_NFO"
-                                }
-        except Exception as e:
-            logger.debug(f"Angel NFO batch fallback error: {e}")
+    except Exception as e:
+        logger.debug(f"Angel NFO batch live fetch error: {e}")
 
     # 4. Fast Index Quotes from Server Broker Cache
     try:

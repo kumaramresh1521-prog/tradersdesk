@@ -15,19 +15,19 @@
       "url": "/futures",
       "icon": "📈",
       "badge": "",
-      "label": "Futures Dashboard",
+      "label": "Future Dashboard",
       "active": true,
       "columns": [
         {
           "items": [
             {
-              "id": "sub_fut_buildup",
+              "id": "sub_fut_dashboard",
               "url": "/futures",
               "icon": "📊",
               "badge": "",
-              "title": "Futures Dashboard",
+              "title": "Future Dashboard",
               "active": true,
-              "subtitle": "Long/short buildup & institutional unwinding flows",
+              "subtitle": "Long/short buildup quadrants & institutional unwinding flows",
               "badgeColor": ""
             },
             {

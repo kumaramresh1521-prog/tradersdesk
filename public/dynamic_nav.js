@@ -14,14 +14,16 @@
   const DESK_ONCLICK_MAP = {
     "/": "return window.instNavClick(event, 'dashboard')",
     "/dashboard": "return window.instNavClick(event, 'dashboard')",
-    "/futures": "return window.instNavClick(event, 'futures', 'matrix')",
-    "/futures/marketwatch": "return window.instNavClick(event, 'futures', 'matrix')",
+    "/futures": "return window.instNavClick(event, 'futures', 'buildup')",
+    "/futures/dashboard": "return window.instNavClick(event, 'futures', 'buildup')",
+    "/futures/screener": "return window.instNavClick(event, 'futures', 'buildup')",
+    
     "/futures/open-interest": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'openInterest');}",
     "/futures/future-intraday": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureIntraday');}",
     "/futures/future-vs-oi": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'futureVsOi');}",
     "/futures/buildup": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'buildup');}",
     "/futures/heatmap": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'heatmap');}",
-    "/futures/indices": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'indices');}",
+    
     "/futures/mwpl": "if(window.instNavClick){return window.instNavClick(event, 'futures', 'mwpl');}",
     "/option-chain-pro": "if(window.instNavClick){return window.instNavClick(event, 'upstoxChain');}",
     "/options": "if(window.instNavClick){return window.instNavClick(event, 'upstoxChain');}",
@@ -69,14 +71,14 @@
     const clean = url.split('?')[0].split('#')[0].toLowerCase().replace(/\/$/, '') || '/';
     
     if (clean === '/' || clean === '/dashboard') return { desk: 'dashboard', subview: null };
-    if (clean === '/futures') return { desk: 'futures', subview: 'matrix' };
-    if (clean === '/futures/marketwatch') return { desk: 'futures', subview: 'matrix' };
+    if (clean === '/futures' || clean === '/futures/dashboard' || clean === '/futures/screener' || clean === '/futures/marketwatch' || clean === '/futures/indices') return { desk: 'futures', subview: 'buildup' };
+    
     if (clean === '/futures/open-interest' || clean === '/futures/oi') return { desk: 'futures', subview: 'openInterest' };
     if (clean === '/futures/future-intraday' || clean === '/futures/intraday') return { desk: 'futures', subview: 'futureIntraday' };
     if (clean === '/futures/future-vs-oi' || clean === '/futures/price-vs-oi') return { desk: 'futures', subview: 'futureVsOi' };
     if (clean === '/futures/buildup') return { desk: 'futures', subview: 'buildup' };
     if (clean === '/futures/heatmap' || clean === '/futures/heatmaps') return { desk: 'futures', subview: 'heatmap' };
-    if (clean === '/futures/indices') return { desk: 'futures', subview: 'indices' };
+    
     if (clean === '/futures/mwpl') return { desk: 'futures', subview: 'mwpl' };
     if (clean === '/futures/rollover') return { desk: 'futures', subview: 'rollover' };
     if (clean === '/option-chain-pro' || clean === '/option-chain' || clean === '/options') return { desk: 'upstoxChain', subview: null };
