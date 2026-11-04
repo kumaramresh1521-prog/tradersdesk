@@ -1497,6 +1497,10 @@ def _async_refresh_master_worker():
         logger.debug(f"[Futures] Background master refresh error: {e}")
     finally:
         _MASTER_BACKGROUND_RUNNING = False
+        try:
+            _MASTER_REFRESH_LOCK.release()
+        except Exception:
+            pass
 
 def get_futures_master(force_refresh: bool = False) -> list[dict]:
     global _MASTER_BACKGROUND_RUNNING
@@ -1504,18 +1508,29 @@ def get_futures_master(force_refresh: bool = False) -> list[dict]:
     cached_master = _FUTURES_CACHE.get("master")
     master_age = now - _FUTURES_CACHE.get("master_ts", 0)
 
-    # 1. Warm cache hit: return immediately (< 0.1ms)
+    # 1. Force refresh requested: immediately build fresh records if cache is older than 3 seconds
+    if force_refresh and (not cached_master or master_age >= 3.0):
+        try:
+            fresh = _build_master_futures_records(allow_network=True)
+            if fresh:
+                _FUTURES_CACHE["master"] = fresh
+                _FUTURES_CACHE["master_ts"] = now
+                return fresh
+        except Exception as _fe:
+            logger.debug(f"Direct force refresh failed: {_fe}")
+
+    # 2. Warm cache hit: return immediately (< 0.1ms)
     if cached_master and not force_refresh and master_age < _CACHE_TTL:
         return cached_master
 
-    # 2. Stale cache exists: return cached data immediately (< 0.1ms) and refresh in background
+    # 3. Stale cache exists: return cached data immediately and trigger background refresh
     if cached_master:
         if not _MASTER_BACKGROUND_RUNNING and _MASTER_REFRESH_LOCK.acquire(blocking=False):
             _MASTER_BACKGROUND_RUNNING = True
             threading.Thread(target=_async_refresh_master_worker, daemon=True).start()
         return cached_master
 
-    # 3. Cold start: build instant baseline from Bhavcopy / disk master in < 5ms without blocking
+    # 4. Cold start: build instant baseline from Bhavcopy / disk master in < 5ms without blocking
     initial_recs = _build_master_futures_records(allow_network=False)
     if initial_recs:
         _FUTURES_CACHE["master"] = initial_recs
@@ -1686,18 +1701,25 @@ def get_futures_screener(sector: str = "ALL", search: str = "", sort_by: str = "
 
 def get_futures_buildup(force_refresh: bool = False) -> dict:
     """
-    Groups stocks into the 4 Institutional Quadrants.
+    Groups stocks into the 4 Institutional Quadrants with live real-time timestamp.
     """
     records = get_futures_master(force_refresh=force_refresh)
-    stocks = [r for r in records if not r["isIndex"]]
+    stocks = [r for r in records if not r.get("isIndex")]
 
-    lb = sorted([r for r in stocks if r["buildupCode"] == "LB"], key=lambda x: x["oiChangePct"], reverse=True)
-    sb = sorted([r for r in stocks if r["buildupCode"] == "SB"], key=lambda x: x["oiChangePct"], reverse=True)
-    sc = sorted([r for r in stocks if r["buildupCode"] == "SC"], key=lambda x: x["priceChangePct"], reverse=True)
-    lu = sorted([r for r in stocks if r["buildupCode"] == "LU"], key=lambda x: x["priceChangePct"])
+    lb = sorted([r for r in stocks if r.get("buildupCode") == "LB"], key=lambda x: x.get("oiChangePct", 0.0), reverse=True)
+    sb = sorted([r for r in stocks if r.get("buildupCode") == "SB"], key=lambda x: x.get("oiChangePct", 0.0), reverse=True)
+    sc = sorted([r for r in stocks if r.get("buildupCode") == "SC"], key=lambda x: x.get("priceChangePct", 0.0), reverse=True)
+    lu = sorted([r for r in stocks if r.get("buildupCode") == "LU"], key=lambda x: x.get("priceChangePct", 0.0))
+
+    now_dt = datetime.now()
+    is_live = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
 
     return {
         "ok": True,
+        "isLive": is_live,
+        "sessionMode": "LIVE" if is_live else "EOD",
+        "timestamp": now_dt.strftime("%Y-%m-%d %H:%M:%S"),
+        "totalCount": len(stocks),
         "longBuildup": lb,
         "shortBuildup": sb,
         "shortCovering": sc,

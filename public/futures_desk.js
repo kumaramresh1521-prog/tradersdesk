@@ -675,10 +675,7 @@
   // --- Sub-Tab 3: Future Buildup Quadrants & Institutional Movers ---
   async function loadBuildupView(forceRefresh = false) {
     try {
-      if (state.buildupData && !forceRefresh) {
-        renderQuadrants(state.buildupData);
-      }
-      const url = forceRefresh ? `/api/futures/buildup?refresh=true&_t=${Date.now()}` : '/api/futures/buildup';
+      const url = `/api/futures/buildup?refresh=${forceRefresh ? 'true' : 'false'}&_t=${Date.now()}`;
       const resB = await fetch(url);
       if (resB.ok) {
         const dataB = await resB.json();
@@ -2737,7 +2734,7 @@
       state.countdownSec -= 1;
       if (state.countdownSec <= 0) {
         state.countdownSec = cycleSec;
-        refreshCurrentSubTab();
+        refreshCurrentSubTab(true);
         if (badge) {
           badge.classList.remove('tick-flash-up');
           void badge.offsetWidth;
