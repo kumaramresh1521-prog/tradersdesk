@@ -141,31 +141,58 @@ def markdown_to_html(md_text: str) -> str:
 # 2. MASTER NAVIGATION ENGINE
 # ==============================================================================
 
+_NAV_CACHE: Optional[Dict[str, Any]] = None
+_FOOTER_CACHE: Optional[dict] = None
+_PAGES_CACHE: Optional[List[Dict[str, Any]]] = None
+_POSTS_CACHE: Optional[List[Dict[str, Any]]] = None
+_SETTINGS_CACHE: Optional[Dict[str, Any]] = None
+_ADS_CACHE: Optional[dict] = None
+
+def reload_cms_caches() -> None:
+    """Flushes all in-memory CMS caches so subsequent reads fetch freshly synced cloud/disk states."""
+    global _NAV_CACHE, _FOOTER_CACHE, _PAGES_CACHE, _POSTS_CACHE, _SETTINGS_CACHE, _ADS_CACHE
+    _NAV_CACHE = None
+    _FOOTER_CACHE = None
+    _PAGES_CACHE = None
+    _POSTS_CACHE = None
+    _SETTINGS_CACHE = None
+    _ADS_CACHE = None
+
 def get_navigation() -> Dict[str, Any]:
+    global _NAV_CACHE
+    if _NAV_CACHE is not None and isinstance(_NAV_CACHE, dict) and _NAV_CACHE.get("items"):
+        return _NAV_CACHE
+
     if NAV_FILE.exists():
         try:
             with open(NAV_FILE, "r", encoding="utf-8") as f:
                 d = json.load(f)
                 if isinstance(d, dict) and d.get("items"):
-                    return d
+                    _NAV_CACHE = d
+                    return _NAV_CACHE
         except Exception:
             pass
     try:
         import supabase_engine
         cloud_nav = supabase_engine.load_app_config_from_supabase("navigation_master")
         if isinstance(cloud_nav, dict) and cloud_nav.get("items"):
+            _NAV_CACHE = cloud_nav
             try:
                 DATA_DIR.mkdir(parents=True, exist_ok=True)
                 with open(NAV_FILE, "w", encoding="utf-8") as f:
+                    json.dump(cloud_nav, f, indent=2)
+                with open(DATA_DIR / "navigation.json", "w", encoding="utf-8") as f:
                     json.dump(cloud_nav, f, indent=2)
             except Exception:
                 pass
             return cloud_nav
     except Exception:
         pass
-    return {"updatedAt": datetime.utcnow().isoformat() + "Z", "items": []}
+    _NAV_CACHE = {"updatedAt": datetime.utcnow().isoformat() + "Z", "items": []}
+    return _NAV_CACHE
 
 def save_navigation(data: Any) -> bool:
+    global _NAV_CACHE
     if isinstance(data, list):
         data = {"items": data}
     elif isinstance(data, dict):
@@ -174,16 +201,21 @@ def save_navigation(data: Any) -> bool:
     if not isinstance(data, dict):
         data = {"items": []}
     data["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+    _NAV_CACHE = data
     try:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         with open(NAV_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
-        # Attempt Supabase sync
+        try:
+            with open(DATA_DIR / "navigation.json", "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+        except Exception:
+            pass
         try:
             import supabase_engine
             supabase_engine.save_app_config_to_supabase("navigation_master", data)
-        except Exception:
-            pass
+        except Exception as se:
+            print(f"[CMS] Supabase navigation sync note: {se}")
         return True
     except Exception as exc:
         print(f"[CMS] Failed saving navigation: {exc}")
@@ -408,19 +440,25 @@ DEFAULT_FOOTER_DATA = {
 }
 
 def get_footer_links_data() -> dict:
-    """Loads footer configuration from data/footer_links.json, Supabase cloud, repository root, or defaults."""
+    """Loads footer configuration from in-memory cache, data/footer_links.json, Supabase cloud, repository root, or defaults."""
+    global _FOOTER_CACHE
+    if _FOOTER_CACHE is not None and isinstance(_FOOTER_CACHE, dict) and _FOOTER_CACHE.get("columns"):
+        return _FOOTER_CACHE
+
     if FOOTER_FILE.exists():
         try:
             with open(FOOTER_FILE, "r", encoding="utf-8") as f:
                 d = json.load(f)
                 if isinstance(d, dict) and d.get("columns"):
-                    return d
+                    _FOOTER_CACHE = d
+                    return _FOOTER_CACHE
         except Exception:
             pass
     try:
         import supabase_engine
         cloud_d = supabase_engine.load_app_config_from_supabase("footer_links")
         if isinstance(cloud_d, dict) and cloud_d.get("columns"):
+            _FOOTER_CACHE = cloud_d
             try:
                 DATA_DIR.mkdir(parents=True, exist_ok=True)
                 with open(FOOTER_FILE, "w", encoding="utf-8") as f:
@@ -436,10 +474,16 @@ def get_footer_links_data() -> dict:
             with open(rf, "r", encoding="utf-8") as f:
                 d = json.load(f)
                 if isinstance(d, dict) and d.get("columns"):
-                    return d
+                    _FOOTER_CACHE = d
+                    return _FOOTER_CACHE
         except Exception:
             pass
-    return DEFAULT_FOOTER_DATA
+    _FOOTER_CACHE = DEFAULT_FOOTER_DATA
+    return _FOOTER_CACHE
+
+def set_footer_cache(data: dict) -> None:
+    global _FOOTER_CACHE
+    _FOOTER_CACHE = data
 
 def render_footer_html(current_path: str = "/") -> str:
     """Renders the complete, unified institutional footer with Left Brand Logo Column."""
@@ -525,28 +569,33 @@ def render_footer_html(current_path: str = "/") -> str:
 # ==============================================================================
 
 def list_pages() -> List[Dict[str, Any]]:
+    global _PAGES_CACHE
+    if _PAGES_CACHE is not None and isinstance(_PAGES_CACHE, list):
+        return _PAGES_CACHE
+
+    pages = []
     if PAGES_FILE.exists():
         try:
             with open(PAGES_FILE, "r", encoding="utf-8") as f:
                 pages = json.load(f)
-                if pages:
-                    return pages
+        except Exception:
+            pages = []
+    if not pages:
+        try:
+            import supabase_engine
+            cloud_pages = supabase_engine.load_app_config_from_supabase("cms_pages")
+            if isinstance(cloud_pages, list) and cloud_pages:
+                pages = cloud_pages
+                try:
+                    DATA_DIR.mkdir(parents=True, exist_ok=True)
+                    with open(PAGES_FILE, "w", encoding="utf-8") as f:
+                        json.dump(cloud_pages, f, indent=2)
+                except Exception:
+                    pass
         except Exception:
             pass
-    try:
-        import supabase_engine
-        cloud_pages = supabase_engine.load_app_config_from_supabase("cms_pages")
-        if isinstance(cloud_pages, list):
-            try:
-                DATA_DIR.mkdir(parents=True, exist_ok=True)
-                with open(PAGES_FILE, "w", encoding="utf-8") as f:
-                    json.dump(cloud_pages, f, indent=2)
-            except Exception:
-                pass
-            return cloud_pages
-    except Exception:
-        pass
-    return []
+    _PAGES_CACHE = pages if isinstance(pages, list) else []
+    return _PAGES_CACHE
 
 def get_page(slug: str) -> Optional[Dict[str, Any]]:
     clean_slug = slug.strip().lstrip("/").lower()
@@ -556,7 +605,8 @@ def get_page(slug: str) -> Optional[Dict[str, Any]]:
     return None
 
 def save_page(page_data: Dict[str, Any]) -> bool:
-    pages = list_pages()
+    global _PAGES_CACHE
+    pages = list(list_pages())
     slug = page_data.get("slug", "").strip().lstrip("/").lower()
     if not slug:
         return False
@@ -576,6 +626,7 @@ def save_page(page_data: Dict[str, Any]) -> bool:
             page_data["id"] = f"page_{int(datetime.utcnow().timestamp())}"
         pages.append(page_data)
 
+    _PAGES_CACHE = pages
     try:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         with open(PAGES_FILE, "w", encoding="utf-8") as f:
@@ -583,62 +634,70 @@ def save_page(page_data: Dict[str, Any]) -> bool:
         try:
             import supabase_engine
             supabase_engine.save_app_config_to_supabase("cms_pages", pages)
-        except Exception:
-            pass
+        except Exception as se:
+            print(f"[CMS] Supabase pages sync note: {se}")
         return True
     except Exception as exc:
         print(f"[CMS] Failed saving page {slug}: {exc}")
         return False
 
 def delete_page(slug: str) -> bool:
+    global _PAGES_CACHE
     clean_slug = slug.strip().lstrip("/").lower()
     pages = [p for p in list_pages() if p.get("slug", "").strip().lower() != clean_slug]
+    _PAGES_CACHE = pages
     try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
         with open(PAGES_FILE, "w", encoding="utf-8") as f:
             json.dump(pages, f, indent=2)
         try:
             import supabase_engine
             supabase_engine.save_app_config_to_supabase("cms_pages", pages)
-        except Exception:
-            pass
+        except Exception as se:
+            print(f"[CMS] Supabase pages delete note: {se}")
         return True
-    except Exception:
+    except Exception as exc:
+        print(f"[CMS] Failed deleting page {slug}: {exc}")
         return False
-
 
 # ==============================================================================
 # 4. BLOG & ARTICLE CMS ENGINE
 # ==============================================================================
 
 def list_posts(published_only: bool = True) -> List[Dict[str, Any]]:
-    posts = []
-    if POSTS_FILE.exists():
-        try:
-            with open(POSTS_FILE, "r", encoding="utf-8") as f:
-                posts = json.load(f)
-        except Exception:
-            pass
-    if not posts:
-        try:
-            import supabase_engine
-            cloud_posts = supabase_engine.load_app_config_from_supabase("cms_posts")
-            if isinstance(cloud_posts, list):
-                posts = cloud_posts
-                try:
-                    DATA_DIR.mkdir(parents=True, exist_ok=True)
-                    with open(POSTS_FILE, "w", encoding="utf-8") as f:
-                        json.dump(cloud_posts, f, indent=2)
-                except Exception:
-                    pass
-        except Exception:
-            pass
+    global _POSTS_CACHE
+    if _POSTS_CACHE is None or not isinstance(_POSTS_CACHE, list):
+        posts = []
+        if POSTS_FILE.exists():
+            try:
+                with open(POSTS_FILE, "r", encoding="utf-8") as f:
+                    posts = json.load(f)
+            except Exception:
+                posts = []
+        if not posts:
+            try:
+                import supabase_engine
+                cloud_posts = supabase_engine.load_app_config_from_supabase("cms_posts")
+                if isinstance(cloud_posts, list) and cloud_posts:
+                    posts = cloud_posts
+                    try:
+                        DATA_DIR.mkdir(parents=True, exist_ok=True)
+                        with open(POSTS_FILE, "w", encoding="utf-8") as f:
+                            json.dump(cloud_posts, f, indent=2)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        _POSTS_CACHE = posts if isinstance(posts, list) else []
+
+    all_p = _POSTS_CACHE or []
     if published_only:
         return [
-            p for p in posts 
+            p for p in all_p 
             if p.get("published") is not False 
             and (p.get("status") or "published").lower() != "draft"
         ]
-    return posts
+    return all_p
 
 def get_post(slug: str) -> Optional[Dict[str, Any]]:
     clean_slug = slug.strip().lstrip("/").lower()
@@ -648,7 +707,8 @@ def get_post(slug: str) -> Optional[Dict[str, Any]]:
     return None
 
 def save_post(post_data: Dict[str, Any]) -> bool:
-    posts = list_posts(published_only=False)
+    global _POSTS_CACHE
+    posts = list(list_posts(published_only=False))
     slug = post_data.get("slug", "").strip().lstrip("/").lower()
     if not slug:
         slug = re.sub(r'[^a-z0-9]+', '-', post_data.get("title", "").lower()).strip('-')
@@ -669,6 +729,7 @@ def save_post(post_data: Dict[str, Any]) -> bool:
             post_data["id"] = f"post_{int(datetime.utcnow().timestamp())}"
         posts.insert(0, post_data)
 
+    _POSTS_CACHE = posts
     try:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         with open(POSTS_FILE, "w", encoding="utf-8") as f:
@@ -676,27 +737,30 @@ def save_post(post_data: Dict[str, Any]) -> bool:
         try:
             import supabase_engine
             supabase_engine.save_app_config_to_supabase("cms_posts", posts)
-        except Exception:
-            pass
+        except Exception as se:
+            print(f"[CMS] Supabase post sync note: {se}")
         return True
     except Exception as exc:
         print(f"[CMS] Failed saving post {slug}: {exc}")
         return False
 
 def delete_post(post_id: str) -> bool:
+    global _POSTS_CACHE
     posts = [p for p in list_posts(published_only=False) if p.get("id") != post_id and p.get("slug") != post_id]
+    _POSTS_CACHE = posts
     try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
         with open(POSTS_FILE, "w", encoding="utf-8") as f:
             json.dump(posts, f, indent=2)
         try:
             import supabase_engine
             supabase_engine.save_app_config_to_supabase("cms_posts", posts)
-        except Exception:
-            pass
+        except Exception as se:
+            print(f"[CMS] Supabase post delete note: {se}")
         return True
-    except Exception:
+    except Exception as exc:
+        print(f"[CMS] Failed deleting post {post_id}: {exc}")
         return False
-
 
 # ==============================================================================
 # 5. SHELL TEMPLATE BUILDER FOR PAGES & BLOG
@@ -856,28 +920,39 @@ def render_blog_index() -> str:
 
 
 def get_ads_config() -> dict:
-    try:
-        p = DATA_DIR / "ads_config.json"
-        if p.exists():
+    global _ADS_CACHE
+    if _ADS_CACHE is not None and isinstance(_ADS_CACHE, dict):
+        return _ADS_CACHE
+
+    p = DATA_DIR / "ads_config.json"
+    if p.exists():
+        try:
             with open(p, "r", encoding="utf-8") as f:
-                return json.load(f)
-    except Exception:
-        pass
+                _ADS_CACHE = json.load(f)
+                return _ADS_CACHE
+        except Exception:
+            pass
     try:
         import supabase_engine
         cloud_ads = supabase_engine.load_app_config_from_supabase("ads_config")
-        if isinstance(cloud_ads, dict):
+        if isinstance(cloud_ads, dict) and cloud_ads:
+            _ADS_CACHE = cloud_ads
             try:
-                p = DATA_DIR / "ads_config.json"
                 p.parent.mkdir(parents=True, exist_ok=True)
                 with open(p, "w", encoding="utf-8") as f:
                     json.dump(cloud_ads, f, indent=2)
             except Exception:
                 pass
-            return cloud_ads
+            return _ADS_CACHE
     except Exception:
         pass
-    return {"enabled": False, "slots": {}}
+    _ADS_CACHE = {"enabled": False, "slots": {}}
+    return _ADS_CACHE
+
+def set_ads_config(cfg: dict) -> None:
+    global _ADS_CACHE
+    _ADS_CACHE = cfg
+
 
 def build_cms_ad_slot(slot_key: str, label: str = "Sponsored Advertisement", margin: str = "24px 0") -> str:
     ads = get_ads_config()
@@ -987,6 +1062,10 @@ SETTINGS_FILE = DATA_DIR / "platform_settings.json"
 
 def get_platform_settings() -> Dict[str, Any]:
     """Loads platform settings (announcement bar, maintenance mode)."""
+    global _SETTINGS_CACHE
+    if _SETTINGS_CACHE is not None and isinstance(_SETTINGS_CACHE, dict):
+        return _SETTINGS_CACHE
+
     default_settings = {
         "maintenance_mode": {
             "enabled": False,
@@ -1002,42 +1081,53 @@ def get_platform_settings() -> Dict[str, Any]:
             "link_url": "/trading-handbook"
         }
     }
-    if not SETTINGS_FILE.exists():
+    
+    settings = None
+    if SETTINGS_FILE.exists():
+        try:
+            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+        except Exception:
+            settings = None
+
+    if not settings:
         try:
             import supabase_engine
             cloud_s = supabase_engine.load_app_config_from_supabase("platform_settings")
-            if isinstance(cloud_s, dict):
-                save_platform_settings(cloud_s)
-                return cloud_s
+            if isinstance(cloud_s, dict) and cloud_s:
+                settings = cloud_s
         except Exception:
             pass
-        save_platform_settings(default_settings)
-        return default_settings
-    try:
-        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            if "maintenance_mode" not in data:
-                data["maintenance_mode"] = default_settings["maintenance_mode"]
-            if "announcement_bar" not in data:
-                data["announcement_bar"] = default_settings["announcement_bar"]
-            return data
-    except Exception:
-        return default_settings
+
+    if not settings:
+        settings = default_settings
+
+    if "maintenance_mode" not in settings:
+        settings["maintenance_mode"] = default_settings["maintenance_mode"]
+    if "announcement_bar" not in settings:
+        settings["announcement_bar"] = default_settings["announcement_bar"]
+
+    _SETTINGS_CACHE = settings
+    return _SETTINGS_CACHE
 
 def save_platform_settings(settings: Dict[str, Any]) -> bool:
-    """Saves platform settings to disk and Supabase cloud."""
+    """Saves platform settings to disk, cache, and Supabase cloud."""
+    global _SETTINGS_CACHE
     try:
+        _SETTINGS_CACHE = settings
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(settings, f, indent=2, ensure_ascii=False)
         try:
             import supabase_engine
             supabase_engine.save_app_config_to_supabase("platform_settings", settings)
-        except Exception:
-            pass
+        except Exception as se:
+            print(f"[CMS] Supabase platform settings sync note: {se}")
         return True
-    except Exception:
+    except Exception as exc:
+        print(f"[CMS] Failed saving platform settings: {exc}")
         return False
+
 
 def render_maintenance_page(title: Optional[str] = None, message: Optional[str] = None) -> str:
     """Renders institutional dark maintenance mode page."""

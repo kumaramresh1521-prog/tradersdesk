@@ -208,6 +208,30 @@ def get_admin_secret() -> str:
 
             pass
 
+    try:
+
+        sb_pin = supabase_engine.load_app_config_from_supabase("admin_pin")
+
+        if isinstance(sb_pin, dict) and sb_pin.get("admin_pin"):
+
+            _DYNAMIC_ADMIN_PIN = str(sb_pin["admin_pin"]).strip()
+
+            try:
+
+                DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+                pin_file.write_text(json.dumps(sb_pin, indent=2), encoding="utf-8")
+
+            except Exception:
+
+                pass
+
+            return _DYNAMIC_ADMIN_PIN
+
+    except Exception:
+
+        pass
+
     raw = env("ADMIN_SECRET_KEY", "").strip().strip('"').strip("'")
 
     return raw
@@ -486,46 +510,52 @@ DEFAULT_FEATURE_FLAGS = {
 
 
 
+_FLAGS_CACHE = None
+
 def get_feature_flags() -> dict:
-    if not FEATURE_FLAGS_FILE.exists():
+    global _FLAGS_CACHE
+    if _FLAGS_CACHE is not None and isinstance(_FLAGS_CACHE, dict):
+        return _FLAGS_CACHE
+
+    flags = None
+    if FEATURE_FLAGS_FILE.exists():
+        try:
+            flags = read_json(FEATURE_FLAGS_FILE, None)
+        except Exception:
+            flags = None
+    if not flags:
         try:
             cloud_flags = supabase_engine.load_app_config_from_supabase("feature_flags")
-            if isinstance(cloud_flags, dict):
-                merged = dict(DEFAULT_FEATURE_FLAGS)
-                merged.update(cloud_flags)
-                DATA_DIR.mkdir(parents=True, exist_ok=True)
-                write_json(FEATURE_FLAGS_FILE, merged)
-                return merged
+            if isinstance(cloud_flags, dict) and cloud_flags:
+                flags = cloud_flags
+                try:
+                    DATA_DIR.mkdir(parents=True, exist_ok=True)
+                    write_json(FEATURE_FLAGS_FILE, flags)
+                except Exception:
+                    pass
         except Exception:
             pass
-        try:
-            DATA_DIR.mkdir(parents=True, exist_ok=True)
-            write_json(FEATURE_FLAGS_FILE, DEFAULT_FEATURE_FLAGS)
-        except Exception:
-            return dict(DEFAULT_FEATURE_FLAGS)
-    try:
-        flags = read_json(FEATURE_FLAGS_FILE, DEFAULT_FEATURE_FLAGS)
-        merged = dict(DEFAULT_FEATURE_FLAGS)
-        if isinstance(flags, dict):
-            merged.update(flags)
-        return merged
-    except Exception:
-        return dict(DEFAULT_FEATURE_FLAGS)
-
+    merged = dict(DEFAULT_FEATURE_FLAGS)
+    if isinstance(flags, dict):
+        merged.update(flags)
+    _FLAGS_CACHE = merged
+    return _FLAGS_CACHE
 
 def save_feature_flags(flags: dict) -> bool:
-    cur = get_feature_flags()
+    global _FLAGS_CACHE
+    cur = get_feature_flags().copy()
     if isinstance(flags, dict):
         for k, v in flags.items():
             cur[k] = bool(v)
+    _FLAGS_CACHE = cur
     try:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
-        ok = write_json(FEATURE_FLAGS_FILE, cur)
+        write_json(FEATURE_FLAGS_FILE, cur)
         try:
             supabase_engine.save_app_config_to_supabase("feature_flags", cur)
         except Exception:
             pass
-        return ok
+        return True
     except Exception as exc:
         logger.error("Failed saving feature flags: %s", exc)
         return False
@@ -1167,9 +1197,9 @@ def load_dotenv() -> None:
 
             for k, v in sb_config.items():
 
-                if v and (k not in os.environ or not os.environ[k]):
+                if v and str(v).strip():
 
-                    os.environ[k] = str(v)
+                    os.environ[k] = str(v).strip()
 
             try:
 
@@ -24492,6 +24522,11 @@ class RequestHandler(BaseHTTPRequestHandler):
 
 
                 try:
+                    cms_engine.set_ads_config(cfg)
+                except Exception:
+                    pass
+
+                try:
                     supabase_engine.save_app_config_to_supabase("ads_config", cfg)
                 except Exception:
                     pass
@@ -24573,6 +24608,14 @@ class RequestHandler(BaseHTTPRequestHandler):
                         CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
                         cache_footer.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+                    except Exception:
+
+                        pass
+
+                    try:
+
+                        cms_engine.set_footer_cache(payload)
 
                     except Exception:
 
@@ -25595,11 +25638,17 @@ def main() -> None:
 
     ensure_cache()
 
-    # Asynchronous cloud config sync: server binds port 8000 instantly (< 50ms) without waiting on network
+    # Synchronize all admin configurations from Supabase cloud on boot so all endpoints have fresh state
+    try:
+        supabase_engine.sync_all_admin_configs_from_cloud(DATA_DIR)
+        cms_engine.reload_cms_caches()
+    except Exception as _sync_err:
+        print(f"[SupabaseStartupSync] Note: {_sync_err}")
+
     threading.Thread(
         target=lambda: supabase_engine.sync_all_admin_configs_from_cloud(DATA_DIR),
         daemon=True,
-        name="SupabaseStartupSync"
+        name="SupabasePeriodicSync"
     ).start()
     threading.Thread(target=lambda: build_indices_overview({}), daemon=True).start()
 

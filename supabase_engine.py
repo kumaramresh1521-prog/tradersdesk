@@ -475,7 +475,7 @@ def sync_all_admin_configs_from_cloud(data_dir: Path | None = None) -> dict:
 
     CONFIG_FILE_MAP = {
         "footer_links": "footer_links.json",
-        "navigation_master": "navigation.json",
+        "navigation_master": "navigation_master.json",
         "cms_pages": "cms_pages.json",
         "cms_posts": "cms_posts.json",
         "platform_settings": "platform_settings.json",
@@ -486,6 +486,7 @@ def sync_all_admin_configs_from_cloud(data_dir: Path | None = None) -> dict:
         "deleted_seo_routes": "deleted_seo_routes.json",
         "admin_pin": "admin_pin.json",
         "admin_config": "admin_config.json",
+        "global_broker_settings": "config_backup.json",
     }
 
     url = f"{cfg['url']}/rest/v1/app_config?select=key,value,updated_at"
@@ -515,14 +516,44 @@ def sync_all_admin_configs_from_cloud(data_dir: Path | None = None) -> dict:
                     if k in CONFIG_FILE_MAP:
                         target_file = data_dir / CONFIG_FILE_MAP[k]
                         try:
+                            # Safeguard: Do not wipe non-empty local file with empty cloud list/dict
+                            if (v == [] or v == {}) and target_file.exists():
+                                try:
+                                    local_existing = json.loads(target_file.read_text(encoding="utf-8"))
+                                    if local_existing:
+                                        save_app_config_to_supabase(k, local_existing)
+                                        seeded_to_cloud.append(k)
+                                        continue
+                                except Exception:
+                                    pass
+
                             target_file.write_text(json.dumps(v, indent=2, ensure_ascii=False), encoding="utf-8")
                             synced_from_cloud.append(k)
-                            if k in ("footer_links", "seo_config", "seo_routes"):
+
+                            # Write aliases & secondary locations
+                            if k == "navigation_master":
+                                try:
+                                    (data_dir / "navigation.json").write_text(json.dumps(v, indent=2, ensure_ascii=False), encoding="utf-8")
+                                except Exception:
+                                    pass
+                            elif k == "global_broker_settings" and isinstance(v, dict):
+                                try:
+                                    cache_backup = ROOT / "cache" / "config_backup.json"
+                                    cache_backup.parent.mkdir(parents=True, exist_ok=True)
+                                    cache_backup.write_text(json.dumps(v, indent=2, ensure_ascii=False), encoding="utf-8")
+                                    import os
+                                    for b_k, b_v in v.items():
+                                        if b_v and str(b_v).strip():
+                                            os.environ[b_k] = str(b_v).strip()
+                                except Exception:
+                                    pass
+                            elif k in ("footer_links", "seo_config", "seo_routes"):
                                 try:
                                     (ROOT / f"{k}.json").write_text(json.dumps(v, indent=2, ensure_ascii=False), encoding="utf-8")
                                 except Exception:
                                     pass
                         except Exception as e:
+                            print(f"[Supabase Sync] Error writing {target_file}: {e}")
                             print(f"[Supabase Sync] Error writing {target_file}: {e}")
 
             # Check if any local configs are missing in Supabase and upload them
