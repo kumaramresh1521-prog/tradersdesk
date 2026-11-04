@@ -17285,7 +17285,7 @@ def build_indices_overview(payload: dict) -> dict:
 
 _BREADTH_CONTRIB_CACHE = {}
 
-_BREADTH_CONTRIB_CACHE_VERSION = 4
+_BREADTH_CONTRIB_CACHE_VERSION = 5
 
 _BREADTH_RECOMPUTE_LOCK = threading.Lock()
 
@@ -17563,11 +17563,11 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
 
         market_open_time = dt_time(9, 15)
 
-        market_close_time = dt_time(15, 40)
+        market_close_time = dt_time(15, 15)  # 3:15 PM strict cutoff
 
         is_live_trading = is_today_session and (market_open_time <= now_ist_dt.time() < market_close_time)
 
-        cur_cutoff_hhmm = now_ist_dt.strftime("%H:%M") if is_live_trading else "15:40"
+        cur_cutoff_hhmm = min(now_ist_dt.strftime("%H:%M"), "15:15") if is_live_trading else "15:15"
 
 
 
@@ -17935,6 +17935,14 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
 
             if fb_data and fb_data.get("ok"):
 
+                if isinstance(fb_data.get("timeline"), list):
+                    fb_data["timeline"] = [
+                        pt for pt in fb_data["timeline"]
+                        if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
+                        or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
+                        or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
+                    ]
+
                 fb_data["cacheSchemaVersion"] = _BREADTH_CONTRIB_CACHE_VERSION
 
                 _BREADTH_CONTRIB_CACHE[cache_key] = {"data": fb_data, "_cached_at": time.time()}
@@ -18040,6 +18048,14 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
 
 
         # Save to in-memory cache and on-disk cache ONLY if valid and timeline has items!
+
+        if data and isinstance(data.get("timeline"), list):
+            data["timeline"] = [
+                pt for pt in data["timeline"]
+                if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
+                or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
+                or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
+            ]
 
         tl = data.get("timeline") or []
 
@@ -18161,6 +18177,13 @@ def get_cached_breadth_contribution(idx: str, date_param: str, interval: str = "
 
                         ).start()
 
+            if cached.get("data") and isinstance(cached["data"].get("timeline"), list):
+                cached["data"]["timeline"] = [
+                    pt for pt in cached["data"]["timeline"]
+                    if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
+                    or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
+                    or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
+                ]
             return cached["data"]
 
 

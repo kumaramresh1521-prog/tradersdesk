@@ -2989,7 +2989,14 @@ if (suiteKey === "callVsPut") {
   function renderBreadthContributionUI(data, targetIdx, effInterval) {
     if (!data) return;
     contribDataCache = data;
-    contribTimeline = data.timeline || [];
+    // Strictly filter timeline up to 15:15 IST to eliminate erratic post-3:15 auction settlement distortions
+    contribTimeline = (data.timeline || []).filter(function(p) {
+      if (!p) return false;
+      var tRaw = String(p.time || p.displayTime || "");
+      var tStr = tRaw.length >= 16 ? tRaw.slice(11, 16) : (tRaw.length === 5 ? tRaw : "");
+      return !tStr || tStr <= "15:15";
+    });
+    data.timeline = contribTimeline;
 
     const univSelect = document.getElementById("contribUniverseSelect");
     if (univSelect && univSelect.value !== targetIdx) {
@@ -3024,7 +3031,7 @@ if (suiteKey === "callVsPut") {
         dateBadge.textContent = "🔴 Market Closed";
         dateBadge.className = "p2-badge p2-badge-red";
       } else {
-        dateBadge.textContent = "🟢 Live (09:15 - 15:40)";
+        dateBadge.textContent = "🟢 Live (09:15 - 15:15)";
         dateBadge.className = "p2-badge p2-badge-teal";
       }
     }

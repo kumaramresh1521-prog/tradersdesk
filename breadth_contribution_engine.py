@@ -223,7 +223,7 @@ def generate_intraday_timeline(
     spot_hint: float = None,
     change_hint: float = None
 ) -> List[Dict[str, Any]]:
-    """Generates 1-minute intraday snapshots (09:15 to 15:40) with synchronized Breadth, 20 SMA, and Spot."""
+    """Generates 1-minute intraday snapshots (09:15 to 15:15) with synchronized Breadth, 20 SMA, and Spot."""
     timeline = []
     effective_date = date_str or "2026-09-21"
 
@@ -231,7 +231,7 @@ def generate_intraday_timeline(
     now_dt = datetime.datetime.now(INDIA_TZ)
     today_str = now_dt.strftime("%Y-%m-%d")
     is_today = (effective_date == today_str)
-    market_close = dt_time(15, 40)
+    market_close = dt_time(15, 15)
     market_open = dt_time(9, 15)
 
     if is_today and now_dt.time() < market_close:
@@ -239,9 +239,9 @@ def generate_intraday_timeline(
             total_minutes = 1
         else:
             cur_min = (now_dt.hour - 9) * 60 + (now_dt.minute - 15)
-            total_minutes = max(1, min(cur_min + 1, 375))
+            total_minutes = max(1, min(cur_min + 1, 361))
     else:
-        total_minutes = 375
+        total_minutes = 361
 
     bm = BENCHMARKS.get(index_key, BENCHMARKS.get("nifty50"))
     base_spot = round(bm["spot"] - bm["change"], 2)
@@ -440,10 +440,10 @@ def compute_breadth_contribution(
     now_dt = datetime.datetime.now(INDIA_TZ)
     today_str = now_dt.strftime("%Y-%m-%d")
     market_open = dt_time(9, 15)
-    market_close = dt_time(15, 40)
+    market_close = dt_time(15, 15)  # 3:15 PM strict cutoff to eliminate post-market erratic fluctuations
     is_today = (effective_date == today_str)
     is_active_session = is_today and (market_open <= now_dt.time() < market_close)
-    cur_cutoff_time = now_dt.strftime("%H:%M") if is_active_session else "15:40"
+    cur_cutoff_time = min(now_dt.strftime("%H:%M"), "15:15") if is_active_session else "15:15"
 
     tot_stk = len(raw_stocks) or (12 if is_bank else 50)
     real_adv_count = len(supporting)
@@ -468,7 +468,7 @@ def compute_breadth_contribution(
         for p in (real_breadth_timeline or []):
             t_raw = str(p.get("time", ""))
             t_str = t_raw[11:16] if len(t_raw) >= 16 else t_raw
-            if (actual_date in t_raw or not any(actual_date in str(x.get("time", "")) for x in (real_breadth_timeline or []))) and "09:15" <= t_str <= "15:40":
+            if (actual_date in t_raw or not any(actual_date in str(x.get("time", "")) for x in (real_breadth_timeline or []))) and "09:15" <= t_str <= "15:15":
                 b_map[t_str] = p
 
         # 2. Build Nifty Spot & VWAP map by HH:MM
@@ -479,7 +479,7 @@ def compute_breadth_contribution(
         for pt in n_pts:
             t_raw = str(pt.get("time", ""))
             t_str = t_raw[11:16] if len(t_raw) >= 16 else t_raw
-            if (actual_date in t_raw or not any(actual_date in str(x.get("time", "")) for x in n_pts)) and "09:15" <= t_str <= "15:40":
+            if (actual_date in t_raw or not any(actual_date in str(x.get("time", "")) for x in n_pts)) and "09:15" <= t_str <= "15:15":
                 v = float(pt.get("volume") or 1000) or 1000.0
                 c = float(pt.get("close") or spot)
                 h = float(pt.get("high") or c)
@@ -505,21 +505,22 @@ def compute_breadth_contribution(
         now_dt = datetime.datetime.now(INDIA_TZ)
         today_str = now_dt.strftime("%Y-%m-%d")
         market_open = dt_time(9, 15)
-        market_close = dt_time(15, 40)
+        market_close = dt_time(15, 15)  # 3:15 PM strict cutoff
         is_today = (actual_date == today_str)
         is_active_session = is_today and (market_open <= now_dt.time() < market_close)
-        cur_cutoff_time = now_dt.strftime("%H:%M") if is_active_session else "15:40"
+        cur_cutoff_time = min(now_dt.strftime("%H:%M"), "15:15") if is_active_session else "15:15"
 
         all_minutes = sorted(set(list(b_map.keys()) + list(n_map.keys())))
+        all_minutes = [t for t in all_minutes if "09:15" <= t <= "15:15"]
         if is_active_session:
             all_minutes = [t for t in all_minutes if t <= cur_cutoff_time]
 
         if all_minutes:
             last_m_str = all_minutes[-1]
-            if last_m_str < cur_cutoff_time and last_m_str >= "15:20":
+            if last_m_str < cur_cutoff_time and last_m_str >= "15:00":
                 start_m = int(last_m_str[3:5])
-                end_m = int(cur_cutoff_time[3:5]) if cur_cutoff_time.startswith("15:") else 40
-                for m in range(start_m + 1, end_m + 1):
+                end_m = int(cur_cutoff_time[3:5]) if cur_cutoff_time.startswith("15:") else 15
+                for m in range(start_m + 1, min(end_m + 1, 16)):
                     all_minutes.append(f"15:{m:02d}")
                 all_minutes = sorted(set(all_minutes))
 
@@ -655,6 +656,14 @@ def compute_breadth_contribution(
         holiday_notice = f"🔴 Market Closed{h_label} • Showing Completed Session of {display_date}"
     elif is_market_closed and req_date != effective_date:
         holiday_notice = f"🔴 Market Closed • Showing Completed Session of {display_date}"
+
+    # Strictly ensure timeline never exceeds 15:15 IST
+    timeline = [
+        pt for pt in timeline
+        if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
+        or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
+        or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
+    ]
 
     return {
         "ok": True,
