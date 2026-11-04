@@ -10759,7 +10759,7 @@ def _build_nifty_internal(payload: dict) -> dict:
 
             chain_fallback_reason = None
 
-            if include_option_chain and not option_rows:
+            if include_option_chain and not option_rows and allow_simulated:
 
                 fallback_rows, fallback_summary = build_sample_option_chain(float(spot), strike_range, strike_step=step)
 
@@ -19797,6 +19797,23 @@ def get_straddle_chart_response(params: dict) -> dict:
 
     def _compute_straddle_now():
 
+        # 1. Attempt pure real institutional straddle feed calculation directly
+        try:
+            feed_res = straddle_engine.compute_straddle_analytics(
+                idx,
+                expiry=exp,
+                date=effective_dt,
+                category=cat,
+                strike_override=strike,
+            )
+            if feed_res and feed_res.get("ok") and feed_res.get("points") and len(feed_res["points"]) > 0:
+                with _STRADDLE_TOOL_LOCK:
+                    STRADDLE_TOOL_CACHE[cache_key] = {"time": time.time(), "data": feed_res}
+                    _STRADDLE_TOOL_UPDATING.discard(cache_key)
+                return feed_res
+        except Exception as _feed_err:
+            logger.warning("[Straddle] Direct feed note: %s", _feed_err)
+
         upstox_chain = None
 
         nifty_data = None
@@ -19877,9 +19894,7 @@ def get_straddle_chart_response(params: dict) -> dict:
 
                 raw_c = fetch_real_intraday_index_candles(idx_key, effective_dt, interval_minutes=1)
 
-                if not raw_c:
 
-                    raw_c = sample_index_candles(idx_key, effective_dt, interval_minutes=1)
 
                 if raw_c:
 
