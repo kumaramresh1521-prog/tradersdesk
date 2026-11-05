@@ -223,109 +223,47 @@ def generate_intraday_timeline(
     spot_hint: float = None,
     change_hint: float = None
 ) -> List[Dict[str, Any]]:
-    """Generates 1-minute intraday snapshots (09:15 to 15:15) with synchronized Breadth, 20 SMA, and Spot."""
-    timeline = []
+    """Fetches real 1-minute intraday snapshots (09:15 to 15:15) from Supabase or disk cache. Zero synthetic curves."""
     effective_date = date_str or "2026-09-21"
+    norm_k = index_key.lower().replace(" ", "").replace("_", "")
 
-    # Check live market session timing
-    now_dt = datetime.datetime.now(INDIA_TZ)
-    today_str = now_dt.strftime("%Y-%m-%d")
-    is_today = (effective_date == today_str)
-    market_close = dt_time(15, 15)
-    market_open = dt_time(9, 15)
+    # 1. Supabase Cloud Database Snapshot Check (Instant load even if broker disconnected)
+    try:
+        import snapshot_engine
+        snap = snapshot_engine.get_snapshot(effective_date)
+        if snap and snap.get("breadth_data"):
+            b_entry = snap["breadth_data"].get(norm_k)
+            if b_entry and b_entry.get("timeline"):
+                return [
+                    pt for pt in b_entry["timeline"]
+                    if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
+                    or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
+                    or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
+                ]
+    except Exception:
+        pass
 
-    if is_today and now_dt.time() < market_close:
-        if now_dt.time() < market_open:
-            total_minutes = 1
-        else:
-            cur_min = (now_dt.hour - 9) * 60 + (now_dt.minute - 15)
-            total_minutes = max(1, min(cur_min + 1, 361))
-    else:
-        total_minutes = 361
+    # 2. Local Disk Persistent Cache Check
+    try:
+        from pathlib import Path
+        import json
+        for p in (Path(".cache"), Path("cache")):
+            f = p / f"breadth_contrib_{norm_k}_{effective_date}_ONE_MINUTE.json"
+            if f.exists():
+                with open(f, "r", encoding="utf-8") as jf:
+                    cd = json.load(jf)
+                    if cd.get("timeline"):
+                        return [
+                            pt for pt in cd["timeline"]
+                            if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
+                            or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
+                            or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
+                        ]
+    except Exception:
+        pass
 
-    bm = BENCHMARKS.get(index_key, BENCHMARKS.get("nifty50"))
-    base_spot = round(bm["spot"] - bm["change"], 2)
-    target_spot = round(bm["spot"], 2)
-    total_stocks = 10 if index_key in ("banknifty", "bankex") else 50
-    base_adv = round(total_stocks * 0.45)
-    base_dec = total_stocks - base_adv
-
-    if spot_hint and spot_hint > 0:
-        target_spot = round(float(spot_hint), 2)
-        chg = float(change_hint) if change_hint is not None else 0.0
-        base_spot = round(target_spot - chg, 2)
-
-    vwap_sum_pv = 0.0
-    vwap_sum_v = 0.0
-
-    raw_points = []
-    for i in range(total_minutes):
-        minute_num = i
-        hour = 9 + (15 + minute_num) // 60
-        minute = (15 + minute_num) % 60
-        time_str = f"{hour:02d}:{minute:02d}"
-        iso_time = f"{effective_date}T{time_str}:00+05:30"
-
-        progress = minute_num / float(total_minutes - 1)
-
-        base_ratio = base_adv / float(total_stocks)
-        if minute_num < 30:
-            spot_delta = -15.0 * math.sin((minute_num / 30.0) * math.pi)
-            ratio = max(0.35, base_ratio - 0.12 * (minute_num / 30.0))
-        elif minute_num < 225:
-            p = (minute_num - 30) / 195.0
-            spot_delta = -5.0 + 40.0 * p + 5.0 * math.sin(p * 4 * math.pi)
-            ratio = 0.48 + 0.08 * p
-        elif minute_num < 300:
-            p = (minute_num - 225) / 75.0
-            spot_delta = 35.0 + 45.0 * p + 3.0 * math.sin(p * 2 * math.pi)
-            ratio = 0.56 + 0.06 * p
-        else:
-            p = (minute_num - 300) / 75.0
-            spot_delta = 80.0 - 4.2 * p
-            ratio = 0.62 - 0.06 * p
-
-        adv = max(1, min(total_stocks - 1, round(total_stocks * ratio)))
-        current_spot = round(base_spot + (target_spot - base_spot) * (progress * 0.4) + spot_delta, 2)
-        if i == total_minutes - 1:
-            current_spot = target_spot
-
-        dec = total_stocks - adv
-        breadth_ratio = round((adv / float(total_stocks)) * 100.0, 2)
-        net_adv = adv - dec
-
-        vol = 5000 + int(3000 * math.sin(progress * math.pi))
-        vwap_sum_pv += current_spot * vol
-        vwap_sum_v += vol
-        vwap = round(vwap_sum_pv / vwap_sum_v, 2)
-
-        raw_points.append({
-            "time": iso_time,
-            "displayTime": time_str,
-            "date": effective_date,
-            "breadth": breadth_ratio,
-            "breadthRatio": breadth_ratio,
-            "advancers": adv,
-            "decliners": dec,
-            "x": adv,
-            "o": dec,
-            "netAdvancers": net_adv,
-            "spot": current_spot,
-            "close": current_spot,
-            "high": round(current_spot + abs(spot_delta) * 0.1, 2),
-            "low": round(current_spot - abs(spot_delta) * 0.1, 2),
-            "vwap": vwap,
-            "volume": vol,
-        })
-
-    # Calculate 20 SMA on breadth ratio
-    for idx, pt in enumerate(raw_points):
-        start_idx = max(0, idx - 19)
-        pts_window = raw_points[start_idx: idx + 1]
-        pt["ma"] = round(sum(p["breadth"] for p in pts_window) / float(len(pts_window)), 2)
-        timeline.append(pt)
-
-    return timeline
+    # No synthetic random-walk or linear interpolation allowed
+    return []
 
 
 def compute_breadth_contribution(
@@ -548,6 +486,23 @@ def compute_breadth_contribution(
         open_spot = float(n_pts[0].get("open") or spot) if n_pts else spot
         raw_breadth_values = []
 
+        # If broker breadth timeline is missing, check Supabase real snapshot immediately
+        if not has_real_breadth:
+            try:
+                import snapshot_engine
+                snap = snapshot_engine.get_snapshot(actual_date)
+                if snap and snap.get("breadth_data"):
+                    b_entry = snap["breadth_data"].get(norm_key)
+                    if b_entry and b_entry.get("timeline") and len(b_entry["timeline"]) >= 5:
+                        for pt in b_entry["timeline"]:
+                            t_raw = str(pt.get("time", ""))
+                            t_str = t_raw[11:16] if len(t_raw) >= 16 else t_raw
+                            if "09:15" <= t_str <= "15:15":
+                                b_map[t_str] = pt
+                        has_real_breadth = len(b_map) >= 5
+            except Exception:
+                pass
+
         for i, t_str in enumerate(all_minutes):
             if t_str in b_map:
                 last_b = b_map[t_str]
@@ -573,14 +528,10 @@ def compute_breadth_contribution(
                     b_x = max(0, min(tot_stk, int(round(tot_stk * b_val / 100.0))))
                     b_o = max(0, tot_stk - b_x)
             else:
-                # Smooth spot-correlated advance/decline progression
-                minute_progress = min(1.0, max(0.0, i / max(1.0, float(len(all_minutes) - 1))))
-                spot_rel = (pt_spot - open_spot) / max(1.0, open_spot)
-                base_b = 50.0 + (real_live_breadth_pct - 50.0) * minute_progress
-                calc_b = max(5.0, min(95.0, base_b + (spot_rel * 350.0)))
-                b_val = round(calc_b, 2)
-                b_x = max(0, min(tot_stk, round(tot_stk * b_val / 100.0)))
-                b_o = tot_stk - b_x
+                # Authentic live constituent ratio (Zero synthetic ramps or linear mathematical formulas)
+                b_val = real_live_breadth_pct
+                b_x = real_adv_count
+                b_o = real_dec_count
 
             # If this is the latest minute of active trading, stitch with genuine live quote stats!
             if is_active_session and i == len(all_minutes) - 1 and (real_adv_count + real_dec_count) > 0:

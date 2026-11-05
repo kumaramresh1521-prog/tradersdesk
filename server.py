@@ -47,6 +47,8 @@ import urllib.parse
 import urllib.request
 
 import zipfile
+import logging
+logger = logging.getLogger("server")
 
 import uuid
 
@@ -17285,7 +17287,7 @@ def build_indices_overview(payload: dict) -> dict:
 
 _BREADTH_CONTRIB_CACHE = {}
 
-_BREADTH_CONTRIB_CACHE_VERSION = 5
+_BREADTH_CONTRIB_CACHE_VERSION = 6
 
 _BREADTH_RECOMPUTE_LOCK = threading.Lock()
 
@@ -17899,6 +17901,20 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
 
 
 
+        # Check Supabase cloud database if broker returned empty breadth
+        if len(real_b) < 5:
+            try:
+                import snapshot_engine
+                snap = snapshot_engine.get_snapshot(resolved_date)
+                if snap and snap.get("breadth_data"):
+                    b_entry = snap["breadth_data"].get(norm_idx)
+                    if b_entry and b_entry.get("timeline") and len(b_entry["timeline"]) >= 5:
+                        real_b = b_entry["timeline"]
+                        if not real_b_summary and b_entry.get("breadthSummary"):
+                            real_b_summary = b_entry["breadthSummary"]
+            except Exception:
+                pass
+
         if len(real_b) < 5 or len(real_n) < 5:
 
             fb_data = breadth_contribution_engine.compute_breadth_contribution(
@@ -18061,6 +18077,13 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
 
         if data and data.get("ok") and len(tl) > 0:
 
+            # Auto-sync real breadth computation to Supabase market_daily_snapshots
+            try:
+                import snapshot_engine
+                snapshot_engine.save_breadth_universe_to_supabase(resolved_date, norm_idx, data)
+            except Exception:
+                pass
+
             data["cacheSchemaVersion"] = _BREADTH_CONTRIB_CACHE_VERSION
 
             _BREADTH_CONTRIB_CACHE[cache_key] = {"data": data, "_cached_at": time.time()}
@@ -18187,6 +18210,45 @@ def get_cached_breadth_contribution(idx: str, date_param: str, interval: str = "
             return cached["data"]
 
 
+
+    # 2.5 Supabase Cloud Database Snapshot Check (Instant load even if broker is offline)
+    if not force_refresh:
+        try:
+            import snapshot_engine
+            snap = snapshot_engine.get_snapshot(resolved_date)
+            if snap and snap.get("breadth_data"):
+                idx_norm = norm_idx.lower().replace(" ", "").replace("_", "")
+                b_entry = snap["breadth_data"].get(idx_norm)
+                if b_entry and b_entry.get("timeline") and len(b_entry["timeline"]) > 0:
+                    cloud_data = {
+                        "ok": True,
+                        "isHistorical": (resolved_date != now_ist().strftime("%Y-%m-%d")),
+                        "source": "Supabase EOD Snapshot",
+                        "indexKey": norm_idx,
+                        "universe": norm_idx,
+                        "interval": norm_interval,
+                        "date": resolved_date,
+                        "displayDate": resolved_date,
+                        "isMarketClosed": not is_market_open(),
+                        "isHoliday": False,
+                        "indexInfo": b_entry.get("indexInfo") or {"name": b_entry.get("label", norm_idx.upper())},
+                        "breadthSummary": b_entry.get("breadthSummary") or {},
+                        "summary": b_entry.get("summary") or {},
+                        "draggingDown": b_entry.get("draggingDown", []),
+                        "supportingUp": b_entry.get("supportingUp", []),
+                        "timeline": [
+                            pt for pt in b_entry["timeline"]
+                            if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
+                            or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
+                            or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
+                        ],
+                        "cacheSchemaVersion": _BREADTH_CONTRIB_CACHE_VERSION,
+                    }
+                    _BREADTH_CONTRIB_CACHE[cache_key] = {"data": cloud_data, "_cached_at": time.time()}
+                    _BREADTH_CONTRIB_CACHE[resolved_cache_key] = {"data": cloud_data, "_cached_at": time.time()}
+                    return cloud_data
+        except Exception:
+            pass
 
     # 2. On-disk persistent cache
 
@@ -20243,11 +20305,12 @@ class RequestHandler(BaseHTTPRequestHandler):
             interval = query.get("interval", ["ONE_MINUTE"])[0]
             force = query.get("refresh", ["false"])[0].lower() in ("1", "true")
 
+            eff_snap_date = resolve_market_session_date(date_param)
             today_str = now_ist().strftime("%Y-%m-%d")
-            if date_param and date_param != today_str and date_param != "today":
+            if eff_snap_date and (eff_snap_date != today_str or not is_market_open() or not is_active_broker_configured()):
                 try:
                     import snapshot_engine
-                    snap = snapshot_engine.get_snapshot(date_param)
+                    snap = snapshot_engine.get_snapshot(eff_snap_date)
                     if snap and snap.get("breadth_data"):
                         brd_map = snap["breadth_data"]
                         idx_norm = idx.lower().replace(" ", "").replace("_", "")
@@ -22411,11 +22474,12 @@ class RequestHandler(BaseHTTPRequestHandler):
                 interval = payload.get("interval") or "ONE_MINUTE"
                 force = bool(payload.get("refresh") or payload.get("fastRefresh"))
 
+                eff_snap_date = resolve_market_session_date(date_param)
                 today_str = now_ist().strftime("%Y-%m-%d")
-                if date_param and date_param != today_str and date_param != "today":
+                if eff_snap_date and (eff_snap_date != today_str or not is_market_open() or not is_active_broker_configured()):
                     try:
                         import snapshot_engine
-                        snap = snapshot_engine.get_snapshot(date_param)
+                        snap = snapshot_engine.get_snapshot(eff_snap_date)
                         if snap and snap.get("breadth_data"):
                             brd_map = snap["breadth_data"]
                             idx_norm = idx.lower().replace(" ", "").replace("_", "")

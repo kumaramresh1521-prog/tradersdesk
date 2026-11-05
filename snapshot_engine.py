@@ -217,6 +217,45 @@ def save_straddles_to_supabase(trade_date: str, straddles_dict: dict) -> dict:
         return {"ok": False, "message": str(e)}
 
 
+def save_breadth_universe_to_supabase(trade_date: str, universe: str, breadth_dict: dict) -> dict:
+    """Safely merges a single universe's breadth data into Supabase market_daily_snapshots."""
+    try:
+        import supabase_engine
+        norm_u = universe.lower().replace(" ", "").replace("_", "")
+        existing = supabase_engine.load_market_daily_snapshot(trade_date) or {}
+        b_data = dict(existing.get("breadth_data", {}))
+
+        s = breadth_dict.get("summary") or {}
+        b = breadth_dict.get("breadthSummary") or {}
+        tl = breadth_dict.get("timeline") or []
+
+        b_data[norm_u] = {
+            "ok": True,
+            "universe": norm_u,
+            "indexKey": breadth_dict.get("indexKey") or norm_u,
+            "label": (breadth_dict.get("indexInfo") or {}).get("name") or norm_u.upper(),
+            "indexInfo": breadth_dict.get("indexInfo") or {},
+            "summary": s,
+            "breadthSummary": b,
+            "netPoints": s.get("netPoints", 0.0),
+            "supportingPoints": s.get("supportingPoints", 0.0),
+            "draggingPoints": s.get("draggingPoints", 0.0),
+            "advancers": s.get("supportingCount", 0),
+            "decliners": s.get("draggingCount", 0),
+            "total": s.get("totalStocks", 0),
+            "breadthPct": b.get("latestBreadth") or s.get("supportRatioPct") or 50.0,
+            "openBreadth": b.get("openBreadth", 50.0),
+            "breadthChange": b.get("change", 0.0),
+            "draggingDown": breadth_dict.get("draggingDown", [])[:20],
+            "supportingUp": breadth_dict.get("supportingUp", [])[:20],
+            "timeline": tl,
+        }
+        existing["breadth_data"] = b_data
+        return supabase_engine.save_market_daily_snapshot(trade_date, existing)
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+
+
 def build_smart_money_snapshot(trade_date: str) -> dict:
     """Gathers FII/DII cash net flow, derivatives flow, and participant OI matrix."""
     try:
@@ -316,6 +355,20 @@ def build_breadth_snapshot(trade_date: str) -> dict:
         for idx in target_universes:
             try:
                 data = get_cached_breadth_contribution(idx, trade_date)
+                if not data or not data.get("timeline"):
+                    from pathlib import Path
+                    import json
+                    for p in (Path(".cache"), Path("cache")):
+                        df = p / f"breadth_contrib_{idx}_{trade_date}_ONE_MINUTE.json"
+                        if df.exists():
+                            try:
+                                with open(df, "r", encoding="utf-8") as jf:
+                                    cd = json.load(jf)
+                                    if cd.get("timeline"):
+                                        data = cd
+                                        break
+                            except Exception:
+                                pass
                 if data and isinstance(data, dict):
                     s = data.get("summary") or {}
                     b = data.get("breadthSummary") or {}

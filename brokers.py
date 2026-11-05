@@ -211,11 +211,23 @@ class UpstoxClient(BaseBrokerClient):
         }
 
     def _load_isin_map(self) -> dict[str, str]:
-        if not hasattr(self, "_isin_cache"):
+        if not hasattr(self, "_isin_cache") or not self._isin_cache:
             p = self.cache_dir / "symbol_to_isin.json"
             if not p.exists():
                 p = Path(__file__).resolve().parent / ".cache" / "symbol_to_isin.json"
             self._isin_cache = read_json_safe(p, {})
+            # Always fallback to official mwpl repository to guarantee 100% ISIN coverage for heavyweights
+            if not self._isin_cache:
+                mwpl_p = Path(__file__).resolve().parent / "data" / "mwpl_official.json"
+                if mwpl_p.exists():
+                    try:
+                        mwpl_d = read_json_safe(mwpl_p, {})
+                        recs = mwpl_d.get("records") or {}
+                        for sym, r in recs.items():
+                            if isinstance(r, dict) and r.get("isin"):
+                                self._isin_cache[sym.upper()] = r["isin"]
+                    except Exception:
+                        pass
         return self._isin_cache
 
     def _resolve_instrument_key(self, instrument: Any) -> str:
