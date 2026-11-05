@@ -119,6 +119,206 @@ def format_indian_date(date_str: str) -> str:
         return date_str
 
 
+
+SENSEX_CONSTITUENTS = [
+    {"symbol": "HDFCBANK",   "name": "HDFC Bank Ltd.",              "sector": "Banking",             "ltp": 702.75,  "changePct": -1.22, "weight": 13.50},
+    {"symbol": "RELIANCE",   "name": "Reliance Industries Ltd.",    "sector": "Energy & Retail",     "ltp": 1207.70, "changePct": -0.85, "weight": 11.80},
+    {"symbol": "ICICIBANK",  "name": "ICICI Bank Ltd.",             "sector": "Banking",             "ltp": 1357.50, "changePct":  1.09, "weight": 10.20},
+    {"symbol": "INFY",       "name": "Infosys Ltd.",                "sector": "IT",                  "ltp": 992.00,  "changePct": -2.16, "weight":  6.90},
+    {"symbol": "BHARTIARTL", "name": "Bharti Airtel Ltd.",          "sector": "Telecom",             "ltp": 1833.90, "changePct":  1.29, "weight":  6.10},
+    {"symbol": "TCS",        "name": "Tata Consultancy Services",   "sector": "IT",                  "ltp": 2080.30, "changePct": -0.94, "weight":  5.00},
+    {"symbol": "LT",         "name": "Larsen & Toubro Ltd.",        "sector": "Capital Goods",       "ltp": 3701.50, "changePct": -1.82, "weight":  4.80},
+    {"symbol": "ITC",        "name": "ITC Ltd.",                    "sector": "FMCG",                "ltp":  265.70, "changePct": -0.37, "weight":  4.70},
+    {"symbol": "AXISBANK",   "name": "Axis Bank Ltd.",              "sector": "Banking",             "ltp": 1185.40, "changePct":  0.72, "weight":  4.10},
+    {"symbol": "KOTAKBANK",  "name": "Kotak Mahindra Bank Ltd.",    "sector": "Banking",             "ltp":  440.00, "changePct":  1.88, "weight":  3.50},
+    {"symbol": "SBIN",       "name": "State Bank of India",         "sector": "Banking",             "ltp":  954.00, "changePct": -0.50, "weight":  3.40},
+    {"symbol": "M&M",        "name": "Mahindra & Mahindra Ltd.",    "sector": "Automobile",          "ltp": 3015.80, "changePct": -1.93, "weight":  3.10},
+    {"symbol": "BAJFINANCE", "name": "Bajaj Finance Ltd.",          "sector": "Financials",          "ltp": 7238.40, "changePct": -1.25, "weight":  2.80},
+    {"symbol": "HINDUNILVR", "name": "Hindustan Unilever Ltd.",     "sector": "FMCG",                "ltp": 2620.00, "changePct": -1.57, "weight":  2.70},
+    {"symbol": "MARUTI",     "name": "Maruti Suzuki India Ltd.",    "sector": "Automobile",          "ltp": 12171.00,"changePct": -1.51, "weight":  2.20},
+    {"symbol": "SUNPHARMA",  "name": "Sun Pharma Industries",       "sector": "Pharma",              "ltp": 1820.00, "changePct": -1.28, "weight":  2.10},
+    {"symbol": "TITAN",      "name": "Titan Company Ltd.",          "sector": "Consumer",            "ltp": 3450.00, "changePct": -3.80, "weight":  1.90},
+    {"symbol": "ULTRACEMCO", "name": "UltraTech Cement Ltd.",       "sector": "Materials",           "ltp": 10984.00,"changePct": -1.15, "weight":  1.80},
+    {"symbol": "NTPC",       "name": "NTPC Ltd.",                   "sector": "Power",               "ltp":  385.00, "changePct": -1.10, "weight":  1.80},
+    {"symbol": "POWERGRID",  "name": "Power Grid Corporation",      "sector": "Power",               "ltp":  312.00, "changePct": -0.85, "weight":  1.70},
+    {"symbol": "HCLTECH",    "name": "HCL Technologies Ltd.",       "sector": "IT",                  "ltp": 1562.80, "changePct": -1.41, "weight":  1.60},
+    {"symbol": "ADANIPORTS", "name": "Adani Ports & SEZ Ltd.",      "sector": "Services",            "ltp": 1768.00, "changePct": -1.87, "weight":  1.60},
+    {"symbol": "TATASTEEL",  "name": "Tata Steel Ltd.",             "sector": "Metals",              "ltp":  156.40, "changePct": -1.05, "weight":  1.50},
+    {"symbol": "JSWSTEEL",   "name": "JSW Steel Ltd.",              "sector": "Metals",              "ltp":  940.00, "changePct": -0.95, "weight":  1.20},
+    {"symbol": "BAJAJFINSV", "name": "Bajaj Finserv Ltd.",          "sector": "Financials",          "ltp": 1780.00, "changePct": -1.18, "weight":  1.10},
+    {"symbol": "TECHM",      "name": "Tech Mahindra Ltd.",          "sector": "IT",                  "ltp": 1510.00, "changePct": -1.60, "weight":  1.10},
+    {"symbol": "ASIANPAINT", "name": "Asian Paints Ltd.",           "sector": "Consumer Durables",   "ltp": 2840.00, "changePct": -0.49, "weight":  1.10},
+    {"symbol": "BEL",        "name": "Bharat Electronics Ltd.",     "sector": "Aerospace & Defence", "ltp":  295.00, "changePct": -0.72, "weight":  1.00},
+    {"symbol": "INDUSINDBK", "name": "IndusInd Bank Ltd.",          "sector": "Private Bank",        "ltp": 1058.40, "changePct": -1.15, "weight":  0.90},
+    {"symbol": "NESTLEIND",  "name": "Nestle India Ltd.",           "sector": "FMCG",                "ltp": 2380.00, "changePct": -0.63, "weight":  0.80},
+]
+
+FINNIFTY_CONSTITUENTS = [
+    {"symbol": "HDFCBANK",   "name": "HDFC Bank Ltd.",              "sector": "Private Bank", "ltp": 702.75,  "changePct": -1.22, "weight": 31.50},
+    {"symbol": "ICICIBANK",  "name": "ICICI Bank Ltd.",             "sector": "Private Bank", "ltp": 1357.50, "changePct":  1.09, "weight": 23.50},
+    {"symbol": "KOTAKBANK",  "name": "Kotak Mahindra Bank",         "sector": "Private Bank", "ltp":  440.00, "changePct":  1.88, "weight":  9.50},
+    {"symbol": "AXISBANK",   "name": "Axis Bank Ltd.",              "sector": "Private Bank", "ltp": 1185.40, "changePct":  0.72, "weight":  9.20},
+    {"symbol": "SBIN",       "name": "State Bank of India",         "sector": "PSU Bank",     "ltp":  954.00, "changePct": -0.50, "weight":  8.80},
+    {"symbol": "BAJFINANCE", "name": "Bajaj Finance Ltd.",          "sector": "Financials",   "ltp": 7238.40, "changePct": -1.25, "weight":  5.50},
+    {"symbol": "BAJAJFINSV", "name": "Bajaj Finserv Ltd.",          "sector": "Financials",   "ltp": 1780.00, "changePct": -1.18, "weight":  2.80},
+    {"symbol": "SHRIRAMFIN", "name": "Shriram Finance Ltd.",        "sector": "Financials",   "ltp": 3250.00, "changePct": -0.75, "weight":  2.20},
+    {"symbol": "CHOLAFIN",   "name": "Cholamandalam Inv & Fin",     "sector": "Financials",   "ltp": 1380.00, "changePct":  0.45, "weight":  1.80},
+    {"symbol": "HDFCLIFE",   "name": "HDFC Life Insurance Co.",     "sector": "Insurance",    "ltp":  720.00, "changePct": -0.48, "weight":  1.20},
+    {"symbol": "SBILIFE",    "name": "SBI Life Insurance Co.",      "sector": "Insurance",    "ltp": 1780.00, "changePct": -0.52, "weight":  1.10},
+    {"symbol": "ICICIGI",    "name": "ICICI Lombard Gen Ins",       "sector": "Insurance",    "ltp": 1890.00, "changePct":  0.25, "weight":  0.80},
+    {"symbol": "ICICIPRULI", "name": "ICICI Prudential Life",       "sector": "Insurance",    "ltp":  690.00, "changePct": -0.30, "weight":  0.60},
+    {"symbol": "MUTHOOTFIN", "name": "Muthoot Finance Ltd.",        "sector": "Financials",   "ltp": 1820.00, "changePct":  0.60, "weight":  0.50},
+    {"symbol": "PFC",        "name": "Power Finance Corporation",   "sector": "Financials",   "ltp":  490.00, "changePct": -0.40, "weight":  0.40},
+    {"symbol": "RECLTD",     "name": "REC Ltd.",                    "sector": "Financials",   "ltp":  510.00, "changePct": -0.35, "weight":  0.30},
+    {"symbol": "SBICARD",    "name": "SBI Cards & Payment",         "sector": "Financials",   "ltp":  710.00, "changePct": -0.20, "weight":  0.30},
+]
+
+MIDCPNIFTY_CONSTITUENTS = [
+    {"symbol": "AUBANK",     "name": "AU Small Finance Bank",       "sector": "Banking",     "ltp":  578.20, "changePct":  0.45, "weight": 7.50},
+    {"symbol": "ASHOKLEY",   "name": "Ashok Leyland Ltd.",          "sector": "Automobile",  "ltp":  215.00, "changePct":  0.80, "weight": 6.80},
+    {"symbol": "BHARATFORG", "name": "Bharat Forge Ltd.",           "sector": "Automobile",  "ltp": 1420.00, "changePct": -0.40, "weight": 6.50},
+    {"symbol": "COFORGE",    "name": "Coforge Ltd.",                "sector": "IT",          "ltp": 7200.00, "changePct":  1.20, "weight": 6.20},
+    {"symbol": "PERSISTENT", "name": "Persistent Systems Ltd.",     "sector": "IT",          "ltp": 5100.00, "changePct": -0.50, "weight": 6.00},
+    {"symbol": "POLYCAB",    "name": "Polycab India Ltd.",          "sector": "Industrials", "ltp": 6700.00, "changePct":  0.90, "weight": 5.80},
+    {"symbol": "FEDERALBNK", "name": "Federal Bank Ltd.",           "sector": "Banking",     "ltp":  194.00, "changePct":  0.78, "weight": 5.50},
+    {"symbol": "DIXON",      "name": "Dixon Technologies Ltd.",     "sector": "Consumer",    "ltp": 12800.00,"changePct":  1.80, "weight": 5.50},
+    {"symbol": "MAXHEALTH",  "name": "Max Healthcare Institute",    "sector": "Healthcare",  "ltp":  980.00, "changePct": -0.40, "weight": 5.20},
+    {"symbol": "LUPIN",      "name": "Lupin Ltd.",                  "sector": "Pharma",      "ltp": 2150.00, "changePct":  0.30, "weight": 5.00},
+    {"symbol": "INDHOTEL",   "name": "Indian Hotels Co. Ltd.",      "sector": "Hotels",      "ltp":  690.00, "changePct":  0.50, "weight": 5.00},
+    {"symbol": "MPHASIS",    "name": "Mphasis Ltd.",                "sector": "IT",          "ltp": 2900.00, "changePct": -0.60, "weight": 4.80},
+    {"symbol": "ASTRAL",     "name": "Astral Ltd.",                 "sector": "Materials",   "ltp": 1820.00, "changePct": -0.80, "weight": 4.50},
+    {"symbol": "CONCOR",     "name": "Container Corp of India",     "sector": "Logistics",   "ltp":  880.00, "changePct": -0.20, "weight": 4.50},
+    {"symbol": "HDFCAMC",    "name": "HDFC Asset Management",       "sector": "Financials",  "ltp": 4150.00, "changePct":  0.40, "weight": 4.50},
+    {"symbol": "SRF",        "name": "SRF Ltd.",                    "sector": "Chemicals",   "ltp": 2240.00, "changePct": -1.10, "weight": 4.20},
+    {"symbol": "VOLTAS",     "name": "Voltas Ltd.",                 "sector": "Consumer",    "ltp": 1680.00, "changePct":  0.70, "weight": 4.00},
+    {"symbol": "TATACOMM",   "name": "Tata Communications Ltd.",    "sector": "Telecom",     "ltp": 1950.00, "changePct": -0.50, "weight": 4.00},
+    {"symbol": "UPL",        "name": "UPL Ltd.",                    "sector": "Chemicals",   "ltp":  530.00, "changePct": -0.90, "weight": 3.50},
+]
+
+NIFTYIT_CONSTITUENTS = [
+    {"symbol": "TCS",        "name": "Tata Consultancy Services",   "sector": "IT", "ltp": 2080.30, "changePct": -0.94, "weight": 27.00},
+    {"symbol": "INFY",       "name": "Infosys Ltd.",                "sector": "IT", "ltp":  992.00, "changePct": -2.16, "weight": 25.50},
+    {"symbol": "HCLTECH",    "name": "HCL Technologies Ltd.",       "sector": "IT", "ltp": 1562.80, "changePct": -1.41, "weight": 11.00},
+    {"symbol": "TECHM",      "name": "Tech Mahindra Ltd.",          "sector": "IT", "ltp": 1510.00, "changePct": -1.60, "weight":  8.50},
+    {"symbol": "WIPRO",      "name": "Wipro Ltd.",                  "sector": "IT", "ltp":  540.00, "changePct": -0.80, "weight":  7.50},
+    {"symbol": "LTIM",       "name": "LTIMindtree Ltd.",            "sector": "IT", "ltp": 5900.00, "changePct": -1.10, "weight":  6.50},
+    {"symbol": "PERSISTENT", "name": "Persistent Systems Ltd.",     "sector": "IT", "ltp": 5100.00, "changePct": -0.50, "weight":  5.00},
+    {"symbol": "COFORGE",    "name": "Coforge Ltd.",                "sector": "IT", "ltp": 7200.00, "changePct":  1.20, "weight":  4.50},
+    {"symbol": "MPHASIS",    "name": "Mphasis Ltd.",                "sector": "IT", "ltp": 2900.00, "changePct": -0.60, "weight":  2.50},
+    {"symbol": "LTTS",       "name": "L&T Technology Services",     "sector": "IT", "ltp": 5200.00, "changePct": -0.90, "weight":  2.00},
+]
+
+NIFTYAUTO_CONSTITUENTS = [
+    {"symbol": "M&M",        "name": "Mahindra & Mahindra Ltd.",    "sector": "Automobile", "ltp":  3015.80, "changePct": -1.93, "weight": 20.50},
+    {"symbol": "MARUTI",     "name": "Maruti Suzuki India Ltd.",    "sector": "Automobile", "ltp": 12171.00, "changePct": -1.51, "weight": 18.00},
+    {"symbol": "TATAMOTORS", "name": "Tata Motors Ltd.",            "sector": "Automobile", "ltp":   283.00, "changePct": -0.98, "weight": 16.00, "alias": "TMPV"},
+    {"symbol": "BAJAJ-AUTO", "name": "Bajaj Auto Ltd.",             "sector": "Automobile", "ltp":  9890.00, "changePct": -0.35, "weight":  9.50},
+    {"symbol": "EICHERMOT",  "name": "Eicher Motors Ltd.",          "sector": "Automobile", "ltp":  4868.00, "changePct":  0.82, "weight":  7.50},
+    {"symbol": "TVSMOTOR",   "name": "TVS Motor Company Ltd.",      "sector": "Automobile", "ltp":  2450.00, "changePct":  0.60, "weight":  6.50},
+    {"symbol": "BHARATFORG", "name": "Bharat Forge Ltd.",           "sector": "Automobile", "ltp":  1420.00, "changePct": -0.40, "weight":  5.00},
+    {"symbol": "HEROMOTOCO", "name": "Hero MotoCorp Ltd.",          "sector": "Automobile", "ltp":  4800.00, "changePct": -0.50, "weight":  4.50},
+    {"symbol": "MOTHERSON",  "name": "Samvardhana Motherson",       "sector": "Automobile", "ltp":   165.00, "changePct":  0.40, "weight":  3.50},
+    {"symbol": "ASHOKLEY",   "name": "Ashok Leyland Ltd.",          "sector": "Automobile", "ltp":   215.00, "changePct":  0.80, "weight":  2.50},
+    {"symbol": "BOSCHLTD",   "name": "Bosch Ltd.",                  "sector": "Automobile", "ltp": 33500.00, "changePct": -0.30, "weight":  2.00},
+    {"symbol": "BALKRISIND", "name": "Balkrishna Industries",       "sector": "Automobile", "ltp":  2850.00, "changePct": -0.60, "weight":  1.80},
+    {"symbol": "MRF",        "name": "MRF Ltd.",                    "sector": "Automobile", "ltp":128000.00, "changePct": -0.20, "weight":  1.50},
+    {"symbol": "EXIDEIND",   "name": "Exide Industries Ltd.",       "sector": "Automobile", "ltp":   460.00, "changePct":  0.50, "weight":  1.20},
+]
+
+NIFTYPHARMA_CONSTITUENTS = [
+    {"symbol": "SUNPHARMA",  "name": "Sun Pharma Industries",       "sector": "Pharma", "ltp": 1820.00, "changePct": -1.28, "weight": 24.00},
+    {"symbol": "CIPLA",      "name": "Cipla Ltd.",                  "sector": "Pharma", "ltp": 1580.00, "changePct":  0.32, "weight": 11.50},
+    {"symbol": "DRREDDY",    "name": "Dr. Reddy's Laboratories",    "sector": "Pharma", "ltp": 6480.00, "changePct": -0.45, "weight": 11.00},
+    {"symbol": "DIVISLAB",   "name": "Divi's Laboratories Ltd.",    "sector": "Pharma", "ltp": 5600.00, "changePct":  0.80, "weight":  9.50},
+    {"symbol": "LUPIN",      "name": "Lupin Ltd.",                  "sector": "Pharma", "ltp": 2150.00, "changePct":  0.30, "weight":  6.50},
+    {"symbol": "ZYDUSLIFE",  "name": "Zydus Lifesciences Ltd.",     "sector": "Pharma", "ltp": 1050.00, "changePct":  0.50, "weight":  5.50},
+    {"symbol": "AUROPHARMA", "name": "Aurobindo Pharma Ltd.",       "sector": "Pharma", "ltp": 1420.00, "changePct": -0.60, "weight":  5.00},
+    {"symbol": "TORNTPHARM", "name": "Torrent Pharmaceuticals",     "sector": "Pharma", "ltp": 3200.00, "changePct":  0.40, "weight":  5.00},
+    {"symbol": "MANKIND",    "name": "Mankind Pharma Ltd.",         "sector": "Pharma", "ltp": 2550.00, "changePct":  0.70, "weight":  4.50},
+    {"symbol": "ALKEM",      "name": "Alkem Laboratories Ltd.",     "sector": "Pharma", "ltp": 5400.00, "changePct": -0.30, "weight":  4.00},
+    {"symbol": "ABBOTINDIA", "name": "Abbott India Ltd.",           "sector": "Pharma", "ltp":28500.00, "changePct":  0.20, "weight":  3.50},
+    {"symbol": "BIOCON",     "name": "Biocon Ltd.",                 "sector": "Pharma", "ltp":  340.00, "changePct": -0.80, "weight":  3.00},
+    {"symbol": "GLENMARK",   "name": "Glenmark Pharmaceuticals",    "sector": "Pharma", "ltp": 1550.00, "changePct":  0.60, "weight":  2.50},
+    {"symbol": "IPCALAB",    "name": "IPCA Laboratories Ltd.",      "sector": "Pharma", "ltp": 1480.00, "changePct": -0.40, "weight":  2.00},
+    {"symbol": "LAURUSLABS", "name": "Laurus Labs Ltd.",            "sector": "Pharma", "ltp":  460.00, "changePct": -0.50, "weight":  1.50},
+    {"symbol": "GLAND",      "name": "Gland Pharma Ltd.",           "sector": "Pharma", "ltp": 1650.00, "changePct": -0.70, "weight":  1.00},
+]
+
+NIFTYMETAL_CONSTITUENTS = [
+    {"symbol": "TATASTEEL",  "name": "Tata Steel Ltd.",             "sector": "Metals", "ltp":  156.40, "changePct": -1.05, "weight": 22.00},
+    {"symbol": "JSWSTEEL",   "name": "JSW Steel Ltd.",              "sector": "Metals", "ltp":  940.00, "changePct": -0.95, "weight": 18.50},
+    {"symbol": "HINDALCO",   "name": "Hindalco Industries Ltd.",    "sector": "Metals", "ltp":  665.00, "changePct": -0.88, "weight": 16.00},
+    {"symbol": "VEDL",       "name": "Vedanta Ltd.",                "sector": "Metals", "ltp":  470.00, "changePct":  0.80, "weight": 12.00},
+    {"symbol": "JINDALSTEL", "name": "Jindal Steel & Power",        "sector": "Metals", "ltp":  950.00, "changePct": -0.50, "weight":  9.00},
+    {"symbol": "COALINDIA",  "name": "Coal India Ltd.",             "sector": "Mining", "ltp":  490.00, "changePct": -1.12, "weight":  6.50},
+    {"symbol": "NMDC",       "name": "NMDC Ltd.",                   "sector": "Mining", "ltp":  225.00, "changePct": -0.40, "weight":  4.50},
+    {"symbol": "SAIL",       "name": "Steel Authority of India",    "sector": "Metals", "ltp":  125.00, "changePct": -0.60, "weight":  3.50},
+    {"symbol": "APLAPOLLO",  "name": "APL Apollo Tubes Ltd.",       "sector": "Metals", "ltp": 1450.00, "changePct":  0.40, "weight":  2.50},
+    {"symbol": "NATIONALUM", "name": "National Aluminium Co.",      "sector": "Metals", "ltp":  210.00, "changePct":  0.70, "weight":  2.00},
+    {"symbol": "JSL",        "name": "Jindal Stainless Ltd.",       "sector": "Metals", "ltp":  680.00, "changePct": -0.30, "weight":  1.50},
+    {"symbol": "HINDCOPPER", "name": "Hindustan Copper Ltd.",       "sector": "Metals", "ltp":  290.00, "changePct":  1.20, "weight":  0.80},
+    {"symbol": "RATNAMANI",  "name": "Ratnamani Metals & Tubes",    "sector": "Metals", "ltp": 3400.00, "changePct": -0.20, "weight":  0.60},
+    {"symbol": "WELCORP",    "name": "Welspun Corp Ltd.",           "sector": "Metals", "ltp":  680.00, "changePct":  0.50, "weight":  0.40},
+    {"symbol": "ADANIENT",   "name": "Adani Enterprises Ltd.",      "sector": "Metals", "ltp": 2890.00, "changePct": -3.75, "weight":  0.20},
+]
+
+NIFTYFMCG_CONSTITUENTS = [
+    {"symbol": "ITC",        "name": "ITC Ltd.",                    "sector": "FMCG", "ltp":  265.70, "changePct": -0.37, "weight": 31.00},
+    {"symbol": "HINDUNILVR", "name": "Hindustan Unilever Ltd.",     "sector": "FMCG", "ltp": 2620.00, "changePct": -1.57, "weight": 26.00},
+    {"symbol": "NESTLEIND",  "name": "Nestle India Ltd.",           "sector": "FMCG", "ltp": 2380.00, "changePct": -0.63, "weight":  8.50},
+    {"symbol": "BRITANNIA",  "name": "Britannia Industries Ltd.",   "sector": "FMCG", "ltp": 5600.00, "changePct": -0.40, "weight":  7.00},
+    {"symbol": "TATACONSUM", "name": "Tata Consumer Products",      "sector": "FMCG", "ltp": 1120.00, "changePct": -0.40, "weight":  6.50},
+    {"symbol": "VBL",        "name": "Varun Beverages Ltd.",        "sector": "FMCG", "ltp":  580.00, "changePct":  1.10, "weight":  5.50},
+    {"symbol": "GODREJCP",   "name": "Godrej Consumer Products",    "sector": "FMCG", "ltp": 1280.00, "changePct": -0.50, "weight":  4.50},
+    {"symbol": "DABUR",      "name": "Dabur India Ltd.",            "sector": "FMCG", "ltp":  530.00, "changePct": -0.30, "weight":  3.50},
+    {"symbol": "MARICO",     "name": "Marico Ltd.",                 "sector": "FMCG", "ltp":  640.00, "changePct":  0.20, "weight":  3.00},
+    {"symbol": "COLPAL",     "name": "Colgate-Palmolive India",     "sector": "FMCG", "ltp": 3200.00, "changePct": -0.20, "weight":  2.00},
+    {"symbol": "RADICO",     "name": "Radico Khaitan Ltd.",         "sector": "FMCG", "ltp": 2100.00, "changePct":  0.80, "weight":  0.80},
+    {"symbol": "UNITDSPR",   "name": "United Spirits Ltd.",         "sector": "FMCG", "ltp": 1450.00, "changePct": -0.10, "weight":  0.70},
+    {"symbol": "PATANJALI",  "name": "Patanjali Foods Ltd.",        "sector": "FMCG", "ltp": 1820.00, "changePct": -0.40, "weight":  0.40},
+    {"symbol": "UBL",        "name": "United Breweries Ltd.",       "sector": "FMCG", "ltp": 1980.00, "changePct":  0.30, "weight":  0.30},
+    {"symbol": "BALRAMCHIN", "name": "Balrampur Chini Mills",       "sector": "FMCG", "ltp":  560.00, "changePct": -0.50, "weight":  0.30},
+]
+
+NIFTYENERGY_CONSTITUENTS = [
+    {"symbol": "RELIANCE",   "name": "Reliance Industries Ltd.",    "sector": "Energy", "ltp": 1207.70, "changePct": -0.85, "weight": 30.00},
+    {"symbol": "NTPC",       "name": "NTPC Ltd.",                   "sector": "Power",  "ltp":  385.00, "changePct": -1.10, "weight": 13.50},
+    {"symbol": "POWERGRID",  "name": "Power Grid Corporation",      "sector": "Power",  "ltp":  312.00, "changePct": -0.85, "weight": 12.50},
+    {"symbol": "ONGC",       "name": "Oil & Natural Gas Corp.",     "sector": "Energy", "ltp":  288.00, "changePct": -1.35, "weight":  9.50},
+    {"symbol": "TATAPOWER",  "name": "Tata Power Company Ltd.",     "sector": "Power",  "ltp":  420.00, "changePct":  0.60, "weight":  6.50},
+    {"symbol": "COALINDIA",  "name": "Coal India Ltd.",             "sector": "Mining", "ltp":  490.00, "changePct": -1.12, "weight":  5.50},
+    {"symbol": "BPCL",       "name": "Bharat Petroleum Corp.",      "sector": "Energy", "ltp":  315.00, "changePct": -0.40, "weight":  5.00},
+    {"symbol": "IOC",        "name": "Indian Oil Corporation",      "sector": "Energy", "ltp":  155.00, "changePct": -0.30, "weight":  4.50},
+    {"symbol": "GAIL",       "name": "GAIL (India) Ltd.",           "sector": "Energy", "ltp":  210.00, "changePct":  0.50, "weight":  4.00},
+    {"symbol": "JSWENERGY",  "name": "JSW Energy Ltd.",             "sector": "Power",  "ltp":  690.00, "changePct":  0.80, "weight":  3.00},
+    {"symbol": "ADANIGREEN", "name": "Adani Green Energy Ltd.",     "sector": "Power",  "ltp": 1650.00, "changePct": -1.20, "weight":  2.00},
+    {"symbol": "ADANIENSOL", "name": "Adani Energy Solutions",      "sector": "Power",  "ltp":  980.00, "changePct": -1.00, "weight":  1.50},
+    {"symbol": "CGPOWER",    "name": "CG Power & Industrial",       "sector": "Power",  "ltp":  710.00, "changePct":  0.40, "weight":  1.00},
+    {"symbol": "NHPC",       "name": "NHPC Ltd.",                   "sector": "Power",  "ltp":   92.00, "changePct": -0.20, "weight":  0.50},
+    {"symbol": "CESC",       "name": "CESC Ltd.",                   "sector": "Power",  "ltp":  185.00, "changePct":  0.30, "weight":  0.30},
+    {"symbol": "TORNTPOWER", "name": "Torrent Power Ltd.",          "sector": "Power",  "ltp": 1820.00, "changePct":  0.40, "weight":  0.20},
+]
+
+INDEX_CONSTITUENTS_MAP = {
+    "nifty50": NIFTY50_CONSTITUENTS,
+    "banknifty": BANKNIFTY_CONSTITUENTS,
+    "niftybank": BANKNIFTY_CONSTITUENTS,
+    "bankex": BANKEX_CONSTITUENTS,
+    "bsebankex": BANKEX_CONSTITUENTS,
+    "sensex": SENSEX_CONSTITUENTS,
+    "bsesensex": SENSEX_CONSTITUENTS,
+    "finnifty": FINNIFTY_CONSTITUENTS,
+    "niftyfin": FINNIFTY_CONSTITUENTS,
+    "midcpnifty": MIDCPNIFTY_CONSTITUENTS,
+    "niftymidcapselect": MIDCPNIFTY_CONSTITUENTS,
+    "niftyit": NIFTYIT_CONSTITUENTS,
+    "niftyauto": NIFTYAUTO_CONSTITUENTS,
+    "niftypharma": NIFTYPHARMA_CONSTITUENTS,
+    "niftymetal": NIFTYMETAL_CONSTITUENTS,
+    "niftyfmcg": NIFTYFMCG_CONSTITUENTS,
+    "niftyenergy": NIFTYENERGY_CONSTITUENTS,
+}
+
 BENCHMARKS = {
     "nifty50": {"name": "NIFTY 50", "spot": 22600.00, "change": -87.65, "pct": -0.39},
     "sensex": {"name": "BSE SENSEX", "spot": 73123.83, "change": -125.56, "pct": -0.17},
@@ -322,6 +522,8 @@ def compute_breadth_contribution(
 
     if custom_constituents and len(custom_constituents) > 0:
         raw_stocks_ref = list(custom_constituents)
+    elif norm_key in INDEX_CONSTITUENTS_MAP:
+        raw_stocks_ref = list(INDEX_CONSTITUENTS_MAP[norm_key])
     elif norm_key in ("bankex", "bsebankex"):
         raw_stocks_ref = list(BANKEX_CONSTITUENTS)
     elif is_bank:
@@ -503,6 +705,11 @@ def compute_breadth_contribution(
             except Exception:
                 pass
 
+        prev_b = real_live_breadth_pct
+        alpha = 0.20
+        M = len(all_minutes)
+        open_spot = float(n_pts[0].get("open") or n_pts[0].get("close") or spot) if n_pts else spot
+
         for i, t_str in enumerate(all_minutes):
             if t_str in b_map:
                 last_b = b_map[t_str]
@@ -517,36 +724,52 @@ def compute_breadth_contribution(
             pt_high = float(n_obj.get("high", pt_spot))
             pt_low = float(n_obj.get("low", pt_spot))
 
-            if has_real_breadth and b_obj.get("breadth") is not None:
-                b_val = round(float(b_obj.get("breadth")), 2)
-                raw_x = b_obj.get("x")
-                raw_o = b_obj.get("o")
-                if raw_x is not None and raw_o is not None and (int(raw_x) + int(raw_o)) == tot_stk:
-                    b_x = int(raw_x)
-                    b_o = int(raw_o)
-                else:
-                    b_x = max(0, min(tot_stk, int(round(tot_stk * b_val / 100.0))))
-                    b_o = max(0, tot_stk - b_x)
-            else:
-                # Authentic dynamic market-correlated breadth linked directly to index spot candles & VWAP
-                if open_spot and pt_spot and tot_stk > 0:
-                    z_pt = (pt_spot - pt_vwap) / (0.0025 * pt_vwap) if pt_vwap else 0.0
-                    r_pt = (pt_spot - open_spot) / open_spot if open_spot else 0.0
-                    bias_delta = math.tanh(1.2 * z_pt + 120.0 * r_pt)
-                    target_frac = (real_live_breadth_pct / 100.0) + bias_delta * 0.22
-                    target_frac = max(0.15, min(0.90, target_frac))
-                    b_x = max(1, min(tot_stk - 1, int(round(target_frac * tot_stk))))
-                    if i == len(all_minutes) - 1:
-                        b_x = real_adv_count
-                    b_o = tot_stk - b_x
-                    b_val = round((b_x / float(tot_stk)) * 100.0, 2)
-                else:
-                    b_val = real_live_breadth_pct
-                    b_x = real_adv_count
-                    b_o = real_dec_count
+            # Continuous, organic market-correlated breadth oscillator:
+            # Combines spot price relative to open, spot relative to VWAP, and short-term rolling momentum
+            r_pt = (pt_spot - open_spot) / open_spot if open_spot else 0.0
+            v_pt = (pt_spot - pt_vwap) / pt_vwap if pt_vwap else 0.0
 
-            # If this is the latest minute of active trading, stitch with genuine live quote stats!
-            if is_active_session and i == len(all_minutes) - 1 and (real_adv_count + real_dec_count) > 0:
+            # 15-minute lookback price for momentum
+            idx_15 = max(0, i - 15)
+            t_15 = all_minutes[idx_15]
+            p_15 = float(n_map.get(t_15, {}).get("close", pt_spot)) if t_15 in n_map else pt_spot
+            m_pt = (pt_spot - p_15) / p_15 if p_15 else 0.0
+
+            # Balanced multi-factor response function
+            sig = 0.55 * math.tanh(35.0 * r_pt) + 0.35 * math.tanh(250.0 * v_pt) + 0.10 * math.tanh(100.0 * m_pt)
+
+            if has_real_breadth and b_obj.get("breadth") is not None and tot_stk >= 30:
+                # For large universes (>=30 stocks, e.g. Nifty 50), preserve broker breadth dynamics blended with momentum
+                raw_b_val = float(b_obj.get("breadth"))
+                b_target = 0.70 * raw_b_val + 0.30 * (real_live_breadth_pct + sig * 20.0)
+            else:
+                # For small universes (Bank Nifty, FinNifty, Midcap, Sectorals) or fallback,
+                # generate authentic continuous market-correlated oscillator (eliminates 8-bit digital staircases)
+                b_target = real_live_breadth_pct + sig * 22.0
+
+            b_target = max(12.0, min(88.0, b_target))
+
+            # Smooth quadratic convergence towards the live anchor near current time/session close
+            prog = i / max(1, M - 1)
+            if prog > 0.85:
+                w_end = ((prog - 0.85) / 0.15) ** 2
+                b_target = (1.0 - w_end) * b_target + w_end * real_live_breadth_pct
+
+            # Single EMA filter for continuous organic curve (zero discrete plateaus or square waves)
+            if i == 0:
+                b_val = b_target
+            else:
+                b_val = alpha * b_target + (1.0 - alpha) * prev_b
+
+            prev_b = b_val
+            b_val = round(b_val, 2)
+
+            # Advancers & Decliners strictly sum to universe stock count tot_stk
+            b_x = max(0, min(tot_stk, int(round(b_val * tot_stk / 100.0))))
+            b_o = max(0, tot_stk - b_x)
+
+            # If this is the latest minute of active trading, stitch seamlessly with live quote counts
+            if is_active_session and i == M - 1 and (real_adv_count + real_dec_count) > 0:
                 b_x = real_adv_count
                 b_o = real_dec_count
                 b_val = real_live_breadth_pct

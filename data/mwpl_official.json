@@ -1,5 +1,5 @@
 {
-  "ts": 1793842330.6002748,
+  "ts": 1793857312.9892213,
   "asOfDate": "04-Nov-2026",
   "records": {
     "KAYNES": {
@@ -3056,7 +3056,7 @@
     }
   },
   "bannedSymbols": [
-    "SAIL",
-    "KAYNES"
+    "KAYNES",
+    "SAIL"
   ]
 }

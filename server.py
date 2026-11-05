@@ -16069,19 +16069,20 @@ _LIVE_INDEX_CACHE = {"timestamp": 0.0, "data": {}}
 
 
 INDEX_YF_MAP = {
-
     "nifty50": "%5ENSEI",
-
     "banknifty": "%5ENSEBANK",
-
+    "niftybank": "%5ENSEBANK",
     "finnifty": "%5ECNXFIN",
-
     "sensex": "%5EBSESN",
-
     "midcpnifty": "%5ENSEMDCP50",
-
     "indiavix": "%5EINDIAVIX",
-
+    "niftyit": "%5ECNXIT",
+    "niftyauto": "%5ECNXAUTO",
+    "niftypharma": "%5ECNXPHARMA",
+    "niftymetal": "%5ECNXMETAL",
+    "niftyfmcg": "%5ECNXFMCG",
+    "niftyenergy": "%5ECNXENERGY",
+    "niftymidcap100": "NIFTY_MIDCAP_100.NS",
 }
 
 
@@ -17672,23 +17673,11 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
 
         custom_index_name = None
 
-        if norm_idx in ("banknifty", "niftybank"):
+        if norm_idx in breadth_contribution_engine.INDEX_CONSTITUENTS_MAP:
 
-            constituents_list = list(breadth_contribution_engine.BANKNIFTY_CONSTITUENTS)
+            constituents_list = list(breadth_contribution_engine.INDEX_CONSTITUENTS_MAP[norm_idx])
 
-            custom_index_name = "BANK NIFTY"
-
-        elif norm_idx in ("bankex", "bsebankex"):
-
-            constituents_list = list(breadth_contribution_engine.BANKEX_CONSTITUENTS)
-
-            custom_index_name = "BSE BANKEX"
-
-        elif norm_idx == "nifty50":
-
-            constituents_list = list(breadth_contribution_engine.NIFTY50_CONSTITUENTS)
-
-            custom_index_name = "NIFTY 50"
+            custom_index_name = breadth_contribution_engine.BENCHMARKS.get(norm_idx, {}).get("name") or norm_idx.upper()
 
         else:
 
@@ -17868,7 +17857,7 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
 
                 try:
 
-                    b_res = future_b.result(timeout=15.0)
+                    b_res = future_b.result(timeout=3.5)
 
                 except Exception:
 
@@ -17876,7 +17865,7 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
 
                 try:
 
-                    n_res = future_n.result(timeout=10.0)
+                    n_res = future_n.result(timeout=3.5)
 
                 except Exception:
 
@@ -18080,7 +18069,7 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
 
         # Stitch latest real spot quote so the chart is accurate to the exact second
 
-        if real_n and live_q and live_q.get("spot"):
+        if real_n and live_q and live_q.get("spot") and (abs(float(live_q["spot"]) - float(real_n[-1].get("close", live_q["spot"]))) / max(1.0, float(real_n[-1].get("close", live_q["spot"])))) < 0.15:
 
             latest_spot = round(float(live_q["spot"]), 2)
 

@@ -2082,7 +2082,8 @@ if (suiteKey === "callVsPut") {
     const istNow = new Date(now.getTime() + istOffset);
     return istNow.toISOString().slice(0, 10);
   })();
-  let currentContribIndex = "nifty50";
+  const _initContribParams = new URLSearchParams(window.location.search);
+  let currentContribIndex = (_initContribParams.get("index") || _initContribParams.get("universe") || "nifty50").toLowerCase().replace(/[\s-]/g, "");
   let currentContribDate = _todayStr;
   let isExplicitContribDate = false;
   let currentContribInterval = "ONE_MINUTE";
@@ -2205,6 +2206,9 @@ if (suiteKey === "callVsPut") {
 
     // 3. Quick Index selector buttons (NIFTY 50, BANK NIFTY, SENSEX, FINNIFTY)
     const idxBtns = document.querySelectorAll("#contribIndexGroup .contrib-index-btn");
+    idxBtns.forEach(b => {
+      b.classList.toggle("active", b.getAttribute("data-index") === currentContribIndex);
+    });
     idxBtns.forEach(btn => {
       btn.addEventListener("click", () => {
         const newIdx = btn.getAttribute("data-index");
@@ -3011,7 +3015,19 @@ if (suiteKey === "callVsPut") {
     }
 
     // Update Date elements without overwriting user's explicit selection
-    const displayDate = data.displayDate || "22-Sep-2026";
+    function _fmtDisplay(dStr) {
+      if (!dStr) return "";
+      try {
+        const p = dStr.slice(0, 10).split("-");
+        if (p.length === 3) {
+          const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const idx = parseInt(p[1], 10) - 1;
+          if (idx >= 0 && idx < 12) return `${p[2]}-${m[idx]}-${p[0]}`;
+        }
+      } catch (e) {}
+      return dStr;
+    }
+    const displayDate = data.displayDate || _fmtDisplay(data.date) || _fmtDisplay(currentContribDate);
     const dateInput = document.getElementById("contribDateInput");
     if (dateInput) {
       if (!isExplicitContribDate) {
