@@ -3887,7 +3887,7 @@ def fetch_real_intraday_index_candles(index_key: str, date_value: str, interval_
 
             c_age = time.time() - cached_obj.get("cached_at", 0)
 
-            is_incomplete_today = (is_today and not is_market_open() and len(c_data) < (385 // interval_minutes))
+            is_incomplete_today = (is_today and not is_market_open() and len(c_data) < (360 // interval_minutes))
 
             if c_data and c_age < cache_ttl and not is_incomplete_today:
 
@@ -17375,7 +17375,7 @@ def build_indices_overview(payload: dict) -> dict:
 
 _BREADTH_CONTRIB_CACHE = {}
 
-_BREADTH_CONTRIB_CACHE_VERSION = 7
+_BREADTH_CONTRIB_CACHE_VERSION = 8
 
 _BREADTH_RECOMPUTE_LOCK = threading.Lock()
 
@@ -17985,9 +17985,13 @@ def _compute_breadth_contribution_task(idx: str, effective_date: str, interval: 
                 if snap and snap.get("breadth_data"):
                     b_entry = snap["breadth_data"].get(norm_idx)
                     if b_entry and b_entry.get("timeline") and len(b_entry["timeline"]) >= 5:
-                        real_b = b_entry["timeline"]
-                        if not real_b_summary and b_entry.get("breadthSummary"):
-                            real_b_summary = b_entry["breadthSummary"]
+                        from collections import Counter
+                        raw_b_vals = [round(float(p.get("breadth", 0)), 1) for p in b_entry["timeline"] if p.get("breadth") is not None]
+                        most_frequent_count = Counter(raw_b_vals).most_common(1)[0][1] if raw_b_vals else 0
+                        if most_frequent_count < 40:
+                            real_b = b_entry["timeline"]
+                            if not real_b_summary and b_entry.get("breadthSummary"):
+                                real_b_summary = b_entry["breadthSummary"]
             except Exception:
                 pass
 
@@ -18253,8 +18257,10 @@ def get_cached_breadth_contribution(idx: str, date_param: str, interval: str = "
     if cached and cached.get("data", {}).get("cacheSchemaVersion") == _BREADTH_CONTRIB_CACHE_VERSION and cached.get("data", {}).get("timeline") and len(cached["data"]["timeline"]) > 0:
 
         age = time.time() - cached.get("_cached_at", 0)
+        c_timeline = cached["data"]["timeline"]
+        is_incomplete_midday = (not market_open and len(c_timeline) < 300)
 
-        if not force_refresh:
+        if not force_refresh and not is_incomplete_midday:
 
             if age >= cache_ttl and market_open:
 
@@ -18295,6 +18301,13 @@ def get_cached_breadth_contribution(idx: str, date_param: str, interval: str = "
             if snap and snap.get("breadth_data"):
                 idx_norm = norm_idx.lower().replace(" ", "").replace("_", "")
                 b_entry = snap["breadth_data"].get(idx_norm)
+                if b_entry and b_entry.get("timeline") and len(b_entry["timeline"]) > 0:
+                    from collections import Counter
+                    raw_b_vals = [round(float(p.get("breadth", 0)), 1) for p in b_entry["timeline"] if p.get("breadth") is not None]
+                    most_frequent_count = Counter(raw_b_vals).most_common(1)[0][1] if raw_b_vals else 0
+                    if most_frequent_count >= 40:
+                        # Reject corrupted flat line snapshot from Supabase
+                        b_entry = None
                 if b_entry and b_entry.get("timeline") and len(b_entry["timeline"]) > 0:
                     cloud_data = {
                         "ok": True,
@@ -18344,6 +18357,9 @@ def get_cached_breadth_contribution(idx: str, date_param: str, interval: str = "
 
                         if disk_data.get("ok") and disk_data.get("cacheSchemaVersion") == _BREADTH_CONTRIB_CACHE_VERSION and disk_data.get("timeline") and len(disk_data["timeline"]) > 0:
 
+                            if not market_open and len(disk_data["timeline"]) < 300:
+                                continue
+
                             file_age = time.time() - disk_cache_file.stat().st_mtime
 
                             _BREADTH_CONTRIB_CACHE[k] = {"data": disk_data, "_cached_at": time.time() - file_age}
@@ -18377,6 +18393,9 @@ def get_cached_breadth_contribution(idx: str, date_param: str, interval: str = "
                 disk_data = json.load(df)
 
                 if disk_data.get("ok") and disk_data.get("timeline") and len(disk_data["timeline"]) > 0:
+
+                    if not market_open and len(disk_data["timeline"]) < 300:
+                        continue
 
                     _BREADTH_CONTRIB_CACHE[cache_key] = {"data": disk_data, "_cached_at": time.time() - 3600}
 

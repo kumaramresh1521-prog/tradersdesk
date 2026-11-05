@@ -13,6 +13,7 @@ Captures, persists to Supabase, queries, and purges daily snapshots across:
 from __future__ import annotations
 import json
 import time
+import threading
 from datetime import datetime, date, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from pathlib import Path
@@ -25,6 +26,7 @@ ROOT = Path(__file__).resolve().parent
 _SNAPSHOT_CACHE: Dict[str, Dict[str, Any]] = {}
 _SNAPSHOT_CACHE_TS: Dict[str, float] = {}
 _CACHE_TTL = 300.0  # 5 minutes in-memory cache
+_BREADTH_SUPABASE_LOCK = threading.Lock()
 
 
 def get_ist_today_str() -> str:
@@ -219,41 +221,46 @@ def save_straddles_to_supabase(trade_date: str, straddles_dict: dict) -> dict:
 
 def save_breadth_universe_to_supabase(trade_date: str, universe: str, breadth_dict: dict) -> dict:
     """Safely merges a single universe's breadth data into Supabase market_daily_snapshots."""
-    try:
-        import supabase_engine
-        norm_u = universe.lower().replace(" ", "").replace("_", "")
-        existing = supabase_engine.load_market_daily_snapshot(trade_date) or {}
-        b_data = dict(existing.get("breadth_data", {}))
+    with _BREADTH_SUPABASE_LOCK:
+        try:
+            import supabase_engine
+            norm_u = universe.lower().replace(" ", "").replace("_", "")
+            existing = supabase_engine.load_market_daily_snapshot(trade_date) or {}
+            b_data = dict(existing.get("breadth_data", {}))
 
-        s = breadth_dict.get("summary") or {}
-        b = breadth_dict.get("breadthSummary") or {}
-        tl = breadth_dict.get("timeline") or []
+            s = breadth_dict.get("summary") or {}
+            b = breadth_dict.get("breadthSummary") or {}
+            tl = breadth_dict.get("timeline") or []
 
-        b_data[norm_u] = {
-            "ok": True,
-            "universe": norm_u,
-            "indexKey": breadth_dict.get("indexKey") or norm_u,
-            "label": (breadth_dict.get("indexInfo") or {}).get("name") or norm_u.upper(),
-            "indexInfo": breadth_dict.get("indexInfo") or {},
-            "summary": s,
-            "breadthSummary": b,
-            "netPoints": s.get("netPoints", 0.0),
-            "supportingPoints": s.get("supportingPoints", 0.0),
-            "draggingPoints": s.get("draggingPoints", 0.0),
-            "advancers": s.get("supportingCount", 0),
-            "decliners": s.get("draggingCount", 0),
-            "total": s.get("totalStocks", 0),
-            "breadthPct": b.get("latestBreadth") or s.get("supportRatioPct") or 50.0,
-            "openBreadth": b.get("openBreadth", 50.0),
-            "breadthChange": b.get("change", 0.0),
-            "draggingDown": breadth_dict.get("draggingDown", [])[:20],
-            "supportingUp": breadth_dict.get("supportingUp", [])[:20],
-            "timeline": tl,
-        }
-        existing["breadth_data"] = b_data
-        return supabase_engine.save_market_daily_snapshot(trade_date, existing)
-    except Exception as e:
-        return {"ok": False, "message": str(e)}
+            b_data[norm_u] = {
+                "ok": True,
+                "universe": norm_u,
+                "indexKey": breadth_dict.get("indexKey") or norm_u,
+                "label": (breadth_dict.get("indexInfo") or {}).get("name") or norm_u.upper(),
+                "indexInfo": breadth_dict.get("indexInfo") or {},
+                "summary": s,
+                "breadthSummary": b,
+                "netPoints": s.get("netPoints", 0.0),
+                "supportingPoints": s.get("supportingPoints", 0.0),
+                "draggingPoints": s.get("draggingPoints", 0.0),
+                "advancers": s.get("supportingCount", 0),
+                "decliners": s.get("draggingCount", 0),
+                "total": s.get("totalStocks", 0),
+                "breadthPct": b.get("latestBreadth") or s.get("supportRatioPct") or 50.0,
+                "openBreadth": b.get("openBreadth", 50.0),
+                "breadthChange": b.get("change", 0.0),
+                "draggingDown": breadth_dict.get("draggingDown", [])[:20],
+                "supportingUp": breadth_dict.get("supportingUp", [])[:20],
+                "timeline": tl,
+            }
+            existing["breadth_data"] = b_data
+            res = supabase_engine.save_market_daily_snapshot(trade_date, existing)
+            # Invalidate in-memory snapshot cache so next read immediately sees newly saved universe
+            _SNAPSHOT_CACHE.pop(trade_date, None)
+            _SNAPSHOT_CACHE_TS.pop(trade_date, None)
+            return res
+        except Exception as e:
+            return {"ok": False, "message": str(e)}
 
 
 def build_smart_money_snapshot(trade_date: str) -> dict:

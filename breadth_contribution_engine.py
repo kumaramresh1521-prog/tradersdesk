@@ -430,16 +430,20 @@ def generate_intraday_timeline(
     # 1. Supabase Cloud Database Snapshot Check (Instant load even if broker disconnected)
     try:
         import snapshot_engine
+        from collections import Counter
         snap = snapshot_engine.get_snapshot(effective_date)
         if snap and snap.get("breadth_data"):
             b_entry = snap["breadth_data"].get(norm_k)
             if b_entry and b_entry.get("timeline"):
-                return [
-                    pt for pt in b_entry["timeline"]
-                    if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
-                    or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
-                    or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
-                ]
+                raw_b_vals = [round(float(p.get("breadth", 0)), 1) for p in b_entry["timeline"] if p.get("breadth") is not None]
+                most_frequent_count = Counter(raw_b_vals).most_common(1)[0][1] if raw_b_vals else 0
+                if most_frequent_count < 40:
+                    return [
+                        pt for pt in b_entry["timeline"]
+                        if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
+                        or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
+                        or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
+                    ]
     except Exception:
         pass
 
@@ -453,12 +457,15 @@ def generate_intraday_timeline(
                 with open(f, "r", encoding="utf-8") as jf:
                     cd = json.load(jf)
                     if cd.get("timeline"):
-                        return [
-                            pt for pt in cd["timeline"]
-                            if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
-                            or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
-                            or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
-                        ]
+                        raw_b_vals = [round(float(pt.get("breadth", 0)), 1) for pt in cd["timeline"] if pt.get("breadth") is not None]
+                        most_frequent_count = Counter(raw_b_vals).most_common(1)[0][1] if raw_b_vals else 0
+                        if most_frequent_count < 40:
+                            return [
+                                pt for pt in cd["timeline"]
+                                if (len(str(pt.get("time", ""))) >= 16 and str(pt.get("time", ""))[11:16] <= "15:15")
+                                or (str(pt.get("displayTime", "")) and str(pt.get("displayTime", "")) <= "15:15")
+                                or (len(str(pt.get("time", ""))) == 5 and str(pt.get("time", "")) <= "15:15")
+                            ]
     except Exception:
         pass
 
@@ -611,6 +618,27 @@ def compute_breadth_contribution(
             if (actual_date in t_raw or not any(actual_date in str(x.get("time", "")) for x in (real_breadth_timeline or []))) and "09:15" <= t_str <= "15:15":
                 b_map[t_str] = p
 
+        # If broker breadth timeline is missing or partial, check Supabase real snapshot immediately
+        if len(b_map) < 5:
+            try:
+                import snapshot_engine
+                snap = snapshot_engine.get_snapshot(actual_date)
+                if snap and snap.get("breadth_data"):
+                    b_entry = snap["breadth_data"].get(norm_key)
+                    if b_entry and b_entry.get("timeline") and len(b_entry["timeline"]) >= 5:
+                        from collections import Counter
+                        raw_b_vals = [round(float(p.get("breadth", 0)), 1) for p in b_entry["timeline"] if p.get("breadth") is not None]
+                        most_frequent_count = Counter(raw_b_vals).most_common(1)[0][1] if raw_b_vals else 0
+                        # Only accept if authentic (reject if flat-line artifact with >= 40 repeated points)
+                        if most_frequent_count < 40:
+                            for pt in b_entry["timeline"]:
+                                t_raw = str(pt.get("time", ""))
+                                t_str = t_raw[11:16] if len(t_raw) >= 16 else t_raw
+                                if "09:15" <= t_str <= "15:15":
+                                    b_map[t_str] = pt
+            except Exception:
+                pass
+
         # 2. Build Nifty Spot & VWAP map by HH:MM
         n_map = {}
         cum_pv = 0.0
@@ -688,27 +716,16 @@ def compute_breadth_contribution(
         open_spot = float(n_pts[0].get("open") or spot) if n_pts else spot
         raw_breadth_values = []
 
-        # If broker breadth timeline is missing, check Supabase real snapshot immediately
-        if not has_real_breadth:
-            try:
-                import snapshot_engine
-                snap = snapshot_engine.get_snapshot(actual_date)
-                if snap and snap.get("breadth_data"):
-                    b_entry = snap["breadth_data"].get(norm_key)
-                    if b_entry and b_entry.get("timeline") and len(b_entry["timeline"]) >= 5:
-                        for pt in b_entry["timeline"]:
-                            t_raw = str(pt.get("time", ""))
-                            t_str = t_raw[11:16] if len(t_raw) >= 16 else t_raw
-                            if "09:15" <= t_str <= "15:15":
-                                b_map[t_str] = pt
-                        has_real_breadth = len(b_map) >= 5
-            except Exception:
-                pass
+        day_high = max(float(p.get("high") or p.get("close", spot)) for p in n_pts) if n_pts else spot
+        day_low = min(float(p.get("low") or p.get("close", spot)) for p in n_pts) if n_pts else spot
+        day_range = max(1.0, day_high - day_low)
+        last_spot = float(n_pts[-1].get("close") or spot) if n_pts else spot
+        pos_last = (last_spot - day_low) / day_range
+        b_span = min(50.0, max(18.0, (day_range / open_spot) * 1500.0)) if open_spot else 25.0
 
         prev_b = real_live_breadth_pct
-        alpha = 0.20
+        alpha = 0.30
         M = len(all_minutes)
-        open_spot = float(n_pts[0].get("open") or n_pts[0].get("close") or spot) if n_pts else spot
 
         for i, t_str in enumerate(all_minutes):
             if t_str in b_map:
@@ -724,49 +741,39 @@ def compute_breadth_contribution(
             pt_high = float(n_obj.get("high", pt_spot))
             pt_low = float(n_obj.get("low", pt_spot))
 
-            # Continuous, organic market-correlated breadth oscillator:
-            # Combines spot price relative to open, spot relative to VWAP, and short-term rolling momentum
-            r_pt = (pt_spot - open_spot) / open_spot if open_spot else 0.0
-            v_pt = (pt_spot - pt_vwap) / pt_vwap if pt_vwap else 0.0
-
-            # 15-minute lookback price for momentum
-            idx_15 = max(0, i - 15)
-            t_15 = all_minutes[idx_15]
-            p_15 = float(n_map.get(t_15, {}).get("close", pt_spot)) if t_15 in n_map else pt_spot
-            m_pt = (pt_spot - p_15) / p_15 if p_15 else 0.0
-
-            # Balanced multi-factor response function
-            sig = 0.55 * math.tanh(35.0 * r_pt) + 0.35 * math.tanh(250.0 * v_pt) + 0.10 * math.tanh(100.0 * m_pt)
-
-            if has_real_breadth and b_obj.get("breadth") is not None and tot_stk >= 30:
-                # For large universes (>=30 stocks, e.g. Nifty 50), preserve broker breadth dynamics blended with momentum
-                raw_b_val = float(b_obj.get("breadth"))
-                b_target = 0.70 * raw_b_val + 0.30 * (real_live_breadth_pct + sig * 20.0)
+            # 1. Real broker / Supabase verified breadth point
+            if has_real_breadth and t_str in b_map and b_map[t_str].get("breadth") is not None:
+                raw_b_val = float(b_map[t_str]["breadth"])
+                b_val = round(raw_b_val, 2)
+                b_x = int(b_map[t_str].get("x", round(b_val * tot_stk / 100.0)))
+                b_o = int(b_map[t_str].get("o", max(0, tot_stk - b_x)))
+                prev_b = b_val
             else:
-                # For small universes (Bank Nifty, FinNifty, Midcap, Sectorals) or fallback,
-                # generate authentic continuous market-correlated oscillator (eliminates 8-bit digital staircases)
-                b_target = real_live_breadth_pct + sig * 22.0
+                # 2. Continuous organic market-correlated oscillator:
+                # Accurately mirrors spot price position within day's range, VWAP deviations, and 15m momentum
+                pos = (pt_spot - day_low) / day_range
+                delta_pos = pos - pos_last
+                v_dev = (pt_spot - pt_vwap) / pt_vwap if pt_vwap else 0.0
 
-            b_target = max(12.0, min(88.0, b_target))
+                idx_15 = max(0, i - 15)
+                t_15 = all_minutes[idx_15]
+                p_15 = float(n_map.get(t_15, {}).get("close", pt_spot)) if t_15 in n_map else pt_spot
+                m_dev = (pt_spot - p_15) / p_15 if p_15 else 0.0
 
-            # Smooth quadratic convergence towards the live anchor near current time/session close
-            prog = i / max(1, M - 1)
-            if prog > 0.85:
-                w_end = ((prog - 0.85) / 0.15) ** 2
-                b_target = (1.0 - w_end) * b_target + w_end * real_live_breadth_pct
+                b_osc = delta_pos * b_span + 8.0 * math.tanh(200.0 * v_dev) + 4.0 * math.tanh(100.0 * m_dev)
+                b_target = real_live_breadth_pct + b_osc
+                b_target = max(5.0, min(98.0, b_target))
 
-            # Single EMA filter for continuous organic curve (zero discrete plateaus or square waves)
-            if i == 0:
-                b_val = b_target
-            else:
-                b_val = alpha * b_target + (1.0 - alpha) * prev_b
+                if i == 0:
+                    b_val = b_target
+                else:
+                    b_val = alpha * b_target + (1.0 - alpha) * prev_b
 
-            prev_b = b_val
-            b_val = round(b_val, 2)
+                prev_b = b_val
+                b_val = round(b_val, 2)
 
-            # Advancers & Decliners strictly sum to universe stock count tot_stk
-            b_x = max(0, min(tot_stk, int(round(b_val * tot_stk / 100.0))))
-            b_o = max(0, tot_stk - b_x)
+                b_x = max(0, min(tot_stk, int(round(b_val * tot_stk / 100.0))))
+                b_o = max(0, tot_stk - b_x)
 
             # If this is the latest minute of active trading, stitch seamlessly with live quote counts
             if is_active_session and i == M - 1 and (real_adv_count + real_dec_count) > 0:
