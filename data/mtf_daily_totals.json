@@ -504,5 +504,16 @@
     "liquid": 0.0,
     "securities": 2219,
     "source": "Official NSE Regulatory Archive"
+  },
+  {
+    "date": "2026-11-03",
+    "dt": "03 Nov",
+    "nse": 144681.22,
+    "bse": 0.0,
+    "combined": 144681.22,
+    "fresh": 0.0,
+    "liquid": 0.0,
+    "securities": 2225,
+    "source": "Official NSE Regulatory Archive"
   }
 ]

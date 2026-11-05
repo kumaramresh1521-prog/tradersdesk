@@ -584,11 +584,11 @@ def save_market_daily_snapshot(trade_date: str, snapshot_data: dict) -> dict:
     if not cfg["isConfigured"]:
         return {"ok": False, "message": "Supabase not configured"}
 
-    url = f"{cfg['url']}/rest/v1/market_daily_snapshots"
+    t_date = trade_date.strip()
     key = cfg["serviceRoleKey"] or cfg["anonKey"]
 
     payload = {
-        "trade_date": trade_date.strip(),
+        "trade_date": t_date,
         "options_data": snapshot_data.get("options_data", {}),
         "straddle_data": snapshot_data.get("straddle_data", {}),
         "open_interest_data": snapshot_data.get("open_interest_data", {}),
@@ -599,6 +599,27 @@ def save_market_daily_snapshot(trade_date: str, snapshot_data: dict) -> dict:
         "breadth_data": snapshot_data.get("breadth_data", {}),
         "updated_at": "now()"
     }
+
+    # 1. Try PATCH on existing record first for high performance and zero constraint conflicts
+    patch_url = f"{cfg['url']}/rest/v1/market_daily_snapshots?trade_date=eq.{t_date}"
+    req_headers_patch = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+    }
+    try:
+        req = urllib.request.Request(patch_url, data=json.dumps(payload).encode("utf-8"), headers=req_headers_patch, method="PATCH")
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            raw = resp.read().decode("utf-8")
+            arr = json.loads(raw or "[]")
+            if arr and len(arr) > 0:
+                return {"ok": True, "message": f"Snapshot for {t_date} updated in Supabase."}
+    except Exception:
+        pass
+
+    # 2. If row did not exist, insert via POST
+    url = f"{cfg['url']}/rest/v1/market_daily_snapshots"
     req_headers = {
         "apikey": key,
         "Authorization": f"Bearer {key}",
@@ -607,8 +628,8 @@ def save_market_daily_snapshot(trade_date: str, snapshot_data: dict) -> dict:
     }
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=req_headers, method="POST")
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return {"ok": True, "message": f"Snapshot for {trade_date} saved to Supabase."}
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            return {"ok": True, "message": f"Snapshot for {t_date} saved to Supabase."}
     except Exception as e:
         return {"ok": False, "message": str(e)}
 

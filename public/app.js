@@ -25831,6 +25831,15 @@ function updateDashboardIndices(indices) {
 
   if (!Array.isArray(indices)) return;
 
+  const isLiveTape = !!_isMarketOpenState;
+  ['dashNiftyBadge', 'dashBankNiftyBadge', 'dashFinNiftyBadge', 'dashSensexBadge'].forEach(bId => {
+    const bEl = document.getElementById(bId);
+    if (bEl) {
+      bEl.textContent = isLiveTape ? '● LIVE' : '● PREV CLOSE';
+      bEl.className = isLiveTape ? 'idx-badge live' : 'idx-badge closed';
+    }
+  });
+
 
 
   indices.forEach(idx => {
@@ -26757,7 +26766,8 @@ async function fetchGlobalMarketPulse() {
 
 
 
-    // Update index card badges: ● LIVE vs ● CLOSED
+    // Update index card badges: ● LIVE vs ● PREV CLOSE
+    const isLiveTape = !!_isMarketOpenState && !!data.isLive;
 
     ['dashNiftyBadge', 'dashBankNiftyBadge', 'dashFinNiftyBadge', 'dashSensexBadge'].forEach(bId => {
 
@@ -26765,7 +26775,7 @@ async function fetchGlobalMarketPulse() {
 
       if (bEl) {
 
-        if (_isMarketOpenState) {
+        if (isLiveTape) {
 
           bEl.textContent = '● LIVE';
 
@@ -26773,7 +26783,7 @@ async function fetchGlobalMarketPulse() {
 
         } else {
 
-          bEl.textContent = '● CLOSED';
+          bEl.textContent = '● PREV CLOSE';
 
           bEl.className = 'idx-badge closed';
 
@@ -26782,6 +26792,11 @@ async function fetchGlobalMarketPulse() {
       }
 
     });
+
+    const tapeDot = document.getElementById('dashTapeStatus');
+    if (tapeDot) {
+      tapeDot.textContent = isLiveTape ? '● LIVE TAPE' : '● PREVIOUS SESSION';
+    }
 
 
 
