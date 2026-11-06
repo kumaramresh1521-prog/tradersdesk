@@ -25831,7 +25831,7 @@ function updateDashboardIndices(indices) {
 
   if (!Array.isArray(indices)) return;
 
-  const isLiveTape = !!_isMarketOpenState;
+  const isLiveTape = !!_isMarketOpenState && (typeof indicesOverviewDataGlobal !== 'undefined' && indicesOverviewDataGlobal ? !!indicesOverviewDataGlobal.isLive : false);
   ['dashNiftyBadge', 'dashBankNiftyBadge', 'dashFinNiftyBadge', 'dashSensexBadge'].forEach(bId => {
     const bEl = document.getElementById(bId);
     if (bEl) {
@@ -25839,6 +25839,10 @@ function updateDashboardIndices(indices) {
       bEl.className = isLiveTape ? 'idx-badge live' : 'idx-badge closed';
     }
   });
+  const tapeStatusEl = document.getElementById('dashTapeStatus');
+  if (tapeStatusEl) {
+    tapeStatusEl.textContent = isLiveTape ? '● LIVE SESSION' : '● PREV SESSION';
+  }
 
 
 

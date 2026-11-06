@@ -115,7 +115,68 @@ def _compact_option_chain(raw_chain: dict, instrument_key: str) -> dict:
     }
 
 
-def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50") -> dict:
+def _get_timeline_eod_metrics(trade_date: str) -> dict:
+    """Reads cache/options_timeline_{trade_date}.json to extract 15:30 EOD closing spot, pcr, max pain."""
+    res = {}
+    if not trade_date:
+        return res
+    for p in (Path("cache"), Path(".cache")):
+        fn = p / f"options_timeline_{trade_date}.json"
+        if fn.exists():
+            try:
+                with open(fn, "r", encoding="utf-8") as f:
+                    tl_data = json.load(f)
+                    for k, pts in tl_data.items():
+                        if isinstance(pts, list) and len(pts) > 0:
+                            p_1530 = next((p for p in reversed(pts) if p.get("time") == "15:30"), pts[-1])
+                            res[k] = p_1530
+                            sym = k.split("|")[1] if "|" in k else k
+                            res[sym] = p_1530
+                            res[sym.upper()] = p_1530
+                            res[sym.lower()] = p_1530
+                break
+            except Exception:
+                pass
+    return res
+
+
+def _get_bhavcopy_stock_closes(trade_date: str) -> dict:
+    """Reads official NSE Bhavcopy for trade_date to extract exact equity closing prices."""
+    res = {}
+    if not trade_date:
+        return res
+    try:
+        dt_obj = datetime.strptime(trade_date, "%Y-%m-%d")
+        ddmmyyyy = dt_obj.strftime("%d%m%Y")
+    except Exception:
+        return res
+
+    import csv
+    for p in (Path(".cache/delivery_bhav"), Path("cache/delivery_bhav"), Path(".cache"), Path("cache")):
+        fn = p / f"sec_bhavdata_full_{ddmmyyyy}.csv"
+        if fn.exists():
+            try:
+                with open(fn, "r", encoding="utf-8", errors="ignore") as f:
+                    r = csv.reader(f)
+                    header = [h.strip() for h in next(r)]
+                    if "SYMBOL" in header and "SERIES" in header and "CLOSE_PRICE" in header:
+                        sym_idx = header.index("SYMBOL")
+                        srs_idx = header.index("SERIES")
+                        cls_idx = header.index("CLOSE_PRICE")
+                        for row in r:
+                            if len(row) > max(sym_idx, srs_idx, cls_idx) and row[srs_idx].strip() == "EQ":
+                                sym = row[sym_idx].strip().upper()
+                                try:
+                                    res[sym] = float(row[cls_idx].strip())
+                                except Exception:
+                                    pass
+                break
+            except Exception:
+                pass
+    return res
+
+
+def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50", trade_date: str = "") -> dict:
     """
     Builds clean options snapshot with multi-instrument coverage:
     - 6 core major indices (NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX)
@@ -128,6 +189,10 @@ def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50") -> dict:
         print(f"[SnapshotEngine] upstox_engine import error: {e}")
         return {}
 
+    t_date = trade_date.strip() or get_ist_today_str()
+    tl_metrics = _get_timeline_eod_metrics(t_date)
+    bhav_closes = _get_bhavcopy_stock_closes(t_date)
+
     instruments_map = {}
     primary_snap = {}
 
@@ -137,6 +202,19 @@ def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50") -> dict:
             raw = upstox_engine.get_option_chain(key)
             if raw and isinstance(raw, dict) and (raw.get("ok") or raw.get("spotPrice") or raw.get("data") or raw.get("strikes")):
                 compact = _compact_option_chain(raw, key)
+
+                # Overlay verified EOD closing metrics if available for historical date
+                sym_plain = key.split("|")[-1]
+                m = tl_metrics.get(key) or tl_metrics.get(sym_plain)
+                if m and m.get("spot"):
+                    compact["spotPrice"] = float(m["spot"])
+                    if m.get("pcr") is not None:
+                        compact["pcr"] = float(m["pcr"])
+                    if m.get("maxPain") is not None:
+                        compact["maxPain"] = float(m["maxPain"])
+                elif sym_plain.upper() in bhav_closes:
+                    compact["spotPrice"] = float(bhav_closes[sym_plain.upper()])
+
                 instruments_map[key] = compact
 
                 # Also map by actual normalized key if different (e.g. Upstox ISIN for stocks)
@@ -144,10 +222,11 @@ def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50") -> dict:
                 if actual_k and actual_k != key:
                     instruments_map[actual_k] = compact
 
-                # Also map aliases for instant lookup
+                # Also map clean uppercase symbol for direct lookup (e.g. NIFTY, RELIANCE)
                 for alias in inst.get("aliases", []):
-                    instruments_map[alias] = compact
-                    instruments_map[alias.lower()] = compact
+                    if alias.isupper() and " " not in alias:
+                        instruments_map[alias] = compact
+                        break
 
                 if key == "NSE_INDEX|Nifty 50":
                     primary_snap = compact
@@ -164,7 +243,7 @@ def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50") -> dict:
     return res
 
 
-def build_straddle_snapshot() -> dict:
+def build_straddle_snapshot(trade_date: str = "") -> dict:
     """Builds clean ATM Straddle & Strangle snapshot for all 6 dropdown indices including full 370-min intraday points."""
     res = {}
     try:
@@ -172,7 +251,10 @@ def build_straddle_snapshot() -> dict:
         indices = ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX")
         for idx in indices:
             try:
-                st = get_straddle_chart_response({"symbol": idx})
+                params = {"symbol": idx}
+                if trade_date:
+                    params["date"] = trade_date
+                st = get_straddle_chart_response(params)
                 if st and isinstance(st, dict) and st.get("ok"):
                     latest = st.get("latest") or {}
                     st_data = {
@@ -425,8 +507,8 @@ def build_daily_market_snapshot(trade_date: str = "") -> dict:
     """
     t_date = trade_date.strip() or get_ist_today_str()
 
-    options_snap = build_options_snapshot()
-    straddle_snap = build_straddle_snapshot()
+    options_snap = build_options_snapshot(trade_date=t_date)
+    straddle_snap = build_straddle_snapshot(trade_date=t_date)
     smart_money_snap = build_smart_money_snapshot(t_date)
     delivery_snap = build_delivery_snapshot(t_date)
     mtf_snap = build_mtf_snapshot(t_date)

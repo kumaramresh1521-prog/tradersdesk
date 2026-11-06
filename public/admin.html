@@ -3555,6 +3555,24 @@
     <script>
       // Admin credentials persistence (sessionStorage + localStorage fallback)
       let adminSecretKey = sessionStorage.getItem('bl_admin_secret') || localStorage.getItem('bl_admin_secret') || '';
+      const _urlKey = new URLSearchParams(window.location.search).get('key') || new URLSearchParams(window.location.search).get('pin');
+      if (_urlKey) {
+        adminSecretKey = _urlKey;
+        sessionStorage.setItem('bl_admin_secret', _urlKey);
+        localStorage.setItem('bl_admin_secret', _urlKey);
+      }
+
+      window.addEventListener('load', () => {
+        if (adminSecretKey) {
+          const overlay = document.getElementById('adminLockOverlay');
+          if (overlay) overlay.style.display = 'none';
+          const layout = document.getElementById('adminLayout');
+          if (layout) layout.style.display = 'flex';
+          try { loadSnapshotsSummaryTable(); } catch(e) {}
+          try { loadTelemetry(); } catch(e) {}
+          try { loadDiagnostics(); } catch(e) {}
+        }
+      });
 
       function getAuthHeaders() {
         if (!adminSecretKey) {

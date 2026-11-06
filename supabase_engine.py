@@ -579,6 +579,7 @@ def save_market_daily_snapshot(trade_date: str, snapshot_data: dict) -> dict:
     Saves or updates daily market snapshot for trade_date in Supabase table market_daily_snapshots.
     Payload keys: options_data, straddle_data, open_interest_data, call_vs_put_data,
                   smart_money_data, delivery_data, mtf_data, breadth_data
+    Non-destructive: preserves existing non-empty tool columns if not supplied in incoming payload.
     """
     cfg = get_supabase_config()
     if not cfg["isConfigured"]:
@@ -587,18 +588,25 @@ def save_market_daily_snapshot(trade_date: str, snapshot_data: dict) -> dict:
     t_date = trade_date.strip()
     key = cfg["serviceRoleKey"] or cfg["anonKey"]
 
+    # Protect existing data from being wiped out by partial updates
+    existing = load_market_daily_snapshot(t_date) or {}
+
     payload = {
         "trade_date": t_date,
-        "options_data": snapshot_data.get("options_data", {}),
-        "straddle_data": snapshot_data.get("straddle_data", {}),
-        "open_interest_data": snapshot_data.get("open_interest_data", {}),
-        "call_vs_put_data": snapshot_data.get("call_vs_put_data", {}),
-        "smart_money_data": snapshot_data.get("smart_money_data", {}),
-        "delivery_data": snapshot_data.get("delivery_data", {}),
-        "mtf_data": snapshot_data.get("mtf_data", {}),
-        "breadth_data": snapshot_data.get("breadth_data", {}),
         "updated_at": "now()"
     }
+    cols = [
+        "options_data", "straddle_data", "open_interest_data", "call_vs_put_data",
+        "smart_money_data", "delivery_data", "mtf_data", "breadth_data"
+    ]
+    for c in cols:
+        val = snapshot_data.get(c)
+        if val and (not isinstance(val, (dict, list)) or len(val) > 0):
+            payload[c] = val
+        elif c in existing and existing[c]:
+            payload[c] = existing[c]
+        else:
+            payload[c] = val or {}
 
     # 1. Try PATCH on existing record first for high performance and zero constraint conflicts
     patch_url = f"{cfg['url']}/rest/v1/market_daily_snapshots?trade_date=eq.{t_date}"
@@ -618,7 +626,28 @@ def save_market_daily_snapshot(trade_date: str, snapshot_data: dict) -> dict:
     except Exception:
         pass
 
-    # 2. If row did not exist, insert via POST
+    # 1b. If monolithic PATCH failed (e.g. payload exceeded server limit), update in discrete column batches
+    batches = [
+        ["smart_money_data", "delivery_data", "mtf_data"],
+        ["straddle_data"],
+        ["options_data", "open_interest_data", "call_vs_put_data"],
+        ["breadth_data"]
+    ]
+    batch_success = 0
+    for b in batches:
+        sub_p = {c: payload[c] for c in b if c in payload}
+        sub_p["updated_at"] = "now()"
+        try:
+            req_b = urllib.request.Request(patch_url, data=json.dumps(sub_p).encode("utf-8"), headers=req_headers_patch, method="PATCH")
+            with urllib.request.urlopen(req_b, timeout=25) as resp_b:
+                if resp_b.status in (200, 204):
+                    batch_success += 1
+        except Exception:
+            pass
+    if batch_success > 0:
+        return {"ok": True, "message": f"Snapshot for {t_date} updated in Supabase in {batch_success} column batches."}
+
+    # 2. If row did not exist, insert via POST with initial small payload then patch
     url = f"{cfg['url']}/rest/v1/market_daily_snapshots"
     req_headers = {
         "apikey": key,
@@ -626,10 +655,19 @@ def save_market_daily_snapshot(trade_date: str, snapshot_data: dict) -> dict:
         "Content-Type": "application/json",
         "Prefer": "resolution=merge-duplicates"
     }
+    init_payload = {"trade_date": t_date, "updated_at": "now()"}
     try:
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=req_headers, method="POST")
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            return {"ok": True, "message": f"Snapshot for {t_date} saved to Supabase."}
+        req = urllib.request.Request(url, data=json.dumps(init_payload).encode("utf-8"), headers=req_headers, method="POST")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            pass
+        # Now patch the full columns in batches
+        for b in batches:
+            sub_p = {c: payload[c] for c in b if c in payload}
+            sub_p["updated_at"] = "now()"
+            req_b = urllib.request.Request(patch_url, data=json.dumps(sub_p).encode("utf-8"), headers=req_headers_patch, method="PATCH")
+            with urllib.request.urlopen(req_b, timeout=25) as resp_b:
+                pass
+        return {"ok": True, "message": f"Snapshot for {t_date} saved to Supabase."}
     except Exception as e:
         return {"ok": False, "message": str(e)}
 

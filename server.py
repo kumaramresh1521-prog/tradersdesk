@@ -19991,7 +19991,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 "timestamp": now_ist().strftime("%Y-%m-%d %H:%M:%S IST")
             })
 
-        if path.startswith("/api/market-snapshot"):
+        if path == "/api/market-snapshot":
             import snapshot_engine
             query = urllib.parse.parse_qs(parsed.query)
             t_date = (query.get("date") or [""])[0].strip() or snapshot_engine.get_ist_today_str()
@@ -25166,37 +25166,47 @@ def _warm_breadth_contributions_worker() -> None:
 
 
 def start_market_hours_background_poller() -> None:
-
     """
-
     Continuous background market ingestion daemon:
-
     Ensures that even with zero active web visitors, key market data
-
     (indices overview, breadth contributions) are automatically refreshed
-
     and cached during trading hours (09:15 - 15:40 IST Mon-Fri).
-
+    Also auto-captures and persists 90-days EOD market snapshots to Supabase at market close.
     """
+    _LAST_EOD_SNAP_DATE = ""
 
     def _poll_worker():
-
+        nonlocal _LAST_EOD_SNAP_DATE
         time.sleep(15)
 
-        while True:
+        # Pre-populate previous trading session snapshot on server boot if missing or incomplete
+        try:
+            import snapshot_engine
+            prev_trade_date = resolve_market_session_date("")
+            existing_snap = snapshot_engine.get_snapshot(prev_trade_date)
+            if not existing_snap or not (existing_snap.get("options_data") or {}).get("strikes"):
+                print(f"[AutoSnapshot] Pre-populating missing/incomplete EOD snapshot for {prev_trade_date}...")
+                snapshot_engine.capture_and_save_eod_snapshot(prev_trade_date)
+        except Exception as _e_init:
+            logger.debug(f"AutoSnapshot init check exception: {_e_init}")
 
+        while True:
             try:
+                ist = now_ist()
+                date_val = ist.strftime("%Y-%m-%d")
 
                 if is_market_open():
-
-                    date_val = now_ist().strftime("%Y-%m-%d")
-
                     trigger_background_indices_update(date_val)
-
                     _warm_breadth_contributions_worker()
-
+                else:
+                    # Auto-capture today's EOD snapshot once market closes (after 15:35 IST on weekdays)
+                    if ist.weekday() < 5 and ist.hour >= 15 and (ist.hour > 15 or ist.minute >= 35):
+                        if _LAST_EOD_SNAP_DATE != date_val:
+                            import snapshot_engine
+                            print(f"[AutoSnapshot] Capturing scheduled EOD snapshot for {date_val} at {ist.strftime('%H:%M:%S IST')}...")
+                            snapshot_engine.capture_and_save_eod_snapshot(date_val)
+                            _LAST_EOD_SNAP_DATE = date_val
             except Exception as e:
-
                 logger.debug(f"Market hours poller exception: {e}")
 
             time.sleep(45)

@@ -101,6 +101,9 @@ def _init_upstox_stock_map() -> None:
 def _is_token_invalid(tok: str) -> bool:
     if not tok:
         return True
+    last_global = _INVALID_TOKENS.get("*")
+    if last_global and (time.time() - last_global < 300):
+        return True
     last_err = _INVALID_TOKENS.get(tok)
     if last_err and (time.time() - last_err < 300):
         return True
@@ -444,6 +447,7 @@ def get_available_expiries(instrument_key: str, token: str = "") -> list[str]:
         except Exception as exc:
             if "401" in str(exc) or "Unauthorized" in str(exc):
                 _INVALID_TOKENS[tok] = time.time()
+                _INVALID_TOKENS["*"] = time.time()
             logger.warning("Failed to fetch Upstox contracts for %s: %s", ikey, exc)
 
     # Check official NSE Bhavcopy options expiries
