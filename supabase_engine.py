@@ -737,6 +737,8 @@ def load_market_snapshots_calendar(days: int = 90) -> list[str]:
         pass
     return []
 
+get_market_snapshots_calendar = load_market_snapshots_calendar
+
 
 def purge_old_market_snapshots(retention_days: int = 90) -> dict:
     """

@@ -601,10 +601,24 @@ def get_fii_derivatives_flow(target_date: Optional[datetime] = None) -> Dict[str
     Returns complete F&O flow data (FII statistics + Participant volumes).
     Uses local cache if fresh. Never blocks request if remote fetch times out.
     """
-    now = target_date or now_ist()
-    date_key = now.strftime("%Y-%m-%d")
-
     cache_dir = ROOT_DIR / "data" / "derivatives_flow"
+    if target_date is None:
+        now = now_ist()
+        date_key = now.strftime("%Y-%m-%d")
+        date_file = cache_dir / f"derivatives_flow_{date_key}.json"
+        if not date_file.exists() and (now.weekday() >= 5 or now.hour < 16):
+            candidates = sorted(cache_dir.glob("derivatives_flow_*.json"), reverse=True)
+            if candidates:
+                latest_f = candidates[0]
+                date_key = latest_f.stem.replace("derivatives_flow_", "")
+                try:
+                    now = datetime.strptime(date_key, "%Y-%m-%d")
+                except Exception:
+                    pass
+    else:
+        now = target_date
+        date_key = now.strftime("%Y-%m-%d")
+
     date_file = cache_dir / f"derivatives_flow_{date_key}.json"
     if date_file.exists():
         try:

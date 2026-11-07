@@ -376,26 +376,42 @@ def build_delivery_snapshot(trade_date: str) -> dict:
         deliv = build_delivery_analytics({"date": trade_date})
         if not deliv or not isinstance(deliv, dict):
             return {}
-        stocks = deliv.get("stocks") or []
-        # Compact top 60 stocks sorted by delivery turnover / %
+        stocks = deliv.get("stocks") or deliv.get("topStocks") or []
         top_stocks = []
         for s in stocks[:60]:
             if isinstance(s, dict):
                 top_stocks.append({
                     "symbol": s.get("symbol"),
+                    "name": s.get("name") or s.get("symbol"),
                     "close": s.get("close") or s.get("ltp"),
+                    "prevClose": s.get("prevClose"),
+                    "change": s.get("change"),
                     "changePct": s.get("changePct") or s.get("pChg"),
-                    "deliveryPct": s.get("deliveryPct"),
-                    "avgDeliveryPct": s.get("avgDeliveryPct") or s.get("avg5dDelivPct"),
-                    "deliveryQty": s.get("deliveryQty"),
-                    "deliveryTurnoverCr": s.get("deliveryTurnoverCr"),
-                    "surgeRatio": s.get("surgeRatio") or s.get("volumeSurgeX"),
+                    "delivPer": s.get("delivPer") or s.get("deliveryPct"),
+                    "deliveryPct": s.get("delivPer") or s.get("deliveryPct"),
+                    "delivQty": s.get("delivQty") or s.get("deliveryQty"),
+                    "deliveryQty": s.get("delivQty") or s.get("deliveryQty"),
+                    "tradedQty": s.get("tradedQty", 0),
+                    "turnoverCr": s.get("turnoverCr", 0.0),
+                    "avg5dQty": s.get("avg5dQty", 0),
+                    "trades": s.get("trades", 0),
+                    "avgDelivPer5D": s.get("avgDelivPer5D") or s.get("avgDeliveryPct") or s.get("avg5dDelivPct"),
+                    "avgDeliveryPct": s.get("avgDelivPer5D") or s.get("avgDeliveryPct") or s.get("avg5dDelivPct"),
+                    "delivTurnoverCr": s.get("delivTurnoverCr") or s.get("deliveryTurnoverCr"),
+                    "deliveryTurnoverCr": s.get("delivTurnoverCr") or s.get("deliveryTurnoverCr"),
+                    "shockRatio": s.get("shockRatio") or s.get("surgeRatio") or s.get("volumeSurgeX"),
+                    "surgeRatio": s.get("shockRatio") or s.get("surgeRatio") or s.get("volumeSurgeX"),
                     "signal": s.get("signal") or s.get("category"),
+                    "isFnO": s.get("isFnO", True),
                 })
         return {
+            "ok": True,
             "date": deliv.get("date") or trade_date,
+            "dateIso": deliv.get("dateIso") or trade_date,
             "summary": deliv.get("summary", {}),
+            "majorIndicesDelivery": deliv.get("majorIndicesDelivery", {}),
             "topStocks": top_stocks,
+            "stocks": top_stocks,
         }
     except Exception as e:
         print(f"[SnapshotEngine] Delivery snapshot error: {e}")
@@ -411,20 +427,35 @@ def build_mtf_snapshot(trade_date: str) -> dict:
             return {}
         screened = mtf.get("stockScreener") or mtf.get("stocks") or []
         top_mtf = []
-        for s in screened[:50]:
+        for s in screened[:60]:
             if isinstance(s, dict):
+                amt_cr = s.get("amtFinancedCrore") or s.get("financedAmountCr") or s.get("marginFundedCr")
+                d_cr = s.get("deltaAmtCrore") or s.get("changeCr")
+                d_pct = s.get("deltaPct") or s.get("changePct")
+                sec = s.get("sector") or s.get("category")
                 top_mtf.append({
                     "symbol": s.get("symbol"),
-                    "financedAmountCr": s.get("financedAmountCr") or s.get("marginFundedCr"),
-                    "changeCr": s.get("changeCr"),
-                    "changePct": s.get("changePct"),
-                    "category": s.get("category"),
+                    "name": s.get("name") or s.get("symbol"),
+                    "amtFinancedCrore": amt_cr,
+                    "financedAmountCr": amt_cr,
+                    "deltaAmtCrore": d_cr,
+                    "changeCr": d_cr,
+                    "deltaPct": d_pct,
+                    "changePct": d_pct,
+                    "sector": sec,
+                    "category": sec,
+                    "sharePct": s.get("sharePct"),
+                    "qtyFinanced": s.get("qtyFinanced"),
+                    "isFnO": s.get("isFnO", True),
                 })
         return {
+            "ok": True,
             "asOf": mtf.get("asOf") or trade_date,
             "summary": mtf.get("summary", {}),
-            "dailyTotals": (mtf.get("dailyTotals") or [])[-10:],
+            "dailyTotals": (mtf.get("dailyTotals") or [])[-15:],
             "topFundedStocks": top_mtf,
+            "stockScreener": top_mtf,
+            "stocks": top_mtf,
         }
     except Exception as e:
         print(f"[SnapshotEngine] MTF snapshot error: {e}")

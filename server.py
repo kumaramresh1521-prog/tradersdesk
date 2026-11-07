@@ -12081,6 +12081,14 @@ def build_delivery_analysis(symbol: str, timeframe: str, date_value: str) -> dic
 def build_participant_oi_analysis(date_value: str) -> dict:
     """Participant OI analysis - returns real NSE participant data only. No synthetic/simulated data."""
     try:
+        import supabase_cache_bridge
+        res = supabase_cache_bridge.get_participant_oi_from_supabase(date_value)
+        if res and res.get("ok") and res.get("participants"):
+            return res
+    except Exception:
+        pass
+
+    try:
         from nse_data import get_real_participant_oi
         res = get_real_participant_oi(date_value)
         if res and res.get("ok") and res.get("participants"):
@@ -12153,7 +12161,7 @@ def build_analysis(payload: dict) -> dict:
 
         elif analysis_type == "participant_oi":
 
-            return get_real_participant_oi(date_value)
+            return build_participant_oi_analysis(date_value)
 
         else:
 
@@ -12610,6 +12618,15 @@ _SMART_MONEY_SYNC_LAST = 0
 
 
 def build_smart_money(payload: dict) -> dict:
+
+    date_val = payload.get("date")
+    try:
+        import supabase_cache_bridge
+        sb_sm = supabase_cache_bridge.get_smart_money_from_supabase(date_val)
+        if sb_sm and sb_sm.get("ok") and sb_sm.get("participants"):
+            return sb_sm
+    except Exception:
+        pass
 
     global _SMART_MONEY_SYNC_LAST
 
@@ -14015,6 +14032,15 @@ def build_delivery_analytics(payload: dict) -> dict:
     filter_mode = (payload.get("filter") or "all").lower()
 
     drill_symbol = (payload.get("symbol") or "").strip().upper()
+
+    if not drill_symbol:
+        try:
+            import supabase_cache_bridge
+            sb_deliv = supabase_cache_bridge.get_delivery_from_supabase(date_val, universe, filter_mode)
+            if sb_deliv and sb_deliv.get("ok") and sb_deliv.get("stocks"):
+                return sb_deliv
+        except Exception:
+            pass
 
 
 
@@ -15742,6 +15768,17 @@ def get_available_mtf_sessions() -> list[tuple[date, str, Path]]:
 
 
 def build_mtf(payload: dict) -> dict:
+
+    target_val = str(payload.get("date") or payload.get("dateCode") or "").strip()
+    force_refresh = parse_bool(str(payload.get("forceRefresh", "")), default=False)
+    if not force_refresh:
+        try:
+            import supabase_cache_bridge
+            sb_mtf = supabase_cache_bridge.get_mtf_from_supabase(target_val)
+            if sb_mtf and sb_mtf.get("ok") and sb_mtf.get("stocks"):
+                return sb_mtf
+        except Exception:
+            pass
 
     global _MTF_CACHE
 
@@ -19675,6 +19712,36 @@ def _get_static_bytes(file_path: Path, clean_path: str, accept_gzip: bool) -> tu
 
 
 
+_LAST_AUTO_EOD_HEAL_TS = 0.0
+
+def maybe_trigger_auto_eod_heal() -> None:
+    """
+    Automatic EOD Healing Hook for Cloud Run & Serverless deployments.
+    Checks if latest completed session's snapshot is backed up in Supabase,
+    and captures it in the background if missing. Rate-limited to 30 mins.
+    """
+    global _LAST_AUTO_EOD_HEAL_TS
+    now = time.time()
+    if (now - _LAST_AUTO_EOD_HEAL_TS) < 1800.0:
+        return
+    _LAST_AUTO_EOD_HEAL_TS = now
+
+    def _heal_worker():
+        try:
+            import snapshot_engine
+            import supabase_engine
+            target_str = resolve_market_session_date("")
+            if not target_str:
+                return
+            existing = supabase_engine.load_market_daily_snapshot(target_str)
+            if not existing or not existing.get("delivery_data") or not existing.get("smart_money_data"):
+                snapshot_engine.capture_and_save_eod_snapshot(target_str)
+        except Exception:
+            pass
+
+    threading.Thread(target=_heal_worker, daemon=True, name="AutoEodHealWorker").start()
+
+
 class RequestHandler(BaseHTTPRequestHandler):
 
     server_version = "TradersDesk/1.0"
@@ -22557,6 +22624,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
 
     def do_POST(self) -> None:
+        maybe_trigger_auto_eod_heal()
 
         parsed = urllib.parse.urlparse(self.path)
 

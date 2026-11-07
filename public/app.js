@@ -9714,7 +9714,7 @@ function renderDeliveryDashboard(data) {
 
           <span style="color:#2563eb; font-weight:700;">${s.delivPer}% Deliv</span>
 
-          <span style="color:#16a34a; font-weight:700; margin-left:6px;">₹${s.delivTurnoverCr.toLocaleString("en-IN")} Cr</span>
+          <span style="color:#16a34a; font-weight:700; margin-left:6px;">₹${(s.delivTurnoverCr || 0).toLocaleString("en-IN")} Cr</span>
 
         </div>
 
@@ -10520,23 +10520,23 @@ function renderDeliveryRowHtml(s) {
 
       </td>
 
-      <td><strong>₹${s.close.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></td>
+      <td><strong>₹${(s.close || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></td>
 
-      <td style="color:${chgColor}; font-weight:700;">${chgPrefix}${s.changePct}%</td>
+      <td style="color:${chgColor}; font-weight:700;">${chgPrefix}${s.changePct || 0}%</td>
 
-      <td>${s.tradedQty.toLocaleString("en-IN")}</td>
+      <td>${(s.tradedQty || 0).toLocaleString("en-IN")}</td>
 
-      <td><strong style="color:#2563eb;">${s.delivQty.toLocaleString("en-IN")}</strong></td>
+      <td><strong style="color:#2563eb;">${(s.delivQty || 0).toLocaleString("en-IN")}</strong></td>
 
       <td>
 
         <div class="deliv-progress-wrap">
 
-          <span style="font-weight:800; width:45px;">${s.delivPer}%</span>
+          <span style="font-weight:800; width:45px;">${s.delivPer || 0}%</span>
 
           <div class="deliv-progress-bar">
 
-            <div class="deliv-progress-fill ${delivFillClass}" style="width: ${Math.min(100, s.delivPer)}%;"></div>
+            <div class="deliv-progress-fill ${delivFillClass}" style="width: ${Math.min(100, s.delivPer || 0)}%;"></div>
 
           </div>
 
@@ -10546,9 +10546,9 @@ function renderDeliveryRowHtml(s) {
 
       <td style="color:var(--text-muted); font-size:11px;">${s.avg5dQty ? Number(s.avg5dQty).toLocaleString("en-IN") : '--'}</td>
 
-      <td style="color:var(--text-muted); font-weight:700;">${s.avgDelivPer5D}%</td>
+      <td style="color:var(--text-muted); font-weight:700;">${s.avgDelivPer5D || 0}%</td>
 
-      <td style="color:#16a34a; font-weight:800;">₹${s.delivTurnoverCr.toLocaleString("en-IN")} Cr</td>
+      <td style="color:#16a34a; font-weight:800;">₹${(s.delivTurnoverCr || 0).toLocaleString("en-IN")} Cr</td>
 
       <td>
 
