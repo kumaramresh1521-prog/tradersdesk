@@ -50,6 +50,7 @@ def get_recent_trading_dates(count: int = 20, end_date: Optional[str] = None) ->
 def fetch_nse_participant_oi_csv(d: date) -> Optional[str]:
     d_str = d.strftime("%d%m%Y")
     for candidate in [
+        os.path.join(os.path.dirname(__file__), "data", "participant_oi", f"fao_participant_oi_{d_str}.csv"),
         os.path.join(os.path.dirname(__file__), "data", f"fao_participant_oi_{d_str}.csv"),
         os.path.join(os.path.dirname(__file__), ".cache", "participant_oi", f"fao_participant_oi_{d_str}.csv"),
         os.path.join(CACHE_DIR, f"fao_participant_oi_{d_str}.csv"),
@@ -67,10 +68,13 @@ def fetch_nse_participant_oi_csv(d: date) -> Optional[str]:
     url = f"https://archives.nseindia.com/content/nsccl/fao_participant_oi_{d_str}.csv"
     try:
         req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:
             content = resp.read().decode("utf-8", errors="ignore")
             if "Client Type" in content:
-                local_path = os.path.join(CACHE_DIR, f"fao_participant_oi_{d_str}.csv")
+                # Save to persistent data directory
+                data_poi_dir = os.path.join(os.path.dirname(__file__), "data", "participant_oi")
+                os.makedirs(data_poi_dir, exist_ok=True)
+                local_path = os.path.join(data_poi_dir, f"fao_participant_oi_{d_str}.csv")
                 with open(local_path, "w", encoding="utf-8") as f:
                     f.write(content)
                 return content
@@ -82,10 +86,14 @@ def fetch_nse_participant_oi_csv(d: date) -> Optional[str]:
 
 def fetch_nse_bhavcopy_csv(d: date) -> Optional[str]:
     d_str = d.strftime("%d%m%Y")
-    local_path = os.path.join(CACHE_DIR, f"sec_bhavdata_full_{d_str}.csv")
-    if os.path.exists(local_path) and os.path.getsize(local_path) > 500:
-        with open(local_path, "r", encoding="utf-8", errors="ignore") as f:
-            return f.read()
+    for candidate in [
+        os.path.join(os.path.dirname(__file__), "data", "delivery", f"sec_bhavdata_full_{d_str}.csv"),
+        os.path.join(os.path.dirname(__file__), "data", f"sec_bhavdata_full_{d_str}.csv"),
+        os.path.join(CACHE_DIR, f"sec_bhavdata_full_{d_str}.csv"),
+    ]:
+        if os.path.exists(candidate) and os.path.getsize(candidate) > 500:
+            with open(candidate, "r", encoding="utf-8", errors="ignore") as f:
+                return f.read()
             
     # Try to download from NSE archives (works for all years)
     url = f"https://archives.nseindia.com/products/content/sec_bhavdata_full_{d_str}.csv"
@@ -292,6 +300,23 @@ def get_real_participant_oi(date_value: str) -> dict:
     parsed_history.sort(key=lambda x: x[0], reverse=True)
     
     if not parsed_history:
+        try:
+            import supabase_engine
+            snap = supabase_engine.load_market_daily_snapshot(date_value)
+            if snap and snap.get("smart_money_data"):
+                sm = snap["smart_money_data"]
+                if sm.get("participants"):
+                    return {
+                        "ok": True,
+                        "type": "participant_oi",
+                        "source": "TradersDesk Verified Archive (Supabase)",
+                        "date": sm.get("date") or date_value,
+                        "summary": sm.get("fiiMetrics") or sm.get("summary") or {},
+                        "participants": sm.get("participants", []),
+                        "history": sm.get("history", [])
+                    }
+        except Exception:
+            pass
         from server import build_participant_oi_analysis
         return build_participant_oi_analysis(date_value)
         

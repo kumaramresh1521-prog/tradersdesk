@@ -35,6 +35,12 @@ data/cache/
 !data/mtf/
 !data/mtf/*.json
 !data/mtf_daily_totals.json
+!data/delivery/
+!data/delivery/*.csv
+!data/participant_oi/
+!data/participant_oi/*.csv
+!data/derivatives_flow/
+!data/derivatives_flow/*.json
 *.session
 *.token
 angel_session.json

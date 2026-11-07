@@ -608,6 +608,22 @@ def save_market_daily_snapshot(trade_date: str, snapshot_data: dict) -> dict:
         else:
             payload[c] = val or {}
 
+    # 0. Ensure base row exists in Supabase table via POST with resolution=merge-duplicates
+    url_base = f"{cfg['url']}/rest/v1/market_daily_snapshots"
+    req_headers_init = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+    init_payload = {"trade_date": t_date, "updated_at": "now()"}
+    try:
+        req_init = urllib.request.Request(url_base, data=json.dumps(init_payload).encode("utf-8"), headers=req_headers_init, method="POST")
+        with urllib.request.urlopen(req_init, timeout=15) as _:
+            pass
+    except Exception:
+        pass
+
     # 1. Try PATCH on existing record first for high performance and zero constraint conflicts
     patch_url = f"{cfg['url']}/rest/v1/market_daily_snapshots?trade_date=eq.{t_date}"
     req_headers_patch = {
@@ -640,7 +656,9 @@ def save_market_daily_snapshot(trade_date: str, snapshot_data: dict) -> dict:
         try:
             req_b = urllib.request.Request(patch_url, data=json.dumps(sub_p).encode("utf-8"), headers=req_headers_patch, method="PATCH")
             with urllib.request.urlopen(req_b, timeout=25) as resp_b:
-                if resp_b.status in (200, 204):
+                raw_b = resp_b.read().decode("utf-8")
+                arr_b = json.loads(raw_b or "[]")
+                if arr_b and len(arr_b) > 0:
                     batch_success += 1
         except Exception:
             pass
