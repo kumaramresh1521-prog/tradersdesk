@@ -1,0 +1,130 @@
+<!-- Single Article Reader Template -->
+<div id="readProgressBar" class="read-progress-bar"></div>
+
+<div class="article-reader-container">
+  <!-- Breadcrumb Navigation -->
+  <nav class="reader-breadcrumb">
+    <a href="/">Terminal</a>
+    <span>/</span>
+    <a href="/blog">Market Insights</a>
+    <span>/</span>
+    <span class="breadcrumb-cat"><!-- ARTICLE_CAT --></span>
+  </nav>
+
+  <!-- Article Header -->
+  <header class="article-header">
+    <span class="article-cat-badge"><!-- ARTICLE_CAT --></span>
+    <h1 class="article-headline"><!-- ARTICLE_TITLE --></h1>
+    <!-- ARTICLE_EXCERPT_HTML -->
+
+    <!-- Author & Meta Strip -->
+    <div class="article-byline-bar">
+      <div class="author-details">
+        <span class="author-avatar-lg">TD</span>
+        <div>
+          <div class="author-name-row">
+            <span class="author-fullname"><!-- ARTICLE_AUTHOR --></span>
+            <span class="verified-badge" title="Quant Model Verified">✓ Verified Desk</span>
+          </div>
+          <div class="author-meta-sub">
+            <span>Published on <!-- ARTICLE_DATE --></span>
+            <span>•</span>
+            <span>⏱️ <!-- ARTICLE_READ_TIME --></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Social Share Buttons -->
+      <div class="article-share-group">
+        <button type="button" class="share-btn share-x" onclick="shareArticleOnX()" title="Share on X (Twitter)">𝕏</button>
+        <button type="button" class="share-btn share-wa" onclick="shareArticleOnWhatsApp()" title="Share on WhatsApp">💬</button>
+        <button type="button" class="share-btn share-copy" id="btnCopyArticleUrl" onclick="copyArticleUrl()" title="Copy Link">📋 Copy</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Cover Image -->
+  <!-- ARTICLE_COVER_HTML -->
+
+  <!-- Top Ad Slot -->
+  <!-- AD_TOP -->
+
+  <!-- Article Main Content Body -->
+  <div class="article-rich-content">
+    <!-- ARTICLE_BODY -->
+  </div>
+
+  <!-- Key Takeaways Callout -->
+  <div class="article-takeaways-box">
+    <div class="takeaways-header">
+      <span class="takeaways-icon">💡</span>
+      <h4 class="takeaways-title">Key Quantitative Takeaways</h4>
+    </div>
+    <ul class="takeaways-list">
+      <li>Always cross-verify options Greeks with real-time Advance/Decline breadth before committing directional risk.</li>
+      <li>Monitor institutional FII/DII participant positioning shifts rather than relying purely on technical oscillators.</li>
+      <li>Calibrate portfolio Delta neutrality to mitigate unexpected volatility spikes during expiry sessions.</li>
+    </ul>
+  </div>
+
+  <!-- Bottom Ad Slot -->
+  <!-- AD_BOTTOM -->
+
+  <!-- Author Bio Footer Box -->
+  <div class="article-author-box">
+    <span class="author-avatar-xl">TD</span>
+    <div class="author-bio-details">
+      <h4 class="bio-name">TradersDesk Quantitative Research Team</h4>
+      <p class="bio-desc">
+        Algorithmic research specialists focusing on mathematical market internals, Black-Scholes Greeks surfaces, institutional cash flow absorption, and automated NSE derivatives data feeds.
+      </p>
+    </div>
+  </div>
+
+  <!-- Related Market Insights -->
+  <!-- RELATED_SECTION_HTML -->
+
+  <!-- Back to Insights Bar -->
+  <div class="article-bottom-nav">
+    <a href="/blog" class="back-insights-btn">&larr; Back to All Market Insights</a>
+    <a href="/option-chain-pro" class="launch-terminal-btn">Open Live Options Terminal &rarr;</a>
+  </div>
+</div>
+
+<!-- Scroll Progress & Share Scripts -->
+<script>
+window.addEventListener('scroll', function() {
+  var h = document.documentElement;
+  var st = h.scrollTop || document.body.scrollTop;
+  var sh = h.scrollHeight || document.body.scrollHeight;
+  var percent = (st / (sh - h.clientHeight)) * 100;
+  var bar = document.getElementById('readProgressBar');
+  if (bar) bar.style.width = Math.min(100, Math.max(0, percent)) + '%';
+});
+
+function copyArticleUrl() {
+  var btn = document.getElementById('btnCopyArticleUrl');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(window.location.href).then(function() {
+      if (btn) {
+        var old = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        btn.style.color = '#10b981';
+        setTimeout(function() { btn.textContent = old; btn.style.color = ''; }, 2000);
+      }
+    });
+  }
+}
+
+function shareArticleOnX() {
+  var url = encodeURIComponent(window.location.href);
+  var title = encodeURIComponent(document.title);
+  window.open('https://twitter.com/intent/tweet?text=' + title + '&url=' + url, '_blank');
+}
+
+function shareArticleOnWhatsApp() {
+  var url = encodeURIComponent(window.location.href);
+  var title = encodeURIComponent(document.title);
+  window.open('https://api.whatsapp.com/send?text=' + title + '%20' + url, '_blank');
+}
+</script>

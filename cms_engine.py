@@ -10,6 +10,10 @@ DATA_DIR = ROOT_DIR / "data"
 NAV_FILE = DATA_DIR / "navigation_master.json"
 PAGES_FILE = DATA_DIR / "cms_pages.json"
 POSTS_FILE = DATA_DIR / "cms_posts.json"
+TEMPLATES_DIR = ROOT_DIR / "templates"
+BLOG_PORTAL_TEMPLATE = TEMPLATES_DIR / "blog_portal.html"
+BLOG_ARTICLE_TEMPLATE = TEMPLATES_DIR / "blog_article.html"
+BLOG_STYLES_TEMPLATE = TEMPLATES_DIR / "blog_styles.css"
 
 # ==============================================================================
 # 1. MARKDOWN TO HTML PARSER (Zero-dependency, clean GFM subset)
@@ -873,32 +877,142 @@ def render_page_view(slug: str, is_preview: bool = False) -> Optional[str]:
 
 def render_blog_index() -> str:
     posts = list_posts(published_only=True)
+    all_categories = sorted(list(set([p.get("category", "General") for p in posts if p.get("category")])))
+
+    featured_post = posts[0] if posts else None
+    trending_posts = posts[1:4] if len(posts) > 1 else (posts[:1] if posts else [])
+
+    cat_pills = ['<button type="button" class="blog-cat-pill active" data-category="ALL" onclick="filterBlogCategory(\'ALL\', this)">All Topics <span class="cat-pill-count">' + str(len(posts)) + '</span></button>']
+    for cat in all_categories:
+        count = sum(1 for p in posts if p.get("category") == cat)
+        cat_pills.append('<button type="button" class="blog-cat-pill" data-category="' + html.escape(cat) + '" onclick="filterBlogCategory(\'' + html.escape(cat) + '\', this)">' + html.escape(cat) + ' <span class="cat-pill-count">' + str(count) + '</span></button>')
+
+    ticker_headline = posts[0].get("title", "Market Insights") if posts else "Latest Quantitative Research"
+    ticker_slug = posts[0].get("slug", "") if posts else ""
+
+    featured_html = ""
+    if featured_post:
+        f_slug = featured_post.get("slug", "")
+        f_img = featured_post.get("coverImage") or "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&auto=format&fit=crop&q=80"
+        f_cat = featured_post.get("category", "Market Research")
+        f_title = featured_post.get("title", "")
+        f_excerpt = featured_post.get("excerpt", "")
+        f_date = featured_post.get("publishedAt", "")
+        f_read = featured_post.get("readTime", "5 min read")
+        f_author = featured_post.get("author", "TradersDesk Research")
+
+        featured_html = f"""<div class="blog-featured-card" onclick="window.location.href='/blog/{html.escape(f_slug)}'">
+          <div class="blog-featured-img-wrap">
+            <img src="{html.escape(f_img)}" alt="{html.escape(f_title)}" class="blog-featured-img" loading="eager" />
+            <div class="blog-featured-img-overlay"></div>
+            <span class="blog-cat-badge">{html.escape(f_cat)}</span>
+          </div>
+          <div class="blog-featured-body">
+            <div class="blog-meta-strip">
+              <span>📅 {html.escape(f_date)}</span>
+              <span>•</span>
+              <span>⏱️ {html.escape(f_read)}</span>
+            </div>
+            <h2 class="blog-featured-title">
+              <a href="/blog/{html.escape(f_slug)}" onclick="event.stopPropagation()">{html.escape(f_title)}</a>
+            </h2>
+            <p class="blog-featured-excerpt">{html.escape(f_excerpt)}</p>
+            <div class="blog-featured-footer">
+              <div class="blog-author-pill">
+                <span class="author-avatar">TD</span>
+                <span class="author-name">{html.escape(f_author)}</span>
+              </div>
+              <a href="/blog/{html.escape(f_slug)}" class="blog-read-btn" onclick="event.stopPropagation()">
+                Read Full Story <span>&rarr;</span>
+              </a>
+            </div>
+          </div>
+        </div>"""
+
+    trending_items = []
+    for i, p in enumerate(trending_posts):
+        t_slug = p.get("slug", "")
+        t_cat = p.get("category", "Insights")
+        t_title = p.get("title", "")
+        t_read = p.get("readTime", "5 min")
+        trending_items.append(f"""<a href="/blog/{html.escape(t_slug)}" class="blog-trending-item">
+          <span class="trending-rank">0{i+1}</span>
+          <div class="trending-info">
+            <span class="trending-cat">{html.escape(t_cat)}</span>
+            <h4 class="trending-title">{html.escape(t_title)}</h4>
+            <span class="trending-meta">⏱️ {html.escape(t_read)}</span>
+          </div>
+        </a>""")
+
+    trending_html = f"""<div class="blog-trending-card">
+      <div class="trending-card-header">
+        <h3 class="trending-card-title">🔥 Top Trending Today</h3>
+        <span class="trending-live-dot">LIVE</span>
+      </div>
+      <div class="trending-list">
+        {''.join(trending_items) if trending_items else '<div style="color:var(--text-muted); font-size:12px;">No trending items</div>'}
+      </div>
+      <a href="/option-chain-pro" class="trending-terminal-cta">
+        <span>⚡ Open Options Greeks Desk</span>
+        <span>&rarr;</span>
+      </a>
+    </div>"""
+
     cards = []
     for p in posts:
         slug = p.get("slug", "")
         img = p.get("coverImage") or "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&auto=format&fit=crop&q=80"
-        cards.append(f"""<div class="blog-card">
-          <img src="{html.escape(img)}" alt="{html.escape(p.get('title',''))}" class="blog-card-img" loading="lazy" />
-          <div class="blog-card-body">
-            <span class="cms-badge" style="align-self:flex-start;">{html.escape(p.get('category', 'Insights'))}</span>
-            <a href="/blog/{html.escape(slug)}" class="blog-card-title">{html.escape(p.get('title',''))}</a>
-            <p class="blog-card-excerpt">{html.escape(p.get('excerpt',''))}</p>
-            <div class="blog-card-meta">
-              <span>{html.escape(p.get('publishedAt', ''))}</span>
-              <span>{html.escape(p.get('readTime', '4 min read'))}</span>
+        cat = p.get("category", "Insights")
+        title = p.get("title", "")
+        excerpt = p.get("excerpt", "")
+        date = p.get("publishedAt", "")
+        read = p.get("readTime", "5 min read")
+        author = p.get("author", "Research Desk")
+
+        cards.append(f"""<div class="blog-grid-card" data-category="{html.escape(cat)}" data-title="{html.escape(title.lower())}" data-excerpt="{html.escape(excerpt.lower())}" data-date="{html.escape(date)}" onclick="window.location.href='/blog/{html.escape(slug)}'">
+          <div class="blog-card-media">
+            <img src="{html.escape(img)}" alt="{html.escape(title)}" class="blog-card-thumbnail" loading="lazy" />
+            <span class="blog-cat-badge">{html.escape(cat)}</span>
+          </div>
+          <div class="blog-card-content">
+            <div class="blog-meta-strip">
+              <span>{html.escape(date)}</span>
+              <span>•</span>
+              <span>{html.escape(read)}</span>
+            </div>
+            <h3 class="blog-card-h3">
+              <a href="/blog/{html.escape(slug)}" onclick="event.stopPropagation()">{html.escape(title)}</a>
+            </h3>
+            <p class="blog-card-summary">{html.escape(excerpt)}</p>
+            <div class="blog-card-bottom">
+              <div class="blog-author-pill">
+                <span class="author-avatar-sm">TD</span>
+                <span class="author-name-sm">{html.escape(author)}</span>
+              </div>
+              <span class="blog-arrow-link">&rarr;</span>
             </div>
           </div>
         </div>""")
 
-    body_html = f"""<div>
-      <div style="margin-bottom: 24px;">
-        <h1 class="cms-h1">✍️ Market Research &amp; Quantitative Insights</h1>
-        <p class="cms-p">In-depth technical analysis, market breadth dynamics, option Greeks calibration, and FII derivatives flow methodologies.</p>
-      </div>
-      <div class="blog-grid">
-        {"".join(cards) if cards else '<div style="color:#64748b; padding:40px; text-align:center;">No published articles yet.</div>'}
-      </div>
-    </div>"""
+    cards_html = "".join(cards) if cards else '<div style="color:var(--text-muted); padding:40px; text-align:center;">No published articles yet.</div>'
+    pills_html = "".join(cat_pills)
+
+    portal_template = ""
+    if BLOG_PORTAL_TEMPLATE.exists():
+        portal_template = BLOG_PORTAL_TEMPLATE.read_text(encoding="utf-8")
+
+    body_html = portal_template
+    body_html = body_html.replace("<!-- TICKER_HEADLINE -->", html.escape(ticker_headline))
+    body_html = body_html.replace("<!-- TICKER_SLUG -->", html.escape(ticker_slug))
+    body_html = body_html.replace("<!-- PILLS_HTML -->", pills_html)
+    body_html = body_html.replace("<!-- FEATURED_HTML -->", featured_html)
+    body_html = body_html.replace("<!-- TRENDING_HTML -->", trending_html)
+    body_html = body_html.replace("<!-- CARDS_HTML -->", cards_html)
+    body_html = body_html.replace("<!-- TOTAL_COUNT -->", str(len(posts)))
+
+    custom_css = ""
+    if BLOG_STYLES_TEMPLATE.exists():
+        custom_css = BLOG_STYLES_TEMPLATE.read_text(encoding="utf-8")
 
     blog_meta = {}
     try:
@@ -907,7 +1021,7 @@ def render_blog_index() -> str:
     except Exception:
         pass
     b_title = blog_meta.get("title") or "Options & Derivatives Trading Blog — NSE Market Analysis | TradersDesk"
-    b_desc = blog_meta.get("desc") or "In-depth articles on NSE derivatives trading, options strategies (straddle, strangle, spreads), MTF leverage analysis, FII/DII institutional flows, market breadth, and Indian stock market analytics from TradersDesk."
+    b_desc = blog_meta.get("desc") or "In-depth articles on NSE derivatives trading, options strategies, MTF leverage analysis, FII/DII institutional flows, market breadth, and Indian stock market analytics."
     b_kw = blog_meta.get("keywords") or "options trading blog india, derivatives strategy nse, mtf trading blog, fii dii analysis blog, nse market analysis"
 
     return render_cms_shell(
@@ -915,7 +1029,8 @@ def render_blog_index() -> str:
         description=b_desc,
         body_content=body_html,
         current_path="/blog",
-        keywords=b_kw
+        keywords=b_kw,
+        custom_css=custom_css
     )
 
 
@@ -1004,9 +1119,6 @@ def render_post_view(slug: str, is_preview: bool = False) -> Optional[str]:
     raw = post.get("content", "")
     fmt = post.get("format", "markdown").lower()
     rendered_body = markdown_to_html(raw) if fmt == "markdown" else raw
-    cover = f'<img src="{html.escape(post["coverImage"])}" style="width:100%; max-height:360px; object-fit:cover; border-radius:10px; margin-bottom:24px;" />' if post.get("coverImage") else ""
-
-    draft_tag = '<span style="background:rgba(234,179,8,0.2); color:#eab308; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">DRAFT</span>' if status == "draft" else ""
 
     ad_top = build_cms_ad_slot("blog_top", "Advertisement", "16px 0 24px 0")
     ad_mid = build_cms_ad_slot("blog_mid", "Sponsored Content", "28px 0")
@@ -1022,31 +1134,66 @@ def render_post_view(slug: str, is_preview: bool = False) -> Optional[str]:
     elif ad_mid:
         rendered_body = rendered_body + ad_mid
 
-    body_html = f"""<article class="cms-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <a href="/blog" style="color:#38bdf8; text-decoration:none; font-size:13px; font-weight:600;">&larr; Back to All Articles</a>
-        <div style="display:flex; gap:8px;">
-          <span class="cms-badge">{html.escape(post.get('category', 'Insights'))}</span>
-          {draft_tag}
+    cover_img = post.get("coverImage")
+    cover_html = f'<div class="post-cover-wrapper"><img src="{html.escape(cover_img)}" alt="{html.escape(post.get("title",""))}" class="post-cover-image" /></div>' if cover_img else ""
+
+    p_title = post.get("title", "Article")
+    p_cat = post.get("category", "Quantitative Research")
+    p_author = post.get("author", "TradersDesk Quantitative Research Desk")
+    p_date = post.get("publishedAt", "")
+    p_read = post.get("readTime", "5 min read")
+    p_excerpt = post.get("excerpt", "")
+
+    other_posts = [p for p in list_posts(published_only=True) if p.get("slug") != slug][:2]
+    related_cards = []
+    for op in other_posts:
+        related_cards.append(f"""<a href="/blog/{html.escape(op.get('slug',''))}" class="related-post-card">
+          <span class="related-cat">{html.escape(op.get('category','Research'))}</span>
+          <h4 class="related-title">{html.escape(op.get('title',''))}</h4>
+          <span class="related-meta">⏱️ {html.escape(op.get('readTime','5 min'))}</span>
+        </a>""")
+
+    related_section_html = ""
+    if related_cards:
+        related_section_html = f"""<div class="related-insights-section">
+        <h3 class="related-section-title">Related Market Research &amp; Guides</h3>
+        <div class="related-grid">
+          {''.join(related_cards)}
         </div>
-      </div>
-      {cover}
-      <div style="font-size:12.5px; color:#64748b; font-family:'JetBrains Mono', monospace; margin-bottom:18px;">
-        <span>By {html.escape(post.get('author', 'Research Desk'))}</span> &bull; 
-        <span>{html.escape(post.get('publishedAt', ''))}</span> &bull; 
-        <span>{html.escape(post.get('readTime', '5 min read'))}</span>
-      </div>
-      {ad_top}
-      {rendered_body}
-      {ad_bottom}
-    </article>"""
+      </div>"""
+
+    lead_excerpt_html = f'<p class="article-lead-excerpt">{html.escape(p_excerpt)}</p>' if p_excerpt else ''
+
+    article_template = ""
+    if BLOG_ARTICLE_TEMPLATE.exists():
+        article_template = BLOG_ARTICLE_TEMPLATE.read_text(encoding="utf-8")
+
+    body_html = article_template
+    body_html = body_html.replace("<!-- ARTICLE_CAT -->", html.escape(p_cat))
+    body_html = body_html.replace("<!-- ARTICLE_TITLE -->", html.escape(p_title))
+    body_html = body_html.replace("<!-- ARTICLE_EXCERPT_HTML -->", lead_excerpt_html)
+    body_html = body_html.replace("<!-- ARTICLE_AUTHOR -->", html.escape(p_author))
+    body_html = body_html.replace("<!-- ARTICLE_DATE -->", html.escape(p_date))
+    body_html = body_html.replace("<!-- ARTICLE_READ_TIME -->", html.escape(p_read))
+    body_html = body_html.replace("<!-- ARTICLE_COVER_HTML -->", cover_html)
+    body_html = body_html.replace("<!-- AD_TOP -->", ad_top or "")
+    body_html = body_html.replace("<!-- ARTICLE_BODY -->", rendered_body)
+    body_html = body_html.replace("<!-- AD_BOTTOM -->", ad_bottom or "")
+    body_html = body_html.replace("<!-- RELATED_SECTION_HTML -->", related_section_html)
+
+    custom_css = ""
+    if BLOG_STYLES_TEMPLATE.exists():
+        custom_css = BLOG_STYLES_TEMPLATE.read_text(encoding="utf-8")
+
+    if post.get("customCss"):
+        custom_css = custom_css + "\n" + post.get("customCss", "")
 
     return render_cms_shell(
         title=post.get("seoTitle") or post.get("title", "Article"),
         description=post.get("metaDescription") or post.get("excerpt", post.get("title", "")),
         body_content=body_html,
         current_path=f"/blog/{slug}",
-        custom_css=post.get("customCss", ""),
+        custom_css=custom_css,
         canonical_url=post.get("canonicalUrl", ""),
         robots_meta=post.get("robotsMeta", "index, follow"),
         keywords=post.get("focusKeyword", ""),

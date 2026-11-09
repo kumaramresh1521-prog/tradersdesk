@@ -1,0 +1,224 @@
+<!-- Blog Portal Template - SSCZone Architecture -->
+<div class="blog-portal-container">
+
+  <!-- Top Breaking Research Ticker Strip -->
+  <div class="blog-ticker-strip">
+    <div class="ticker-left">
+      <span class="ticker-pill"><span class="ticker-pulse"></span>TRENDING RESEARCH</span>
+      <span class="ticker-text"><!-- TICKER_HEADLINE --></span>
+    </div>
+    <a href="/blog/<!-- TICKER_SLUG -->" class="ticker-action">Read Full Analysis &rarr;</a>
+  </div>
+
+  <!-- Hero Header Section -->
+  <div class="blog-hero-section">
+    <div class="hero-text-wrap">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-icon">📊</span>
+        <span>QUANTITATIVE RESEARCH &amp; MARKET INTELLIGENCE</span>
+      </div>
+      <h1 class="hero-main-title">Options, Derivatives &amp; Market Breadth Insights</h1>
+      <p class="hero-subtitle">
+        In-depth mathematical research on Nifty &amp; BankNifty options, Black-Scholes Greeks, FII/DII participant positioning, advance-decline momentum, and cash delivery absorption.
+      </p>
+    </div>
+
+    <!-- Integrated Live Search Bar -->
+    <div class="hero-search-wrap">
+      <div class="search-input-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="blogSearchInput" placeholder="Search articles, Greeks, OI, topics..." oninput="handleBlogSearch(this.value)" autocomplete="off" />
+        <button type="button" id="blogSearchClear" class="search-clear-btn" onclick="clearBlogSearch()" title="Clear search">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Highlight Action Banner (SSCZone Gradient Card) -->
+  <div class="blog-action-banner">
+    <div class="action-banner-content">
+      <div class="banner-badge-row">
+        <span class="banner-badge">⚡ NEW INTERACTIVE DESK</span>
+        <span class="banner-tag">Black-Scholes Mathematical Calibration</span>
+      </div>
+      <h2 class="banner-title">Real-Time Option Chain Pro &amp; Greeks Volatility Surface</h2>
+      <p class="banner-desc">Stream sub-second Delta, Gamma, Theta, Vega, and IV Smile across 200+ strikes with zero-lag websocket integration.</p>
+    </div>
+    <a href="/option-chain-pro" class="banner-cta-btn">
+      <span>Launch Option Chain Pro</span>
+      <span class="btn-arrow">&rarr;</span>
+    </a>
+  </div>
+
+  <!-- Category Filter Pills & Sort Bar -->
+  <div class="blog-controls-bar">
+    <div class="blog-pills-scroll" id="blogCategoryPills">
+      <!-- PILLS_HTML -->
+    </div>
+    <div class="blog-sort-wrap">
+      <select id="blogSortSelect" onchange="sortBlogCards(this.value)">
+        <option value="newest">📅 Newest First</option>
+        <option value="oldest">📅 Oldest First</option>
+      </select>
+      <button type="button" id="blogResetBtn" class="blog-reset-btn" onclick="resetBlogFilters()" style="display:none;">Reset</button>
+    </div>
+  </div>
+
+  <!-- Spotlight 8 + 4 Grid Section -->
+  <div class="blog-spotlight-grid" id="blogSpotlightGrid">
+    <div class="spotlight-left">
+      <div class="section-label-strip">
+        <span class="section-label-icon">✨</span>
+        <span class="section-label-text">EDITORIAL SPOTLIGHT</span>
+      </div>
+      <!-- FEATURED_HTML -->
+    </div>
+    <div class="spotlight-right">
+      <div class="section-label-strip">
+        <span class="section-label-icon">📈</span>
+        <span class="section-label-text">MARKET SPOTLIGHT</span>
+      </div>
+      <!-- TRENDING_HTML -->
+    </div>
+  </div>
+
+  <!-- Main Articles Grid Section -->
+  <div class="blog-main-section">
+    <div class="main-section-header">
+      <div class="section-heading-group">
+        <h2 class="main-section-title">Latest Research &amp; Technical Notes</h2>
+        <span class="articles-count-pill" id="articlesCountPill"><!-- TOTAL_COUNT --> Articles</span>
+      </div>
+      <span class="filter-hint-text" id="filterStatusHint">Showing all published articles</span>
+    </div>
+
+    <!-- 3-Column Grid -->
+    <div class="blog-cards-grid" id="blogCardsGrid">
+      <!-- CARDS_HTML -->
+    </div>
+
+    <!-- Zero Results Empty State -->
+    <div class="blog-empty-state" id="blogEmptyState" style="display:none;">
+      <div class="empty-icon-wrap">🔍</div>
+      <h3 class="empty-title">No matching articles found</h3>
+      <p class="empty-desc">We couldn't find any articles matching your search query. Try another keyword or reset active category filters.</p>
+      <button type="button" class="empty-reset-btn" onclick="resetBlogFilters()">Reset All Filters</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Interactive Client-Side Filter, Search & Sort Script -->
+<script>
+var currentBlogCategory = 'ALL';
+var currentBlogQuery = '';
+
+function handleBlogSearch(val) {
+  currentBlogQuery = (val || '').trim().toLowerCase();
+  var clearBtn = document.getElementById('blogSearchClear');
+  if (clearBtn) {
+    clearBtn.style.display = currentBlogQuery ? 'inline-flex' : 'none';
+  }
+  applyBlogFilters();
+}
+
+function clearBlogSearch() {
+  var input = document.getElementById('blogSearchInput');
+  if (input) input.value = '';
+  currentBlogQuery = '';
+  var clearBtn = document.getElementById('blogSearchClear');
+  if (clearBtn) clearBtn.style.display = 'none';
+  applyBlogFilters();
+}
+
+function filterBlogCategory(cat, btn) {
+  currentBlogCategory = cat;
+  document.querySelectorAll('.blog-cat-pill').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  if (btn) btn.classList.add('active');
+  applyBlogFilters();
+}
+
+function resetBlogFilters() {
+  currentBlogCategory = 'ALL';
+  currentBlogQuery = '';
+  var input = document.getElementById('blogSearchInput');
+  if (input) input.value = '';
+  var clearBtn = document.getElementById('blogSearchClear');
+  if (clearBtn) clearBtn.style.display = 'none';
+  document.querySelectorAll('.blog-cat-pill').forEach(function(el) {
+    el.classList.toggle('active', el.getAttribute('data-category') === 'ALL');
+  });
+  applyBlogFilters();
+}
+
+function applyBlogFilters() {
+  var cards = document.querySelectorAll('#blogCardsGrid .blog-grid-card');
+  var visibleCount = 0;
+  var isFiltering = (currentBlogCategory !== 'ALL' || currentBlogQuery !== '');
+
+  cards.forEach(function(card) {
+    var cardCat = (card.getAttribute('data-category') || '').trim();
+    var cardTitle = (card.getAttribute('data-title') || '');
+    var cardExcerpt = (card.getAttribute('data-excerpt') || '');
+
+    var matchesCat = (currentBlogCategory === 'ALL' || cardCat.toLowerCase() === currentBlogCategory.toLowerCase());
+    var matchesQuery = (!currentBlogQuery || cardTitle.indexOf(currentBlogQuery) !== -1 || cardExcerpt.indexOf(currentBlogQuery) !== -1);
+
+    if (matchesCat && matchesQuery) {
+      card.style.display = 'flex';
+      visibleCount++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+  // Update counters & empty state
+  var countPill = document.getElementById('articlesCountPill');
+  if (countPill) countPill.textContent = visibleCount + ' Article' + (visibleCount === 1 ? '' : 's');
+
+  var emptyState = document.getElementById('blogEmptyState');
+  var grid = document.getElementById('blogCardsGrid');
+  var spotlight = document.getElementById('blogSpotlightGrid');
+  var resetBtn = document.getElementById('blogResetBtn');
+  var hint = document.getElementById('filterStatusHint');
+
+  if (emptyState && grid) {
+    if (visibleCount === 0) {
+      emptyState.style.display = 'block';
+      grid.style.display = 'none';
+    } else {
+      emptyState.style.display = 'none';
+      grid.style.display = 'grid';
+    }
+  }
+
+  if (spotlight) {
+    spotlight.style.display = isFiltering ? 'none' : 'grid';
+  }
+
+  if (resetBtn) {
+    resetBtn.style.display = isFiltering ? 'inline-flex' : 'none';
+  }
+
+  if (hint) {
+    if (isFiltering) {
+      hint.textContent = 'Showing ' + visibleCount + ' matching result' + (visibleCount === 1 ? '' : 's');
+    } else {
+      hint.textContent = 'Showing all published articles';
+    }
+  }
+}
+
+function sortBlogCards(mode) {
+  var grid = document.getElementById('blogCardsGrid');
+  if (!grid) return;
+  var cards = Array.from(grid.querySelectorAll('.blog-grid-card'));
+  cards.sort(function(a, b) {
+    var dateA = a.getAttribute('data-date') || '';
+    var dateB = b.getAttribute('data-date') || '';
+    return mode === 'oldest' ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
+  });
+  cards.forEach(function(card) { grid.appendChild(card); });
+}
+</script>
