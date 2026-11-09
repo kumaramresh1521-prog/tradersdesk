@@ -67,9 +67,9 @@
       "banner_image": ""
     }
   },
-  "enabled": false,
-  "auto_ads": false,
+  "enabled": true,
+  "auto_ads": true,
   "test_mode": false,
-  "updated_at": "2026-11-01 21:30:00 IST",
-  "adsense_client_id": ""
+  "updated_at": "2026-11-09 12:35:00 IST",
+  "adsense_client_id": "ca-pub-4652482591100186"
 }

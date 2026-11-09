@@ -1750,6 +1750,27 @@ def inject_seo_metadata(html: str, path: str) -> str:
             elif "<HEAD>" in html:
                 html = html.replace("<HEAD>", f'<HEAD>{ga_snippet}', 1)
 
+    # 9b. Google AdSense Verification & Auto-Ads Script Injection
+    try:
+        import cms_engine
+        ads_cfg = cms_engine.get_ads_config()
+    except Exception:
+        ads_cfg = {}
+    adsense_cid = ""
+    if isinstance(ads_cfg, dict):
+        adsense_cid = (ads_cfg.get("adsense_client_id") or "").strip()
+    if not adsense_cid:
+        adsense_cid = "ca-pub-4652482591100186"
+    if adsense_cid and "pagead2.googlesyndication.com" not in html:
+        adsense_snippet = (
+            f'\n  <!-- Google AdSense Verification & Auto Ads -->\n'
+            f'  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={adsense_cid}" crossorigin="anonymous"></script>'
+        )
+        if "<head>" in html:
+            html = html.replace("<head>", f'<head>{adsense_snippet}', 1)
+        elif "<HEAD>" in html:
+            html = html.replace("<HEAD>", f'<HEAD>{adsense_snippet}', 1)
+
     # 10. Inject Dynamic Schema.org JSON-LD
     dynamic_json_ld = generate_dynamic_json_ld(path, snapshot)
     json_ld_script = f'\n  <!-- Structured Data: Dynamic Schema.org JSON-LD -->\n  <script type="application/ld+json">\n{dynamic_json_ld}\n  </script>'

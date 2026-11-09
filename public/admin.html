@@ -2076,6 +2076,14 @@
                   </div>
                   <div style="font-size:11.5px; color:#94a3b8;">Dynamic H1 tags injected dynamically per route for search engine indexing.</div>
                 </div>
+
+                <div class="stat-box" style="background:rgba(255,255,255,0.02); border:1px solid rgba(16,185,129,0.2); padding:12px 14px; cursor:pointer;" onclick="switchAdminTab('ads')">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:12px; font-weight:700; color:#e2e8f0;">Google AdSense Verification</span>
+                    <span style="font-size:10.5px; font-weight:800; color:#34d399; background:rgba(16,185,129,0.15); padding:2px 8px; border-radius:10px;">ACTIVE IN &lt;HEAD&gt;</span>
+                  </div>
+                  <div style="font-size:11.5px; color:#94a3b8;">Publisher ca-pub-4652482591100186 active. Click to manage Ads &amp; Monetization &rarr;</div>
+                </div>
               </div>
 
               <div style="display:flex; justify-content:space-between; align-items:center; font-size:11.5px; color:#64748b; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
@@ -2953,8 +2961,8 @@
                 <label style="font-size:12px; font-weight:700; color:#38bdf8; display:block; margin-bottom:6px;">
                   Google AdSense Publisher ID (Client ID):
                 </label>
-                <input type="text" id="admAdsClientId" class="adm-input" placeholder="e.g. ca-pub-1234567890123456" style="width:100%;" />
-                <span style="font-size:11px; color:var(--adm-muted); display:block; margin-top:4px;">Leave blank if using direct image banners or custom partner HTML.</span>
+                <input type="text" id="admAdsClientId" class="adm-input" placeholder="e.g. ca-pub-4652482591100186" style="width:100%;" oninput="updateAdSenseSnippetPreview()" />
+                <span style="font-size:11px; color:var(--adm-muted); display:block; margin-top:4px;">Official publisher client ID provided by Google AdSense.</span>
               </div>
               <div style="display:flex; flex-direction:column; justify-content:center; gap:12px;">
                 <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#f8fafc;">
@@ -2963,8 +2971,60 @@
                 </label>
                 <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#f8fafc;">
                   <input type="checkbox" id="admAdsAutoAdsToggle" style="width:18px; height:18px; accent-color:#eab308;" />
-                  <span><b>Google Auto-Ads Script Tag</b> — <small style="color:var(--adm-muted);">Inject AdSense automatic high-performing tag</small></span>
+                  <span><b>Google Auto-Ads Script Tag</b> — <small style="color:var(--adm-muted);">Inject AdSense automatic high-performing tag into &lt;head&gt;</small></span>
                 </label>
+              </div>
+            </div>
+
+            <!-- Google AdSense Verification & Head Tag Inspector -->
+            <div style="margin-top:16px; background:linear-gradient(180deg, rgba(16,185,129,0.08) 0%, rgba(15,23,42,0.6) 100%); border-radius:8px; padding:16px; border:1px solid rgba(16,185,129,0.25);">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:20px;">🛡️</span>
+                  <div>
+                    <h4 style="margin:0; font-size:14px; font-weight:800; color:#34d399; letter-spacing:0.3px;">
+                      Google AdSense Site Verification Status
+                    </h4>
+                    <p style="margin:2px 0 0; font-size:11.5px; color:#94a3b8;">
+                      Official publisher verification script tag is permanently injected into <code style="color:#38bdf8; background:rgba(56,189,248,0.1); padding:1px 5px; border-radius:3px;">&lt;head&gt;</code> across all pages for Google AdSense crawler.
+                    </p>
+                  </div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <span id="admAdsenseHeadBadge" style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:800; background:rgba(16,185,129,0.2); color:#10b981; border:1px solid rgba(16,185,129,0.4); padding:4px 10px; border-radius:20px;">
+                    🟢 ACTIVE IN &lt;HEAD&gt;
+                  </span>
+                  <button type="button" class="btn-adm-secondary" onclick="checkAdsenseLiveTag()" style="font-size:11.5px; padding:5px 12px; display:inline-flex; align-items:center; gap:5px;">
+                    🔍 Test Live Tag On Site
+                  </button>
+                </div>
+              </div>
+
+              <!-- Live Verification Snippet Box -->
+              <div style="background:rgba(2,6,23,0.85); border:1px solid rgba(56,189,248,0.2); border-radius:6px; padding:12px; position:relative; margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <span style="font-size:11px; font-weight:700; color:#38bdf8;">Verification Code Tag (&lt;head&gt;):</span>
+                  <button type="button" id="btnCopyAdsenseTag" onclick="copyAdsenseTagSnippet()" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; font-size:11px; font-weight:700; padding:3px 10px; border-radius:4px; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                    📋 Copy Code
+                  </button>
+                </div>
+                <pre id="admAdsenseTagPreview" style="margin:0; font-family:Consolas, 'Courier New', monospace; font-size:12px; color:#f1f5f9; white-space:pre-wrap; word-break:break-all; line-height:1.4;">&lt;script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4652482591100186" crossorigin="anonymous"&gt;&lt;/script&gt;</pre>
+              </div>
+
+              <!-- Diagnostic result box -->
+              <div id="admAdsenseLiveCheckResult" style="display:none; margin-bottom:12px; font-size:12px; padding:8px 12px; border-radius:6px;"></div>
+
+              <!-- Verification Steps Checklist -->
+              <div style="background:rgba(0,0,0,0.3); border-radius:6px; padding:12px; border:1px solid rgba(255,255,255,0.06);">
+                <div style="font-size:12px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">
+                  📋 Step-by-Step Google AdSense Verification Guide:
+                </div>
+                <ol style="margin:0; padding-left:20px; font-size:11.5px; color:#cbd5e1; line-height:1.6;">
+                  <li><b>Code is already placed:</b> The verification script tag with Client ID <code style="color:#38bdf8;">ca-pub-4652482591100186</code> is permanently embedded in the HTML <code style="color:#38bdf8;">&lt;head&gt;</code> of all site pages.</li>
+                  <li><b>Open Google AdSense Console:</b> Go to <a href="https://adsense.google.com/" target="_blank" style="color:#38bdf8; text-decoration:underline;">Google AdSense (adsense.google.com)</a> &rarr; Click on <b>"Sites"</b> in the left sidebar menu.</li>
+                  <li><b>Verify Site:</b> Select <b>tradersdesk.in</b> &rarr; Check the box <b>"I've placed the code"</b> &rarr; Click <b>"Verify"</b> or <b>"Request Review"</b>.</li>
+                  <li>Google crawlers will detect the tag automatically and approve the site within 24–48 hours.</li>
+                </ol>
               </div>
             </div>
           </div>
@@ -7029,6 +7089,7 @@ async function loadAdminAdsHub() {
     if (autoAdsToggle) autoAdsToggle.checked = !!cfg.auto_ads;
 
     updateAdmAdsStatusBadge();
+    updateAdSenseSnippetPreview();
 
     const slots = cfg.slots || {};
     const defaultSlots = {
@@ -7313,6 +7374,7 @@ async function saveAdminAdsHub() {
         setTimeout(() => { if (bottomMsg) bottomMsg.textContent = ''; }, 3500);
       }
       updateAdmAdsStatusBadge();
+    updateAdSenseSnippetPreview();
     } else {
       if (alertEl) {
         alertEl.className = 'alert-adm alert-adm-danger';
@@ -7333,5 +7395,87 @@ async function saveAdminAdsHub() {
 }
 
 </script>
-  </body>
+  <script>
+function updateAdSenseSnippetPreview() {
+  const inp = document.getElementById('admAdsClientId');
+  const preview = document.getElementById('admAdsenseTagPreview');
+  const val = (inp ? inp.value.trim() : '') || 'ca-pub-4652482591100186';
+  if (preview) {
+    preview.textContent = `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${val}" crossorigin="anonymous"><\/script>`;
+  }
+}
+
+function copyAdsenseTagSnippet() {
+  const el = document.getElementById('admAdsenseTagPreview');
+  const btn = document.getElementById('btnCopyAdsenseTag');
+  if (!el) return;
+  const text = el.textContent || el.innerText;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Copied!';
+        btn.style.color = '#10b981';
+        setTimeout(() => { btn.innerHTML = orig; btn.style.color = '#38bdf8'; }, 2500);
+      }
+    }).catch(() => fallbackCopy(text, btn));
+  } else {
+    fallbackCopy(text, btn);
+  }
+}
+
+function fallbackCopy(text, btn) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    if (btn) {
+      btn.innerHTML = '✅ Copied!';
+      setTimeout(() => { btn.innerHTML = '📋 Copy Code'; }, 2500);
+    }
+  } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+async function checkAdsenseLiveTag() {
+  const resEl = document.getElementById('admAdsenseLiveCheckResult');
+  const clientId = (document.getElementById('admAdsClientId')?.value || 'ca-pub-4652482591100186').trim();
+  if (resEl) {
+    resEl.style.display = 'block';
+    resEl.style.background = 'rgba(56,189,248,0.1)';
+    resEl.style.border = '1px solid rgba(56,189,248,0.3)';
+    resEl.style.color = '#38bdf8';
+    resEl.innerHTML = '⏳ Testing live HTML &lt;head&gt; on server...';
+  }
+  try {
+    const res = await fetch('/?_test=' + Date.now());
+    const html = await res.text();
+    if (html.includes(clientId) && html.includes('pagead2.googlesyndication.com')) {
+      if (resEl) {
+        resEl.style.background = 'rgba(16,185,129,0.15)';
+        resEl.style.border = '1px solid rgba(16,185,129,0.4)';
+        resEl.style.color = '#34d399';
+        resEl.innerHTML = `✅ <b>Verified!</b> Google AdSense tag for <code>${clientId}</code> is detected LIVE in website &lt;head&gt;! Ready for Google review.`;
+      }
+    } else {
+      if (resEl) {
+        resEl.style.background = 'rgba(239,68,68,0.15)';
+        resEl.style.border = '1px solid rgba(239,68,68,0.4)';
+        resEl.style.color = '#f87171';
+        resEl.innerHTML = `⚠️ Client ID <code>${clientId}</code> not found in current response. Make sure "Master Ads Network" is ENABLED and click "Save Ads Settings".`;
+      }
+    }
+  } catch (e) {
+    if (resEl) {
+      resEl.style.background = 'rgba(239,68,68,0.15)';
+      resEl.style.border = '1px solid rgba(239,68,68,0.4)';
+      resEl.style.color = '#f87171';
+      resEl.innerHTML = '❌ Error testing live response: ' + (e.message || e);
+    }
+  }
+}
+</script>
+</body>
 </html>
