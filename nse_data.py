@@ -302,7 +302,7 @@ def get_real_participant_oi(date_value: str) -> dict:
     if not parsed_history:
         try:
             import supabase_engine
-            snap = supabase_engine.load_market_daily_snapshot(date_value)
+            snap = supabase_engine.load_market_daily_snapshot(date_value, columns="smart_money_data")
             if snap and snap.get("smart_money_data"):
                 sm = snap["smart_money_data"]
                 if sm.get("participants"):

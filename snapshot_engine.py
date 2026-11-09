@@ -222,11 +222,7 @@ def build_options_snapshot(underlying: str = "NSE_INDEX|Nifty 50", trade_date: s
                 if actual_k and actual_k != key:
                     instruments_map[actual_k] = compact
 
-                # Also map clean uppercase symbol for direct lookup (e.g. NIFTY, RELIANCE)
-                for alias in inst.get("aliases", []):
-                    if alias.isupper() and " " not in alias:
-                        instruments_map[alias] = compact
-                        break
+                # Stored by canonical instrument key (lookup code automatically resolves NSE_INDEX| and NSE_EQ| prefixes)
 
                 if key == "NSE_INDEX|Nifty 50":
                     primary_snap = compact
@@ -278,7 +274,6 @@ def build_straddle_snapshot(trade_date: str = "") -> dict:
                         "points": st.get("points", []),
                     }
                     res[idx.lower()] = st_data
-                    res[idx.upper()] = st_data
             except Exception as ex_idx:
                 print(f"[SnapshotEngine] Straddle snapshot error for {idx}: {ex_idx}")
     except Exception as e:
@@ -290,13 +285,11 @@ def save_straddles_to_supabase(trade_date: str, straddles_dict: dict) -> dict:
     """Merges straddles directly into Supabase market_daily_snapshots without slow dependencies."""
     try:
         import supabase_engine
-        existing = supabase_engine.load_market_daily_snapshot(trade_date) or {}
+        existing = supabase_engine.load_market_daily_snapshot(trade_date, columns="straddle_data") or {}
         st_data = dict(existing.get("straddle_data", {}))
         for k, v in straddles_dict.items():
             st_data[k.lower()] = v
-            st_data[k.upper()] = v
-        existing["straddle_data"] = st_data
-        return supabase_engine.save_market_daily_snapshot(trade_date, existing)
+        return supabase_engine.save_market_daily_snapshot(trade_date, {"straddle_data": st_data})
     except Exception as e:
         return {"ok": False, "message": str(e)}
 
@@ -307,7 +300,7 @@ def save_breadth_universe_to_supabase(trade_date: str, universe: str, breadth_di
         try:
             import supabase_engine
             norm_u = universe.lower().replace(" ", "").replace("_", "")
-            existing = supabase_engine.load_market_daily_snapshot(trade_date) or {}
+            existing = supabase_engine.load_market_daily_snapshot(trade_date, columns="breadth_data") or {}
             b_data = dict(existing.get("breadth_data", {}))
 
             s = breadth_dict.get("summary") or {}
@@ -335,8 +328,7 @@ def save_breadth_universe_to_supabase(trade_date: str, universe: str, breadth_di
                 "supportingUp": breadth_dict.get("supportingUp", [])[:20],
                 "timeline": tl,
             }
-            existing["breadth_data"] = b_data
-            res = supabase_engine.save_market_daily_snapshot(trade_date, existing)
+            res = supabase_engine.save_market_daily_snapshot(trade_date, {"breadth_data": b_data})
             # Invalidate in-memory snapshot cache so next read immediately sees newly saved universe
             _SNAPSHOT_CACHE.pop(trade_date, None)
             _SNAPSHOT_CACHE_TS.pop(trade_date, None)

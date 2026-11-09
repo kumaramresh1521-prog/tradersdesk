@@ -12113,7 +12113,7 @@ def build_participant_oi_analysis(date_value: str) -> dict:
 
     try:
         import supabase_engine
-        snap = supabase_engine.load_market_daily_snapshot(date_value)
+        snap = supabase_engine.load_market_daily_snapshot(date_value, columns="smart_money_data")
         if snap and snap.get("smart_money_data"):
             sm = snap["smart_money_data"]
             if sm.get("participants"):
@@ -12677,7 +12677,7 @@ def build_smart_money(payload: dict) -> dict:
         try:
             import supabase_engine
             target_str = target_dt.isoformat() if target_dt else resolve_market_session_date("")
-            snap = supabase_engine.load_market_daily_snapshot(target_str)
+            snap = supabase_engine.load_market_daily_snapshot(target_str, columns="smart_money_data")
             if snap and snap.get("smart_money_data") and isinstance(snap["smart_money_data"], dict):
                 return snap["smart_money_data"]
         except Exception:
@@ -14132,7 +14132,7 @@ def build_delivery_analytics(payload: dict) -> dict:
         try:
             import supabase_engine
             target_str = str(payload.get("date") or resolve_market_session_date(""))[:10]
-            snap = supabase_engine.load_market_daily_snapshot(target_str)
+            snap = supabase_engine.load_market_daily_snapshot(target_str, columns="delivery_data")
             if snap and snap.get("delivery_data") and isinstance(snap["delivery_data"], dict):
                 deliv_d = snap["delivery_data"]
                 if deliv_d.get("stocks") or deliv_d.get("topDelivery"):
@@ -15836,7 +15836,7 @@ def build_mtf(payload: dict) -> dict:
         try:
             import supabase_engine
             target_str = str(payload.get("date") or resolve_market_session_date(""))[:10]
-            snap = supabase_engine.load_market_daily_snapshot(target_str)
+            snap = supabase_engine.load_market_daily_snapshot(target_str, columns="mtf_data")
             if snap and snap.get("mtf_data") and isinstance(snap["mtf_data"], dict):
                 return snap["mtf_data"]
         except Exception:
@@ -19733,7 +19733,7 @@ def maybe_trigger_auto_eod_heal() -> None:
             target_str = resolve_market_session_date("")
             if not target_str:
                 return
-            existing = supabase_engine.load_market_daily_snapshot(target_str)
+            existing = supabase_engine.load_market_daily_snapshot(target_str, columns=["delivery_data", "smart_money_data"])
             if not existing or not existing.get("delivery_data") or not existing.get("smart_money_data"):
                 snapshot_engine.capture_and_save_eod_snapshot(target_str)
         except Exception:
@@ -22122,7 +22122,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             if not check_admin_request(self):
                 return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
             query = urllib.parse.parse_qs(parsed.query)
-            days = int((query.get("days") or ["90"])[0]) if (query.get("days") or ["90"])[0].isdigit() else 90
+            raw_days = int((query.get("days") or ["15"])[0]) if (query.get("days") or ["15"])[0].isdigit() else 15
+            days = min(max(raw_days, 1), 30)
             snaps = supabase_engine.load_market_snapshots_summary_list(days)
             return self.send_json(200, {
                 "ok": True,

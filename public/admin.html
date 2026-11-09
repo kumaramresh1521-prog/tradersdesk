@@ -3947,7 +3947,7 @@
         const tbody = document.getElementById('tbodySnapshotsArchive');
         if (!tbody) return;
         try {
-          const res = await fetch('/api/admin/snapshots-summary?days=90', { headers: getAuthHeaders() });
+          const res = await fetch('/api/admin/snapshots-summary?days=15', { headers: getAuthHeaders() });
           if (!res.ok) throw new Error('HTTP ' + res.status);
           const d = await res.json();
           _allSnapshotsData = d.snapshots || [];
