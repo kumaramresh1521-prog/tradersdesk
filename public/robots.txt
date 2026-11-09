@@ -1,5 +1,9 @@
-# TradersDesk.in - Search Engine Crawler Directives
+# TradersDesk.in - Search Engine & AdSense Crawler Directives
 User-agent: *
+Allow: /
+
+# Google AdSense Crawler (Explicit Unrestricted Access for Review & Ad Serving)
+User-agent: Mediapartners-Google
 Allow: /
 
 # Private Administrative & Internal Surfaces (Strictly Blocked)
