@@ -364,9 +364,27 @@ def build_smart_money_snapshot(trade_date: str) -> dict:
 def build_delivery_snapshot(trade_date: str) -> dict:
     """Gathers top delivery percentage and volume surge stocks."""
     try:
+        t_iso = trade_date.strip()
+        if t_iso:
+            try:
+                from datetime import datetime as _dt
+                d_obj = _dt.strptime(t_iso[:10], "%Y-%m-%d").date()
+                d_str = d_obj.strftime("%d%m%Y")
+                has_file = False
+                for p in (ROOT / "data" / "delivery", ROOT / "data", Path(".cache/delivery_bhav"), Path("cache/delivery_bhav")):
+                    if (p / f"sec_bhavdata_full_{d_str}.csv").exists():
+                        has_file = True
+                        break
+                if not has_file:
+                    # Official delivery data for trade_date has NOT been published by NSE yet.
+                    # Do NOT forge or save an earlier session under this trade_date.
+                    return {}
+            except Exception:
+                pass
+
         from server import build_delivery_analytics
         deliv = build_delivery_analytics({"date": trade_date})
-        if not deliv or not isinstance(deliv, dict):
+        if not deliv or not isinstance(deliv, dict) or deliv.get("isNearestSession"):
             return {}
         stocks = deliv.get("stocks") or deliv.get("topStocks") or []
         top_stocks = []

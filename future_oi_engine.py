@@ -88,7 +88,7 @@ def _get_pcr_iv_for_symbol_date(symbol: str, date_str: str) -> Optional[dict]:
 def _load_delivery_data(force: bool = False) -> Dict[str, Any]:
     global _DELIVERY_DATA_CACHE, _DELIVERY_INDEX_COMPOSITE, _DELIVERY_DATA_MTIME
     current_mtime = DELIVERY_MASTER_FILE.stat().st_mtime if DELIVERY_MASTER_FILE.exists() else 0.0
-    if not force and _DELIVERY_DATA_CACHE is not None and current_mtime == _DELIVERY_DATA_MTIME:
+    if not force and _DELIVERY_DATA_CACHE is not None and current_mtime == _DELIVERY_DATA_MTIME and _DELIVERY_DATA_CACHE:
         return _DELIVERY_DATA_CACHE
     _DELIVERY_DATA_MTIME = current_mtime
     if DELIVERY_MASTER_FILE.exists():
@@ -101,6 +101,52 @@ def _load_delivery_data(force: bool = False) -> Dict[str, Any]:
     else:
         _DELIVERY_DATA_CACHE = {}
 
+    # Scan for any un-indexed official delivery CSVs in DELIVERY_DIR and CACHE_DIR / "delivery_bhav"
+    ref_stock = "RELIANCE"
+    existing_dates = set(_DELIVERY_DATA_CACHE.get(ref_stock, {}).keys()) if _DELIVERY_DATA_CACHE else set()
+    csv_candidates = []
+    for d_dir in (DELIVERY_DIR, ROOT / "data", CACHE_DIR / "delivery_bhav", CACHE_DIR):
+        if d_dir.exists():
+            csv_candidates.extend(d_dir.glob("sec_bhavdata_full_*.csv"))
+
+    merged_new = False
+    for f in csv_candidates:
+        base = f.stem.replace("sec_bhavdata_full_", "")
+        if len(base) == 8 and base.isdigit():
+            dt_key = base[4:8] + base[2:4] + base[0:2]  # DDMMYYYY -> YYYYMMDD
+            if dt_key not in existing_dates:
+                try:
+                    with open(f, "r", encoding="utf-8", errors="ignore") as fp:
+                        r = csv.reader(fp)
+                        header = [c.strip() for c in next(r)]
+                        if "SYMBOL" in header and "SERIES" in header and "DELIV_PER" in header:
+                            s_idx = header.index("SYMBOL")
+                            ser_idx = header.index("SERIES")
+                            dv_idx = header.index("DELIV_PER")
+                            qty_idx = header.index("DELIV_QTY") if "DELIV_QTY" in header else -1
+                            vol_idx = header.index("TTL_TRD_QNTY") if "TTL_TRD_QNTY" in header else -1
+                            for row in r:
+                                if len(row) > max(s_idx, ser_idx, dv_idx):
+                                    if row[ser_idx].strip() == "EQ":
+                                        sym = row[s_idx].strip().upper()
+                                        try:
+                                            dv = float(row[dv_idx].strip())
+                                            qty = int(row[qty_idx].strip()) if qty_idx >= 0 and row[qty_idx].strip().isdigit() else None
+                                            vol = int(row[vol_idx].strip()) if vol_idx >= 0 and row[vol_idx].strip().isdigit() else None
+                                            if sym not in _DELIVERY_DATA_CACHE:
+                                                _DELIVERY_DATA_CACHE[sym] = {}
+                                            _DELIVERY_DATA_CACHE[sym][dt_key] = {
+                                                "dv": dv,
+                                                "deliv_qty": qty,
+                                                "volume": vol
+                                            }
+                                        except Exception:
+                                            pass
+                            existing_dates.add(dt_key)
+                            merged_new = True
+                except Exception as err:
+                    print(f"[future_oi_engine] Error parsing delivery file {f.name}: {err}")
+
     if _DELIVERY_DATA_CACHE:
         top_stocks = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "SBIN", "BHARTIARTL", "ITC", "LT", "AXISBANK", "KOTAKBANK", "TMPV", "TATASTEEL", "MARUTI", "SUNPHARMA", "BAJFINANCE", "HINDUNILVR"]
         dates_set = set()
@@ -108,9 +154,20 @@ def _load_delivery_data(force: bool = False) -> Dict[str, Any]:
             if s in _DELIVERY_DATA_CACHE:
                 dates_set.update(_DELIVERY_DATA_CACHE[s].keys())
         for d in dates_set:
-            vals = [_DELIVERY_DATA_CACHE[s][d]["dv"] for s in top_stocks if s in _DELIVERY_DATA_CACHE and d in _DELIVERY_DATA_CACHE[s]]
+            vals = [_DELIVERY_DATA_CACHE[s][d]["dv"] for s in top_stocks if s in _DELIVERY_DATA_CACHE and d in _DELIVERY_DATA_CACHE[s] and _DELIVERY_DATA_CACHE[s][d].get("dv") is not None]
             if vals:
                 _DELIVERY_INDEX_COMPOSITE[d] = round(sum(vals) / len(vals), 1)
+
+        if merged_new:
+            try:
+                DELIVERY_MASTER_FILE.parent.mkdir(parents=True, exist_ok=True)
+                tmp_deliv = DELIVERY_MASTER_FILE.with_suffix(".tmp")
+                with open(tmp_deliv, "w", encoding="utf-8") as f:
+                    json.dump(_DELIVERY_DATA_CACHE, f)
+                tmp_deliv.replace(DELIVERY_MASTER_FILE)
+                _DELIVERY_DATA_MTIME = DELIVERY_MASTER_FILE.stat().st_mtime
+            except Exception as e:
+                print("[future_oi_engine] Error writing delivery master file:", e)
 
     return _DELIVERY_DATA_CACHE
 
@@ -130,21 +187,19 @@ def _get_delivery_for_symbol_date(symbol: str, date_str: str) -> Optional[dict]:
         s_data = deliv_master.get(clean_sym)
 
     clean_d = date_str.replace("-", "")
-    if not s_data:
-        # Benchmark and Sectoral Indices composite delivery
-        if sym in ("NIFTY", "NIFTY50", "NIFTY 50", "BANKNIFTY", "BANK NIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX") or "NIFTY" in sym:
-            if clean_d in _DELIVERY_INDEX_COMPOSITE:
-                return {
-                    "dv": _DELIVERY_INDEX_COMPOSITE[clean_d],
-                    "deliv_qty": None,
-                    "volume": None
-                }
-        return None
-
-    if clean_d in s_data:
+    if s_data and clean_d in s_data and s_data[clean_d].get("dv") is not None:
         return s_data[clean_d]
-    if date_str in s_data:
+    if s_data and date_str in s_data and s_data[date_str].get("dv") is not None:
         return s_data[date_str]
+
+    # Benchmark and Sectoral Indices composite delivery fallback
+    if sym in ("NIFTY", "NIFTY50", "NIFTY 50", "BANKNIFTY", "BANK NIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX") or "NIFTY" in sym:
+        if clean_d in _DELIVERY_INDEX_COMPOSITE:
+            return {
+                "dv": _DELIVERY_INDEX_COMPOSITE[clean_d],
+                "deliv_qty": None,
+                "volume": None
+            }
 
     return None
 
@@ -296,6 +351,8 @@ def _load_bhavcopy_eod_data(force: bool = False):
             latest_options = {}
 
         day_fut: Dict[str, list] = {}
+        day_pe_oi: Dict[str, int] = {}
+        day_ce_oi: Dict[str, int] = {}
         try:
             with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 reader = csv.DictReader(f)
@@ -332,13 +389,21 @@ def _load_bhavcopy_eod_data(force: bool = False):
                         except Exception:
                             pass
 
-                    # Options record for the latest session (partitioned cleanly by Expiry Date!)
-                    elif is_latest and tp in ("STO", "IDO", "OPTSTK", "OPTIDX"):
+                    # Options record: accumulate PE/CE OI for PCR across all dates, and map contracts for is_latest
+                    elif tp in ("STO", "IDO", "OPTSTK", "OPTIDX"):
                         try:
+                            oi = int(float(r.get("OpnIntrst") or 0))
+                            opt_type = (r.get("OptnTp") or "").strip().upper()
+                            if opt_type == "PE":
+                                day_pe_oi[sym] = day_pe_oi.get(sym, 0) + oi
+                            elif opt_type == "CE":
+                                day_ce_oi[sym] = day_ce_oi.get(sym, 0) + oi
+
+                            if not is_latest:
+                                continue
+
                             k = float(r.get("StrkPric") or 0)
                             exp = (r.get("XpryDt") or "").strip()
-                            opt_type = (r.get("OptnTp") or "").strip().upper()
-                            oi = int(float(r.get("OpnIntrst") or 0))
                             oi_chg = int(float(r.get("ChngInOpnIntrst") or 0))
                             cls_p = float(r.get("ClsPric") or r.get("LastPric") or 0.0)
                             prev_p = float(r.get("PrvsClsgPric") or cls_p)
@@ -404,6 +469,10 @@ def _load_bhavcopy_eod_data(force: bool = False):
 
                 # Remove any existing point for dt_str and append clean aggregate
                 symbols_data[sym] = [x for x in symbols_data[sym] if x["date"] != dt_str]
+                pe_tot = day_pe_oi.get(sym, 0)
+                ce_tot = day_ce_oi.get(sym, 0)
+                pcr_val = round(pe_tot / ce_tot, 2) if ce_tot > 0 else 1.0
+
                 symbols_data[sym].append({
                     "date": dt_str,
                     "o": round(near["o"] * ratio, 2),
@@ -414,6 +483,7 @@ def _load_bhavcopy_eod_data(force: bool = False):
                     "basis": round(near["c"] - final_c, 2),
                     "v": tot_vol,
                     "oi": tot_oi,
+                    "pcr": pcr_val,
                     "isIndex": near["isIndex"],
                 })
         except Exception:

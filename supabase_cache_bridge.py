@@ -182,6 +182,7 @@ def get_delivery_from_supabase(date_val: str = "", universe: str = "nifty50", fi
     """Constructs complete Delivery Desk response from Supabase snapshot."""
     cal_dates = get_available_calendar_dates()
     target_date = _normalize_date_input(date_val, cal_dates)
+    requested_today = not date_val or date_val.strip() == (cal_dates[0] if cal_dates else "")
     if not target_date or target_date not in cal_dates:
         target_date = cal_dates[0] if cal_dates else ""
 
@@ -189,10 +190,22 @@ def get_delivery_from_supabase(date_val: str = "", universe: str = "nifty50", fi
         return None
 
     snap = get_cached_supabase_snapshot(target_date)
-    if not snap:
-        return None
+    deliv_d = snap.get("delivery_data") if snap and isinstance(snap, dict) else None
 
-    deliv_d = snap.get("delivery_data")
+    # If the requested target_date has no delivery_data (e.g. today before NSE EOD bhavcopy is released):
+    # Fall back to the most recent calendar session that actually has delivery data!
+    is_nearest = False
+    if not deliv_d or not isinstance(deliv_d, dict) or not (deliv_d.get("stocks") or deliv_d.get("topStocks")):
+        if requested_today:
+            for alt_date in cal_dates:
+                alt_snap = get_cached_supabase_snapshot(alt_date)
+                alt_deliv = alt_snap.get("delivery_data") if alt_snap and isinstance(alt_snap, dict) else None
+                if alt_deliv and isinstance(alt_deliv, dict) and (alt_deliv.get("stocks") or alt_deliv.get("topStocks")):
+                    deliv_d = alt_deliv
+                    target_date = alt_date
+                    is_nearest = True
+                    break
+
     if not deliv_d or not isinstance(deliv_d, dict):
         return None
 
@@ -251,20 +264,30 @@ def get_delivery_from_supabase(date_val: str = "", universe: str = "nifty50", fi
     elif f_low == "high_deliv":
         filtered = [s for s in filtered if s.get("delivPer", s.get("deliveryPct", 0.0)) >= 60.0]
 
-    try:
-        dt = datetime.strptime(target_date, "%Y-%m-%d").date()
-        date_formatted = dt.strftime("%d %b %Y")
-    except Exception:
-        date_formatted = deliv_d.get("date") or target_date
+    # Resolve authentic session date from embedded delivery metadata if present
+    sess_date = deliv_d.get("date")
+    sess_iso = str(deliv_d.get("dateIso") or "")[:10]
+
+    if sess_iso and sess_iso != target_date:
+        is_nearest = True
+        session_iso = sess_iso
+        date_formatted = sess_date if sess_date else sess_iso
+    else:
+        session_iso = target_date
+        try:
+            dt = datetime.strptime(target_date, "%Y-%m-%d").date()
+            date_formatted = sess_date or dt.strftime("%d %b %Y")
+        except Exception:
+            date_formatted = sess_date or target_date
 
     available_sessions = get_available_sessions_list()
 
     return {
         "ok": True,
         "date": date_formatted,
-        "dateIso": target_date,
-        "targetDateIso": target_date,
-        "isNearestSession": False,
+        "dateIso": session_iso,
+        "targetDateIso": cal_dates[0] if cal_dates else target_date,
+        "isNearestSession": is_nearest,
         "source": "TradersDesk Verified Cloud Archive (Supabase)",
         "availableSessions": available_sessions,
         "majorIndicesDelivery": deliv_d.get("majorIndicesDelivery", {}),
