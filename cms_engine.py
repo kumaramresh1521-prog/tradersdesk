@@ -828,6 +828,36 @@ def delete_post(post_id: str) -> bool:
 
 TEMPLATE_FILE = ROOT_DIR / "templates" / "cms_shell.html"
 
+def get_multilingual_keywords(slug: str, base_keywords: str, title: str) -> str:
+    """Enriches keywords with high-volume Hindi (Devanagari) terms so that Google Search
+    indexes and ranks the page when Indian users search in Hindi.
+    """
+    hindi_terms = ["शेयर मार्केट", "ट्रेडिंग", "निफ्टी 50", "बैंक निफ्टी", "म्यूचुअल फंड", "स्टॉक मार्केट हिंदी"]
+    low = (title + " " + slug).lower()
+
+    if any(k in low for k in ("sip", "calculator", "wealth", "compound", "lump")):
+        hindi_terms.extend([
+            "एसआईपी कैलकुलेटर", "म्यूचुअल फंड एसआईपी", "एसआईपी क्या है", "लंपसम कैलकुलेटर",
+            "कंपाउंडिंग कैलकुलेटर", "म्यूचुअल फंड में निवेश कैसे करें", "एसआईपी कैलकुलेटर हिंदी",
+            "SIP calculator in Hindi", "करोड़पति कैसे बने", "सिप कैलकुलेटर"
+        ])
+    elif any(k in low for k in ("option", "greeks", "pcr", "oi", "chain")):
+        hindi_terms.extend([
+            "ऑप्शन ट्रेडिंग हिंदी", "कॉल और पुट क्या है", "ओपन इंटरेस्ट हिंदी", "पीसीआर अनुपात",
+            "ऑप्शन ग्रीक्स", "डेरिवेटिव्स ट्रेडिंग", "निफ्टी ऑप्शन चेन"
+        ])
+    elif any(k in low for k in ("delivery", "fii", "breadth", "mtf")):
+        hindi_terms.extend([
+            "डिलीवरी डेटा हिंदी", "एफआईआई डीआईआई डेटा", "मार्केट ब्रेथ", "शेयर बाजार तेजी मंदी"
+        ])
+
+    base = [k.strip() for k in base_keywords.split(",") if k.strip()]
+    for ht in hindi_terms:
+        if ht not in base:
+            base.append(ht)
+    return ", ".join(base)
+
+
 def render_cms_shell(
     title: str,
     description: str,
@@ -837,7 +867,8 @@ def render_cms_shell(
     canonical_url: str = "",
     robots_meta: str = "index, follow",
     keywords: str = "",
-    is_draft: bool = False
+    is_draft: bool = False,
+    extra_schema: str = ""
 ) -> str:
     """Wraps any page or blog post in the unified TradersDesk terminal template."""
     nav_html = render_navigation_html(current_path)
@@ -848,9 +879,18 @@ def render_cms_shell(
     &#x26A0;&#xFE0F; DRAFT PREVIEW MODE &mdash; This document is saved as a draft and is hidden from public indexing.
   </div>""" if is_draft else ""
 
-    custom_style_block = f"<style>{custom_css}</style>" if custom_css.strip() else ""
-    keywords_tag = f'<meta name="keywords" content="{html.escape(keywords)}">' if keywords.strip() else ""
+    # Enrich keywords with high-intent Hindi search terms for bilingual Google rankings
+    enriched_keywords = get_multilingual_keywords(current_path, keywords, title)
+    keywords_tag = f'<meta name="keywords" content="{html.escape(enriched_keywords)}">'
     og_type = "article" if "/blog/" in current_path else "website"
+
+    # Multilingual SEO & hreflang tags for Google Search (English + Hindi)
+    hreflang_tags = f"""<link rel="alternate" hreflang="en" href="{html.escape(canon)}">
+  <link rel="alternate" hreflang="hi" href="{html.escape(canon)}">
+  <link rel="alternate" hreflang="x-default" href="{html.escape(canon)}">
+  <meta http-equiv="content-language" content="en-IN, hi-IN">"""
+
+    custom_style_block = f"<style>{custom_css}</style>" if custom_css.strip() else ""
 
     template = ""
     if TEMPLATE_FILE.exists():
@@ -879,6 +919,8 @@ def render_cms_shell(
         "<!-- CMS_HEAD_TITLE -->": html.escape(clean_head_title),
         "<!-- CMS_META_DESC -->": html.escape(description),
         "<!-- CMS_KEYWORDS -->": keywords_tag + ads_header_script,
+        "<!-- CMS_HREFLANG -->": hreflang_tags,
+        "<!-- CMS_EXTRA_SCHEMA -->": extra_schema or "",
         "<!-- CMS_ROBOTS -->": html.escape(robots),
         "<!-- CMS_CANONICAL -->": html.escape(canon),
         "<!-- CMS_OG_TYPE -->": og_type,
@@ -914,6 +956,46 @@ def expand_cms_widgets(text: str) -> str:
     return text
 
 
+def build_sip_faq_schema() -> str:
+    """Builds Google Search FAQPage JSON-LD schema with bilingual titles for Hindi search ranking."""
+    faqs = [
+        ("What happens if I miss an SIP installment due to insufficient bank balance? | क्या बैंक बैलेंस न होने पर SIP मिस होने पर पेनल्टी लगती है?",
+         "The Mutual Fund AMC will NEVER penalize you or cancel your portfolio. However, your bank may charge an NACH/ECS mandate bounce fee. You can easily pause your SIP for 1 to 3 months before scheduled deduction date without any penalty."),
+        ("Is there a Best Date of the month to schedule my SIP (1st vs 5th vs 15th)? | क्या SIP के लिए महीने की कोई सही तारीख होती है?",
+         "Statistically, there is zero meaningful difference across 20+ years of Nifty 50 data (difference < 0.08%). The best date is simply 2 to 3 days after your monthly salary is credited."),
+        ("Can I withdraw my SIP money whenever I want? Is there any lock-in? | क्या SIP का पैसा कभी भी निकाल सकते हैं?",
+         "Except for ELSS tax saving funds (3-year lock-in), all open-ended equity mutual funds offer 100% liquidity. You can redeem anytime with credit in T+1 to T+2 business days."),
+        ("Is my money safe in mutual funds? Can the AMC or broker run away? | क्या म्यूचुअल फंड में पैसा सुरक्षित है?",
+         "Yes. Mutual funds are regulated by SEBI under a strict 3-tier structure. Securities are held by independent institutional custodians (like Deutsche Bank/SBI), not in the broker's bank account."),
+        ("Should I stop my SIP during a market crash or recession? | क्या मार्केट गिरने पर SIP बंद कर देनी चाहिए?",
+         "Stopping SIP during a crash is the single most costly mistake in investing. When prices collapse, your fixed monthly SIP buys maximum units at rock-bottom prices via Rupee-Cost Averaging."),
+        ("What is the difference between SIP, Bank RD, and PPF? | SIP, बैंक आरडी और पीपीएफ में क्या अंतर है?",
+         "Bank RD offers 6.5%-7% taxable interest. PPF offers 7.1% with 15-year lock-in. Equity SIP has short-term volatility but historically compounds at 12% to 15% CAGR over long horizons."),
+        ("How does an Annual Step-Up SIP multiply wealth? | स्टेप-अप एसआईपी से ज्यादा रिटर्न कैसे मिलता है?",
+         "An Annual Step-Up increases monthly SIP by 10% each year with salary hikes. On a ₹10,000 SIP over 20 years, a 10% step-up creates ₹1.65 Crore versus ₹99.9 Lakh flat (+₹65.5 Lakhs extra wealth)."),
+        ("Direct Plan vs Regular Plan: Which is better? | डायरेक्ट प्लान और रेगुलर प्लान में क्या अंतर है?",
+         "Always choose Direct-Growth. Regular plans pay 0.75%-1.25% annual trail commissions to distributors. Over 25 years on a ₹20,000 SIP, that 1% difference costs over ₹35 Lakhs in lost wealth."),
+        ("What are the Indian Mutual Fund Tax Rules (Budget 2024)? | म्यूचुअल फंड पर नया टैक्स नियम क्या है?",
+         "Under Budget 2024: Equity LTCG (>12 months) up to ₹1.25 Lakh per financial year is 100% Tax-Free; excess is taxed at flat 12.5%. STCG (<12 months) is taxed at 20%."),
+        ("What realistic rate of return should I expect from equity mutual funds? | भारतीय शेयर बाजार में कितना रिटर्न मिलना संभव है?",
+         "Over historical 15-20 year rolling periods, benchmark Nifty 50 Total Returns Index (TRI) has compounded at 12.5% to 13.5% CAGR. Flexible/mid-cap funds average 13% to 15%.")
+    ]
+    items = []
+    for q, a in faqs:
+        items.append({
+            "@type": "Question",
+            "name": q,
+            "acceptedAnswer": {"@type": "Answer", "text": a}
+        })
+    schema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "inLanguage": ["en-IN", "hi-IN"],
+        "mainEntity": items
+    }
+    return '<script type="application/ld+json">\n' + json.dumps(schema, ensure_ascii=False, indent=2) + '\n</script>'
+
+
 def render_page_view(slug: str, is_preview: bool = False) -> Optional[str]:
     page = get_page(slug)
     if not page:
@@ -929,11 +1011,30 @@ def render_page_view(slug: str, is_preview: bool = False) -> Optional[str]:
 
     draft_tag = '<span style="background:rgba(234,179,8,0.2); color:#eab308; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">DRAFT</span>' if status == "draft" else ""
 
+    extra_schema = ""
+    if slug == "sip-calculator":
+        extra_schema = build_sip_faq_schema()
+
+    translator_strip = """<div class="td-translator-strip" style="margin:0 0 20px 0;">
+      <div class="td-trans-left">
+        <span class="td-trans-title">🌐 अनुवाद / Read in:</span>
+        <div class="td-trans-pills">
+          <button type="button" class="td-lang-pill" id="tdBtnLangHi" onclick="tdSwitchLanguage('hi')">🇮🇳 हिंदी (Default)</button>
+          <button type="button" class="td-lang-pill" id="tdBtnLangEn" onclick="tdSwitchLanguage('en')">🇬🇧 English</button>
+        </div>
+      </div>
+      <div class="td-trans-right">
+        <span class="td-trans-more-lbl">अन्य भाषाएं / More:</span>
+        <div id="google_translate_element"></div>
+      </div>
+    </div>"""
+
     body_html = f"""<div class="cms-card">
       <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
         <span class="cms-badge">Document &bull; {html.escape(page.get('updatedAt', '')[:10])}</span>
         {draft_tag}
       </div>
+      {translator_strip}
       {rendered_body}
     </div>"""
 
@@ -946,7 +1047,8 @@ def render_page_view(slug: str, is_preview: bool = False) -> Optional[str]:
         canonical_url=page.get("canonicalUrl", ""),
         robots_meta=page.get("robotsMeta", "index, follow"),
         keywords=page.get("focusKeyword", ""),
-        is_draft=(status == "draft")
+        is_draft=(status == "draft"),
+        extra_schema=extra_schema
     )
 
 
@@ -1263,6 +1365,40 @@ def render_post_view(slug: str, is_preview: bool = False) -> Optional[str]:
     if post.get("customCss"):
         custom_css = custom_css + "\n" + post.get("customCss", "")
 
+    # Build Article JSON-LD schema with inLanguage: ["en-IN", "hi-IN"] for bilingual Google ranking
+    post_canon = post.get("canonicalUrl", "").strip() or f"https://tradersdesk.in/blog/{slug}"
+    article_schema_obj = {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": p_title,
+        "description": p_excerpt or p_title,
+        "inLanguage": ["en-IN", "hi-IN"],
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": post_canon
+        },
+        "author": {
+            "@type": "Organization",
+            "name": p_author or "TradersDesk Quantitative Research Desk",
+            "url": "https://tradersdesk.in"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "TradersDesk",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://tradersdesk.in/tradersdesk_header.svg"
+            }
+        },
+        "datePublished": p_date,
+        "dateModified": p_date or datetime.now().strftime("%Y-%m-%d"),
+        "keywords": get_multilingual_keywords(slug, post.get("focusKeyword", ""), p_title)
+    }
+    if cover_img:
+        article_schema_obj["image"] = cover_img
+
+    article_schema = '<script type="application/ld+json">\n' + json.dumps(article_schema_obj, ensure_ascii=False, indent=2) + '\n</script>'
+
     return render_cms_shell(
         title=post.get("seoTitle") or post.get("title", "Article"),
         description=post.get("metaDescription") or post.get("excerpt", post.get("title", "")),
@@ -1272,7 +1408,8 @@ def render_post_view(slug: str, is_preview: bool = False) -> Optional[str]:
         canonical_url=post.get("canonicalUrl", ""),
         robots_meta=post.get("robotsMeta", "index, follow"),
         keywords=post.get("focusKeyword", ""),
-        is_draft=(status == "draft")
+        is_draft=(status == "draft"),
+        extra_schema=article_schema
     )
 
 

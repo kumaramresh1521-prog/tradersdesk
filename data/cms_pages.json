@@ -29,16 +29,5 @@
     "metaTitle": "blog 5",
     "updatedAt": "2026-10-30T14:32:35.405176Z",
     "metaDescription": "blog 5"
-  },
-  {
-    "id": "page_1793354112",
-    "slug": "test-strategy-pro",
-    "title": "Custom Strategy Engine PRO",
-    "status": "published",
-    "content": "## Strategy Studio\n\nWelcome to the custom quantitative strategy builder.",
-    "summary": "Algorithmic execution studio for systematic options traders",
-    "is_draft": false,
-    "published": true,
-    "updatedAt": "2026-10-30T15:25:12.146984Z"
   }
 ]

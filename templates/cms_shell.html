@@ -19,6 +19,7 @@
   <title><!-- CMS_HEAD_TITLE --> | TradersDesk</title>
   <meta name="description" content="<!-- CMS_META_DESC -->">
   <!-- CMS_KEYWORDS -->
+  <!-- CMS_HREFLANG -->
   <meta name="robots" content="<!-- CMS_ROBOTS -->">
   <link rel="canonical" href="<!-- CMS_CANONICAL -->">
 
@@ -48,9 +49,12 @@
     "name": "TradersDesk",
     "url": "https://tradersdesk.in",
     "logo": "https://tradersdesk.in/tradersdesk_header.svg",
-    "description": "Institutional Real-Time Stock Market Breadth, Option Chain Matrix & Algorithmic Derivatives Analytics Desk."
+    "inLanguage": ["en-IN", "hi-IN"],
+    "description": "Institutional Real-Time Stock Market Breadth, Option Chain Matrix & Algorithmic Derivatives Analytics Desk.",
+    "alternateName": ["ट्रेडर्सडेस्क", "TradersDesk India"]
   }
   </script>
+  <!-- CMS_EXTRA_SCHEMA -->
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -182,6 +186,128 @@
     }
     html[data-theme="light"] .cms-card details p strong {
       color: #0284c7;
+    }
+
+    /* ==========================================================================
+       GOOGLE TRANSLATOR INSTITUTIONAL CONTROL PANEL
+       Seamless Hindi & Multilingual Switcher without Layout Distortion
+       ========================================================================== */
+    .goog-te-banner-frame.skiptranslate,
+    .goog-te-banner-frame {
+      display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+    }
+    body {
+      top: 0px !important;
+      position: static !important;
+    }
+    #goog-gt-tt, .goog-te-balloon-frame {
+      display: none !important;
+    }
+    .goog-text-highlight {
+      background: none !important;
+      box-shadow: none !important;
+    }
+
+    .td-translator-strip {
+      background: rgba(2, 132, 199, 0.05);
+      border: 1px solid rgba(2, 132, 199, 0.2);
+      border-radius: 12px;
+      padding: 10px 16px;
+      margin: 16px 0 22px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    html[data-theme="light"] .td-translator-strip {
+      background: #f0f9ff;
+      border-color: #bae6fd;
+    }
+    .td-trans-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .td-trans-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0284c7;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    html:not([data-theme="light"]) .td-trans-title {
+      color: #38bdf8;
+    }
+    .td-trans-pills {
+      display: inline-flex;
+      gap: 6px;
+    }
+    .td-lang-pill {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      color: #334155;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      line-height: 1;
+    }
+    html:not([data-theme="light"]) .td-lang-pill {
+      background: rgba(15, 23, 42, 0.85);
+      border-color: rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+    }
+    .td-lang-pill:hover {
+      border-color: #0284c7;
+      color: #0284c7;
+    }
+    .td-lang-pill.active {
+      background: #0284c7 !important;
+      border-color: #0284c7 !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35) !important;
+    }
+    .td-trans-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .td-trans-more-lbl {
+      font-size: 11.5px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    #google_translate_element {
+      display: inline-block;
+    }
+    .goog-te-gadget-simple {
+      background-color: transparent !important;
+      border: 1.5px solid #cbd5e1 !important;
+      padding: 4px 10px !important;
+      border-radius: 8px !important;
+      font-size: 12px !important;
+      line-height: 1.4 !important;
+    }
+    html:not([data-theme="light"]) .goog-te-gadget-simple {
+      border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+    .goog-te-gadget-simple .goog-te-menu-value span {
+      color: #334155 !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+    }
+    html:not([data-theme="light"]) .goog-te-gadget-simple .goog-te-menu-value span {
+      color: #cbd5e1 !important;
     }
   </style>
   <!-- CMS_CUSTOM_STYLE -->
@@ -829,5 +955,91 @@
       initDynamicFooter();
     }
   </script>
+
+  <!-- Google Translate & Default Hindi Switcher Engine -->
+  <script type="text/javascript">
+    (function initLanguagePreference() {
+      try {
+        var userChoice = localStorage.getItem("td_user_lang");
+        if (!userChoice) {
+          // Default to Hindi on first visit for content readers
+          document.cookie = "googtrans=/en/hi; path=/";
+          try {
+            var domain = window.location.hostname;
+            if (domain && domain !== "localhost" && domain !== "127.0.0.1") {
+              document.cookie = "googtrans=/en/hi; path=/; domain=." + domain;
+            }
+          } catch(e) {}
+          localStorage.setItem("td_user_lang", "hi");
+        }
+      } catch (e) {}
+    })();
+
+    window.tdSwitchLanguage = function(targetLang) {
+      try {
+        localStorage.setItem("td_user_lang", targetLang);
+        if (targetLang === "en") {
+          document.cookie = "googtrans=/en/en; path=/";
+          document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          try {
+            var domain = window.location.hostname;
+            if (domain && domain !== "localhost" && domain !== "127.0.0.1") {
+              document.cookie = "googtrans=/en/en; path=/; domain=." + domain;
+              document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=." + domain;
+            }
+          } catch(e) {}
+        } else {
+          var pair = "/en/" + targetLang;
+          document.cookie = "googtrans=" + pair + "; path=/";
+          try {
+            var domain = window.location.hostname;
+            if (domain && domain !== "localhost" && domain !== "127.0.0.1") {
+              document.cookie = "googtrans=" + pair + "; path=/; domain=." + domain;
+            }
+          } catch(e) {}
+        }
+      } catch (e) {}
+      window.location.reload();
+    };
+
+    function updateActiveLanguagePill() {
+      var curLang = "hi";
+      try {
+        var m = document.cookie.match(/(?:^|;\s*)googtrans=([^;]+)/);
+        if (m && m[1]) {
+          var parts = decodeURIComponent(m[1]).split('/');
+          if (parts.length >= 3 && parts[2]) curLang = parts[2];
+        } else {
+          curLang = localStorage.getItem("td_user_lang") || "hi";
+        }
+      } catch(e) {}
+
+      var btnHi = document.getElementById("tdBtnLangHi");
+      var btnEn = document.getElementById("tdBtnLangEn");
+      if (btnHi && btnEn) {
+        if (curLang === "en") {
+          btnEn.classList.add("active");
+          btnHi.classList.remove("active");
+        } else {
+          btnHi.classList.add("active");
+          btnEn.classList.remove("active");
+        }
+      }
+    }
+    document.addEventListener("DOMContentLoaded", updateActiveLanguagePill);
+
+    function googleTranslateElementInit() {
+      if (document.getElementById("google_translate_element")) {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'hi,en,gu,mr,bn,ta,te,pa,kn,ur',
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false
+        }, 'google_translate_element');
+      }
+      setTimeout(updateActiveLanguagePill, 300);
+    }
+  </script>
+  <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
 </body>
 </html>
