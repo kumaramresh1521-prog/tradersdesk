@@ -668,6 +668,25 @@ def save_page(page_data: Dict[str, Any]) -> bool:
         page_data["status"] = "published"
     page_data["updatedAt"] = datetime.utcnow().isoformat() + "Z"
 
+    # Bidirectional SEO field normalization
+    seo_t = page_data.get("seoTitle") or page_data.get("metaTitle") or page_data.get("title", "")
+    page_data["seoTitle"] = seo_t
+    page_data["metaTitle"] = seo_t
+
+    kw = page_data.get("focusKeyword") or page_data.get("keywords") or ""
+    page_data["focusKeyword"] = kw
+    page_data["keywords"] = kw
+
+    rob = page_data.get("robotsMeta") or page_data.get("robots") or "index, follow"
+    page_data["robotsMeta"] = rob
+    page_data["robots"] = rob
+
+    desc = page_data.get("metaDescription") or page_data.get("excerpt") or ""
+    page_data["metaDescription"] = desc
+
+    if not page_data.get("canonicalUrl"):
+        page_data["canonicalUrl"] = f"https://tradersdesk.in/{slug}"
+
     idx = next((i for i, p in enumerate(pages) if p.get("slug", "").strip().lower() == slug), None)
     if idx is not None:
         pages[idx] = page_data
@@ -790,6 +809,27 @@ def save_post(post_data: Dict[str, Any]) -> bool:
 
     if not post_data.get("publishedAt"):
         post_data["publishedAt"] = datetime.utcnow().strftime("%Y-%m-%d")
+
+    # Bidirectional SEO field normalization
+    seo_t = post_data.get("seoTitle") or post_data.get("metaTitle") or post_data.get("title", "")
+    post_data["seoTitle"] = seo_t
+    post_data["metaTitle"] = seo_t
+
+    kw = post_data.get("focusKeyword") or post_data.get("keywords") or ""
+    post_data["focusKeyword"] = kw
+    post_data["keywords"] = kw
+
+    rob = post_data.get("robotsMeta") or post_data.get("robots") or "index, follow"
+    post_data["robotsMeta"] = rob
+    post_data["robots"] = rob
+
+    desc = post_data.get("metaDescription") or post_data.get("excerpt") or ""
+    post_data["metaDescription"] = desc
+    if not post_data.get("excerpt"):
+        post_data["excerpt"] = desc
+
+    if not post_data.get("canonicalUrl"):
+        post_data["canonicalUrl"] = f"https://tradersdesk.in/blog/{slug}"
 
     idx = next((i for i, p in enumerate(posts) if p.get("slug", "").strip().lower() == slug), None)
     if idx is not None:

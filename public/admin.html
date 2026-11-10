@@ -1360,8 +1360,14 @@
         padding: 20px;
       }
       .adm-modal-overlay.active {
-        display: flex;
+        display: flex !important;
         animation: fadeInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @media (min-width: 1025px) {
+        .admin-sidebar-backdrop {
+          display: none !important;
+          pointer-events: none !important;
+        }
       }
       @keyframes fadeInModal {
         from { opacity: 0; transform: scale(0.97); }
@@ -6723,7 +6729,11 @@
         switchPageModalTab('editor');
         renderCmsPagePreview();
         updatePageSerpPreview();
-        document.getElementById('modalCmsPage').classList.add('active');
+        const mPage = document.getElementById('modalCmsPage');
+        if (mPage) {
+          mPage.style.display = 'flex';
+          mPage.classList.add('active');
+        }
       }
 
       async function editCmsPage(slug) {
@@ -6740,10 +6750,10 @@
           document.getElementById('cmsPageTitle').value = p.title || '';
           document.getElementById('cmsPageSlug').value = p.slug || '';
           document.getElementById('cmsPageFormat').value = p.format || 'markdown';
-          document.getElementById('cmsPageMetaTitle').value = p.metaTitle || p.title || '';
-          document.getElementById('cmsPageMetaDesc').value = p.metaDescription || '';
-          document.getElementById('cmsPageKeywords').value = p.keywords || '';
-          document.getElementById('cmsPageRobots').value = p.robots || 'index, follow';
+          document.getElementById('cmsPageMetaTitle').value = p.metaTitle || p.seoTitle || p.title || '';
+          document.getElementById('cmsPageMetaDesc').value = p.metaDescription || p.excerpt || '';
+          document.getElementById('cmsPageKeywords').value = p.keywords || p.focusKeyword || '';
+          document.getElementById('cmsPageRobots').value = p.robots || p.robotsMeta || 'index, follow';
           document.getElementById('cmsPageOgImage').value = p.ogImage || '';
           document.getElementById('cmsPageAuthor').value = p.author || 'TradersDesk Institutional Desk';
           document.getElementById('cmsPageCustomCss').value = p.customCss || '';
@@ -6759,7 +6769,11 @@
           switchPageModalTab('editor');
           renderCmsPagePreview();
           updatePageSerpPreview();
-          document.getElementById('modalCmsPage').classList.add('active');
+          const mPage = document.getElementById('modalCmsPage');
+          if (mPage) {
+            mPage.style.display = 'flex';
+            mPage.classList.add('active');
+          }
         } catch(e) {
           alert('Failed loading page: ' + e.message);
         }
@@ -6796,16 +6810,25 @@
           return;
         }
 
+        const metaTitleVal = document.getElementById('cmsPageMetaTitle').value.trim() || title;
+        const metaDescVal = document.getElementById('cmsPageMetaDesc').value.trim();
+        const keywordsVal = document.getElementById('cmsPageKeywords').value.trim();
+        const robotsVal = document.getElementById('cmsPageRobots').value || 'index, follow';
+
         const payload = {
           id: document.getElementById('cmsPageId').value || undefined,
           title: title,
           slug: slug,
           format: document.getElementById('cmsPageFormat').value,
           status: isPublish ? 'published' : 'draft',
-          metaTitle: document.getElementById('cmsPageMetaTitle').value.trim() || title,
-          metaDescription: document.getElementById('cmsPageMetaDesc').value.trim(),
-          keywords: document.getElementById('cmsPageKeywords').value.trim(),
-          robots: document.getElementById('cmsPageRobots').value,
+          seoTitle: metaTitleVal,
+          metaTitle: metaTitleVal,
+          metaDescription: metaDescVal,
+          focusKeyword: keywordsVal,
+          keywords: keywordsVal,
+          robotsMeta: robotsVal,
+          robots: robotsVal,
+          canonicalUrl: `https://tradersdesk.in/${slug}`,
           ogImage: document.getElementById('cmsPageOgImage').value.trim(),
           author: document.getElementById('cmsPageAuthor').value.trim(),
           customCss: document.getElementById('cmsPageCustomCss').value.trim(),
@@ -6941,7 +6964,11 @@
         switchBlogModalTab('editor');
         renderCmsBlogPreview();
         updateBlogSerpPreview();
-        document.getElementById('modalCmsBlog').classList.add('active');
+        const mBlog = document.getElementById('modalCmsBlog');
+        if (mBlog) {
+          mBlog.style.display = 'flex';
+          mBlog.classList.add('active');
+        }
       }
 
       async function editCmsBlog(slug) {
@@ -6962,9 +6989,9 @@
           document.getElementById('cmsBlogReadTime').value = p.readTime || '5 min read';
           document.getElementById('cmsBlogCover').value = p.coverImage || '';
           document.getElementById('cmsBlogExcerpt').value = p.excerpt || '';
-          document.getElementById('cmsBlogMetaTitle').value = p.metaTitle || p.title || '';
-          document.getElementById('cmsBlogKeywords').value = p.keywords || '';
-          document.getElementById('cmsBlogCanonical').value = p.canonicalUrl || '';
+          document.getElementById('cmsBlogMetaTitle').value = p.metaTitle || p.seoTitle || p.title || '';
+          document.getElementById('cmsBlogKeywords').value = p.keywords || p.focusKeyword || '';
+          document.getElementById('cmsBlogCanonical').value = p.canonicalUrl || `https://tradersdesk.in/blog/${slug}`;
           document.getElementById('cmsBlogContent').value = p.content || '';
 
           const isPub = (p.status !== 'draft');
@@ -6978,7 +7005,11 @@
           switchBlogModalTab('editor');
           renderCmsBlogPreview();
           updateBlogSerpPreview();
-          document.getElementById('modalCmsBlog').classList.add('active');
+          const mBlog = document.getElementById('modalCmsBlog');
+          if (mBlog) {
+            mBlog.style.display = 'flex';
+            mBlog.classList.add('active');
+          }
         } catch(e) {
           alert('Failed loading article: ' + e.message);
         }
@@ -7012,6 +7043,11 @@
           return;
         }
 
+        const metaTitleVal = document.getElementById('cmsBlogMetaTitle').value.trim() || title;
+        const excerptVal = excerpt;
+        const keywordsVal = document.getElementById('cmsBlogKeywords').value.trim();
+        const canonVal = document.getElementById('cmsBlogCanonical').value.trim() || `https://tradersdesk.in/blog/${slug}`;
+
         const payload = {
           id: document.getElementById('cmsBlogId').value || undefined,
           title: title,
@@ -7021,10 +7057,15 @@
           readTime: document.getElementById('cmsBlogReadTime').value.trim(),
           status: isPublish ? 'published' : 'draft',
           coverImage: document.getElementById('cmsBlogCover').value.trim(),
-          excerpt: excerpt,
-          metaTitle: document.getElementById('cmsBlogMetaTitle').value.trim() || title,
-          keywords: document.getElementById('cmsBlogKeywords').value.trim(),
-          canonicalUrl: document.getElementById('cmsBlogCanonical').value.trim(),
+          excerpt: excerptVal,
+          seoTitle: metaTitleVal,
+          metaTitle: metaTitleVal,
+          metaDescription: excerptVal,
+          focusKeyword: keywordsVal,
+          keywords: keywordsVal,
+          canonicalUrl: canonVal,
+          robotsMeta: 'index, follow',
+          robots: 'index, follow',
           format: "markdown",
           content: document.getElementById('cmsBlogContent').value
         };
