@@ -1,1132 +1,243 @@
-# SIP & Lumpsum Wealth Calculator
+# SIP & Lumpsum Wealth Calculator: The Complete Compounding Handbook
 
-Plan your financial journey with institutional precision. Whether investing monthly via a **Systematic Investment Plan (SIP)** or deploying a **One-Time Lumpsum**, this compounding engine calculates your future wealth accumulation, capital appreciation, and year-by-year corpus progression.
+Whether you are starting your very first **₹1,000 monthly Systematic Investment Plan (SIP)** from your first paycheck or planning to deploy a **₹10 Lakh one-time lumpsum bonus**, this institutional-grade compounding simulator calculates your future maturity corpus, accrued gains, and inflation-adjusted purchasing power with mathematical precision.
+
+{{CALCULATOR_WIDGET}}
 
 ---
 
-<div class="td-modern-calc" id="tdModernCalc">
-  <style>
-    /* ==========================================================================
-       GROWW / ZERODHA LEVEL FINTECH CALCULATOR DESIGN SYSTEM
-       Theme Agnostic: 100% Native Light & Dark Themes
-       ========================================================================== */
-    .td-modern-calc {
-      --c-bg: #ffffff;
-      --c-card: #f8fafc;
-      --c-border: #e2e8f0;
-      --c-title: #0f172a;
-      --c-text: #334155;
-      --c-muted: #64748b;
-      --c-primary: #0284c7;
-      --c-primary-light: #e0f2fe;
-      --c-invested: #0284c7;
-      --c-returns: #10b981;
-      --c-returns-light: #ecfdf5;
-      --c-total: #6366f1;
-      --c-total-light: #f5f3ff;
-      --c-track-empty: #e2e8f0;
-      --c-input-bg: #ffffff;
-      --c-input-border: #cbd5e1;
-      --c-tab-bg: #f1f5f9;
-      --c-tab-active-bg: #0284c7;
-      --c-tab-active-text: #ffffff;
-      --c-chip-bg: #f1f5f9;
-      --c-chip-text: #475569;
-      --c-chip-hover: #e2e8f0;
-      
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      margin: 18px 0 32px 0;
-      color: var(--c-text);
-      box-sizing: border-box;
-      transition: all 0.25s ease;
-    }
+## Part 1: Beginner's Blueprint &mdash; Understanding the Magic of Compounding
 
-    html:not([data-theme="light"]) .td-modern-calc,
-    [data-theme="dark"] .td-modern-calc {
-      --c-bg: #0c1220;
-      --c-card: #090f20;
-      --c-border: rgba(255, 255, 255, 0.09);
-      --c-title: #f8fafc;
-      --c-text: #cbd5e1;
-      --c-muted: #94a3b8;
-      --c-primary: #38bdf8;
-      --c-primary-light: rgba(14, 165, 233, 0.12);
-      --c-invested: #38bdf8;
-      --c-returns: #34d399;
-      --c-returns-light: rgba(16, 185, 129, 0.12);
-      --c-total: #a78bfa;
-      --c-total-light: rgba(139, 92, 246, 0.12);
-      --c-track-empty: rgba(255, 255, 255, 0.12);
-      --c-input-bg: rgba(3, 7, 18, 0.75);
-      --c-input-border: rgba(56, 189, 248, 0.3);
-      --c-tab-bg: rgba(15, 23, 42, 0.9);
-      --c-tab-active-bg: #0284c7;
-      --c-tab-active-text: #ffffff;
-      --c-chip-bg: rgba(255, 255, 255, 0.05);
-      --c-chip-text: #94a3b8;
-      --c-chip-hover: rgba(255, 255, 255, 0.12);
-    }
+### 1.1 What is a Systematic Investment Plan (SIP)?
+In simple Indian words, an SIP is **not an investment product by itself**; it is a **disciplined method of investing**. Just like an automated Recurring Deposit (RD) cuts a fixed amount from your salary account on the 5th of every month, an SIP automatically deducts a pre-set amount and invests it into your chosen mutual fund scheme.
 
-    /* TOP HEADER & SEGMENTED SWITCHER */
-    .td-calc-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin-bottom: 28px;
-      border-bottom: 1px solid var(--c-border);
-      padding-bottom: 20px;
-    }
-    .td-calc-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      padding: 4px 12px;
-      border-radius: 20px;
-      background: var(--c-primary-light);
-      color: var(--c-primary);
-    }
-    .td-calc-heading {
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--c-title);
-      margin: 6px 0 0 0;
-      letter-spacing: -0.02em;
-    }
+> **💡 The "Chai-Sutta & Weekend Swiggy" Reality Check:**
+> Most young professionals in Mumbai, Bengaluru, Delhi, or Pune easily spend ₹150 to ₹250 a day on incidental treats &mdash; cutting chai, quick snacks, or weekend food deliveries. That is approximately **₹5,000 per month**.
+> * If you spend ₹5,000/month, at the end of 20 years you have **₹0**.
+> * If you channel that exact same **₹5,000/month into a disciplined equity SIP** averaging a realistic 12.5% annual return, your total investment of ₹12 Lakhs compounds into a massive **₹48.9 Lakhs**!
 
-    /* Segmented Tab Bar */
-    .td-tab-group {
-      display: flex;
-      background: var(--c-tab-bg);
-      border: 1px solid var(--c-border);
-      border-radius: 12px;
-      padding: 4px;
-      gap: 4px;
-    }
-    .td-modern-calc button.td-tab-item {
-      padding: 9px 20px !important;
-      border-radius: 9px !important;
-      border: none !important;
-      background: transparent !important;
-      color: var(--c-muted) !important;
-      -webkit-text-fill-color: var(--c-muted) !important;
-      font-size: 13.5px !important;
-      font-weight: 700 !important;
-      cursor: pointer !important;
-      transition: all 0.2s ease !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 6px !important;
-      box-shadow: none !important;
-    }
-    .td-modern-calc button.td-tab-item:hover {
-      color: var(--c-title) !important;
-      -webkit-text-fill-color: var(--c-title) !important;
-    }
-    .td-modern-calc button.td-tab-item.active {
-      background: var(--c-tab-active-bg) !important;
-      color: var(--c-tab-active-text) !important;
-      -webkit-text-fill-color: var(--c-tab-active-text) !important;
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
-    }
+### 1.2 Simple Interest vs. Compound Interest: Why Time Beats Timing
+When you keep money in a traditional Fixed Deposit (FD) or Savings Account, you earn interest only on your original principal. But compounding is what Albert Einstein famously referred to as the **"Eighth Wonder of the World"** &mdash; you earn interest on your principal, and then you earn **interest on your accumulated interest**.
 
-    /* 2-COLUMN LAYOUT */
-    .td-calc-body {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 36px;
-      align-items: start;
-    }
-    @media (max-width: 920px) {
-      .td-calc-body { grid-template-columns: 1fr; gap: 28px; }
-    }
+Here is how compounding leaves simple savings behind over time with a ₹10,000 monthly investment:
 
-    /* INPUT ROW & PILL */
-    .td-calc-row {
-      margin-bottom: 24px;
-    }
-    .td-calc-row-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-    .td-calc-label-txt {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--c-title);
-    }
+| Time Horizon | Total Invested | Bank FD @ 6.5% Simple Return | Mutual Fund SIP @ 12.5% CAGR | The Compounding Edge (Extra Wealth) |
+|---|---|---|---|---|
+| **5 Years** | ₹6,00,000 | ₹7,07,000 | ₹8,25,000 | **+₹1,18,000** |
+| **10 Years** | ₹12,00,000 | ₹16,98,000 | ₹23,23,000 | **+₹6,25,000** |
+| **15 Years** | ₹18,00,000 | ₹30,88,000 | ₹51,80,000 | **+₹20,92,000** |
+| **20 Years** | ₹24,00,000 | ₹50,38,000 | ₹1,00,90,000 (₹1.01 Cr) | **+₹50,52,000** |
+| **25 Years** | ₹30,00,000 | ₹77,73,000 | ₹1,90,00,000 (₹1.90 Cr) | **+₹1.12 Crore!** |
 
-    /* Clean Single-Border Value Box */
-    .td-calc-val-pill {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-end;
-      background: var(--c-input-bg) !important;
-      border: 1.5px solid var(--c-input-border) !important;
-      border-radius: 10px !important;
-      padding: 6px 14px !important;
-      width: 155px !important;
-      box-sizing: border-box !important;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-    .td-calc-val-pill:focus-within {
-      border-color: var(--c-primary) !important;
-      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
-    }
-    .td-calc-unit-sym {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--c-primary);
-      margin-right: 4px;
-      user-select: none;
-    }
+*Takeaway:* Notice how by Year 25, while your total bank savings struggle under ₹78 Lakhs, your mutual fund SIP crosses **₹1.90 Crore**! Over 60% of that final corpus was generated in the last 7 years alone.
 
-    /* Resets for input to defeat global input styles */
-    .td-modern-calc input.td-clean-input,
-    .td-modern-calc input[type="number"].td-clean-input {
-      border: none !important;
-      background: transparent !important;
-      box-shadow: none !important;
-      outline: none !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      width: 100% !important;
-      height: auto !important;
-      font-size: 16px !important;
-      font-weight: 700 !important;
-      font-family: 'JetBrains Mono', monospace !important;
-      color: var(--c-title) !important;
-      -webkit-text-fill-color: var(--c-title) !important;
-      text-align: right !important;
-      -moz-appearance: textfield !important;
-    }
-    .td-modern-calc input.td-clean-input::-webkit-outer-spin-button,
-    .td-modern-calc input.td-clean-input::-webkit-inner-spin-button {
-      -webkit-appearance: none !important;
-      margin: 0 !important;
-    }
+### 1.3 Rupee-Cost Averaging (RCA): Why Market Falls Are Actually a "Diwali Sale"
+The biggest psychological fear of every new investor is: *"What if the stock market crashes right after I invest?"*
 
-    /* DYNAMIC SLIDER WITH FULL-FILL TRACK */
-    .td-calc-slider-box {
-      margin: 10px 0 8px 0;
-    }
-    .td-modern-calc input[type="range"].td-slider {
-      -webkit-appearance: none !important;
-      appearance: none !important;
-      width: 100% !important;
-      height: 7px !important;
-      border-radius: 7px !important;
-      outline: none !important;
-      border: none !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      cursor: pointer !important;
-      transition: background 0.15s ease;
-    }
-    .td-modern-calc input[type="range"].td-slider::-webkit-slider-runnable-track {
-      background: transparent !important;
-      border: none !important;
-      height: 7px !important;
-    }
-    .td-modern-calc input[type="range"].td-slider::-webkit-slider-thumb {
-      -webkit-appearance: none !important;
-      appearance: none !important;
-      width: 22px !important;
-      height: 22px !important;
-      border-radius: 50% !important;
-      background: #ffffff !important;
-      border: 3.5px solid var(--c-primary) !important;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
-      cursor: pointer !important;
-      margin-top: -7.5px !important;
-      transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-    }
-    .td-modern-calc input[type="range"].td-slider::-webkit-slider-thumb:hover {
-      transform: scale(1.15) !important;
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45) !important;
-    }
-    .td-modern-calc input[type="range"].td-slider::-moz-range-track {
-      background: transparent !important;
-      border: none !important;
-      height: 7px !important;
-    }
-    .td-modern-calc input[type="range"].td-slider::-moz-range-thumb {
-      width: 22px !important;
-      height: 22px !important;
-      border-radius: 50% !important;
-      background: #ffffff !important;
-      border: 3.5px solid var(--c-primary) !important;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
-      cursor: pointer !important;
-    }
+With an SIP, a market crash is actually your greatest financial advantage due to **Rupee-Cost Averaging**. When the market drops, mutual fund Net Asset Values (NAVs) fall, which means your fixed monthly installment buys **more mutual fund units**. When the market recovers and makes new all-time highs, those extra discounted units generate explosive returns.
 
-    /* QUICK CHIP BUTTONS */
-    .td-chip-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 6px;
-    }
-    .td-chip-btn {
-      background: var(--c-chip-bg);
-      border: 1px solid var(--c-border);
-      border-radius: 14px;
-      padding: 3px 10px;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: var(--c-chip-text);
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.15s ease;
-    }
-    .td-chip-btn:hover {
-      background: var(--c-chip-hover);
-      color: var(--c-title);
-      border-color: var(--c-primary);
-    }
+#### **A Simple 4-Month Math Example:**
+Imagine you invest ₹2,000 every month into an index fund:
 
-    /* STEP-UP TOGGLE BOX */
-    .td-stepup-card {
-      background: var(--c-card);
-      border: 1px solid var(--c-border);
-      border-radius: 12px;
-      padding: 14px 18px;
-      margin-top: 8px;
-    }
-    .td-stepup-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      user-select: none;
-    }
-    .td-switch-wrap {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 24px;
-    }
-    .td-switch-wrap input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-      display: none !important;
-    }
-    .td-switch-track {
-      position: absolute;
-      cursor: pointer;
-      inset: 0;
-      background-color: var(--c-track-empty);
-      border-radius: 24px;
-      transition: .25s;
-    }
-    .td-switch-track:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      border-radius: 50%;
-      transition: .25s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    }
-    .td-switch-wrap input:checked + .td-switch-track {
-      background-color: var(--c-primary);
-    }
-    .td-switch-wrap input:checked + .td-switch-track:before {
-      transform: translateX(20px);
-    }
+| Month | Market Condition | Fund NAV (₹) | Monthly SIP (₹) | Units Allotted | Cumulative Units Owned |
+|---|---|---|---|---|---|
+| **Month 1** | Normal Market | ₹50 | ₹2,000 | 40 units | 40 units |
+| **Month 2** | Panic Crash / Bear Dip | **₹25** | ₹2,000 | **80 units!** | 120 units |
+| **Month 3** | Market Recovery Rally | ₹40 | ₹2,000 | 50 units | 170 units |
+| **Month 4** | New Highs | ₹60 | ₹2,000 | 33.3 units | 203.3 units |
+| **Total** | &mdash; | **Avg NAV: ₹43.75** | **₹8,000** | &mdash; | **203.3 Units** |
 
-    /* RIGHT SIDE RESULT DASHBOARD */
-    .td-dashboard-box {
-      background: var(--c-card);
-      border: 1px solid var(--c-border);
-      border-radius: 16px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+* **Your Total Capital Invested:** ₹8,000
+* **Current Portfolio Value at Month 4:** 203.3 units × ₹60 NAV = **₹12,198**
+* **Net Profit:** **+₹4,198 (+52.5% Gain!)**
+* **Average Cost Per Unit:** ₹8,000 ÷ 203.3 = **₹39.35** (significantly cheaper than the simple average NAV of ₹43.75).
 
-    /* SVG DONUT */
-    .td-donut-frame {
-      position: relative;
-      width: 220px;
-      height: 220px;
-      margin: 10px auto 20px auto;
-    }
-    .td-donut-svg {
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-    }
-    .td-donut-circle-bg {
-      fill: none;
-      stroke: var(--c-track-empty);
-      stroke-width: 22;
-    }
-    .td-donut-circle-inv {
-      fill: none;
-      stroke: var(--c-invested);
-      stroke-width: 22;
-      stroke-linecap: round;
-      transition: stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease;
-    }
-    .td-donut-circle-ret {
-      fill: none;
-      stroke: var(--c-returns);
-      stroke-width: 22;
-      stroke-linecap: round;
-      transition: stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease;
-    }
-    .td-donut-content {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      pointer-events: none;
-    }
-    .td-donut-label {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--c-muted);
-    }
-    .td-donut-val {
-      font-size: 21px;
-      font-weight: 800;
-      color: var(--c-title);
-      margin: 3px 0;
-      font-family: 'JetBrains Mono', monospace;
-      letter-spacing: -0.02em;
-    }
-    .td-donut-tag {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 12px;
-      background: var(--c-returns-light);
-      color: var(--c-returns);
-    }
-
-    /* METRIC TILES */
-    .td-tiles-list {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .td-tile-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      border-radius: 12px;
-      background: var(--c-bg);
-      border: 1px solid var(--c-border);
-      box-sizing: border-box;
-    }
-    .td-tile-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .td-tile-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .td-tile-label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--c-text);
-      white-space: nowrap;
-    }
-    .td-tile-pct {
-      font-size: 11.5px;
-      color: var(--c-muted);
-      margin-left: 2px;
-      white-space: nowrap;
-    }
-    .td-tile-val {
-      font-size: 15px;
-      font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--c-title);
-      white-space: nowrap;
-      text-align: right;
-    }
-
-    /* MATURITY SUMMARY BANNER */
-    .td-banner-maturity {
-      width: 100%;
-      margin-top: 14px;
-      padding: 14px 18px;
-      border-radius: 12px;
-      background: var(--c-total-light);
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-sizing: border-box;
-    }
-    .td-banner-title {
-      font-size: 12.5px;
-      font-weight: 700;
-      color: var(--c-total);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .td-banner-val {
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--c-total);
-      font-family: 'JetBrains Mono', monospace;
-      white-space: nowrap;
-    }
-
-    /* INFLATION FOOTNOTE */
-    .td-inflation-info {
-      font-size: 11.5px;
-      color: var(--c-muted);
-      text-align: center;
-      margin-top: 14px;
-      line-height: 1.45;
-    }
-
-    /* BOTTOM EXPAND BUTTON */
-    .td-bottom-action {
-      margin-top: 36px;
-      margin-bottom: 12px;
-      display: flex;
-      justify-content: center;
-    }
-    .td-modern-calc button.td-btn-schedule {
-      background: #0284c7 !important;
-      color: #ffffff !important;
-      -webkit-text-fill-color: #ffffff !important;
-      border: none !important;
-      padding: 12px 28px !important;
-      border-radius: 10px !important;
-      font-size: 14px !important;
-      font-weight: 700 !important;
-      cursor: pointer !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      line-height: 1 !important;
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
-      transition: all 0.2s ease !important;
-    }
-    .td-modern-calc button.td-btn-schedule:hover {
-      background: #0369a1 !important;
-      transform: translateY(-2px) !important;
-      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45) !important;
-    }
-
-    /* ACCORDION TABLE */
-    .td-schedule-panel {
-      display: none;
-      margin-top: 24px;
-      border-top: 1px solid var(--c-border);
-      padding-top: 24px;
-      overflow-x: auto;
-    }
-    .td-sched-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      text-align: right;
-    }
-    .td-sched-table th {
-      background: var(--c-tab-bg);
-      color: var(--c-title);
-      padding: 10px 14px;
-      font-weight: 700;
-      border: 1px solid var(--c-border);
-      text-transform: uppercase;
-      font-size: 11px;
-      letter-spacing: 0.04em;
-    }
-    .td-sched-table td {
-      padding: 10px 14px;
-      border: 1px solid var(--c-border);
-      color: var(--c-text);
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .td-sched-table tr:nth-child(even) {
-      background: var(--c-card);
-    }
-    .td-sched-table tr:hover td {
-      background: var(--c-primary-light);
-      color: var(--c-title);
-    }
-  </style>
-
-  <!-- CALCULATOR TOP HEADER -->
-  <div class="td-calc-head">
-    <div>
-      <span class="td-calc-badge">⚡ Institutional Compounding Suite</span>
-      <h2 class="td-calc-heading">Wealth Growth &amp; Compounding Simulator</h2>
-    </div>
-    <!-- Mode Switcher -->
-    <div class="td-tab-group">
-      <button type="button" class="td-tab-item active" id="btnModeSip" onclick="tdSetMode('sip')">🚀 Monthly SIP</button>
-      <button type="button" class="td-tab-item" id="btnModeLump" onclick="tdSetMode('lump')">💰 One-Time Lumpsum</button>
-    </div>
-  </div>
-
-  <!-- MAIN CALCULATOR BODY -->
-  <div class="td-calc-body">
-    
-    <!-- LEFT COLUMN: CONTROLS -->
-    <div class="td-calc-inputs">
-      
-      <!-- FIELD 1: Investment Amount -->
-      <div class="td-calc-row">
-        <div class="td-calc-row-top">
-          <label class="td-calc-label-txt" id="lblAmount">Monthly Investment</label>
-          <div class="td-calc-val-pill">
-            <span class="td-calc-unit-sym">₹</span>
-            <input type="number" id="inputAmount" class="td-clean-input" value="10000" min="500" max="10000000" step="500" oninput="tdOnAmountInput(this.value)" />
-          </div>
-        </div>
-        <div class="td-calc-slider-box">
-          <input type="range" id="sliderAmount" class="td-slider" min="500" max="500000" step="500" value="10000" oninput="tdOnAmountSlider(this.value)" />
-        </div>
-        <!-- Quick Chips -->
-        <div class="td-chip-row" id="chipsAmount">
-          <span class="td-chip-btn" onclick="tdSetAmount(5000)">₹5,000</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(10000)">₹10,000</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(25000)">₹25,000</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(50000)">₹50,000</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(100000)">₹1 Lakh</span>
-        </div>
-      </div>
-
-      <!-- FIELD 2: Expected CAGR -->
-      <div class="td-calc-row">
-        <div class="td-calc-row-top">
-          <label class="td-calc-label-txt">Expected Annual Return (CAGR)</label>
-          <div class="td-calc-val-pill">
-            <input type="number" id="inputRate" class="td-clean-input" value="12.0" min="1" max="35" step="0.5" oninput="tdOnRateInput(this.value)" />
-            <span class="td-calc-unit-sym" style="margin-right:0; margin-left:4px;">%</span>
-          </div>
-        </div>
-        <div class="td-calc-slider-box">
-          <input type="range" id="sliderRate" class="td-slider" min="1" max="30" step="0.5" value="12.0" oninput="tdOnRateSlider(this.value)" />
-        </div>
-        <!-- Quick Chips -->
-        <div class="td-chip-row">
-          <span class="td-chip-btn" onclick="tdSetRate(8.0)">8% (Debt/FD)</span>
-          <span class="td-chip-btn" onclick="tdSetRate(12.0)">12% (Nifty 50)</span>
-          <span class="td-chip-btn" onclick="tdSetRate(14.5)">14.5% (Flexicap)</span>
-          <span class="td-chip-btn" onclick="tdSetRate(18.0)">18% (Aggressive)</span>
-        </div>
-      </div>
-
-      <!-- FIELD 3: Time Horizon -->
-      <div class="td-calc-row">
-        <div class="td-calc-row-top">
-          <label class="td-calc-label-txt">Investment Horizon</label>
-          <div class="td-calc-val-pill">
-            <input type="number" id="inputYears" class="td-clean-input" value="10" min="1" max="40" step="1" oninput="tdOnYearsInput(this.value)" />
-            <span class="td-calc-unit-sym" style="margin-right:0; margin-left:4px; font-size:13px;">Yr</span>
-          </div>
-        </div>
-        <div class="td-calc-slider-box">
-          <input type="range" id="sliderYears" class="td-slider" min="1" max="35" step="1" value="10" oninput="tdOnYearsSlider(this.value)" />
-        </div>
-        <!-- Quick Chips -->
-        <div class="td-chip-row">
-          <span class="td-chip-btn" onclick="tdSetYears(5)">5 Yrs</span>
-          <span class="td-chip-btn" onclick="tdSetYears(10)">10 Yrs</span>
-          <span class="td-chip-btn" onclick="tdSetYears(15)">15 Yrs</span>
-          <span class="td-chip-btn" onclick="tdSetYears(20)">20 Yrs</span>
-          <span class="td-chip-btn" onclick="tdSetYears(25)">25 Yrs</span>
-        </div>
-      </div>
-
-      <!-- FIELD 4: Step-Up SIP (SIP Mode Only) -->
-      <div class="td-stepup-card" id="boxStepUp">
-        <div class="td-stepup-header" onclick="tdToggleStepUp()">
-          <div>
-            <div style="font-size:13.5px; font-weight:700; color:var(--c-title);">📈 Annual Step-Up Top-up</div>
-            <div style="font-size:11.5px; color:var(--c-muted); margin-top:2px;">Increase monthly SIP in tandem with your annual salary increments</div>
-          </div>
-          <label class="td-switch-wrap" onclick="event.stopPropagation()">
-            <input type="checkbox" id="chkStepUp" onchange="tdOnStepUpToggle(this.checked)" />
-            <span class="td-switch-track"></span>
-          </label>
-        </div>
-        <div id="stepUpDetails" style="display:none; margin-top:14px; border-top:1px dashed var(--c-border); padding-top:12px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-size:12.5px; color:var(--c-muted);">Annual Step-Up Increment:</span>
-            <span id="txtStepUpPct" style="font-weight:700; color:var(--c-primary); font-family:'JetBrains Mono', monospace;">10% / year</span>
-          </div>
-          <input type="range" id="sliderStepUp" class="td-slider" min="1" max="25" step="1" value="10" oninput="tdOnStepUpSlider(this.value)" />
-        </div>
-      </div>
-
-    </div>
-
-    <!-- RIGHT COLUMN: RESULTS & SVG DONUT -->
-    <div class="td-dashboard-box">
-      
-      <!-- SVG Donut Chart -->
-      <div class="td-donut-frame">
-        <svg class="td-donut-svg" viewBox="0 0 200 200">
-          <circle class="td-donut-circle-bg" cx="100" cy="100" r="80"></circle>
-          <circle id="donutInvested" class="td-donut-circle-inv" cx="100" cy="100" r="80" stroke-dasharray="0 502.65" stroke-dashoffset="0"></circle>
-          <circle id="donutGain" class="td-donut-circle-ret" cx="100" cy="100" r="80" stroke-dasharray="0 502.65" stroke-dashoffset="0"></circle>
-        </svg>
-        <div class="td-donut-content">
-          <span class="td-donut-label">TOTAL MATURITY</span>
-          <span class="td-donut-val" id="donutTotalVal">₹23.2 L</span>
-          <span class="td-donut-tag" id="donutMultiplier">1.9x Multiplier</span>
-        </div>
-      </div>
-
-      <!-- Single Row Tiles -->
-      <div class="td-tiles-list">
-        
-        <!-- Invested Capital -->
-        <div class="td-tile-item">
-          <div class="td-tile-left">
-            <span class="td-tile-dot" style="background:var(--c-invested);"></span>
-            <span class="td-tile-label">Invested Capital</span>
-            <span class="td-tile-pct" id="pctInvested">(51.6%)</span>
-          </div>
-          <span class="td-tile-val" id="valInvested">₹12,00,000</span>
-        </div>
-
-        <!-- Est Compounded Gain -->
-        <div class="td-tile-item">
-          <div class="td-tile-left">
-            <span class="td-tile-dot" style="background:var(--c-returns);"></span>
-            <span class="td-tile-label">Est. Compounded Gain</span>
-            <span class="td-tile-pct" id="pctGain">(48.4%)</span>
-          </div>
-          <span class="td-tile-val" style="color:var(--c-returns);" id="valGain">+₹11,23,391</span>
-        </div>
-
-        <!-- Maturity Banner -->
-        <div class="td-banner-maturity">
-          <div>
-            <div class="td-banner-title">Total Corpus Value</div>
-            <div style="font-size:11px; color:var(--c-muted); margin-top:2px;" id="txtHorizonSubtitle">After 10 Years @ 12% CAGR</div>
-          </div>
-          <div class="td-banner-val" id="valTotal">₹23,23,391</div>
-        </div>
-
-      </div>
-
-      <!-- Inflation Footnote -->
-      <div class="td-inflation-info" id="txtInflationNote">🛒 Estimated real purchasing power after 6% annual inflation: <strong>₹12.9 Lakh</strong></div>
-
-    </div>
-
-  </div>
-
-  <!-- BOTTOM SCHEDULE TOGGLE -->
-  <div class="td-bottom-action">
-    <button type="button" class="td-btn-schedule" onclick="tdToggleSchedule()">📊 View Year-by-Year Growth Table &amp; Breakdown</button>
-  </div>
-
-  <!-- EXPANDABLE TABLE -->
-  <div class="td-schedule-panel" id="paneSchedule">
-    <table class="td-sched-table">
-      <thead>
-        <tr>
-          <th style="text-align:left;">Year</th>
-          <th>Annual Contribution</th>
-          <th>Total Invested</th>
-          <th>Interest Accrued</th>
-          <th>Closing Balance</th>
-        </tr>
-      </thead>
-      <tbody id="tbodySchedule">
-        <!-- Rendered dynamically -->
-      </tbody>
-    </table>
-  </div>
-
-</div>
-
-<script>
-  (function() {
-    let _calcMode = 'sip';
-    let _hasStepUp = false;
-    const CIRCUMFERENCE = 2 * Math.PI * 80; // ~502.6548
-
-    function fmtCur(val) {
-      if (isNaN(val)) return '₹0';
-      return '₹' + Math.round(val).toLocaleString('en-IN');
-    }
-
-    function fmtShortCur(val) {
-      if (isNaN(val)) return '₹0';
-      if (val >= 10000000) {
-        return '₹' + (val / 10000000).toFixed(2) + ' Cr';
-      } else if (val >= 100000) {
-        return '₹' + (val / 100000).toFixed(1) + ' L';
-      }
-      return fmtCur(val);
-    }
-
-    function paintSlider(slider) {
-      if (!slider) return;
-      const min = parseFloat(slider.min) || 0;
-      const max = parseFloat(slider.max) || 100;
-      const val = parseFloat(slider.value) || 0;
-      const pct = Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
-      slider.style.setProperty('background', 'linear-gradient(to right, var(--c-primary) 0%, var(--c-primary) ' + pct + '%, var(--c-track-empty) ' + pct + '%, var(--c-track-empty) 100%)', 'important');
-    }
-
-    function runCalculations() {
-      const amount = parseFloat(document.getElementById('inputAmount').value) || 0;
-      const rate = parseFloat(document.getElementById('inputRate').value) || 0;
-      const years = parseInt(document.getElementById('inputYears').value) || 0;
-      const stepUp = _hasStepUp ? (parseFloat(document.getElementById('sliderStepUp').value) || 0) : 0;
-
-      let totalInvested = 0;
-      let totalCorpus = 0;
-      const schedule = [];
-      const currentYear = new Date().getFullYear();
-
-      if (_calcMode === 'sip') {
-        const monthlyRate = (rate / 100) / 12;
-        let runningCorpus = 0;
-        let runningInvested = 0;
-        let currentMonthly = amount;
-
-        for (let y = 1; y <= years; y++) {
-          let annualDeposit = 0;
-          let yearStartCorpus = runningCorpus;
-
-          for (let m = 1; m <= 12; m++) {
-            runningInvested += currentMonthly;
-            annualDeposit += currentMonthly;
-            runningCorpus = (runningCorpus + currentMonthly) * (1 + monthlyRate);
-          }
-
-          const yearInterest = runningCorpus - yearStartCorpus - annualDeposit;
-          schedule.push({
-            year: y,
-            calYear: currentYear + y,
-            annualDeposit: annualDeposit,
-            totalInvested: runningInvested,
-            yearInterest: yearInterest,
-            closingCorpus: runningCorpus
-          });
-
-          if (stepUp > 0) {
-            currentMonthly = currentMonthly * (1 + stepUp / 100);
-          }
-        }
-
-        totalInvested = runningInvested;
-        totalCorpus = runningCorpus;
-      } else {
-        // Lumpsum Mode
-        totalInvested = amount;
-        let runningCorpus = amount;
-
-        for (let y = 1; y <= years; y++) {
-          const nextCorpus = runningCorpus * (1 + rate / 100);
-          const yearInterest = nextCorpus - runningCorpus;
-          runningCorpus = nextCorpus;
-
-          schedule.push({
-            year: y,
-            calYear: currentYear + y,
-            annualDeposit: (y === 1 ? amount : 0),
-            totalInvested: amount,
-            yearInterest: yearInterest,
-            closingCorpus: runningCorpus
-          });
-        }
-        totalCorpus = runningCorpus;
-      }
-
-      const totalGain = Math.max(0, totalCorpus - totalInvested);
-      const mult = totalInvested > 0 ? (totalCorpus / totalInvested).toFixed(1) + 'x Multiplier' : '1.0x';
-      const invPct = totalCorpus > 0 ? ((totalInvested / totalCorpus) * 100).toFixed(1) : '50.0';
-      const gainPct = totalCorpus > 0 ? ((totalGain / totalCorpus) * 100).toFixed(1) : '50.0';
-
-      // Update Texts
-      document.getElementById('valInvested').innerText = fmtCur(totalInvested);
-      document.getElementById('pctInvested').innerText = `(${invPct}%)`;
-      document.getElementById('valGain').innerText = '+' + fmtCur(totalGain);
-      document.getElementById('pctGain').innerText = `(${gainPct}%)`;
-      document.getElementById('valTotal').innerText = fmtCur(totalCorpus);
-      document.getElementById('donutTotalVal').innerText = fmtShortCur(totalCorpus);
-      document.getElementById('donutMultiplier').innerText = mult;
-      document.getElementById('txtHorizonSubtitle').innerText = `After ${years} Year${years > 1 ? 's' : ''} @ ${rate}% CAGR`;
-
-      // Real Inflation Purchasing Power
-      const realPurchasingPower = totalCorpus / Math.pow(1 + 0.06, years);
-      document.getElementById('txtInflationNote').innerHTML = `🛒 Estimated real purchasing power after 6% annual inflation: <strong>${fmtShortCur(realPurchasingPower)}</strong>`;
-
-      // Update SVG Donut Stroke
-      const c = CIRCUMFERENCE;
-      const invStroke = (parseFloat(invPct) / 100) * c;
-      const gainStroke = (parseFloat(gainPct) / 100) * c;
-
-      const circleInv = document.getElementById('donutInvested');
-      const circleGain = document.getElementById('donutGain');
-      if (circleInv) {
-        circleInv.style.strokeDasharray = `${invStroke} ${c}`;
-        circleInv.style.strokeDashoffset = '0';
-      }
-      if (circleGain) {
-        circleGain.style.strokeDasharray = `${gainStroke} ${c}`;
-        circleGain.style.strokeDashoffset = `-${invStroke}`;
-      }
-
-      // Repaint all slider track gradients
-      paintSlider(document.getElementById('sliderAmount'));
-      paintSlider(document.getElementById('sliderRate'));
-      paintSlider(document.getElementById('sliderYears'));
-      const sStep = document.getElementById('sliderStepUp');
-      if (sStep) paintSlider(sStep);
-
-      // Render Schedule Table
-      const tbody = document.getElementById('tbodySchedule');
-      if (tbody) {
-        let html = '';
-        schedule.forEach(row => {
-          html += `
-            <tr>
-              <td style="text-align:left; font-weight:700;">Year ${row.year} <span style="font-size:11px; color:var(--c-muted); font-weight:normal;">(${row.calYear})</span></td>
-              <td>${fmtCur(row.annualDeposit)}</td>
-              <td>${fmtCur(row.totalInvested)}</td>
-              <td style="color:var(--c-returns);">+${fmtCur(row.yearInterest)}</td>
-              <td style="font-weight:700; color:var(--c-title);">${fmtCur(row.closingCorpus)}</td>
-            </tr>
-          `;
-        });
-        tbody.innerHTML = html;
-      }
-    }
-
-    window.tdSetMode = function(mode) {
-      _calcMode = mode;
-      document.getElementById('btnModeSip').classList.toggle('active', mode === 'sip');
-      document.getElementById('btnModeLump').classList.toggle('active', mode === 'lump');
-      
-      const sAmt = document.getElementById('sliderAmount');
-      const iAmt = document.getElementById('inputAmount');
-      const lblAmt = document.getElementById('lblAmount');
-      const chips = document.getElementById('chipsAmount');
-      const boxStep = document.getElementById('boxStepUp');
-
-      if (mode === 'sip') {
-        lblAmt.innerText = 'Monthly Investment';
-        sAmt.min = 500;
-        sAmt.max = 500000;
-        sAmt.step = 500;
-        iAmt.value = 10000;
-        sAmt.value = 10000;
-        boxStep.style.display = 'block';
-        chips.innerHTML = `
-          <span class="td-chip-btn" onclick="tdSetAmount(5000)">₹5,000</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(10000)">₹10,000</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(25000)">₹25,000</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(50000)">₹50,000</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(100000)">₹1 Lakh</span>
-        `;
-      } else {
-        lblAmt.innerText = 'Total One-Time Investment';
-        sAmt.min = 5000;
-        sAmt.max = 5000000;
-        sAmt.step = 5000;
-        iAmt.value = 100000;
-        sAmt.value = 100000;
-        boxStep.style.display = 'none';
-        chips.innerHTML = `
-          <span class="td-chip-btn" onclick="tdSetAmount(50000)">₹50,000</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(100000)">₹1 Lakh</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(250000)">₹2.5 Lakh</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(500000)">₹5 Lakh</span>
-          <span class="td-chip-btn" onclick="tdSetAmount(1000000)">₹10 Lakh</span>
-        `;
-      }
-      runCalculations();
-    };
-
-    window.tdOnAmountSlider = function(val) {
-      document.getElementById('inputAmount').value = val;
-      runCalculations();
-    };
-    window.tdOnAmountInput = function(val) {
-      document.getElementById('sliderAmount').value = val;
-      runCalculations();
-    };
-    window.tdSetAmount = function(val) {
-      document.getElementById('inputAmount').value = val;
-      document.getElementById('sliderAmount').value = val;
-      runCalculations();
-    };
-
-    window.tdOnRateSlider = function(val) {
-      document.getElementById('inputRate').value = val;
-      runCalculations();
-    };
-    window.tdOnRateInput = function(val) {
-      document.getElementById('sliderRate').value = val;
-      runCalculations();
-    };
-    window.tdSetRate = function(val) {
-      document.getElementById('inputRate').value = val;
-      document.getElementById('sliderRate').value = val;
-      runCalculations();
-    };
-
-    window.tdOnYearsSlider = function(val) {
-      document.getElementById('inputYears').value = val;
-      runCalculations();
-    };
-    window.tdOnYearsInput = function(val) {
-      document.getElementById('sliderYears').value = val;
-      runCalculations();
-    };
-    window.tdSetYears = function(val) {
-      document.getElementById('inputYears').value = val;
-      document.getElementById('sliderYears').value = val;
-      runCalculations();
-    };
-
-    window.tdToggleStepUp = function() {
-      const chk = document.getElementById('chkStepUp');
-      chk.checked = !chk.checked;
-      tdOnStepUpToggle(chk.checked);
-    };
-    window.tdOnStepUpToggle = function(checked) {
-      _hasStepUp = checked;
-      document.getElementById('stepUpDetails').style.display = checked ? 'block' : 'none';
-      runCalculations();
-    };
-    window.tdOnStepUpSlider = function(val) {
-      document.getElementById('txtStepUpPct').innerText = val + '% / year';
-      runCalculations();
-    };
-
-    window.tdToggleSchedule = function() {
-      const p = document.getElementById('paneSchedule');
-      p.style.display = (p.style.display === 'block') ? 'none' : 'block';
-    };
-
-    // Paint sliders immediately
-    setTimeout(runCalculations, 50);
-  })();
-</script>
+*The Lesson:* You did not need to predict the exact bottom of the market crash. The automated nature of SIP forced you to accumulate maximum units at ₹25 without panic.
 
 ---
 
-## The Power of Compounding: Key Principles Every Investor Must Know
+## Part 2: Intermediate Strategies &mdash; SIP vs. Lumpsum & Step-Up Compounding
 
-### 1. The 8-4-3 Rule of Compounding
-Compounding works logarithmically. In mutual fund SIPs, wealth creation accelerates drastically as time advances:
+### 2.1 SIP vs. Lumpsum: Which One Should You Choose?
 
-* **The First ₹1 Crore takes ~8 to 10 years** of consistent deposits and patient compounding.
-* **The Second ₹1 Crore takes only ~4 years**, because your accrued returns begin generating more interest than your original monthly deposits.
-* **The Third ₹1 Crore takes only ~3 years**, where gains dwarf total principal invested.
-
-<div style="background:rgba(2,132,199,0.06); border-left:4px solid #0284c7; border-radius:0 12px 12px 0; padding:16px 20px; margin:24px 0;">
-  <div style="font-weight:700; color:#0284c7; font-size:14.5px; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-    <span>💡</span> Institutional Rule of Thumb
-  </div>
-  <div style="font-size:14px; color:var(--c-text, #334155); line-height:1.65;">
-    Compounding rewards <strong>time in the market</strong> over timing the market. Starting 5 years earlier can double your ultimate retirement corpus even with half the monthly contribution.
-  </div>
-</div>
-
----
-
-### 2. Systematic Investment Plan (SIP) vs One-Time Lumpsum
-
-| Key Feature | Systematic Investment Plan (SIP) | One-Time Lumpsum Investment |
+| Parameter | Systematic Investment Plan (SIP) | One-Time Lumpsum Investment |
 |---|---|---|
-| **Capital Requirement** | Disciplined monthly allocation (starts from ₹500/mo) | Bulk upfront capital (e.g. bonus, property sale, inheritance) |
-| **Market Volatility Risk** | Low &mdash; Uses **Rupee-Cost Averaging** during dips | High &mdash; Exposed to entry timing and market peaks |
-| **Ideal Market Environment** | Range-bound, sideways, or volatile consolidating markets | Post-correction bear market troughs or deep value crashes |
-| **Psychological Discipline** | Automated deduction removes emotional trading bias | Requires conviction to hold through short-term drawdown volatility |
+| **Best Suited For** | Salaried employees with recurring monthly income | Windfalls (Diwali bonus, land sale, business payout) |
+| **Market Timing Risk** | **Zero timing risk** &mdash; spreads purchases across cycles | **High timing risk** &mdash; buying at peak can lead to short-term drawdown |
+| **Ideal Market Stance** | Consolidating, sideways, or volatile choppy markets | Deep post-crash valuations (e.g. March 2020 COVID trough) |
+| **Investor Psychology** | Stress-free automated habit; removes emotional FOMO | High anxiety; requires iron stomach to watch short-term red days |
+
+> **🔥 Pro-Tip: The Systematic Transfer Plan (STP) Workaround:**
+> If you have a lump sum of ₹10 Lakhs right now and the market is trading near historic highs, **never invest 100% into equity on day one**. 
+> Instead, park the ₹10 Lakhs in a low-risk **Liquid or Ultra-Short Duration Fund** earning 6.5% to 7% annual interest, and initiate a weekly **Systematic Transfer Plan (STP)** of ₹25,000 to ₹50,000 into an Equity Flexicap or Nifty 50 Index Fund over 6 to 12 months. This gives you the peace of mind of an SIP with the earning power of a lump sum!
+
+### 2.2 The 8-4-3 Rule of Wealth Creation
+Every seasoned Dalal Street investor understands that compounding acts like an exponential rocket:
+
+* **The First ₹1 Crore takes ~8 to 10 years:** During this phase, 75% of your portfolio consists of your own hard-earned deposited salary. Returns feel modest, and patience is tested.
+* **The Second ₹1 Crore takes only ~4 years:** Here, your accumulated gains equal your principal. Your money begins working harder than you do.
+* **The Third ₹1 Crore takes barely ~3 years:** By this stage, market gains dwarf your fresh monthly deposits. A simple 15% bull market year adds ₹45 Lakhs to your net worth in 12 months!
+
+### 2.3 The "Rahul vs. Priya" Story: The Unstoppable Power of Step-Up SIP
+Most people's salaries increase by 8% to 15% every year due to appraisals and promotions. If your income grows, why should your investment remain stagnant?
+
+Let us compare two colleagues, **Rahul** and **Priya**, both starting their careers at age 25 with a ₹10,000/month SIP expecting 12% CAGR over 20 years:
+
+* **Rahul (Flat SIP):** Invests ₹10,000 every single month for 20 years without ever increasing it.
+  - *Total Principal Invested:* ₹24,00,000 (₹24 Lakhs)
+  - *Final Maturity Corpus:* **₹99,91,479 (~₹1.0 Crore)**
+* **Priya (10% Annual Step-Up SIP):** Starts with ₹10,000/month, but every year after her appraisal, she steps up her SIP by 10% (₹11,000 in Year 2, ₹12,100 in Year 3, etc.).
+  - *Total Principal Invested:* ₹68,70,000 (₹68.7 Lakhs)
+  - *Final Maturity Corpus:* **₹1,65,48,000 (~₹1.65 Crore)**
+
+*The Game Changer:* With a step-up increment that was barely felt in her monthly budget, Priya created **an extra ₹65.5 Lakhs of clean wealth**!
 
 ---
 
-### 3. The Rule of 72: Doubling Time Formula
-The **Rule of 72** is a quick mathematical shortcut to estimate how many years it takes for your investment to double at a given compound annual growth rate (CAGR):
+## Part 3: Advanced Portfolio Engineering & Institutional Insights
 
-<div style="display:inline-flex; align-items:center; gap:10px; background:var(--c-card, #f8fafc); border:1.5px solid var(--c-border, #e2e8f0); padding:10px 20px; border-radius:12px; font-size:15px; font-weight:700; color:var(--c-title, #0f172a); margin:14px 0;">
-  <span>Years to Double</span>
-  <span style="color:var(--c-muted, #64748b);">≈</span>
-  <span style="color:#0284c7;">72 ÷ Annual Return (%)</span>
-</div>
+### 3.1 Direct Plan vs. Regular Plan: The 1% Leakage That Costs You ₹35 Lakhs
+When you buy mutual funds through your local bank relationship manager or third-party distributor, they place you into a **Regular Plan**. When you invest through platforms like Zerodha Coin, Groww, or direct AMC portals, you invest in a **Direct Plan**.
 
-* At **12% CAGR** (historical Nifty 50 TRI return): `72 ÷ 12 =` **6 Years** to double.
-* At **15% CAGR** (aggressive mid/small-cap alpha): `72 ÷ 15 =` **4.8 Years** to double.
-* At **7% CAGR** (standard bank fixed deposits): `72 ÷ 7 =` **10.3 Years** to double.
+Both plans own the **exact same shares of Reliance, TCS, HDFC Bank, and Infosys**, and are managed by the exact same fund manager. The only difference is the **Expense Ratio**:
+* **Regular Plan:** Charges ~1.75% to 2.25% annually (includes distributor trail commissions).
+* **Direct Plan:** Charges ~0.50% to 1.00% annually (zero distributor commissions).
+
+> **⚠️ The ₹35 Lakh Math Trap:**
+> A seemingly tiny difference of **1.0% in annual expense ratio** on a ₹20,000 monthly SIP over 25 years compounds into a staggering loss of **over ₹35,00,000 (₹35 Lakhs)** in distributor commissions! Always verify that your fund scheme name includes the word **"Direct - Growth"**.
+
+### 3.2 XIRR vs. CAGR: Why CAGR Gives You False Numbers for SIPs
+* **CAGR (Compound Annual Growth Rate):** Assumes a single lump sum invested at the start and held continuously until the end. It only looks at the first deposit and the final value.
+* **XIRR (Extended Internal Rate of Return):** Calculates the exact annualized rate of return across multiple cash inflows occurring on different calendar dates. 
+
+Because an SIP involves 120 separate investments over a 10-year period (where your 1st installment had 120 months to compound, but your 119th installment had only 1 month), **CAGR is mathematically meaningless for SIPs**. Always use **XIRR** to measure your actual mutual fund performance on your CAS (Consolidated Account Statement) or broker dashboard.
+
+### 3.3 The Real Inflation Threat (6% Indian CPI Reality Check)
+Accumulating ₹1 Crore sounds like a dream, but what will ₹1 Crore actually buy when you retire 20 years from now?
+
+In India, long-term consumer price inflation (CPI) averages around **6% per year** (education and healthcare inflate at 8% to 10%). Using the rule of discounted purchasing power:
+
+$$\text{Real Purchasing Power} = \frac{\text{Nominal Corpus}}{(1 + 0.06)^{\text{Years}}}$$
+
+* **₹1 Crore in 10 Years** has the purchasing power of only **₹55.8 Lakhs** today.
+* **₹1 Crore in 20 Years** has the purchasing power of only **₹31.1 Lakhs** today.
+* **₹1 Crore in 25 Years** has the purchasing power of only **₹23.3 Lakhs** today.
+
+*Rule for Goal Planning:* If your dream flat or child's overseas education costs ₹50 Lakhs today, do not aim for ₹50 Lakhs 15 years later. Target a future corpus of at least **₹1.20 Crore** using the calculator's inflation footnote.
+
+### 3.4 Indian Mutual Fund Taxation Guide (Budget 2024 Updates)
+
+Understanding the tax implications on your mutual fund redemptions ensures you keep the lion's share of your wealth:
+
+#### **A. Equity Mutual Funds (≥65% Domestic Equities):**
+* **Long-Term Capital Gains (LTCG):** 
+  - Applicable when units are held for **more than 12 months**.
+  - **₹1.25 Lakh per financial year is 100% Tax-Free** (increased from ₹1.0 Lakh in Union Budget 2024).
+  - Gains exceeding ₹1.25 Lakh are taxed at a flat rate of **12.5%** (without indexation).
+* **Short-Term Capital Gains (STCG):**
+  - Applicable when units are redeemed within **12 months** of purchase.
+  - Taxed at a flat rate of **20%** (increased from 15% in Budget 2024).
+
+#### **B. Debt Mutual Funds:**
+* Any redemption gains (short-term or long-term) are added directly to your total annual taxable income and taxed according to your individual income tax slab.
+
+> **💡 The Annual Tax-Harvesting Trick:**
+> Every February or March, savvy Indian investors sell equity mutual fund units with accrued gains up to **₹1.25 Lakhs** tax-free, and immediately reinvest that money back into the same or another fund. This resets their purchase cost base higher and saves lakhs in future capital gains tax!
 
 ---
 
-### 4. Indian Mutual Fund Taxation Guide (Budget 2024 Updates)
-
-* **Long-Term Capital Gains (LTCG)**:
-  - Applicable on equity mutual funds held for **more than 12 months**.
-  - Capital gains up to **₹1.25 Lakh per financial year are 100% tax-free**.
-  - Gains exceeding ₹1.25 Lakh are taxed at **12.5%** (without indexation).
-* **Short-Term Capital Gains (STCG)**:
-  - Applicable on equity funds held for **less than 12 months**.
-  - Taxed at a flat rate of **20%** plus applicable cess.
-* **Debt Mutual Funds**:
-  - Capital gains are added to total annual taxable income and taxed according to your individual income tax slab.
-
----
-
-## Frequently Asked Questions (FAQ)
+## Part 4: Frequently Asked Questions (FAQ)
 
 <div style="margin:24px 0; display:flex; flex-direction:column; gap:12px;">
-  <details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">What is a Systematic Investment Plan (SIP)?</summary>
-    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
-      A Systematic Investment Plan (SIP) allows you to invest a fixed amount of money at regular intervals (typically monthly) into mutual funds. It inculcates disciplined financial habits and takes advantage of Rupee-Cost Averaging, buying more mutual fund units when markets drop and fewer when markets rise.
-    </p>
-  </details>
 
-  <details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">How does an Annual Step-Up SIP multiply wealth?</summary>
-    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
-      An Annual Step-Up automatically increases your monthly SIP contribution by a fixed percentage (e.g. 10%) every year in tandem with your annual salary increments. A ₹10,000 monthly SIP with a 10% annual step-up over 20 years yields nearly <strong>₹1.65 Crore</strong>, compared to <strong>₹99 Lakh</strong> without the step-up &mdash; creating an extra ₹66 Lakh of wealth!
-    </p>
-  </details>
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">1. What happens if I miss an SIP installment due to insufficient bank balance?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    <strong>The Mutual Fund AMC will NEVER penalize you or cancel your portfolio.</strong> However, your bank may charge an NACH/ECS mandate bounce fee (typically ₹250 to ₹500 plus GST). If your bank balance is low, you can easily use your broker app to "Pause" your SIP for 1 to 3 months before the scheduled deduction date without any charge.
+  </p>
+</details>
 
-  <details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">What average return should I realistically expect from Indian equity mutual funds?</summary>
-    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
-      Over rolling 10 to 15-year periods, the benchmark Nifty 50 Total Returns Index (TRI) has historically delivered approximately <strong>12% to 13.5% CAGR</strong>. Broad-market flexi-cap and active diversified funds have historically averaged <strong>13% to 15% CAGR</strong>.
-    </p>
-  </details>
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">2. Is there a "Best Date" of the month to schedule my SIP (e.g. 1st, 5th, or 15th)?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    <strong>No. Statistically, there is zero meaningful difference.</strong> Comprehensive backtesting of 20+ years of Nifty 50 data across the 1st, 7th, 15th, and 25th of every month revealed an annualized return difference of less than 0.08%. The best date is simply <strong>2 to 3 days after your monthly salary is credited</strong> (e.g. 5th or 7th) to ensure your investment happens before discretionary expenses begin.
+  </p>
+</details>
 
-  <details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">Can I pause, stop, or change my SIP amount midway?</summary>
-    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
-      Yes. In open-ended mutual funds, SIPs are completely flexible. You can pause or stop your SIP at any time through your broker or AMC portal without incurring penalties, and resume whenever convenient.
-    </p>
-  </details>
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">3. Can I withdraw my SIP money whenever I want? Is there any lock-in?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    Except for <strong>ELSS (Tax Saving Mutual Funds)</strong> which have a mandatory 3-year statutory lock-in, all open-ended mutual funds (Flexicap, Largecap, Midcap, Index Funds) offer <strong>100% liquidity</strong>. You can redeem your money anytime and the funds will credit to your verified bank account within T+1 to T+2 business days. Note that withdrawing within 365 days may attract a minor 1% Exit Load.
+  </p>
+</details>
+
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">4. Is my money safe in mutual funds? Can the AMC or broker run away with my money?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    Mutual funds in India are regulated by SEBI under a strict 3-tier governance structure: <strong>Sponsor &rarr; Trustee Board &rarr; Asset Management Company (AMC)</strong>. Your securities are never held in the bank account of the AMC or your broker; they are held by independent, SEBI-licensed institutional custodians (such as Deutsche Bank, Citibank, or SBI Custodial Services). Even if an AMC or broker shuts down, your units remain safely registered with RTAs (CAMS or KFintech) under your PAN.
+  </p>
+</details>
+
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">5. Should I stop my SIP during a market crash or recession?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    <strong>Stopping your SIP during a crash is the single most costly mistake in investing.</strong> When stock prices collapse, your fixed monthly SIP buys maximum units at rock-bottom prices. When the market inevitably recovers, those discounted units generate the bulk of your multi-year compounding. Stopping your SIP during a downturn is like running away from a 40% discount festival at your favorite store!
+  </p>
+</details>
+
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">6. What is the difference between SIP, Bank Recurring Deposit (RD), and PPF?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    * <strong>Bank RD:</strong> Offers a guaranteed fixed interest rate (around 6.5% - 7.0%), but interest is fully taxable as per your income slab, resulting in post-tax returns that often fail to beat real inflation.<br>
+    * <strong>Public Provident Fund (PPF):</strong> Offers EEE (Exempt-Exempt-Exempt) tax benefits at ~7.1% interest, but comes with a rigid 15-year lock-in and an annual deposit ceiling of ₹1.5 Lakh.<br>
+    * <strong>Equity SIP:</strong> Carries market volatility in the short run, but historically delivers <strong>12% to 15% CAGR</strong> over 10+ year horizons, generating 2x to 4x greater wealth than traditional debt instruments.
+  </p>
+</details>
+
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">7. How many mutual fund SIPs should an investor run simultaneously?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    Most retail investors over-diversify by holding 10 to 15 different mutual funds, creating massive portfolio overlap. For 95% of investors, <strong>3 to 4 well-chosen funds are ideal</strong>:
+    <br>&bull; 1 Broad Market Index Fund (Nifty 50 or Nifty LargeMidcap 250)
+    <br>&bull; 1 Active Flexi-Cap or Multi-Cap Fund
+    <br>&bull; 1 Mid-Cap or Small-Cap Fund (for high-growth alpha)
+    <br>&bull; 1 Conservative/Emergency fund (Liquid or Arbitrage Fund)
+  </p>
+</details>
+
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">8. What is the difference between "Growth" and "IDCW" (Dividend) options in SIP?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    In the <strong>Growth option</strong>, all corporate profits, dividends, and capital gains are automatically reinvested back into the scheme, triggering full exponential compounding. In the <strong>IDCW (Income Distribution cum Capital Withdrawal) option</strong>, dividends are periodically credited to your bank account and taxed at your marginal income tax slab. For long-term wealth creation, <strong>always choose the Growth option</strong>.
+  </p>
+</details>
+
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">9. How does taxation work when redeeming an SIP (FIFO Method)?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    Redemptions in mutual fund SIPs follow the <strong>First-In, First-Out (FIFO)</strong> accounting method. Each monthly installment is treated as an independent investment with its own distinct holding period. When you withdraw money, the units bought in Month 1 are sold first. If those units were bought more than 12 months ago, their gains qualify for the lower 12.5% Long-Term Capital Gains (LTCG) tax rate.
+  </p>
+</details>
+
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">10. Can I get a loan against my mutual fund SIP portfolio instead of selling?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    <strong>Yes. It is called Loan Against Mutual Funds (LAMF).</strong> Leading banks and NBFCs allow you to digitally pledge your mutual fund units as collateral and offer an overdraft credit line up to 50% of your equity portfolio value at attractive interest rates (typically 9.5% to 10.5%). This lets you manage emergency cash requirements without selling your units, interrupting compounding, or triggering capital gains tax.
+  </p>
+</details>
+
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">11. What is an Exit Load and when does it apply?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    An Exit Load is a fee charged by the AMC if an investor redeems units before a pre-specified holding period. For most Indian equity funds, the exit load is <strong>1% if redeemed within 365 days (1 year)</strong> of unit allotment, and <strong>0% (Nil)</strong> after 1 year. The exit load is automatically deducted from your redemption NAV and credited back to the fund scheme.
+  </p>
+</details>
+
+<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">12. What rate of return should I realistically assume in an Indian SIP Calculator?</summary>
+  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+    Over historical 15 to 20-year horizons, India's benchmark <strong>Nifty 50 Total Returns Index (TRI)</strong> has compounded at approximately <strong>12.5% to 13.5% CAGR</strong>, reflecting the underlying expansion of the Indian economy. For financial goal planning, conservative advisors suggest using <strong>11% to 12% for Large-Cap/Index Funds</strong> and <strong>13% to 14.5% for well-managed Flexicap or Midcap Funds</strong>.
+  </p>
+</details>
+
 </div>

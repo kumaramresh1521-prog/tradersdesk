@@ -895,6 +895,25 @@ def render_cms_shell(
     return html_out
 
 
+def expand_cms_widgets(text: str) -> str:
+    """Expands component shortcodes like {{CALCULATOR_WIDGET}} into rich interactive tools.
+    Allows admin users to manage clean, human-readable Markdown in the Admin Panel without
+    worrying about raw JavaScript, SVG, or CSS getting corrupted.
+    """
+    if not text:
+        return ""
+
+    if any(tag in text for tag in ("{{CALCULATOR_WIDGET}}", "{{SIP_CALCULATOR}}", "[CALCULATOR_WIDGET]")):
+        widget_path = TEMPLATES_DIR / "widgets" / "sip_calculator.html"
+        if widget_path.exists():
+            widget_code = widget_path.read_text(encoding="utf-8")
+            text = text.replace("{{CALCULATOR_WIDGET}}", widget_code)\
+                       .replace("{{SIP_CALCULATOR}}", widget_code)\
+                       .replace("[CALCULATOR_WIDGET]", widget_code)
+
+    return text
+
+
 def render_page_view(slug: str, is_preview: bool = False) -> Optional[str]:
     page = get_page(slug)
     if not page:
@@ -904,7 +923,7 @@ def render_page_view(slug: str, is_preview: bool = False) -> Optional[str]:
     if status == "draft" and not is_preview:
         return None
 
-    raw = page.get("content", "")
+    raw = expand_cms_widgets(page.get("content", ""))
     fmt = page.get("format", "markdown").lower()
     rendered_body = markdown_to_html(raw) if fmt == "markdown" else raw
 
@@ -1172,7 +1191,7 @@ def render_post_view(slug: str, is_preview: bool = False) -> Optional[str]:
     if status == "draft" and not is_preview:
         return None
 
-    raw = post.get("content", "")
+    raw = expand_cms_widgets(post.get("content", ""))
     fmt = post.get("format", "markdown").lower()
     rendered_body = markdown_to_html(raw) if fmt == "markdown" else raw
 

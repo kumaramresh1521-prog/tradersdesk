@@ -1,0 +1,1032 @@
+<div class="td-modern-calc" id="tdModernCalc">
+  <style>
+    /* ==========================================================================
+       GROWW / ZERODHA LEVEL FINTECH CALCULATOR DESIGN SYSTEM
+       Theme Agnostic: 100% Native Light & Dark Themes
+       ========================================================================== */
+    .td-modern-calc {
+      --c-bg: #ffffff;
+      --c-card: #f8fafc;
+      --c-border: #e2e8f0;
+      --c-title: #0f172a;
+      --c-text: #334155;
+      --c-muted: #64748b;
+      --c-primary: #0284c7;
+      --c-primary-light: #e0f2fe;
+      --c-invested: #0284c7;
+      --c-returns: #10b981;
+      --c-returns-light: #ecfdf5;
+      --c-total: #6366f1;
+      --c-total-light: #f5f3ff;
+      --c-track-empty: #e2e8f0;
+      --c-input-bg: #ffffff;
+      --c-input-border: #cbd5e1;
+      --c-tab-bg: #f1f5f9;
+      --c-tab-active-bg: #0284c7;
+      --c-tab-active-text: #ffffff;
+      --c-chip-bg: #f1f5f9;
+      --c-chip-text: #475569;
+      --c-chip-hover: #e2e8f0;
+      
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 18px 0 32px 0;
+      color: var(--c-text);
+      box-sizing: border-box;
+      transition: all 0.25s ease;
+    }
+
+    html:not([data-theme="light"]) .td-modern-calc,
+    [data-theme="dark"] .td-modern-calc {
+      --c-bg: #0c1220;
+      --c-card: #090f20;
+      --c-border: rgba(255, 255, 255, 0.09);
+      --c-title: #f8fafc;
+      --c-text: #cbd5e1;
+      --c-muted: #94a3b8;
+      --c-primary: #38bdf8;
+      --c-primary-light: rgba(14, 165, 233, 0.12);
+      --c-invested: #38bdf8;
+      --c-returns: #34d399;
+      --c-returns-light: rgba(16, 185, 129, 0.12);
+      --c-total: #a78bfa;
+      --c-total-light: rgba(139, 92, 246, 0.12);
+      --c-track-empty: rgba(255, 255, 255, 0.12);
+      --c-input-bg: rgba(3, 7, 18, 0.75);
+      --c-input-border: rgba(56, 189, 248, 0.3);
+      --c-tab-bg: rgba(15, 23, 42, 0.9);
+      --c-tab-active-bg: #0284c7;
+      --c-tab-active-text: #ffffff;
+      --c-chip-bg: rgba(255, 255, 255, 0.05);
+      --c-chip-text: #94a3b8;
+      --c-chip-hover: rgba(255, 255, 255, 0.12);
+    }
+
+    /* TOP HEADER & SEGMENTED SWITCHER */
+    .td-calc-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--c-border);
+      padding-bottom: 20px;
+    }
+    .td-calc-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: var(--c-primary-light);
+      color: var(--c-primary);
+    }
+    .td-calc-heading {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--c-title);
+      margin: 6px 0 0 0;
+      letter-spacing: -0.02em;
+    }
+
+    /* Segmented Tab Bar */
+    .td-tab-group {
+      display: flex;
+      background: var(--c-tab-bg);
+      border: 1px solid var(--c-border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .td-modern-calc button.td-tab-item {
+      padding: 9px 20px !important;
+      border-radius: 9px !important;
+      border: none !important;
+      background: transparent !important;
+      color: var(--c-muted) !important;
+      -webkit-text-fill-color: var(--c-muted) !important;
+      font-size: 13.5px !important;
+      font-weight: 700 !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      box-shadow: none !important;
+    }
+    .td-modern-calc button.td-tab-item:hover {
+      color: var(--c-title) !important;
+      -webkit-text-fill-color: var(--c-title) !important;
+    }
+    .td-modern-calc button.td-tab-item.active {
+      background: var(--c-tab-active-bg) !important;
+      color: var(--c-tab-active-text) !important;
+      -webkit-text-fill-color: var(--c-tab-active-text) !important;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+    }
+
+    /* 2-COLUMN LAYOUT */
+    .td-calc-body {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 36px;
+      align-items: start;
+    }
+    @media (max-width: 920px) {
+      .td-calc-body { grid-template-columns: 1fr; gap: 28px; }
+    }
+
+    /* INPUT ROW & PILL */
+    .td-calc-row {
+      margin-bottom: 24px;
+    }
+    .td-calc-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .td-calc-label-txt {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--c-title);
+    }
+
+    /* Clean Single-Border Value Box */
+    .td-calc-val-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      background: var(--c-input-bg) !important;
+      border: 1.5px solid var(--c-input-border) !important;
+      border-radius: 10px !important;
+      padding: 6px 14px !important;
+      width: 155px !important;
+      box-sizing: border-box !important;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .td-calc-val-pill:focus-within {
+      border-color: var(--c-primary) !important;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+    }
+    .td-calc-unit-sym {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--c-primary);
+      margin-right: 4px;
+      user-select: none;
+    }
+
+    /* Resets for input to defeat global input styles */
+    .td-modern-calc input.td-clean-input,
+    .td-modern-calc input[type="number"].td-clean-input {
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      outline: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100% !important;
+      height: auto !important;
+      font-size: 16px !important;
+      font-weight: 700 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      color: var(--c-title) !important;
+      -webkit-text-fill-color: var(--c-title) !important;
+      text-align: right !important;
+      -moz-appearance: textfield !important;
+    }
+    .td-modern-calc input.td-clean-input::-webkit-outer-spin-button,
+    .td-modern-calc input.td-clean-input::-webkit-inner-spin-button {
+      -webkit-appearance: none !important;
+      margin: 0 !important;
+    }
+
+    /* DYNAMIC SLIDER WITH FULL-FILL TRACK */
+    .td-calc-slider-box {
+      margin: 10px 0 8px 0;
+    }
+    .td-modern-calc input[type="range"].td-slider {
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      width: 100% !important;
+      height: 7px !important;
+      border-radius: 7px !important;
+      outline: none !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      cursor: pointer !important;
+      transition: background 0.15s ease;
+    }
+    .td-modern-calc input[type="range"].td-slider::-webkit-slider-runnable-track {
+      background: transparent !important;
+      border: none !important;
+      height: 7px !important;
+    }
+    .td-modern-calc input[type="range"].td-slider::-webkit-slider-thumb {
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      width: 22px !important;
+      height: 22px !important;
+      border-radius: 50% !important;
+      background: #ffffff !important;
+      border: 3.5px solid var(--c-primary) !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+      cursor: pointer !important;
+      margin-top: -7.5px !important;
+      transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    .td-modern-calc input[type="range"].td-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15) !important;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45) !important;
+    }
+    .td-modern-calc input[type="range"].td-slider::-moz-range-track {
+      background: transparent !important;
+      border: none !important;
+      height: 7px !important;
+    }
+    .td-modern-calc input[type="range"].td-slider::-moz-range-thumb {
+      width: 22px !important;
+      height: 22px !important;
+      border-radius: 50% !important;
+      background: #ffffff !important;
+      border: 3.5px solid var(--c-primary) !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+      cursor: pointer !important;
+    }
+
+    /* QUICK CHIP BUTTONS */
+    .td-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .td-chip-btn {
+      background: var(--c-chip-bg);
+      border: 1px solid var(--c-border);
+      border-radius: 14px;
+      padding: 3px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--c-chip-text);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .td-chip-btn:hover {
+      background: var(--c-chip-hover);
+      color: var(--c-title);
+      border-color: var(--c-primary);
+    }
+
+    /* STEP-UP TOGGLE BOX */
+    .td-stepup-card {
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-top: 8px;
+    }
+    .td-stepup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .td-switch-wrap {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .td-switch-wrap input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      display: none !important;
+    }
+    .td-switch-track {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: var(--c-track-empty);
+      border-radius: 24px;
+      transition: .25s;
+    }
+    .td-switch-track:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .25s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .td-switch-wrap input:checked + .td-switch-track {
+      background-color: var(--c-primary);
+    }
+    .td-switch-wrap input:checked + .td-switch-track:before {
+      transform: translateX(20px);
+    }
+
+    /* RIGHT SIDE RESULT DASHBOARD */
+    .td-dashboard-box {
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* SVG DONUT */
+    .td-donut-frame {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin: 10px auto 20px auto;
+    }
+    .td-donut-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .td-donut-circle-bg {
+      fill: none;
+      stroke: var(--c-track-empty);
+      stroke-width: 22;
+    }
+    .td-donut-circle-inv {
+      fill: none;
+      stroke: var(--c-invested);
+      stroke-width: 22;
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease;
+    }
+    .td-donut-circle-ret {
+      fill: none;
+      stroke: var(--c-returns);
+      stroke-width: 22;
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease;
+    }
+    .td-donut-content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      pointer-events: none;
+    }
+    .td-donut-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--c-muted);
+    }
+    .td-donut-val {
+      font-size: 21px;
+      font-weight: 800;
+      color: var(--c-title);
+      margin: 3px 0;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: -0.02em;
+    }
+    .td-donut-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: var(--c-returns-light);
+      color: var(--c-returns);
+    }
+
+    /* METRIC TILES */
+    .td-tiles-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .td-tile-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      box-sizing: border-box;
+    }
+    .td-tile-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .td-tile-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .td-tile-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--c-text);
+      white-space: nowrap;
+    }
+    .td-tile-pct {
+      font-size: 11.5px;
+      color: var(--c-muted);
+      margin-left: 2px;
+      white-space: nowrap;
+    }
+    .td-tile-val {
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--c-title);
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    /* MATURITY SUMMARY BANNER */
+    .td-banner-maturity {
+      width: 100%;
+      margin-top: 14px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      background: var(--c-total-light);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .td-banner-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--c-total);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .td-banner-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--c-total);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+
+    /* INFLATION FOOTNOTE */
+    .td-inflation-info {
+      font-size: 11.5px;
+      color: var(--c-muted);
+      text-align: center;
+      margin-top: 14px;
+      line-height: 1.45;
+    }
+
+    /* BOTTOM EXPAND BUTTON */
+    .td-bottom-action {
+      margin-top: 36px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: center;
+    }
+    .td-modern-calc button.td-btn-schedule {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      border: none !important;
+      padding: 12px 28px !important;
+      border-radius: 10px !important;
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      cursor: pointer !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      line-height: 1 !important;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
+      transition: all 0.2s ease !important;
+    }
+    .td-modern-calc button.td-btn-schedule:hover {
+      background: #0369a1 !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45) !important;
+    }
+
+    /* ACCORDION TABLE */
+    .td-schedule-panel {
+      display: none;
+      margin-top: 24px;
+      border-top: 1px solid var(--c-border);
+      padding-top: 24px;
+      overflow-x: auto;
+    }
+    .td-sched-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: right;
+    }
+    .td-sched-table th {
+      background: var(--c-tab-bg);
+      color: var(--c-title);
+      padding: 10px 14px;
+      font-weight: 700;
+      border: 1px solid var(--c-border);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+    .td-sched-table td {
+      padding: 10px 14px;
+      border: 1px solid var(--c-border);
+      color: var(--c-text);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .td-sched-table tr:nth-child(even) {
+      background: var(--c-card);
+    }
+    .td-sched-table tr:hover td {
+      background: var(--c-primary-light);
+      color: var(--c-title);
+    }
+  </style>
+
+  <!-- CALCULATOR TOP HEADER -->
+  <div class="td-calc-head">
+    <div>
+      <span class="td-calc-badge">⚡ Institutional Compounding Suite</span>
+      <h2 class="td-calc-heading">Wealth Growth &amp; Compounding Simulator</h2>
+    </div>
+    <!-- Mode Switcher -->
+    <div class="td-tab-group">
+      <button type="button" class="td-tab-item active" id="btnModeSip" onclick="tdSetMode('sip')">🚀 Monthly SIP</button>
+      <button type="button" class="td-tab-item" id="btnModeLump" onclick="tdSetMode('lump')">💰 One-Time Lumpsum</button>
+    </div>
+  </div>
+
+  <!-- MAIN CALCULATOR BODY -->
+  <div class="td-calc-body">
+    
+    <!-- LEFT COLUMN: CONTROLS -->
+    <div class="td-calc-inputs">
+      
+      <!-- FIELD 1: Investment Amount -->
+      <div class="td-calc-row">
+        <div class="td-calc-row-top">
+          <label class="td-calc-label-txt" id="lblAmount">Monthly Investment</label>
+          <div class="td-calc-val-pill">
+            <span class="td-calc-unit-sym">₹</span>
+            <input type="number" id="inputAmount" class="td-clean-input" value="10000" min="500" max="10000000" step="500" oninput="tdOnAmountInput(this.value)" />
+          </div>
+        </div>
+        <div class="td-calc-slider-box">
+          <input type="range" id="sliderAmount" class="td-slider" min="500" max="500000" step="500" value="10000" oninput="tdOnAmountSlider(this.value)" />
+        </div>
+        <!-- Quick Chips -->
+        <div class="td-chip-row" id="chipsAmount">
+          <span class="td-chip-btn" onclick="tdSetAmount(5000)">₹5,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(10000)">₹10,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(25000)">₹25,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(50000)">₹50,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(100000)">₹1 Lakh</span>
+        </div>
+      </div>
+
+      <!-- FIELD 2: Expected CAGR -->
+      <div class="td-calc-row">
+        <div class="td-calc-row-top">
+          <label class="td-calc-label-txt">Expected Annual Return (CAGR)</label>
+          <div class="td-calc-val-pill">
+            <input type="number" id="inputRate" class="td-clean-input" value="12.0" min="1" max="35" step="0.5" oninput="tdOnRateInput(this.value)" />
+            <span class="td-calc-unit-sym" style="margin-right:0; margin-left:4px;">%</span>
+          </div>
+        </div>
+        <div class="td-calc-slider-box">
+          <input type="range" id="sliderRate" class="td-slider" min="1" max="30" step="0.5" value="12.0" oninput="tdOnRateSlider(this.value)" />
+        </div>
+        <!-- Quick Chips -->
+        <div class="td-chip-row">
+          <span class="td-chip-btn" onclick="tdSetRate(8.0)">8% (Debt/FD)</span>
+          <span class="td-chip-btn" onclick="tdSetRate(12.0)">12% (Nifty 50)</span>
+          <span class="td-chip-btn" onclick="tdSetRate(14.5)">14.5% (Flexicap)</span>
+          <span class="td-chip-btn" onclick="tdSetRate(18.0)">18% (Aggressive)</span>
+        </div>
+      </div>
+
+      <!-- FIELD 3: Time Horizon -->
+      <div class="td-calc-row">
+        <div class="td-calc-row-top">
+          <label class="td-calc-label-txt">Investment Horizon</label>
+          <div class="td-calc-val-pill">
+            <input type="number" id="inputYears" class="td-clean-input" value="10" min="1" max="40" step="1" oninput="tdOnYearsInput(this.value)" />
+            <span class="td-calc-unit-sym" style="margin-right:0; margin-left:4px; font-size:13px;">Yr</span>
+          </div>
+        </div>
+        <div class="td-calc-slider-box">
+          <input type="range" id="sliderYears" class="td-slider" min="1" max="35" step="1" value="10" oninput="tdOnYearsSlider(this.value)" />
+        </div>
+        <!-- Quick Chips -->
+        <div class="td-chip-row">
+          <span class="td-chip-btn" onclick="tdSetYears(5)">5 Yrs</span>
+          <span class="td-chip-btn" onclick="tdSetYears(10)">10 Yrs</span>
+          <span class="td-chip-btn" onclick="tdSetYears(15)">15 Yrs</span>
+          <span class="td-chip-btn" onclick="tdSetYears(20)">20 Yrs</span>
+          <span class="td-chip-btn" onclick="tdSetYears(25)">25 Yrs</span>
+        </div>
+      </div>
+
+      <!-- FIELD 4: Step-Up SIP (SIP Mode Only) -->
+      <div class="td-stepup-card" id="boxStepUp">
+        <div class="td-stepup-header" onclick="tdToggleStepUp()">
+          <div>
+            <div style="font-size:13.5px; font-weight:700; color:var(--c-title);">📈 Annual Step-Up Top-up</div>
+            <div style="font-size:11.5px; color:var(--c-muted); margin-top:2px;">Increase monthly SIP in tandem with your annual salary increments</div>
+          </div>
+          <label class="td-switch-wrap" onclick="event.stopPropagation()">
+            <input type="checkbox" id="chkStepUp" onchange="tdOnStepUpToggle(this.checked)" />
+            <span class="td-switch-track"></span>
+          </label>
+        </div>
+        <div id="stepUpDetails" style="display:none; margin-top:14px; border-top:1px dashed var(--c-border); padding-top:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-size:12.5px; color:var(--c-muted);">Annual Step-Up Increment:</span>
+            <span id="txtStepUpPct" style="font-weight:700; color:var(--c-primary); font-family:'JetBrains Mono', monospace;">10% / year</span>
+          </div>
+          <input type="range" id="sliderStepUp" class="td-slider" min="1" max="25" step="1" value="10" oninput="tdOnStepUpSlider(this.value)" />
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: RESULTS & SVG DONUT -->
+    <div class="td-dashboard-box">
+      
+      <!-- SVG Donut Chart -->
+      <div class="td-donut-frame">
+        <svg class="td-donut-svg" viewBox="0 0 200 200">
+          <circle class="td-donut-circle-bg" cx="100" cy="100" r="80"></circle>
+          <circle id="donutInvested" class="td-donut-circle-inv" cx="100" cy="100" r="80" stroke-dasharray="0 502.65" stroke-dashoffset="0"></circle>
+          <circle id="donutGain" class="td-donut-circle-ret" cx="100" cy="100" r="80" stroke-dasharray="0 502.65" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="td-donut-content">
+          <span class="td-donut-label">TOTAL MATURITY</span>
+          <span class="td-donut-val" id="donutTotalVal">₹23.2 L</span>
+          <span class="td-donut-tag" id="donutMultiplier">1.9x Multiplier</span>
+        </div>
+      </div>
+
+      <!-- Single Row Tiles -->
+      <div class="td-tiles-list">
+        
+        <!-- Invested Capital -->
+        <div class="td-tile-item">
+          <div class="td-tile-left">
+            <span class="td-tile-dot" style="background:var(--c-invested);"></span>
+            <span class="td-tile-label">Invested Capital</span>
+            <span class="td-tile-pct" id="pctInvested">(51.6%)</span>
+          </div>
+          <span class="td-tile-val" id="valInvested">₹12,00,000</span>
+        </div>
+
+        <!-- Est Compounded Gain -->
+        <div class="td-tile-item">
+          <div class="td-tile-left">
+            <span class="td-tile-dot" style="background:var(--c-returns);"></span>
+            <span class="td-tile-label">Est. Compounded Gain</span>
+            <span class="td-tile-pct" id="pctGain">(48.4%)</span>
+          </div>
+          <span class="td-tile-val" style="color:var(--c-returns);" id="valGain">+₹11,23,391</span>
+        </div>
+
+        <!-- Maturity Banner -->
+        <div class="td-banner-maturity">
+          <div>
+            <div class="td-banner-title">Total Corpus Value</div>
+            <div style="font-size:11px; color:var(--c-muted); margin-top:2px;" id="txtHorizonSubtitle">After 10 Years @ 12% CAGR</div>
+          </div>
+          <div class="td-banner-val" id="valTotal">₹23,23,391</div>
+        </div>
+
+      </div>
+
+      <!-- Inflation Footnote -->
+      <div class="td-inflation-info" id="txtInflationNote">🛒 Estimated real purchasing power after 6% annual inflation: <strong>₹12.9 Lakh</strong></div>
+
+    </div>
+
+  </div>
+
+  <!-- BOTTOM SCHEDULE TOGGLE -->
+  <div class="td-bottom-action">
+    <button type="button" class="td-btn-schedule" onclick="tdToggleSchedule()">📊 View Year-by-Year Growth Table &amp; Breakdown</button>
+  </div>
+
+  <!-- EXPANDABLE TABLE -->
+  <div class="td-schedule-panel" id="paneSchedule">
+    <table class="td-sched-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;">Year</th>
+          <th>Annual Contribution</th>
+          <th>Total Invested</th>
+          <th>Interest Accrued</th>
+          <th>Closing Balance</th>
+        </tr>
+      </thead>
+      <tbody id="tbodySchedule">
+        <!-- Rendered dynamically -->
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  (function() {
+    let _calcMode = 'sip';
+    let _hasStepUp = false;
+    const CIRCUMFERENCE = 2 * Math.PI * 80; // ~502.6548
+
+    function fmtCur(val) {
+      if (isNaN(val)) return '₹0';
+      return '₹' + Math.round(val).toLocaleString('en-IN');
+    }
+
+    function fmtShortCur(val) {
+      if (isNaN(val)) return '₹0';
+      if (val >= 10000000) {
+        return '₹' + (val / 10000000).toFixed(2) + ' Cr';
+      } else if (val >= 100000) {
+        return '₹' + (val / 100000).toFixed(1) + ' L';
+      }
+      return fmtCur(val);
+    }
+
+    function paintSlider(slider) {
+      if (!slider) return;
+      const min = parseFloat(slider.min) || 0;
+      const max = parseFloat(slider.max) || 100;
+      const val = parseFloat(slider.value) || 0;
+      const pct = Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+      slider.style.setProperty('background', 'linear-gradient(to right, var(--c-primary) 0%, var(--c-primary) ' + pct + '%, var(--c-track-empty) ' + pct + '%, var(--c-track-empty) 100%)', 'important');
+    }
+
+    function runCalculations() {
+      const amount = parseFloat(document.getElementById('inputAmount').value) || 0;
+      const rate = parseFloat(document.getElementById('inputRate').value) || 0;
+      const years = parseInt(document.getElementById('inputYears').value) || 0;
+      const stepUp = _hasStepUp ? (parseFloat(document.getElementById('sliderStepUp').value) || 0) : 0;
+
+      let totalInvested = 0;
+      let totalCorpus = 0;
+      const schedule = [];
+      const currentYear = new Date().getFullYear();
+
+      if (_calcMode === 'sip') {
+        const monthlyRate = (rate / 100) / 12;
+        let runningCorpus = 0;
+        let runningInvested = 0;
+        let currentMonthly = amount;
+
+        for (let y = 1; y <= years; y++) {
+          let annualDeposit = 0;
+          let yearStartCorpus = runningCorpus;
+
+          for (let m = 1; m <= 12; m++) {
+            runningInvested += currentMonthly;
+            annualDeposit += currentMonthly;
+            runningCorpus = (runningCorpus + currentMonthly) * (1 + monthlyRate);
+          }
+
+          const yearInterest = runningCorpus - yearStartCorpus - annualDeposit;
+          schedule.push({
+            year: y,
+            calYear: currentYear + y,
+            annualDeposit: annualDeposit,
+            totalInvested: runningInvested,
+            yearInterest: yearInterest,
+            closingCorpus: runningCorpus
+          });
+
+          if (stepUp > 0) {
+            currentMonthly = currentMonthly * (1 + stepUp / 100);
+          }
+        }
+
+        totalInvested = runningInvested;
+        totalCorpus = runningCorpus;
+      } else {
+        // Lumpsum Mode
+        totalInvested = amount;
+        let runningCorpus = amount;
+
+        for (let y = 1; y <= years; y++) {
+          const nextCorpus = runningCorpus * (1 + rate / 100);
+          const yearInterest = nextCorpus - runningCorpus;
+          runningCorpus = nextCorpus;
+
+          schedule.push({
+            year: y,
+            calYear: currentYear + y,
+            annualDeposit: (y === 1 ? amount : 0),
+            totalInvested: amount,
+            yearInterest: yearInterest,
+            closingCorpus: runningCorpus
+          });
+        }
+        totalCorpus = runningCorpus;
+      }
+
+      const totalGain = Math.max(0, totalCorpus - totalInvested);
+      const mult = totalInvested > 0 ? (totalCorpus / totalInvested).toFixed(1) + 'x Multiplier' : '1.0x';
+      const invPct = totalCorpus > 0 ? ((totalInvested / totalCorpus) * 100).toFixed(1) : '50.0';
+      const gainPct = totalCorpus > 0 ? ((totalGain / totalCorpus) * 100).toFixed(1) : '50.0';
+
+      // Update Texts
+      document.getElementById('valInvested').innerText = fmtCur(totalInvested);
+      document.getElementById('pctInvested').innerText = `(${invPct}%)`;
+      document.getElementById('valGain').innerText = '+' + fmtCur(totalGain);
+      document.getElementById('pctGain').innerText = `(${gainPct}%)`;
+      document.getElementById('valTotal').innerText = fmtCur(totalCorpus);
+      document.getElementById('donutTotalVal').innerText = fmtShortCur(totalCorpus);
+      document.getElementById('donutMultiplier').innerText = mult;
+      document.getElementById('txtHorizonSubtitle').innerText = `After ${years} Year${years > 1 ? 's' : ''} @ ${rate}% CAGR`;
+
+      // Real Inflation Purchasing Power
+      const realPurchasingPower = totalCorpus / Math.pow(1 + 0.06, years);
+      document.getElementById('txtInflationNote').innerHTML = `🛒 Estimated real purchasing power after 6% annual inflation: <strong>${fmtShortCur(realPurchasingPower)}</strong>`;
+
+      // Update SVG Donut Stroke
+      const c = CIRCUMFERENCE;
+      const invStroke = (parseFloat(invPct) / 100) * c;
+      const gainStroke = (parseFloat(gainPct) / 100) * c;
+
+      const circleInv = document.getElementById('donutInvested');
+      const circleGain = document.getElementById('donutGain');
+      if (circleInv) {
+        circleInv.style.strokeDasharray = `${invStroke} ${c}`;
+        circleInv.style.strokeDashoffset = '0';
+      }
+      if (circleGain) {
+        circleGain.style.strokeDasharray = `${gainStroke} ${c}`;
+        circleGain.style.strokeDashoffset = `-${invStroke}`;
+      }
+
+      // Repaint all slider track gradients
+      paintSlider(document.getElementById('sliderAmount'));
+      paintSlider(document.getElementById('sliderRate'));
+      paintSlider(document.getElementById('sliderYears'));
+      const sStep = document.getElementById('sliderStepUp');
+      if (sStep) paintSlider(sStep);
+
+      // Render Schedule Table
+      const tbody = document.getElementById('tbodySchedule');
+      if (tbody) {
+        let html = '';
+        schedule.forEach(row => {
+          html += `
+            <tr>
+              <td style="text-align:left; font-weight:700;">Year ${row.year} <span style="font-size:11px; color:var(--c-muted); font-weight:normal;">(${row.calYear})</span></td>
+              <td>${fmtCur(row.annualDeposit)}</td>
+              <td>${fmtCur(row.totalInvested)}</td>
+              <td style="color:var(--c-returns);">+${fmtCur(row.yearInterest)}</td>
+              <td style="font-weight:700; color:var(--c-title);">${fmtCur(row.closingCorpus)}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      }
+    }
+
+    window.tdSetMode = function(mode) {
+      _calcMode = mode;
+      document.getElementById('btnModeSip').classList.toggle('active', mode === 'sip');
+      document.getElementById('btnModeLump').classList.toggle('active', mode === 'lump');
+      
+      const sAmt = document.getElementById('sliderAmount');
+      const iAmt = document.getElementById('inputAmount');
+      const lblAmt = document.getElementById('lblAmount');
+      const chips = document.getElementById('chipsAmount');
+      const boxStep = document.getElementById('boxStepUp');
+
+      if (mode === 'sip') {
+        lblAmt.innerText = 'Monthly Investment';
+        sAmt.min = 500;
+        sAmt.max = 500000;
+        sAmt.step = 500;
+        iAmt.value = 10000;
+        sAmt.value = 10000;
+        boxStep.style.display = 'block';
+        chips.innerHTML = `
+          <span class="td-chip-btn" onclick="tdSetAmount(5000)">₹5,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(10000)">₹10,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(25000)">₹25,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(50000)">₹50,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(100000)">₹1 Lakh</span>
+        `;
+      } else {
+        lblAmt.innerText = 'Total One-Time Investment';
+        sAmt.min = 5000;
+        sAmt.max = 5000000;
+        sAmt.step = 5000;
+        iAmt.value = 100000;
+        sAmt.value = 100000;
+        boxStep.style.display = 'none';
+        chips.innerHTML = `
+          <span class="td-chip-btn" onclick="tdSetAmount(50000)">₹50,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(100000)">₹1 Lakh</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(250000)">₹2.5 Lakh</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(500000)">₹5 Lakh</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(1000000)">₹10 Lakh</span>
+        `;
+      }
+      runCalculations();
+    };
+
+    window.tdOnAmountSlider = function(val) {
+      document.getElementById('inputAmount').value = val;
+      runCalculations();
+    };
+    window.tdOnAmountInput = function(val) {
+      document.getElementById('sliderAmount').value = val;
+      runCalculations();
+    };
+    window.tdSetAmount = function(val) {
+      document.getElementById('inputAmount').value = val;
+      document.getElementById('sliderAmount').value = val;
+      runCalculations();
+    };
+
+    window.tdOnRateSlider = function(val) {
+      document.getElementById('inputRate').value = val;
+      runCalculations();
+    };
+    window.tdOnRateInput = function(val) {
+      document.getElementById('sliderRate').value = val;
+      runCalculations();
+    };
+    window.tdSetRate = function(val) {
+      document.getElementById('inputRate').value = val;
+      document.getElementById('sliderRate').value = val;
+      runCalculations();
+    };
+
+    window.tdOnYearsSlider = function(val) {
+      document.getElementById('inputYears').value = val;
+      runCalculations();
+    };
+    window.tdOnYearsInput = function(val) {
+      document.getElementById('sliderYears').value = val;
+      runCalculations();
+    };
+    window.tdSetYears = function(val) {
+      document.getElementById('inputYears').value = val;
+      document.getElementById('sliderYears').value = val;
+      runCalculations();
+    };
+
+    window.tdToggleStepUp = function() {
+      const chk = document.getElementById('chkStepUp');
+      chk.checked = !chk.checked;
+      tdOnStepUpToggle(chk.checked);
+    };
+    window.tdOnStepUpToggle = function(checked) {
+      _hasStepUp = checked;
+      document.getElementById('stepUpDetails').style.display = checked ? 'block' : 'none';
+      runCalculations();
+    };
+    window.tdOnStepUpSlider = function(val) {
+      document.getElementById('txtStepUpPct').innerText = val + '% / year';
+      runCalculations();
+    };
+
+    window.tdToggleSchedule = function() {
+      const p = document.getElementById('paneSchedule');
+      p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+    };
+
+    // Paint sliders immediately
+    setTimeout(runCalculations, 50);
+  })();
+</script>
