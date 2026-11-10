@@ -7,86 +7,75 @@ Plan your financial journey with institutional precision. Whether investing mont
 <div class="td-modern-calc" id="tdModernCalc">
   <style>
     /* ==========================================================================
-       MODERN FINTECH CALCULATOR DESIGN SYSTEM
-       Theme Agnostic: Flawless in both Day Mode (Light) & Night Mode (Dark)
+       GROWW / ZERODHA LEVEL FINTECH CALCULATOR DESIGN SYSTEM
+       Theme Agnostic: 100% Native Light & Dark Themes
        ========================================================================== */
     .td-modern-calc {
-      --calc-bg: #ffffff;
-      --calc-card-bg: #f8fafc;
-      --calc-card-border: #e2e8f0;
-      --calc-title: #0f172a;
-      --calc-text: #334155;
-      --calc-muted: #64748b;
-      --calc-subtle: #94a3b8;
-      --calc-input-bg: #ffffff;
-      --calc-input-border: #cbd5e1;
-      --calc-active-tab-bg: #0284c7;
-      --calc-active-tab-text: #ffffff;
-      --calc-tab-bg: #f1f5f9;
-      --calc-chip-bg: #f1f5f9;
-      --calc-chip-hover: #e2e8f0;
-      --calc-chip-text: #475569;
-      --calc-invested-color: #0284c7;
-      --calc-invested-bg: #f0f9ff;
-      --calc-invested-border: #bae6fd;
-      --calc-returns-color: #059669;
-      --calc-returns-bg: #ecfdf5;
-      --calc-returns-border: #a7f3d0;
-      --calc-total-color: #6366f1;
-      --calc-total-bg: #f5f3ff;
-      --calc-total-border: #ddd6fe;
-      --calc-track-bg: #e2e8f0;
-      --calc-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+      --c-bg: #ffffff;
+      --c-card: #f8fafc;
+      --c-border: #e2e8f0;
+      --c-title: #0f172a;
+      --c-text: #334155;
+      --c-muted: #64748b;
+      --c-primary: #0284c7;
+      --c-primary-light: #e0f2fe;
+      --c-invested: #0284c7;
+      --c-returns: #10b981;
+      --c-returns-light: #ecfdf5;
+      --c-total: #6366f1;
+      --c-total-light: #f5f3ff;
+      --c-track-empty: #e2e8f0;
+      --c-input-bg: #ffffff;
+      --c-input-border: #cbd5e1;
+      --c-tab-bg: #f1f5f9;
+      --c-tab-active-bg: #0284c7;
+      --c-tab-active-text: #ffffff;
+      --c-chip-bg: #f1f5f9;
+      --c-chip-text: #475569;
+      --c-chip-hover: #e2e8f0;
+      
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--calc-bg);
-      border: 1px solid var(--calc-card-border);
-      border-radius: 20px;
-      padding: 32px 32px 42px 32px;
-      margin: 28px 0;
-      color: var(--calc-text);
-      box-shadow: var(--calc-shadow);
-      transition: background 0.25s ease, border-color 0.25s ease;
+      margin: 18px 0 32px 0;
+      color: var(--c-text);
+      box-sizing: border-box;
+      transition: all 0.25s ease;
     }
 
     html:not([data-theme="light"]) .td-modern-calc,
     [data-theme="dark"] .td-modern-calc {
-      --calc-bg: #090f20;
-      --calc-card-bg: #0e172e;
-      --calc-card-border: rgba(255, 255, 255, 0.09);
-      --calc-title: #f8fafc;
-      --calc-text: #cbd5e1;
-      --calc-muted: #94a3b8;
-      --calc-subtle: #64748b;
-      --calc-input-bg: rgba(3, 7, 18, 0.75);
-      --calc-input-border: rgba(56, 189, 248, 0.35);
-      --calc-active-tab-bg: #0284c7;
-      --calc-active-tab-text: #ffffff;
-      --calc-tab-bg: rgba(15, 23, 42, 0.9);
-      --calc-chip-bg: rgba(255, 255, 255, 0.05);
-      --calc-chip-hover: rgba(255, 255, 255, 0.12);
-      --calc-chip-text: #94a3b8;
-      --calc-invested-color: #38bdf8;
-      --calc-invested-bg: rgba(14, 165, 233, 0.1);
-      --calc-invested-border: rgba(14, 165, 233, 0.28);
-      --calc-returns-color: #34d399;
-      --calc-returns-bg: rgba(16, 185, 129, 0.1);
-      --calc-returns-border: rgba(16, 185, 129, 0.28);
-      --calc-total-color: #a78bfa;
-      --calc-total-bg: rgba(139, 92, 246, 0.1);
-      --calc-total-border: rgba(139, 92, 246, 0.28);
-      --calc-track-bg: rgba(255, 255, 255, 0.12);
-      --calc-shadow: 0 16px 45px -10px rgba(0, 0, 0, 0.7);
+      --c-bg: #0c1220;
+      --c-card: #090f20;
+      --c-border: rgba(255, 255, 255, 0.09);
+      --c-title: #f8fafc;
+      --c-text: #cbd5e1;
+      --c-muted: #94a3b8;
+      --c-primary: #38bdf8;
+      --c-primary-light: rgba(14, 165, 233, 0.12);
+      --c-invested: #38bdf8;
+      --c-returns: #34d399;
+      --c-returns-light: rgba(16, 185, 129, 0.12);
+      --c-total: #a78bfa;
+      --c-total-light: rgba(139, 92, 246, 0.12);
+      --c-track-empty: rgba(255, 255, 255, 0.12);
+      --c-input-bg: rgba(3, 7, 18, 0.75);
+      --c-input-border: rgba(56, 189, 248, 0.3);
+      --c-tab-bg: rgba(15, 23, 42, 0.9);
+      --c-tab-active-bg: #0284c7;
+      --c-tab-active-text: #ffffff;
+      --c-chip-bg: rgba(255, 255, 255, 0.05);
+      --c-chip-text: #94a3b8;
+      --c-chip-hover: rgba(255, 255, 255, 0.12);
     }
 
-    /* Header & Mode Switcher */
-    .td-calc-header {
+    /* TOP HEADER & SEGMENTED SWITCHER */
+    .td-calc-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 16px;
       margin-bottom: 28px;
-      border-bottom: 1px solid var(--calc-card-border);
+      border-bottom: 1px solid var(--c-border);
       padding-bottom: 20px;
     }
     .td-calc-badge {
@@ -95,245 +84,251 @@ Plan your financial journey with institutional precision. Whether investing mont
       gap: 6px;
       font-size: 11px;
       font-weight: 800;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
       padding: 4px 12px;
       border-radius: 20px;
-      background: var(--calc-invested-bg);
-      color: var(--calc-invested-color);
-      border: 1px solid var(--calc-invested-border);
+      background: var(--c-primary-light);
+      color: var(--c-primary);
     }
-    .td-calc-title {
+    .td-calc-heading {
       font-size: 22px;
       font-weight: 800;
-      color: var(--calc-title);
+      color: var(--c-title);
       margin: 6px 0 0 0;
       letter-spacing: -0.02em;
     }
-    .td-calc-switcher {
+
+    /* Segmented Tab Bar */
+    .td-tab-group {
       display: flex;
-      background: var(--calc-tab-bg);
-      border: 1px solid var(--calc-card-border);
+      background: var(--c-tab-bg);
+      border: 1px solid var(--c-border);
       border-radius: 12px;
       padding: 4px;
       gap: 4px;
     }
-    .td-calc-switch-btn {
-      padding: 10px 22px;
-      border-radius: 9px;
-      border: none;
-      background: transparent;
-      color: var(--calc-muted);
-      font-size: 13.5px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .td-modern-calc button.td-tab-item {
+      padding: 9px 20px !important;
+      border-radius: 9px !important;
+      border: none !important;
+      background: transparent !important;
+      color: var(--c-muted) !important;
+      -webkit-text-fill-color: var(--c-muted) !important;
+      font-size: 13.5px !important;
+      font-weight: 700 !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      box-shadow: none !important;
     }
-    .td-calc-switch-btn:hover {
-      color: var(--calc-title);
+    .td-modern-calc button.td-tab-item:hover {
+      color: var(--c-title) !important;
+      -webkit-text-fill-color: var(--c-title) !important;
     }
-    .td-modern-calc .td-calc-switch-btn.active,
-    .td-modern-calc .td-calc-switch-btn.active * {
-      background: #0284c7 !important;
-      color: #ffffff !important;
-      -webkit-text-fill-color: #ffffff !important;
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    .td-modern-calc button.td-tab-item.active {
+      background: var(--c-tab-active-bg) !important;
+      color: var(--c-tab-active-text) !important;
+      -webkit-text-fill-color: var(--c-tab-active-text) !important;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
     }
 
-    /* Main Grid: Left Controls, Right Chart */
-    .td-calc-layout {
+    /* 2-COLUMN LAYOUT */
+    .td-calc-body {
       display: grid;
       grid-template-columns: 1.15fr 0.85fr;
       gap: 36px;
       align-items: start;
     }
     @media (max-width: 920px) {
-      .td-modern-calc { padding: 22px 18px; }
-      .td-calc-layout { grid-template-columns: 1fr; gap: 28px; }
+      .td-calc-body { grid-template-columns: 1fr; gap: 28px; }
     }
 
-    /* Input Group */
-    .td-calc-field {
+    /* INPUT ROW & PILL */
+    .td-calc-row {
       margin-bottom: 24px;
     }
-    .td-calc-field-top {
+    .td-calc-row-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
       margin-bottom: 10px;
     }
-    .td-calc-label {
+    .td-calc-label-txt {
       font-size: 14px;
       font-weight: 600;
-      color: var(--calc-title);
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      color: var(--c-title);
     }
-    .td-calc-input-pill {
+
+    /* Clean Single-Border Value Box */
+    .td-calc-val-pill {
       display: inline-flex;
       align-items: center;
-      background: var(--calc-input-bg);
-      border: 1.5px solid var(--calc-input-border);
-      border-radius: 10px;
-      padding: 7px 14px;
-      min-width: 165px;
+      justify-content: flex-end;
+      background: var(--c-input-bg) !important;
+      border: 1.5px solid var(--c-input-border) !important;
+      border-radius: 10px !important;
+      padding: 6px 14px !important;
+      width: 155px !important;
+      box-sizing: border-box !important;
       transition: all 0.2s ease;
       box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-      box-sizing: border-box;
     }
-    .td-calc-input-pill:focus-within {
-      border-color: var(--calc-active-tab-bg);
-      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    .td-calc-val-pill:focus-within {
+      border-color: var(--c-primary) !important;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
     }
-    .td-calc-prefix {
+    .td-calc-unit-sym {
       font-size: 15px;
       font-weight: 700;
-      color: var(--calc-invested-color);
+      color: var(--c-primary);
       margin-right: 4px;
       user-select: none;
     }
-    .td-calc-num-input {
-      border: none;
-      background: transparent;
-      outline: none;
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--calc-title);
-      width: 100%;
-      min-width: 90px;
-      text-align: right;
-      font-family: 'JetBrains Mono', monospace;
-      -moz-appearance: textfield !important;
+
+    /* Resets for input to defeat global input styles */
+    .td-modern-calc input.td-clean-input,
+    .td-modern-calc input[type="number"].td-clean-input {
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      outline: none !important;
       padding: 0 !important;
       margin: 0 !important;
+      width: 100% !important;
+      height: auto !important;
+      font-size: 16px !important;
+      font-weight: 700 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      color: var(--c-title) !important;
+      -webkit-text-fill-color: var(--c-title) !important;
+      text-align: right !important;
+      -moz-appearance: textfield !important;
     }
-    .td-calc-num-input::-webkit-outer-spin-button,
-    .td-calc-num-input::-webkit-inner-spin-button {
+    .td-modern-calc input.td-clean-input::-webkit-outer-spin-button,
+    .td-modern-calc input.td-clean-input::-webkit-inner-spin-button {
       -webkit-appearance: none !important;
       margin: 0 !important;
     }
 
-    /* Custom Slider */
-    .td-calc-slider-wrap {
-      position: relative;
-      margin: 12px 0 10px 0;
+    /* DYNAMIC SLIDER WITH FULL-FILL TRACK */
+    .td-calc-slider-box {
+      margin: 10px 0 8px 0;
     }
-    .td-range-slider {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 7px;
-      border-radius: 7px;
-      outline: none;
-      cursor: pointer;
-      background: var(--calc-track-bg);
+    .td-modern-calc input[type="range"].td-slider {
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      width: 100% !important;
+      height: 7px !important;
+      border-radius: 7px !important;
+      outline: none !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      cursor: pointer !important;
       transition: background 0.15s ease;
     }
-    .td-range-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: #ffffff;
-      border: 3.5px solid #0284c7;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-      cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    .td-modern-calc input[type="range"].td-slider::-webkit-slider-runnable-track {
+      background: transparent !important;
+      border: none !important;
+      height: 7px !important;
     }
-    .td-range-slider::-webkit-slider-thumb:hover {
-      transform: scale(1.15);
-      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45);
+    .td-modern-calc input[type="range"].td-slider::-webkit-slider-thumb {
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      width: 22px !important;
+      height: 22px !important;
+      border-radius: 50% !important;
+      background: #ffffff !important;
+      border: 3.5px solid var(--c-primary) !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+      cursor: pointer !important;
+      margin-top: -7.5px !important;
+      transition: transform 0.15s ease, box-shadow 0.15s ease !important;
     }
-    .td-range-slider::-moz-range-thumb {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: #ffffff;
-      border: 3.5px solid #0284c7;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-      cursor: pointer;
+    .td-modern-calc input[type="range"].td-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15) !important;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45) !important;
+    }
+    .td-modern-calc input[type="range"].td-slider::-moz-range-track {
+      background: transparent !important;
+      border: none !important;
+      height: 7px !important;
+    }
+    .td-modern-calc input[type="range"].td-slider::-moz-range-thumb {
+      width: 22px !important;
+      height: 22px !important;
+      border-radius: 50% !important;
+      background: #ffffff !important;
+      border: 3.5px solid var(--c-primary) !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+      cursor: pointer !important;
     }
 
-    /* Quick Suggestion Chips */
-    .td-calc-chips {
+    /* QUICK CHIP BUTTONS */
+    .td-chip-row {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
       margin-top: 6px;
     }
-    .td-calc-chip {
-      background: var(--calc-chip-bg);
-      border: 1px solid var(--calc-card-border);
+    .td-chip-btn {
+      background: var(--c-chip-bg);
+      border: 1px solid var(--c-border);
       border-radius: 14px;
       padding: 3px 10px;
       font-size: 11.5px;
       font-weight: 600;
-      color: var(--calc-chip-text);
+      color: var(--c-chip-text);
       cursor: pointer;
+      user-select: none;
       transition: all 0.15s ease;
     }
-    .td-calc-chip:hover {
-      background: var(--calc-chip-hover);
-      color: var(--calc-title);
-      border-color: #0284c7;
+    .td-chip-btn:hover {
+      background: var(--c-chip-hover);
+      color: var(--c-title);
+      border-color: var(--c-primary);
     }
 
-    /* Step-Up Toggle Box */
-    .td-calc-stepup-box {
-      background: var(--calc-card-bg);
-      border: 1px solid var(--calc-card-border);
+    /* STEP-UP TOGGLE BOX */
+    .td-stepup-card {
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
       border-radius: 12px;
       padding: 14px 18px;
-      margin-top: 6px;
-      transition: all 0.2s ease;
+      margin-top: 8px;
     }
-    .td-calc-stepup-row {
+    .td-stepup-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       cursor: pointer;
       user-select: none;
     }
-    .td-calc-stepup-info {
-      display: flex;
-      flex-direction: column;
-    }
-    .td-calc-stepup-title {
-      font-size: 13.5px;
-      font-weight: 700;
-      color: var(--calc-title);
-    }
-    .td-calc-stepup-sub {
-      font-size: 11.5px;
-      color: var(--calc-muted);
-      margin-top: 2px;
-    }
-    .td-toggle-switch {
+    .td-switch-wrap {
       position: relative;
       display: inline-block;
       width: 44px;
       height: 24px;
     }
-    .td-toggle-switch input {
+    .td-switch-wrap input {
       opacity: 0;
       width: 0;
       height: 0;
+      display: none !important;
     }
-    .td-toggle-slider {
+    .td-switch-track {
       position: absolute;
       cursor: pointer;
       inset: 0;
-      background-color: var(--calc-track-bg);
+      background-color: var(--c-track-empty);
       border-radius: 24px;
       transition: .25s;
     }
-    .td-toggle-slider:before {
+    .td-switch-track:before {
       position: absolute;
       content: "";
       height: 18px;
@@ -345,31 +340,30 @@ Plan your financial journey with institutional precision. Whether investing mont
       transition: .25s;
       box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
-    .td-toggle-switch input:checked + .td-toggle-slider {
-      background-color: #0284c7;
+    .td-switch-wrap input:checked + .td-switch-track {
+      background-color: var(--c-primary);
     }
-    .td-toggle-switch input:checked + .td-toggle-slider:before {
+    .td-switch-wrap input:checked + .td-switch-track:before {
       transform: translateX(20px);
     }
 
-    /* Right Column: Chart & Result Dashboard */
-    .td-calc-dashboard {
-      background: var(--calc-card-bg);
-      border: 1px solid var(--calc-card-border);
+    /* RIGHT SIDE RESULT DASHBOARD */
+    .td-dashboard-box {
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
       border-radius: 16px;
       padding: 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
     }
 
-    /* Circular SVG Donut Chart */
-    .td-donut-wrapper {
+    /* SVG DONUT */
+    .td-donut-frame {
       position: relative;
       width: 220px;
       height: 220px;
-      margin: 10px auto 22px auto;
+      margin: 10px auto 20px auto;
     }
     .td-donut-svg {
       width: 100%;
@@ -378,24 +372,24 @@ Plan your financial journey with institutional precision. Whether investing mont
     }
     .td-donut-circle-bg {
       fill: none;
-      stroke: var(--calc-track-bg);
+      stroke: var(--c-track-empty);
       stroke-width: 22;
     }
-    .td-donut-circle-invested {
+    .td-donut-circle-inv {
       fill: none;
-      stroke: var(--calc-invested-color);
+      stroke: var(--c-invested);
       stroke-width: 22;
       stroke-linecap: round;
       transition: stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease;
     }
-    .td-donut-circle-gain {
+    .td-donut-circle-ret {
       fill: none;
-      stroke: var(--calc-returns-color);
+      stroke: var(--c-returns);
       stroke-width: 22;
       stroke-linecap: round;
       transition: stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease;
     }
-    .td-donut-center {
+    .td-donut-content {
       position: absolute;
       inset: 0;
       display: flex;
@@ -405,122 +399,124 @@ Plan your financial journey with institutional precision. Whether investing mont
       text-align: center;
       pointer-events: none;
     }
-    .td-donut-center-sub {
+    .td-donut-label {
       font-size: 11px;
       font-weight: 800;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: var(--calc-muted);
+      color: var(--c-muted);
     }
-    .td-donut-center-val {
-      font-size: 20px;
+    .td-donut-val {
+      font-size: 21px;
       font-weight: 800;
-      color: var(--calc-title);
+      color: var(--c-title);
       margin: 3px 0;
       font-family: 'JetBrains Mono', monospace;
       letter-spacing: -0.02em;
     }
-    .td-donut-center-badge {
+    .td-donut-tag {
       font-size: 11px;
       font-weight: 700;
       padding: 2px 8px;
       border-radius: 12px;
-      background: var(--calc-returns-bg);
-      color: var(--calc-returns-color);
-      border: 1px solid var(--calc-returns-border);
+      background: var(--c-returns-light);
+      color: var(--c-returns);
     }
 
-    /* Result Breakdown Cards */
-    .td-result-cards {
+    /* METRIC TILES */
+    .td-tiles-list {
       width: 100%;
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-    .td-result-row {
+    .td-tile-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 12px 16px;
       border-radius: 12px;
-      background: var(--calc-bg);
-      border: 1px solid var(--calc-card-border);
-      transition: transform 0.15s ease;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      box-sizing: border-box;
     }
-    .td-result-row:hover {
-      transform: translateX(2px);
-    }
-    .td-result-left {
+    .td-tile-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
-    .td-result-dot {
+    .td-tile-dot {
       width: 10px;
       height: 10px;
       border-radius: 50%;
+      flex-shrink: 0;
     }
-    .td-result-label {
+    .td-tile-label {
       font-size: 13px;
       font-weight: 600;
-      color: var(--calc-text);
+      color: var(--c-text);
+      white-space: nowrap;
     }
-    .td-result-pct {
-      font-size: 11px;
-      color: var(--calc-muted);
-      margin-left: 4px;
+    .td-tile-pct {
+      font-size: 11.5px;
+      color: var(--c-muted);
+      margin-left: 2px;
+      white-space: nowrap;
     }
-    .td-result-val {
+    .td-tile-val {
       font-size: 15px;
       font-weight: 700;
       font-family: 'JetBrains Mono', monospace;
-      color: var(--calc-title);
+      color: var(--c-title);
+      white-space: nowrap;
+      text-align: right;
     }
 
-    /* Maturity Highlight Card */
-    .td-maturity-banner {
+    /* MATURITY SUMMARY BANNER */
+    .td-banner-maturity {
       width: 100%;
       margin-top: 14px;
       padding: 14px 18px;
       border-radius: 12px;
-      background: var(--calc-total-bg);
-      border: 1px solid var(--calc-total-border);
+      background: var(--c-total-light);
+      border: 1px solid rgba(99, 102, 241, 0.25);
       display: flex;
       justify-content: space-between;
       align-items: center;
       box-sizing: border-box;
     }
-    .td-maturity-title {
+    .td-banner-title {
       font-size: 12.5px;
       font-weight: 700;
-      color: var(--calc-total-color);
+      color: var(--c-total);
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
-    .td-maturity-val {
+    .td-banner-val {
       font-size: 20px;
       font-weight: 800;
-      color: var(--calc-total-color);
+      color: var(--c-total);
       font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
     }
 
-    /* Inflation note */
-    .td-inflation-tag {
-      font-size: 11px;
-      color: var(--calc-muted);
+    /* INFLATION FOOTNOTE */
+    .td-inflation-info {
+      font-size: 11.5px;
+      color: var(--c-muted);
       text-align: center;
-      margin-top: 12px;
-      line-height: 1.4;
+      margin-top: 14px;
+      line-height: 1.45;
     }
 
-    /* Bottom Compounding Schedule Button & Table */
-    .td-calc-footer-action {
-      margin: 36px 0 10px 0;
+    /* BOTTOM EXPAND BUTTON */
+    .td-bottom-action {
+      margin-top: 36px;
+      margin-bottom: 12px;
       display: flex;
       justify-content: center;
     }
-    .td-modern-calc .td-schedule-btn,
-    .td-modern-calc .td-schedule-btn * {
+    .td-modern-calc button.td-btn-schedule {
       background: #0284c7 !important;
       color: #ffffff !important;
       -webkit-text-fill-color: #ffffff !important;
@@ -532,234 +528,229 @@ Plan your financial journey with institutional precision. Whether investing mont
       cursor: pointer !important;
       display: inline-flex !important;
       align-items: center !important;
-      gap: 8px !important;
+      justify-content: center !important;
+      line-height: 1 !important;
       box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
       transition: all 0.2s ease !important;
     }
-    .td-modern-calc .td-schedule-btn:hover {
+    .td-modern-calc button.td-btn-schedule:hover {
       background: #0369a1 !important;
-      transform: translateY(-1px) !important;
+      transform: translateY(-2px) !important;
       box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45) !important;
     }
-    .td-schedule-pane {
+
+    /* ACCORDION TABLE */
+    .td-schedule-panel {
       display: none;
       margin-top: 24px;
-      border-top: 1px solid var(--calc-card-border);
+      border-top: 1px solid var(--c-border);
       padding-top: 24px;
       overflow-x: auto;
     }
-    .td-schedule-table {
+    .td-sched-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
       text-align: right;
     }
-    .td-schedule-table th {
-      background: var(--calc-tab-bg);
-      color: var(--calc-title);
+    .td-sched-table th {
+      background: var(--c-tab-bg);
+      color: var(--c-title);
       padding: 10px 14px;
       font-weight: 700;
-      border: 1px solid var(--calc-card-border);
+      border: 1px solid var(--c-border);
       text-transform: uppercase;
       font-size: 11px;
       letter-spacing: 0.04em;
     }
-    .td-schedule-table td {
+    .td-sched-table td {
       padding: 10px 14px;
-      border: 1px solid var(--calc-card-border);
-      color: var(--calc-text);
+      border: 1px solid var(--c-border);
+      color: var(--c-text);
       font-family: 'JetBrains Mono', monospace;
     }
-    .td-schedule-table tr:nth-child(even) {
-      background: var(--calc-card-bg);
+    .td-sched-table tr:nth-child(even) {
+      background: var(--c-card);
     }
-    .td-schedule-table tr:hover td {
-      background: var(--calc-invested-bg);
-      color: var(--calc-title);
+    .td-sched-table tr:hover td {
+      background: var(--c-primary-light);
+      color: var(--c-title);
     }
   </style>
 
-  <!-- CALCULATOR HEADER -->
-  <div class="td-calc-header">
+  <!-- CALCULATOR TOP HEADER -->
+  <div class="td-calc-head">
     <div>
       <span class="td-calc-badge">⚡ Institutional Compounding Suite</span>
-      <h2 class="td-calc-title">Wealth Growth &amp; Compounding Simulator</h2>
+      <h2 class="td-calc-heading">Wealth Growth &amp; Compounding Simulator</h2>
     </div>
     <!-- Mode Switcher -->
-    <div class="td-calc-switcher">
-      <button type="button" class="td-calc-switch-btn active" id="btnModeSip" onclick="tdSetMode('sip')">
-        🚀 Monthly SIP
-      </button>
-      <button type="button" class="td-calc-switch-btn" id="btnModeLump" onclick="tdSetMode('lump')">
-        💰 One-Time Lumpsum
-      </button>
+    <div class="td-tab-group">
+      <button type="button" class="td-tab-item active" id="btnModeSip" onclick="tdSetMode('sip')">🚀 Monthly SIP</button>
+      <button type="button" class="td-tab-item" id="btnModeLump" onclick="tdSetMode('lump')">💰 One-Time Lumpsum</button>
     </div>
   </div>
 
-  <!-- CALCULATOR LAYOUT -->
-  <div class="td-calc-layout">
+  <!-- MAIN CALCULATOR BODY -->
+  <div class="td-calc-body">
     
-    <!-- LEFT CONTROLS -->
-    <div class="td-calc-controls">
+    <!-- LEFT COLUMN: CONTROLS -->
+    <div class="td-calc-inputs">
       
-      <!-- FIELD 1: Amount -->
-      <div class="td-calc-field">
-        <div class="td-calc-field-top">
-          <label class="td-calc-label" id="lblAmount">Monthly Investment</label>
-          <div class="td-calc-input-pill">
-            <span class="td-calc-prefix">₹</span>
-            <input type="number" id="inputAmount" class="td-calc-num-input" value="10000" min="500" max="10000000" step="500" oninput="tdOnAmountInput(this.value)" />
+      <!-- FIELD 1: Investment Amount -->
+      <div class="td-calc-row">
+        <div class="td-calc-row-top">
+          <label class="td-calc-label-txt" id="lblAmount">Monthly Investment</label>
+          <div class="td-calc-val-pill">
+            <span class="td-calc-unit-sym">₹</span>
+            <input type="number" id="inputAmount" class="td-clean-input" value="10000" min="500" max="10000000" step="500" oninput="tdOnAmountInput(this.value)" />
           </div>
         </div>
-        <div class="td-calc-slider-wrap">
-          <input type="range" id="sliderAmount" class="td-range-slider" min="500" max="500000" step="500" value="10000" oninput="tdOnAmountSlider(this.value)" />
+        <div class="td-calc-slider-box">
+          <input type="range" id="sliderAmount" class="td-slider" min="500" max="500000" step="500" value="10000" oninput="tdOnAmountSlider(this.value)" />
         </div>
         <!-- Quick Chips -->
-        <div class="td-calc-chips" id="chipsAmount">
-          <span class="td-calc-chip" onclick="tdSetAmount(5000)">₹5,000</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(10000)">₹10,000</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(25000)">₹25,000</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(50000)">₹50,000</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(100000)">₹1 Lakh</span>
+        <div class="td-chip-row" id="chipsAmount">
+          <span class="td-chip-btn" onclick="tdSetAmount(5000)">₹5,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(10000)">₹10,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(25000)">₹25,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(50000)">₹50,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(100000)">₹1 Lakh</span>
         </div>
       </div>
 
-      <!-- FIELD 2: Expected Return Rate -->
-      <div class="td-calc-field">
-        <div class="td-calc-field-top">
-          <label class="td-calc-label">Expected Annual Return (CAGR)</label>
-          <div class="td-calc-input-pill">
-            <input type="number" id="inputRate" class="td-calc-num-input" value="12.0" min="1" max="35" step="0.5" oninput="tdOnRateInput(this.value)" />
-            <span class="td-calc-prefix" style="margin-right:0; margin-left:4px;">%</span>
+      <!-- FIELD 2: Expected CAGR -->
+      <div class="td-calc-row">
+        <div class="td-calc-row-top">
+          <label class="td-calc-label-txt">Expected Annual Return (CAGR)</label>
+          <div class="td-calc-val-pill">
+            <input type="number" id="inputRate" class="td-clean-input" value="12.0" min="1" max="35" step="0.5" oninput="tdOnRateInput(this.value)" />
+            <span class="td-calc-unit-sym" style="margin-right:0; margin-left:4px;">%</span>
           </div>
         </div>
-        <div class="td-calc-slider-wrap">
-          <input type="range" id="sliderRate" class="td-range-slider" min="1" max="30" step="0.5" value="12.0" oninput="tdOnRateSlider(this.value)" />
+        <div class="td-calc-slider-box">
+          <input type="range" id="sliderRate" class="td-slider" min="1" max="30" step="0.5" value="12.0" oninput="tdOnRateSlider(this.value)" />
         </div>
         <!-- Quick Chips -->
-        <div class="td-calc-chips">
-          <span class="td-calc-chip" onclick="tdSetRate(8.0)">8% (Debt/FD)</span>
-          <span class="td-calc-chip" onclick="tdSetRate(12.0)">12% (Nifty 50)</span>
-          <span class="td-calc-chip" onclick="tdSetRate(14.5)">14.5% (Flexicap)</span>
-          <span class="td-calc-chip" onclick="tdSetRate(18.0)">18% (Aggressive)</span>
+        <div class="td-chip-row">
+          <span class="td-chip-btn" onclick="tdSetRate(8.0)">8% (Debt/FD)</span>
+          <span class="td-chip-btn" onclick="tdSetRate(12.0)">12% (Nifty 50)</span>
+          <span class="td-chip-btn" onclick="tdSetRate(14.5)">14.5% (Flexicap)</span>
+          <span class="td-chip-btn" onclick="tdSetRate(18.0)">18% (Aggressive)</span>
         </div>
       </div>
 
       <!-- FIELD 3: Time Horizon -->
-      <div class="td-calc-field">
-        <div class="td-calc-field-top">
-          <label class="td-calc-label">Investment Horizon</label>
-          <div class="td-calc-input-pill">
-            <input type="number" id="inputYears" class="td-calc-num-input" value="10" min="1" max="40" step="1" oninput="tdOnYearsInput(this.value)" />
-            <span class="td-calc-prefix" style="margin-right:0; margin-left:4px; font-size:13px;">Yr</span>
+      <div class="td-calc-row">
+        <div class="td-calc-row-top">
+          <label class="td-calc-label-txt">Investment Horizon</label>
+          <div class="td-calc-val-pill">
+            <input type="number" id="inputYears" class="td-clean-input" value="10" min="1" max="40" step="1" oninput="tdOnYearsInput(this.value)" />
+            <span class="td-calc-unit-sym" style="margin-right:0; margin-left:4px; font-size:13px;">Yr</span>
           </div>
         </div>
-        <div class="td-calc-slider-wrap">
-          <input type="range" id="sliderYears" class="td-range-slider" min="1" max="35" step="1" value="10" oninput="tdOnYearsSlider(this.value)" />
+        <div class="td-calc-slider-box">
+          <input type="range" id="sliderYears" class="td-slider" min="1" max="35" step="1" value="10" oninput="tdOnYearsSlider(this.value)" />
         </div>
         <!-- Quick Chips -->
-        <div class="td-calc-chips">
-          <span class="td-calc-chip" onclick="tdSetYears(5)">5 Yrs</span>
-          <span class="td-calc-chip" onclick="tdSetYears(10)">10 Yrs</span>
-          <span class="td-calc-chip" onclick="tdSetYears(15)">15 Yrs</span>
-          <span class="td-calc-chip" onclick="tdSetYears(20)">20 Yrs</span>
-          <span class="td-calc-chip" onclick="tdSetYears(25)">25 Yrs</span>
+        <div class="td-chip-row">
+          <span class="td-chip-btn" onclick="tdSetYears(5)">5 Yrs</span>
+          <span class="td-chip-btn" onclick="tdSetYears(10)">10 Yrs</span>
+          <span class="td-chip-btn" onclick="tdSetYears(15)">15 Yrs</span>
+          <span class="td-chip-btn" onclick="tdSetYears(20)">20 Yrs</span>
+          <span class="td-chip-btn" onclick="tdSetYears(25)">25 Yrs</span>
         </div>
       </div>
 
-      <!-- FIELD 4: Annual Step-Up Option (SIP Mode Only) -->
-      <div class="td-calc-stepup-box" id="boxStepUp">
-        <div class="td-calc-stepup-row" onclick="tdToggleStepUp()">
-          <div class="td-calc-stepup-info">
-            <span class="td-calc-stepup-title">📈 Annual Step-Up Top-up</span>
-            <span class="td-calc-stepup-sub">Increase monthly SIP as your annual salary grows</span>
+      <!-- FIELD 4: Step-Up SIP (SIP Mode Only) -->
+      <div class="td-stepup-card" id="boxStepUp">
+        <div class="td-stepup-header" onclick="tdToggleStepUp()">
+          <div>
+            <div style="font-size:13.5px; font-weight:700; color:var(--c-title);">📈 Annual Step-Up Top-up</div>
+            <div style="font-size:11.5px; color:var(--c-muted); margin-top:2px;">Increase monthly SIP in tandem with your annual salary increments</div>
           </div>
-          <label class="td-toggle-switch" onclick="event.stopPropagation()">
+          <label class="td-switch-wrap" onclick="event.stopPropagation()">
             <input type="checkbox" id="chkStepUp" onchange="tdOnStepUpToggle(this.checked)" />
-            <span class="td-toggle-slider"></span>
+            <span class="td-switch-track"></span>
           </label>
         </div>
-        <div id="stepUpDetails" style="display:none; margin-top:14px; border-top:1px dashed var(--calc-card-border); padding-top:12px;">
+        <div id="stepUpDetails" style="display:none; margin-top:14px; border-top:1px dashed var(--c-border); padding-top:12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-size:12.5px; color:var(--calc-muted);">Annual Increment Percentage:</span>
-            <span id="txtStepUpPct" style="font-weight:700; color:#0284c7; font-family:'JetBrains Mono', monospace;">10% / year</span>
+            <span style="font-size:12.5px; color:var(--c-muted);">Annual Step-Up Increment:</span>
+            <span id="txtStepUpPct" style="font-weight:700; color:var(--c-primary); font-family:'JetBrains Mono', monospace;">10% / year</span>
           </div>
-          <input type="range" id="sliderStepUp" class="td-range-slider" min="1" max="25" step="1" value="10" oninput="tdOnStepUpSlider(this.value)" />
+          <input type="range" id="sliderStepUp" class="td-slider" min="1" max="25" step="1" value="10" oninput="tdOnStepUpSlider(this.value)" />
         </div>
       </div>
 
     </div>
 
-    <!-- RIGHT DASHBOARD: CIRCULAR DONUT & METRIC CARDS -->
-    <div class="td-calc-dashboard">
+    <!-- RIGHT COLUMN: RESULTS & SVG DONUT -->
+    <div class="td-dashboard-box">
       
       <!-- SVG Donut Chart -->
-      <div class="td-donut-wrapper">
+      <div class="td-donut-frame">
         <svg class="td-donut-svg" viewBox="0 0 200 200">
           <circle class="td-donut-circle-bg" cx="100" cy="100" r="80"></circle>
-          <circle id="donutInvested" class="td-donut-circle-invested" cx="100" cy="100" r="80" stroke-dasharray="0 502.65" stroke-dashoffset="0"></circle>
-          <circle id="donutGain" class="td-donut-circle-gain" cx="100" cy="100" r="80" stroke-dasharray="0 502.65" stroke-dashoffset="0"></circle>
+          <circle id="donutInvested" class="td-donut-circle-inv" cx="100" cy="100" r="80" stroke-dasharray="0 502.65" stroke-dashoffset="0"></circle>
+          <circle id="donutGain" class="td-donut-circle-ret" cx="100" cy="100" r="80" stroke-dasharray="0 502.65" stroke-dashoffset="0"></circle>
         </svg>
-        <div class="td-donut-center">
-          <span class="td-donut-center-sub">TOTAL MATURITY</span>
-          <span class="td-donut-center-val" id="donutTotalVal">₹23.2 L</span>
-          <span class="td-donut-center-badge" id="donutMultiplier">2.0x Multiplier</span>
+        <div class="td-donut-content">
+          <span class="td-donut-label">TOTAL MATURITY</span>
+          <span class="td-donut-val" id="donutTotalVal">₹23.2 L</span>
+          <span class="td-donut-tag" id="donutMultiplier">1.9x Multiplier</span>
         </div>
       </div>
 
-      <!-- Result Cards -->
-      <div class="td-result-cards">
+      <!-- Single Row Tiles -->
+      <div class="td-tiles-list">
         
-        <!-- Invested -->
-        <div class="td-result-row">
-          <div class="td-result-left">
-            <span class="td-result-dot" style="background:var(--calc-invested-color);"></span>
-            <span class="td-result-label">Invested Capital</span>
-            <span class="td-result-pct" id="pctInvested">(51.6%)</span>
+        <!-- Invested Capital -->
+        <div class="td-tile-item">
+          <div class="td-tile-left">
+            <span class="td-tile-dot" style="background:var(--c-invested);"></span>
+            <span class="td-tile-label">Invested Capital</span>
+            <span class="td-tile-pct" id="pctInvested">(51.6%)</span>
           </div>
-          <span class="td-result-val" id="valInvested">₹12,00,000</span>
+          <span class="td-tile-val" id="valInvested">₹12,00,000</span>
         </div>
 
-        <!-- Wealth Gain -->
-        <div class="td-result-row">
-          <div class="td-result-left">
-            <span class="td-result-dot" style="background:var(--calc-returns-color);"></span>
-            <span class="td-result-label">Est. Compounded Gain</span>
-            <span class="td-result-pct" id="pctGain">(48.4%)</span>
+        <!-- Est Compounded Gain -->
+        <div class="td-tile-item">
+          <div class="td-tile-left">
+            <span class="td-tile-dot" style="background:var(--c-returns);"></span>
+            <span class="td-tile-label">Est. Compounded Gain</span>
+            <span class="td-tile-pct" id="pctGain">(48.4%)</span>
           </div>
-          <span class="td-result-val" style="color:var(--calc-returns-color);" id="valGain">+₹11,23,391</span>
+          <span class="td-tile-val" style="color:var(--c-returns);" id="valGain">+₹11,23,391</span>
         </div>
 
-        <!-- Total Future Value Banner -->
-        <div class="td-maturity-banner">
+        <!-- Maturity Banner -->
+        <div class="td-banner-maturity">
           <div>
-            <div class="td-maturity-title">Total Corpus Value</div>
-            <div style="font-size:11px; color:var(--calc-muted); margin-top:2px;" id="txtHorizonSubtitle">After 10 Years @ 12% CAGR</div>
+            <div class="td-banner-title">Total Corpus Value</div>
+            <div style="font-size:11px; color:var(--c-muted); margin-top:2px;" id="txtHorizonSubtitle">After 10 Years @ 12% CAGR</div>
           </div>
-          <div class="td-maturity-val" id="valTotal">₹23,23,391</div>
+          <div class="td-banner-val" id="valTotal">₹23,23,391</div>
         </div>
 
       </div>
 
-      <!-- Inflation Purchasing Power Note -->
-      <div class="td-inflation-tag" id="txtInflationNote">
-        🛒 Estimated real purchasing power after 6% annual inflation: <strong>₹12.9 Lakh</strong>
-      </div>
+      <!-- Inflation Footnote -->
+      <div class="td-inflation-info" id="txtInflationNote">🛒 Estimated real purchasing power after 6% annual inflation: <strong>₹12.9 Lakh</strong></div>
 
     </div>
 
   </div>
 
   <!-- BOTTOM SCHEDULE TOGGLE -->
-  <div class="td-calc-footer-action">
-    <button type="button" class="td-schedule-btn" onclick="tdToggleSchedule()">
-      📊 View Year-by-Year Growth Table &amp; Breakdown
-    </button>
+  <div class="td-bottom-action">
+    <button type="button" class="td-btn-schedule" onclick="tdToggleSchedule()">📊 View Year-by-Year Growth Table &amp; Breakdown</button>
   </div>
 
-  <!-- EXPANDABLE YEARLY SCHEDULE TABLE -->
-  <div class="td-schedule-pane" id="paneSchedule">
-    <table class="td-schedule-table">
+  <!-- EXPANDABLE TABLE -->
+  <div class="td-schedule-panel" id="paneSchedule">
+    <table class="td-sched-table">
       <thead>
         <tr>
           <th style="text-align:left;">Year</th>
@@ -770,7 +761,7 @@ Plan your financial journey with institutional precision. Whether investing mont
         </tr>
       </thead>
       <tbody id="tbodySchedule">
-        <!-- Rendered via JS -->
+        <!-- Rendered dynamically -->
       </tbody>
     </table>
   </div>
@@ -779,7 +770,7 @@ Plan your financial journey with institutional precision. Whether investing mont
 
 <script>
   (function() {
-    let _calcMode = 'sip'; // 'sip' or 'lump'
+    let _calcMode = 'sip';
     let _hasStepUp = false;
     const CIRCUMFERENCE = 2 * Math.PI * 80; // ~502.6548
 
@@ -798,9 +789,13 @@ Plan your financial journey with institutional precision. Whether investing mont
       return fmtCur(val);
     }
 
-    function updateSliderFill(slider, min, max, val) {
-      const pct = ((val - min) / (max - min)) * 100;
-      slider.style.background = `linear-gradient(to right, #0284c7 0%, #0284c7 ${pct}%, var(--calc-track-bg) ${pct}%, var(--calc-track-bg) 100%)`;
+    function paintSlider(slider) {
+      if (!slider) return;
+      const min = parseFloat(slider.min) || 0;
+      const max = parseFloat(slider.max) || 100;
+      const val = parseFloat(slider.value) || 0;
+      const pct = Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+      slider.style.setProperty('background', 'linear-gradient(to right, var(--c-primary) 0%, var(--c-primary) ' + pct + '%, var(--c-track-empty) ' + pct + '%, var(--c-track-empty) 100%)', 'important');
     }
 
     function runCalculations() {
@@ -812,7 +807,6 @@ Plan your financial journey with institutional precision. Whether investing mont
       let totalInvested = 0;
       let totalCorpus = 0;
       const schedule = [];
-
       const currentYear = new Date().getFullYear();
 
       if (_calcMode === 'sip') {
@@ -885,7 +879,7 @@ Plan your financial journey with institutional precision. Whether investing mont
       document.getElementById('donutMultiplier').innerText = mult;
       document.getElementById('txtHorizonSubtitle').innerText = `After ${years} Year${years > 1 ? 's' : ''} @ ${rate}% CAGR`;
 
-      // Inflation calculation (at ~6% avg inflation)
+      // Real Inflation Purchasing Power
       const realPurchasingPower = totalCorpus / Math.pow(1 + 0.06, years);
       document.getElementById('txtInflationNote').innerHTML = `🛒 Estimated real purchasing power after 6% annual inflation: <strong>${fmtShortCur(realPurchasingPower)}</strong>`;
 
@@ -896,44 +890,41 @@ Plan your financial journey with institutional precision. Whether investing mont
 
       const circleInv = document.getElementById('donutInvested');
       const circleGain = document.getElementById('donutGain');
+      if (circleInv) {
+        circleInv.style.strokeDasharray = `${invStroke} ${c}`;
+        circleInv.style.strokeDashoffset = '0';
+      }
+      if (circleGain) {
+        circleGain.style.strokeDasharray = `${gainStroke} ${c}`;
+        circleGain.style.strokeDashoffset = `-${invStroke}`;
+      }
 
-      circleInv.style.strokeDasharray = `${invStroke} ${c}`;
-      circleInv.style.strokeDashoffset = '0';
-
-      circleGain.style.strokeDasharray = `${gainStroke} ${c}`;
-      circleGain.style.strokeDashoffset = `-${invStroke}`;
-
-      // Update Sliders Gradient Fills
-      const sAmt = document.getElementById('sliderAmount');
-      updateSliderFill(sAmt, parseFloat(sAmt.min), parseFloat(sAmt.max), amount);
-
-      const sRate = document.getElementById('sliderRate');
-      updateSliderFill(sRate, parseFloat(sRate.min), parseFloat(sRate.max), rate);
-
-      const sYrs = document.getElementById('sliderYears');
-      updateSliderFill(sYrs, parseFloat(sYrs.min), parseFloat(sYrs.max), years);
-
+      // Repaint all slider track gradients
+      paintSlider(document.getElementById('sliderAmount'));
+      paintSlider(document.getElementById('sliderRate'));
+      paintSlider(document.getElementById('sliderYears'));
       const sStep = document.getElementById('sliderStepUp');
-      if (sStep) updateSliderFill(sStep, parseFloat(sStep.min), parseFloat(sStep.max), stepUp || 10);
+      if (sStep) paintSlider(sStep);
 
       // Render Schedule Table
       const tbody = document.getElementById('tbodySchedule');
-      let html = '';
-      schedule.forEach(row => {
-        html += `
-          <tr>
-            <td style="text-align:left; font-weight:700;">Year ${row.year} <span style="font-size:11px; color:var(--calc-muted); font-weight:normal;">(${row.calYear})</span></td>
-            <td>${fmtCur(row.annualDeposit)}</td>
-            <td>${fmtCur(row.totalInvested)}</td>
-            <td style="color:var(--calc-returns-color);">+${fmtCur(row.yearInterest)}</td>
-            <td style="font-weight:700; color:var(--calc-title);">${fmtCur(row.closingCorpus)}</td>
-          </tr>
-        `;
-      });
-      tbody.innerHTML = html;
+      if (tbody) {
+        let html = '';
+        schedule.forEach(row => {
+          html += `
+            <tr>
+              <td style="text-align:left; font-weight:700;">Year ${row.year} <span style="font-size:11px; color:var(--c-muted); font-weight:normal;">(${row.calYear})</span></td>
+              <td>${fmtCur(row.annualDeposit)}</td>
+              <td>${fmtCur(row.totalInvested)}</td>
+              <td style="color:var(--c-returns);">+${fmtCur(row.yearInterest)}</td>
+              <td style="font-weight:700; color:var(--c-title);">${fmtCur(row.closingCorpus)}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      }
     }
 
-    // Window exposure for events
     window.tdSetMode = function(mode) {
       _calcMode = mode;
       document.getElementById('btnModeSip').classList.toggle('active', mode === 'sip');
@@ -954,11 +945,11 @@ Plan your financial journey with institutional precision. Whether investing mont
         sAmt.value = 10000;
         boxStep.style.display = 'block';
         chips.innerHTML = `
-          <span class="td-calc-chip" onclick="tdSetAmount(5000)">₹5,000</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(10000)">₹10,000</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(25000)">₹25,000</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(50000)">₹50,000</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(100000)">₹1 Lakh</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(5000)">₹5,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(10000)">₹10,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(25000)">₹25,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(50000)">₹50,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(100000)">₹1 Lakh</span>
         `;
       } else {
         lblAmt.innerText = 'Total One-Time Investment';
@@ -969,11 +960,11 @@ Plan your financial journey with institutional precision. Whether investing mont
         sAmt.value = 100000;
         boxStep.style.display = 'none';
         chips.innerHTML = `
-          <span class="td-calc-chip" onclick="tdSetAmount(50000)">₹50,000</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(100000)">₹1 Lakh</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(250000)">₹2.5 Lakh</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(500000)">₹5 Lakh</span>
-          <span class="td-calc-chip" onclick="tdSetAmount(1000000)">₹10 Lakh</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(50000)">₹50,000</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(100000)">₹1 Lakh</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(250000)">₹2.5 Lakh</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(500000)">₹5 Lakh</span>
+          <span class="td-chip-btn" onclick="tdSetAmount(1000000)">₹10 Lakh</span>
         `;
       }
       runCalculations();
@@ -1041,8 +1032,8 @@ Plan your financial journey with institutional precision. Whether investing mont
       p.style.display = (p.style.display === 'block') ? 'none' : 'block';
     };
 
-    // Initial Execution
-    runCalculations();
+    // Paint sliders immediately
+    setTimeout(runCalculations, 50);
   })();
 </script>
 
@@ -1061,7 +1052,7 @@ Compounding works logarithmically. In mutual fund SIPs, wealth creation accelera
   <div style="font-weight:700; color:#0284c7; font-size:14.5px; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
     <span>💡</span> Institutional Rule of Thumb
   </div>
-  <div style="font-size:14px; color:var(--calc-text, #334155); line-height:1.65;">
+  <div style="font-size:14px; color:var(--c-text, #334155); line-height:1.65;">
     Compounding rewards <strong>time in the market</strong> over timing the market. Starting 5 years earlier can double your ultimate retirement corpus even with half the monthly contribution.
   </div>
 </div>
@@ -1082,9 +1073,9 @@ Compounding works logarithmically. In mutual fund SIPs, wealth creation accelera
 ### 3. The Rule of 72: Doubling Time Formula
 The **Rule of 72** is a quick mathematical shortcut to estimate how many years it takes for your investment to double at a given compound annual growth rate (CAGR):
 
-<div style="display:inline-flex; align-items:center; gap:10px; background:var(--calc-card-bg, #f8fafc); border:1.5px solid var(--calc-card-border, #e2e8f0); padding:10px 20px; border-radius:12px; font-size:15px; font-weight:700; color:var(--calc-title, #0f172a); margin:14px 0;">
+<div style="display:inline-flex; align-items:center; gap:10px; background:var(--c-card, #f8fafc); border:1.5px solid var(--c-border, #e2e8f0); padding:10px 20px; border-radius:12px; font-size:15px; font-weight:700; color:var(--c-title, #0f172a); margin:14px 0;">
   <span>Years to Double</span>
-  <span style="color:var(--calc-muted, #64748b);">≈</span>
+  <span style="color:var(--c-muted, #64748b);">≈</span>
   <span style="color:#0284c7;">72 ÷ Annual Return (%)</span>
 </div>
 
@@ -1111,30 +1102,30 @@ The **Rule of 72** is a quick mathematical shortcut to estimate how many years i
 ## Frequently Asked Questions (FAQ)
 
 <div style="margin:24px 0; display:flex; flex-direction:column; gap:12px;">
-  <details style="background:var(--calc-card-bg, rgba(255,255,255,0.03)); border:1px solid var(--calc-card-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--calc-title, #f8fafc);">What is a Systematic Investment Plan (SIP)?</summary>
-    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--calc-text, #cbd5e1);">
+  <details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">What is a Systematic Investment Plan (SIP)?</summary>
+    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
       A Systematic Investment Plan (SIP) allows you to invest a fixed amount of money at regular intervals (typically monthly) into mutual funds. It inculcates disciplined financial habits and takes advantage of Rupee-Cost Averaging, buying more mutual fund units when markets drop and fewer when markets rise.
     </p>
   </details>
 
-  <details style="background:var(--calc-card-bg, rgba(255,255,255,0.03)); border:1px solid var(--calc-card-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--calc-title, #f8fafc);">How does an Annual Step-Up SIP multiply wealth?</summary>
-    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--calc-text, #cbd5e1);">
+  <details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">How does an Annual Step-Up SIP multiply wealth?</summary>
+    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
       An Annual Step-Up automatically increases your monthly SIP contribution by a fixed percentage (e.g. 10%) every year in tandem with your annual salary increments. A ₹10,000 monthly SIP with a 10% annual step-up over 20 years yields nearly <strong>₹1.65 Crore</strong>, compared to <strong>₹99 Lakh</strong> without the step-up &mdash; creating an extra ₹66 Lakh of wealth!
     </p>
   </details>
 
-  <details style="background:var(--calc-card-bg, rgba(255,255,255,0.03)); border:1px solid var(--calc-card-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--calc-title, #f8fafc);">What average return should I realistically expect from Indian equity mutual funds?</summary>
-    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--calc-text, #cbd5e1);">
+  <details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">What average return should I realistically expect from Indian equity mutual funds?</summary>
+    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
       Over rolling 10 to 15-year periods, the benchmark Nifty 50 Total Returns Index (TRI) has historically delivered approximately <strong>12% to 13.5% CAGR</strong>. Broad-market flexi-cap and active diversified funds have historically averaged <strong>13% to 15% CAGR</strong>.
     </p>
   </details>
 
-  <details style="background:var(--calc-card-bg, rgba(255,255,255,0.03)); border:1px solid var(--calc-card-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--calc-title, #f8fafc);">Can I pause, stop, or change my SIP amount midway?</summary>
-    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--calc-text, #cbd5e1);">
+  <details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
+    <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">Can I pause, stop, or change my SIP amount midway?</summary>
+    <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
       Yes. In open-ended mutual funds, SIPs are completely flexible. You can pause or stop your SIP at any time through your broker or AMC portal without incurring penalties, and resume whenever convenient.
     </p>
   </details>
