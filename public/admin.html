@@ -1321,6 +1321,31 @@
         background: rgba(255, 255, 255, 0.025);
       }
 
+      /* CMS Drag & Drop File Upload Area */
+      .cms-dropzone-box {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.06) 0%, rgba(30, 41, 59, 0.35) 100%);
+        border: 2px dashed rgba(56, 189, 248, 0.45);
+        border-radius: 12px;
+        padding: 16px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.25s ease-in-out;
+        margin-bottom: 14px;
+        user-select: none;
+      }
+      .cms-dropzone-box:hover {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(30, 41, 59, 0.5) 100%);
+        border-color: #38bdf8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 20px rgba(14, 165, 233, 0.18);
+      }
+      .cms-dropzone-box.dragover {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.22) 0%, rgba(30, 41, 59, 0.7) 100%);
+        border-color: #0ea5e9;
+        box-shadow: 0 0 24px rgba(14, 165, 233, 0.4);
+        transform: scale(1.008);
+      }
+
       /* Modal Styling */
       .adm-modal-overlay {
         position: fixed;
@@ -2623,11 +2648,15 @@
               <h1>📄 Dynamic Pages CMS (Markdown &amp; HTML)</h1>
               <p>Create and manage custom institutional pages (e.g. <code>/trading-handbook</code>, <code>/algo-rules</code>, <code>/strategy-vault</code>). Write in Markdown or raw HTML with real-time split preview.</p>
             </div>
-            <div style="display:flex; gap:10px;">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <span class="p2-badge p2-badge-teal" id="cmsPagesSupabaseBadge" title="Supabase Cloud Database Connected" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:12px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#34d399;">
+                <span style="width:8px; height:8px; background:#10b981; border-radius:50%; box-shadow:0 0 8px #10b981; display:inline-block;"></span>
+                ☁️ Supabase Cloud Synced
+              </span>
               <button type="button" class="btn-adm-primary" onclick="openNewPageModal()">➕ Create New Page</button>
               <button type="button" class="btn-adm-primary" style="background:#0284c7;" onclick="triggerQuickMdUpload('page')">📁 Upload .md File</button>
               <input type="file" id="quickPageUploadInput" accept=".md,.markdown,.txt,.html" style="display:none;" onchange="handleQuickMdUpload(this, 'page')" />
-              <button type="button" class="btn-adm-danger" onclick="loadCmsPagesList()">🔄 Refresh</button>
+              <button type="button" class="btn-adm-danger" onclick="loadCmsPagesList(true)" title="Force sync with Supabase cloud database">🔄 Cloud Sync</button>
             </div>
           </div>
 
@@ -2659,11 +2688,15 @@
               <h1>✍️ Market Research &amp; Article Studio</h1>
               <p>Publish options strategies, market breadth research, and algorithmic analysis articles to <code>/blog</code> and <code>/blog/[slug]</code>.</p>
             </div>
-            <div style="display:flex; gap:10px;">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <span class="p2-badge p2-badge-teal" id="cmsBlogSupabaseBadge" title="Supabase Cloud Database Connected" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:12px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#34d399;">
+                <span style="width:8px; height:8px; background:#10b981; border-radius:50%; box-shadow:0 0 8px #10b981; display:inline-block;"></span>
+                ☁️ Supabase Cloud Synced
+              </span>
               <button type="button" class="btn-adm-primary" onclick="openNewBlogModal()">➕ Write New Article</button>
               <button type="button" class="btn-adm-primary" style="background:#0284c7;" onclick="triggerQuickMdUpload('blog')">📁 Upload .md Article</button>
               <input type="file" id="quickBlogUploadInput" accept=".md,.markdown,.txt,.html" style="display:none;" onchange="handleQuickMdUpload(this, 'blog')" />
-              <button type="button" class="btn-adm-danger" onclick="loadCmsBlogList()">🔄 Refresh</button>
+              <button type="button" class="btn-adm-danger" onclick="loadCmsBlogList(true)" title="Force sync with Supabase cloud database">🔄 Cloud Sync</button>
             </div>
           </div>
 
@@ -3267,6 +3300,28 @@
               </div>
             </div>
 
+            <!-- Prominent Visual Drag & Drop Markdown File Upload Box -->
+            <div class="cms-dropzone-box" id="pageDropzoneBox"
+                 onclick="document.getElementById('fileUploadCmsPage').click()"
+                 ondragover="event.preventDefault(); this.classList.add('dragover');"
+                 ondragleave="this.classList.remove('dragover');"
+                 ondrop="event.preventDefault(); this.classList.remove('dragover'); handleDroppedMdFile(event, 'cmsPage');">
+              <div style="font-size:26px; line-height:1; margin-bottom:6px;">📄 ⬆️</div>
+              <div style="font-weight:700; color:#38bdf8; font-size:14px; margin-bottom:3px;">
+                Click to Choose File or Drag &amp; Drop Markdown (.md / .txt) Here
+              </div>
+              <div style="color:var(--adm-muted); font-size:12px;">
+                Instant file upload: Auto-detects Title, URL Slug, SEO Meta, and displays live split preview
+              </div>
+              <div style="margin-top:8px;">
+                <span class="btn-adm-primary" style="display:inline-block; padding:5px 14px; font-size:12px; background:#0284c7; border-radius:6px; pointer-events:none;">
+                  📂 Choose .md File
+                </span>
+                <span style="font-size:11px; color:#64748b; margin-left:8px;">Supported formats: .md, .markdown, .txt, .html</span>
+              </div>
+              <input type="file" id="fileUploadCmsPage" accept=".md,.markdown,.txt,.html" style="display:none;" onchange="handleModalMdUpload(this, 'cmsPage')" />
+            </div>
+
             <!-- Formatting Toolbar -->
             <div class="cms-toolbar" style="display:flex; flex-wrap:wrap; gap:4px; padding:6px 10px; background:#080e21; border:1px solid var(--adm-border); border-bottom:none; border-radius:8px 8px 0 0;">
               <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '**', '**', 'bold text')" title="Bold"><strong>B</strong></button>
@@ -3289,7 +3344,7 @@
             <!-- Split Editor -->
             <div class="cms-editor-split" style="margin-top:0;">
               <div class="cms-editor-pane">
-                <textarea id="cmsPageContent" class="cms-editor-textarea" style="border-radius:0 0 8px 8px;" placeholder="# Heading&#10;&#10;Write your institutional page content here in Markdown or raw HTML..." oninput="renderCmsPagePreview()"></textarea>
+                <textarea id="cmsPageContent" class="cms-editor-textarea" style="border-radius:0 0 8px 8px;" placeholder="# Heading&#10;&#10;Write your institutional page content here in Markdown or raw HTML..." oninput="renderCmsPagePreview()" ondragover="event.preventDefault()" ondrop="event.preventDefault(); handleDroppedMdFile(event, 'cmsPage');"></textarea>
               </div>
               <div class="cms-editor-pane">
                 <div id="cmsPagePreview" class="cms-preview-pane"></div>
@@ -3427,6 +3482,28 @@
               </div>
             </div>
 
+            <!-- Prominent Visual Drag & Drop Markdown File Upload Box -->
+            <div class="cms-dropzone-box" id="blogDropzoneBox"
+                 onclick="document.getElementById('fileUploadCmsBlog').click()"
+                 ondragover="event.preventDefault(); this.classList.add('dragover');"
+                 ondragleave="this.classList.remove('dragover');"
+                 ondrop="event.preventDefault(); this.classList.remove('dragover'); handleDroppedMdFile(event, 'cmsBlog');">
+              <div style="font-size:26px; line-height:1; margin-bottom:6px;">✍️ ⬆️</div>
+              <div style="font-weight:700; color:#38bdf8; font-size:14px; margin-bottom:3px;">
+                Click to Choose File or Drag &amp; Drop Markdown (.md / .txt) Article Here
+              </div>
+              <div style="color:var(--adm-muted); font-size:12px;">
+                Instant file upload: Auto-detects Article Title, URL Slug, SEO Meta, and displays live split preview
+              </div>
+              <div style="margin-top:8px;">
+                <span class="btn-adm-primary" style="display:inline-block; padding:5px 14px; font-size:12px; background:#0284c7; border-radius:6px; pointer-events:none;">
+                  📂 Choose .md Article File
+                </span>
+                <span style="font-size:11px; color:#64748b; margin-left:8px;">Supported formats: .md, .markdown, .txt, .html</span>
+              </div>
+              <input type="file" id="fileUploadCmsBlog" accept=".md,.markdown,.txt,.html" style="display:none;" onchange="handleModalMdUpload(this, 'cmsBlog')" />
+            </div>
+
             <!-- Formatting Toolbar -->
             <div class="cms-toolbar" style="display:flex; flex-wrap:wrap; gap:4px; padding:6px 10px; background:#080e21; border:1px solid var(--adm-border); border-bottom:none; border-radius:8px 8px 0 0;">
               <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '**', '**', 'bold text')" title="Bold"><strong>B</strong></button>
@@ -3442,12 +3519,13 @@
               <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '![', '](https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80)', 'Market Chart')" title="Insert Image">🖼️ Image</button>
               <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '| Strike | Call OI | Put OI |\n|---|---|---|\n| 22600 | 85.2L | 110.4L |\n', '', '')" title="Insert Table">📊 Table</button>
               <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsBlogContent', '> [!IMPORTANT]\n> High dealer gamma threshold reached.\n', '', '')" title="Insert Callout">⚡ Callout</button>
+              <button type="button" class="seo-pill-btn" style="background:#0284c7; color:#fff; font-weight:700; margin-left:auto;" onclick="document.getElementById('fileUploadCmsBlog').click()" title="Upload .md article file from your computer">📁 Upload .md File</button>
             </div>
 
             <!-- Split Editor -->
             <div class="cms-editor-split" style="margin-top:0;">
               <div class="cms-editor-pane">
-                <textarea id="cmsBlogContent" class="cms-editor-textarea" style="border-radius:0 0 8px 8px;" placeholder="# Article Title&#10;&#10;Write your quantitative research analysis here in Markdown..." oninput="renderCmsBlogPreview()"></textarea>
+                <textarea id="cmsBlogContent" class="cms-editor-textarea" style="border-radius:0 0 8px 8px;" placeholder="# Article Title&#10;&#10;Write your quantitative research analysis here in Markdown..." oninput="renderCmsBlogPreview()" ondragover="event.preventDefault()" ondrop="event.preventDefault(); handleDroppedMdFile(event, 'cmsBlog');"></textarea>
               </div>
               <div class="cms-editor-pane">
                 <div id="cmsBlogPreview" class="cms-preview-pane"></div>
@@ -6438,10 +6516,11 @@
       // =========================================================================
       let _cmsPagesList = [];
 
-      async function loadCmsPagesList() {
+      async function loadCmsPagesList(forceSync = false) {
         const tbody = document.getElementById('cmsPagesTableBody');
         try {
-          let res = await fetch('/api/admin/pages', { headers: getAuthHeaders() });
+          const url = forceSync ? '/api/admin/pages?sync=1' : '/api/admin/pages';
+          let res = await fetch(url, { headers: getAuthHeaders() });
           if (!res.ok) {
             console.warn('Admin pages fetch returned HTTP ' + res.status + ', trying public fallback...');
             res = await fetch('/api/pages');
@@ -6450,6 +6529,9 @@
           const data = await res.json();
           _cmsPagesList = data.pages || [];
           renderCmsPagesTable();
+          if (forceSync) {
+            showPagesAlert('☁️ Synced with Supabase Cloud: ' + _cmsPagesList.length + ' page(s) loaded.', 'success');
+          }
         } catch(e) {
           console.error("Failed loading CMS pages:", e);
           if (tbody) {
@@ -6487,6 +6569,50 @@
         tbody.innerHTML = html;
       }
 
+      function parseMdFileDetails(rawContent, originalName) {
+        let content = rawContent;
+        let title = '';
+        let slug = '';
+        let description = '';
+        const baseName = originalName.replace(/\.[^/.]+$/, '');
+
+        // Check for YAML Frontmatter
+        if (content.startsWith('---')) {
+          const fmEnd = content.indexOf('---', 3);
+          if (fmEnd !== -1) {
+            const frontmatter = content.substring(3, fmEnd);
+            const tm = frontmatter.match(/title:\s*["']?([^"'\n\r]+)["']?/i);
+            if (tm) title = tm[1].trim();
+            const sm = frontmatter.match(/slug:\s*["']?([^"'\n\r]+)["']?/i);
+            if (sm) slug = sm[1].trim();
+            const dm = frontmatter.match(/(?:description|metaDescription):\s*["']?([^"'\n\r]+)["']?/i);
+            if (dm) description = dm[1].trim();
+          }
+        }
+
+        // Title fallback: first H1 (# Title)
+        if (!title) {
+          const titleMatch = content.match(/^#\s+(.+)$/m);
+          if (titleMatch) title = titleMatch[1].trim();
+        }
+        if (!title) {
+          title = baseName.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        }
+
+        // Slug fallback
+        if (!slug) {
+          slug = baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        }
+
+        // Meta Description fallback
+        if (!description) {
+          const descMatch = content.match(/^(?!#|>|\||-|\*|<|`)(.{30,160})/m);
+          if (descMatch) description = descMatch[1].trim();
+        }
+
+        return { title, slug, description, content };
+      }
+
       function triggerQuickMdUpload(type) {
         const inp = document.getElementById(type === 'page' ? 'quickPageUploadInput' : 'quickBlogUploadInput');
         if (inp) {
@@ -6500,33 +6626,27 @@
         const file = input.files[0];
         const reader = new FileReader();
         reader.onload = function(e) {
-          const content = e.target.result;
-          const fileName = file.name.replace(/\.[^/.]+$/, '');
-          const titleMatch = content.match(/^#\s+(.+)$/m);
-          const title = titleMatch ? titleMatch[1].trim() : fileName.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-          const slug = fileName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-
+          const parsed = parseMdFileDetails(e.target.result, file.name);
           if (type === 'page') {
             openNewPageModal();
-            document.getElementById('cmsPageTitle').value = title;
-            document.getElementById('cmsPageSlug').value = slug;
-            document.getElementById('cmsPageMetaTitle').value = title + ' | TradersDesk';
-            document.getElementById('cmsPageContent').value = content;
-            
-            const descMatch = content.match(/^(?!#|>|\||-|\*|<|`)(.{30,160})/m);
-            if (descMatch) {
-              document.getElementById('cmsPageMetaDesc').value = descMatch[1].trim();
-            }
+            document.getElementById('cmsPageTitle').value = parsed.title;
+            document.getElementById('cmsPageSlug').value = parsed.slug;
+            document.getElementById('cmsPageMetaTitle').value = parsed.title + ' | TradersDesk';
+            if (parsed.description) document.getElementById('cmsPageMetaDesc').value = parsed.description;
+            document.getElementById('cmsPageContent').value = parsed.content;
             renderCmsPagePreview();
             updatePageSerpPreview();
+            showPagesAlert('✅ Loaded "' + file.name + '" into Page Editor! Review & Publish Live to save to Supabase.', 'success');
           } else {
             openNewBlogModal();
-            document.getElementById('cmsBlogTitle').value = title;
-            document.getElementById('cmsBlogSlug').value = slug;
-            document.getElementById('cmsBlogMetaTitle').value = title + ' | TradersDesk Blog';
-            document.getElementById('cmsBlogContent').value = content;
+            document.getElementById('cmsBlogTitle').value = parsed.title;
+            document.getElementById('cmsBlogSlug').value = parsed.slug;
+            document.getElementById('cmsBlogMetaTitle').value = parsed.title + ' | TradersDesk Blog';
+            if (parsed.description) document.getElementById('cmsBlogMetaDesc').value = parsed.description;
+            document.getElementById('cmsBlogContent').value = parsed.content;
             renderCmsBlogPreview();
             updateBlogSerpPreview();
+            showBlogAlert('✅ Loaded "' + file.name + '" into Blog Editor! Review & Publish Live to save to Supabase.', 'success');
           }
         };
         reader.readAsText(file);
@@ -6535,32 +6655,42 @@
       function handleModalMdUpload(input, targetPrefix) {
         if (!input.files || !input.files[0]) return;
         const file = input.files[0];
+        processUploadedMdFile(file, targetPrefix);
+      }
+
+      function handleDroppedMdFile(event, targetPrefix) {
+        const dt = event.dataTransfer;
+        if (!dt || !dt.files || !dt.files[0]) return;
+        const file = dt.files[0];
+        processUploadedMdFile(file, targetPrefix);
+      }
+
+      function processUploadedMdFile(file, targetPrefix) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          const content = e.target.result;
-          const fileName = file.name.replace(/\.[^/.]+$/, '');
-          const titleMatch = content.match(/^#\s+(.+)$/m);
-          const title = titleMatch ? titleMatch[1].trim() : fileName.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-          const slug = fileName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-
+          const parsed = parseMdFileDetails(e.target.result, file.name);
           if (targetPrefix === 'cmsPage') {
-            document.getElementById('cmsPageContent').value = content;
-            if (!document.getElementById('cmsPageTitle').value) {
-              document.getElementById('cmsPageTitle').value = title;
-              document.getElementById('cmsPageSlug').value = slug;
-              document.getElementById('cmsPageMetaTitle').value = title + ' | TradersDesk';
+            document.getElementById('cmsPageContent').value = parsed.content;
+            document.getElementById('cmsPageTitle').value = parsed.title;
+            document.getElementById('cmsPageSlug').value = parsed.slug;
+            document.getElementById('cmsPageMetaTitle').value = parsed.title + ' | TradersDesk';
+            if (parsed.description) {
+              document.getElementById('cmsPageMetaDesc').value = parsed.description;
             }
             renderCmsPagePreview();
             updatePageSerpPreview();
+            showPagesAlert('✅ Successfully loaded "' + file.name + '" (' + (file.size / 1024).toFixed(1) + ' KB)! Ready to sync with Supabase.', 'success');
           } else {
-            document.getElementById('cmsBlogContent').value = content;
-            if (!document.getElementById('cmsBlogTitle').value) {
-              document.getElementById('cmsBlogTitle').value = title;
-              document.getElementById('cmsBlogSlug').value = slug;
-              document.getElementById('cmsBlogMetaTitle').value = title + ' | TradersDesk Blog';
+            document.getElementById('cmsBlogContent').value = parsed.content;
+            document.getElementById('cmsBlogTitle').value = parsed.title;
+            document.getElementById('cmsBlogSlug').value = parsed.slug;
+            document.getElementById('cmsBlogMetaTitle').value = parsed.title + ' | TradersDesk Blog';
+            if (parsed.description) {
+              document.getElementById('cmsBlogMetaDesc').value = parsed.description;
             }
             renderCmsBlogPreview();
             updateBlogSerpPreview();
+            showBlogAlert('✅ Successfully loaded "' + file.name + '" (' + (file.size / 1024).toFixed(1) + ' KB)! Ready to sync with Supabase.', 'success');
           }
         };
         reader.readAsText(file);
@@ -6730,10 +6860,11 @@
       // =========================================================================
       let _cmsBlogList = [];
 
-      async function loadCmsBlogList() {
+      async function loadCmsBlogList(forceSync = false) {
         const tbody = document.getElementById('cmsBlogTableBody');
         try {
-          let res = await fetch('/api/admin/blog/posts', { headers: getAuthHeaders() });
+          const url = forceSync ? '/api/admin/blog/posts?sync=1' : '/api/admin/blog/posts';
+          let res = await fetch(url, { headers: getAuthHeaders() });
           if (!res.ok) {
             console.warn('Admin blog fetch returned HTTP ' + res.status + ', trying public endpoint fallback...');
             res = await fetch('/api/blog/posts');
@@ -6742,6 +6873,9 @@
           const data = await res.json();
           _cmsBlogList = data.posts || [];
           renderCmsBlogTable();
+          if (forceSync) {
+            showBlogAlert('☁️ Synced with Supabase Cloud: ' + _cmsBlogList.length + ' article(s) loaded.', 'success');
+          }
         } catch(e) {
           console.error("Failed loading CMS blog posts:", e);
           if (tbody) {

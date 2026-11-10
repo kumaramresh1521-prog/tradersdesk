@@ -278,7 +278,7 @@ def save_app_config_to_supabase(key: str, value: any) -> dict:
     }
     try:
         req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=req_headers, method="POST")
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:
             return {"ok": True, "message": f"{key} saved permanently to Supabase cloud."}
     except Exception as e:
         return {"ok": False, "message": str(e)}
@@ -298,7 +298,7 @@ def load_app_config_from_supabase(key: str) -> any | None:
     }
     try:
         req = urllib.request.Request(url, headers=req_headers, method="GET")
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:
             raw = resp.read().decode("utf-8")
             items = json.loads(raw or "[]")
             if items and isinstance(items, list) and len(items) > 0:

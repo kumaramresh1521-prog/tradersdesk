@@ -598,9 +598,9 @@ def render_footer_html(current_path: str = "/") -> str:
 # 3. DYNAMIC PAGES CMS ENGINE
 # ==============================================================================
 
-def list_pages() -> List[Dict[str, Any]]:
+def list_pages(force_sync: bool = False) -> List[Dict[str, Any]]:
     global _PAGES_CACHE
-    if _PAGES_CACHE is not None and isinstance(_PAGES_CACHE, list):
+    if not force_sync and _PAGES_CACHE is not None and isinstance(_PAGES_CACHE, list) and len(_PAGES_CACHE) > 0:
         return _PAGES_CACHE
 
     pages = []
@@ -618,20 +618,32 @@ def list_pages() -> List[Dict[str, Any]]:
                     pages = json.load(f)
             except Exception:
                 pages = []
-    if not pages:
-        try:
-            import supabase_engine
-            cloud_pages = supabase_engine.load_app_config_from_supabase("cms_pages")
-            if isinstance(cloud_pages, list) and cloud_pages:
+
+    try:
+        import supabase_engine
+        cloud_pages = supabase_engine.load_app_config_from_supabase("cms_pages")
+        if isinstance(cloud_pages, list) and cloud_pages:
+            if not pages or force_sync:
                 pages = cloud_pages
-                try:
-                    DATA_DIR.mkdir(parents=True, exist_ok=True)
-                    with open(PAGES_FILE, "w", encoding="utf-8") as f:
-                        json.dump(cloud_pages, f, indent=2)
-                except Exception:
-                    pass
-        except Exception:
-            pass
+            else:
+                existing_slugs = {p.get("slug") for p in pages if p.get("slug")}
+                for cp in cloud_pages:
+                    if cp.get("slug") not in existing_slugs:
+                        pages.append(cp)
+            try:
+                DATA_DIR.mkdir(parents=True, exist_ok=True)
+                with open(PAGES_FILE, "w", encoding="utf-8") as f:
+                    json.dump(pages, f, indent=2)
+            except Exception:
+                pass
+        elif pages and not cloud_pages:
+            try:
+                supabase_engine.save_app_config_to_supabase("cms_pages", pages)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
     _PAGES_CACHE = pages if isinstance(pages, list) else []
     return _PAGES_CACHE
 
@@ -702,9 +714,9 @@ def delete_page(slug: str) -> bool:
 # 4. BLOG & ARTICLE CMS ENGINE
 # ==============================================================================
 
-def list_posts(published_only: bool = True) -> List[Dict[str, Any]]:
+def list_posts(published_only: bool = True, force_sync: bool = False) -> List[Dict[str, Any]]:
     global _POSTS_CACHE
-    if _POSTS_CACHE is None or not isinstance(_POSTS_CACHE, list):
+    if force_sync or _POSTS_CACHE is None or not isinstance(_POSTS_CACHE, list) or len(_POSTS_CACHE) == 0:
         posts = []
         if POSTS_FILE.exists():
             try:
@@ -712,20 +724,30 @@ def list_posts(published_only: bool = True) -> List[Dict[str, Any]]:
                     posts = json.load(f)
             except Exception:
                 posts = []
-        if not posts:
-            try:
-                import supabase_engine
-                cloud_posts = supabase_engine.load_app_config_from_supabase("cms_posts")
-                if isinstance(cloud_posts, list) and cloud_posts:
+        try:
+            import supabase_engine
+            cloud_posts = supabase_engine.load_app_config_from_supabase("cms_posts")
+            if isinstance(cloud_posts, list) and cloud_posts:
+                if not posts or force_sync:
                     posts = cloud_posts
-                    try:
-                        DATA_DIR.mkdir(parents=True, exist_ok=True)
-                        with open(POSTS_FILE, "w", encoding="utf-8") as f:
-                            json.dump(cloud_posts, f, indent=2)
-                    except Exception:
-                        pass
-            except Exception:
-                pass
+                else:
+                    existing_slugs = {p.get("slug") for p in posts if p.get("slug")}
+                    for cp in cloud_posts:
+                        if cp.get("slug") not in existing_slugs:
+                            posts.append(cp)
+                try:
+                    DATA_DIR.mkdir(parents=True, exist_ok=True)
+                    with open(POSTS_FILE, "w", encoding="utf-8") as f:
+                        json.dump(posts, f, indent=2)
+                except Exception:
+                    pass
+            elif posts and not cloud_posts:
+                try:
+                    supabase_engine.save_app_config_to_supabase("cms_posts", posts)
+                except Exception:
+                    pass
+        except Exception:
+            pass
         _POSTS_CACHE = posts if isinstance(posts, list) else []
 
     all_p = _POSTS_CACHE or []

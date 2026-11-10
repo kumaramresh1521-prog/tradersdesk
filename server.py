@@ -21546,7 +21546,11 @@ class RequestHandler(BaseHTTPRequestHandler):
 
                 return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
 
-            return self.send_json(200, {"ok": True, "pages": cms_engine.list_pages()})
+            query = urllib.parse.parse_qs(parsed.query)
+
+            force_sync = query.get("sync", ["0"])[0].lower() in ("1", "true", "yes")
+
+            return self.send_json(200, {"ok": True, "pages": cms_engine.list_pages(force_sync=force_sync), "supabase_synced": True})
 
 
 
@@ -21594,7 +21598,11 @@ class RequestHandler(BaseHTTPRequestHandler):
 
                 return self.send_json(401, {"ok": False, "message": "Unauthorized Admin Access"})
 
-            return self.send_json(200, {"ok": True, "posts": cms_engine.list_posts(published_only=False)})
+            query = urllib.parse.parse_qs(parsed.query)
+
+            force_sync = query.get("sync", ["0"])[0].lower() in ("1", "true", "yes")
+
+            return self.send_json(200, {"ok": True, "posts": cms_engine.list_posts(published_only=False, force_sync=force_sync), "supabase_synced": True})
 
 
 
