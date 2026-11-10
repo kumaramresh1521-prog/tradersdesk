@@ -114,6 +114,75 @@
     .blog-card-excerpt { font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 18px; flex: 1; }
     html[data-theme="light"] .blog-card-excerpt { color: #64748b; }
     .blog-card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: #64748b; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px; font-family: 'JetBrains Mono', monospace; }
+    
+    /* Global CMS FAQ Accordion Styling (High Contrast Light & Dark) */
+    .cms-card details {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 14px;
+      transition: all 0.2s ease;
+    }
+    html[data-theme="light"] .cms-card details {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+    .cms-card details[open] {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.05);
+    }
+    html[data-theme="light"] .cms-card details[open] {
+      border-color: #0284c7;
+      background: #ffffff;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.1);
+    }
+    .cms-card summary {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f8fafc;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      list-style: none;
+    }
+    html[data-theme="light"] .cms-card summary {
+      color: #0f172a;
+    }
+    .cms-card summary::-webkit-details-marker {
+      display: none;
+    }
+    .cms-card summary::after {
+      content: "▼";
+      font-size: 11px;
+      color: #38bdf8;
+      transition: transform 0.2s ease;
+      margin-left: 12px;
+    }
+    html[data-theme="light"] .cms-card summary::after {
+      color: #0284c7;
+    }
+    .cms-card details[open] summary::after {
+      transform: rotate(180deg);
+    }
+    .cms-card details p {
+      margin: 12px 0 0 0;
+      font-size: 14px;
+      line-height: 1.75;
+      color: #cbd5e1;
+    }
+    html[data-theme="light"] .cms-card details p {
+      color: #334155;
+    }
+    .cms-card details p strong {
+      color: #38bdf8;
+    }
+    html[data-theme="light"] .cms-card details p strong {
+      color: #0284c7;
+    }
   </style>
   <!-- CMS_CUSTOM_STYLE -->
 </head>

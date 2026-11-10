@@ -150,53 +150,53 @@ Understanding the tax implications on your mutual fund redemptions ensures you k
 
 <div style="margin:24px 0; display:flex; flex-direction:column; gap:12px;">
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">1. What happens if I miss an SIP installment due to insufficient bank balance?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details open>
+  <summary>1. What happens if I miss an SIP installment due to insufficient bank balance?</summary>
+  <p>
     <strong>The Mutual Fund AMC will NEVER penalize you or cancel your portfolio.</strong> However, your bank may charge an NACH/ECS mandate bounce fee (typically ₹250 to ₹500 plus GST). If your bank balance is low, you can easily use your broker app to "Pause" your SIP for 1 to 3 months before the scheduled deduction date without any charge.
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">2. Is there a "Best Date" of the month to schedule my SIP (e.g. 1st, 5th, or 15th)?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details open>
+  <summary>2. Is there a "Best Date" of the month to schedule my SIP (e.g. 1st, 5th, or 15th)?</summary>
+  <p>
     <strong>No. Statistically, there is zero meaningful difference.</strong> Comprehensive backtesting of 20+ years of Nifty 50 data across the 1st, 7th, 15th, and 25th of every month revealed an annualized return difference of less than 0.08%. The best date is simply <strong>2 to 3 days after your monthly salary is credited</strong> (e.g. 5th or 7th) to ensure your investment happens before discretionary expenses begin.
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">3. Can I withdraw my SIP money whenever I want? Is there any lock-in?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details>
+  <summary>3. Can I withdraw my SIP money whenever I want? Is there any lock-in?</summary>
+  <p>
     Except for <strong>ELSS (Tax Saving Mutual Funds)</strong> which have a mandatory 3-year statutory lock-in, all open-ended mutual funds (Flexicap, Largecap, Midcap, Index Funds) offer <strong>100% liquidity</strong>. You can redeem your money anytime and the funds will credit to your verified bank account within T+1 to T+2 business days. Note that withdrawing within 365 days may attract a minor 1% Exit Load.
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">4. Is my money safe in mutual funds? Can the AMC or broker run away with my money?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details>
+  <summary>4. Is my money safe in mutual funds? Can the AMC or broker run away with my money?</summary>
+  <p>
     Mutual funds in India are regulated by SEBI under a strict 3-tier governance structure: <strong>Sponsor &rarr; Trustee Board &rarr; Asset Management Company (AMC)</strong>. Your securities are never held in the bank account of the AMC or your broker; they are held by independent, SEBI-licensed institutional custodians (such as Deutsche Bank, Citibank, or SBI Custodial Services). Even if an AMC or broker shuts down, your units remain safely registered with RTAs (CAMS or KFintech) under your PAN.
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">5. Should I stop my SIP during a market crash or recession?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details>
+  <summary>5. Should I stop my SIP during a market crash or recession?</summary>
+  <p>
     <strong>Stopping your SIP during a crash is the single most costly mistake in investing.</strong> When stock prices collapse, your fixed monthly SIP buys maximum units at rock-bottom prices. When the market inevitably recovers, those discounted units generate the bulk of your multi-year compounding. Stopping your SIP during a downturn is like running away from a 40% discount festival at your favorite store!
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">6. What is the difference between SIP, Bank Recurring Deposit (RD), and PPF?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details>
+  <summary>6. What is the difference between SIP, Bank Recurring Deposit (RD), and PPF?</summary>
+  <p>
     * <strong>Bank RD:</strong> Offers a guaranteed fixed interest rate (around 6.5% - 7.0%), but interest is fully taxable as per your income slab, resulting in post-tax returns that often fail to beat real inflation.<br>
     * <strong>Public Provident Fund (PPF):</strong> Offers EEE (Exempt-Exempt-Exempt) tax benefits at ~7.1% interest, but comes with a rigid 15-year lock-in and an annual deposit ceiling of ₹1.5 Lakh.<br>
     * <strong>Equity SIP:</strong> Carries market volatility in the short run, but historically delivers <strong>12% to 15% CAGR</strong> over 10+ year horizons, generating 2x to 4x greater wealth than traditional debt instruments.
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">7. How many mutual fund SIPs should an investor run simultaneously?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details>
+  <summary>7. How many mutual fund SIPs should an investor run simultaneously?</summary>
+  <p>
     Most retail investors over-diversify by holding 10 to 15 different mutual funds, creating massive portfolio overlap. For 95% of investors, <strong>3 to 4 well-chosen funds are ideal</strong>:
     <br>&bull; 1 Broad Market Index Fund (Nifty 50 or Nifty LargeMidcap 250)
     <br>&bull; 1 Active Flexi-Cap or Multi-Cap Fund
@@ -205,37 +205,37 @@ Understanding the tax implications on your mutual fund redemptions ensures you k
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">8. What is the difference between "Growth" and "IDCW" (Dividend) options in SIP?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details>
+  <summary>8. What is the difference between "Growth" and "IDCW" (Dividend) options in SIP?</summary>
+  <p>
     In the <strong>Growth option</strong>, all corporate profits, dividends, and capital gains are automatically reinvested back into the scheme, triggering full exponential compounding. In the <strong>IDCW (Income Distribution cum Capital Withdrawal) option</strong>, dividends are periodically credited to your bank account and taxed at your marginal income tax slab. For long-term wealth creation, <strong>always choose the Growth option</strong>.
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">9. How does taxation work when redeeming an SIP (FIFO Method)?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details>
+  <summary>9. How does taxation work when redeeming an SIP (FIFO Method)?</summary>
+  <p>
     Redemptions in mutual fund SIPs follow the <strong>First-In, First-Out (FIFO)</strong> accounting method. Each monthly installment is treated as an independent investment with its own distinct holding period. When you withdraw money, the units bought in Month 1 are sold first. If those units were bought more than 12 months ago, their gains qualify for the lower 12.5% Long-Term Capital Gains (LTCG) tax rate.
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">10. Can I get a loan against my mutual fund SIP portfolio instead of selling?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details>
+  <summary>10. Can I get a loan against my mutual fund SIP portfolio instead of selling?</summary>
+  <p>
     <strong>Yes. It is called Loan Against Mutual Funds (LAMF).</strong> Leading banks and NBFCs allow you to digitally pledge your mutual fund units as collateral and offer an overdraft credit line up to 50% of your equity portfolio value at attractive interest rates (typically 9.5% to 10.5%). This lets you manage emergency cash requirements without selling your units, interrupting compounding, or triggering capital gains tax.
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">11. What is an Exit Load and when does it apply?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details>
+  <summary>11. What is an Exit Load and when does it apply?</summary>
+  <p>
     An Exit Load is a fee charged by the AMC if an investor redeems units before a pre-specified holding period. For most Indian equity funds, the exit load is <strong>1% if redeemed within 365 days (1 year)</strong> of unit allotment, and <strong>0% (Nil)</strong> after 1 year. The exit load is automatically deducted from your redemption NAV and credited back to the fund scheme.
   </p>
 </details>
 
-<details style="background:var(--c-card, rgba(255,255,255,0.03)); border:1px solid var(--c-border, rgba(255,255,255,0.08)); border-radius:12px; padding:16px 20px;">
-  <summary style="font-weight:700; cursor:pointer; font-size:15px; color:var(--c-title, #f8fafc);">12. What rate of return should I realistically assume in an Indian SIP Calculator?</summary>
-  <p style="margin:12px 0 0 0; font-size:14px; line-height:1.7; color:var(--c-text, #cbd5e1);">
+<details>
+  <summary>12. What rate of return should I realistically assume in an Indian SIP Calculator?</summary>
+  <p>
     Over historical 15 to 20-year horizons, India's benchmark <strong>Nifty 50 Total Returns Index (TRI)</strong> has compounded at approximately <strong>12.5% to 13.5% CAGR</strong>, reflecting the underlying expansion of the Indian economy. For financial goal planning, conservative advisors suggest using <strong>11% to 12% for Large-Cap/Index Funds</strong> and <strong>13% to 14.5% for well-managed Flexicap or Midcap Funds</strong>.
   </p>
 </details>
