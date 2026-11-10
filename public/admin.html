@@ -2625,6 +2625,8 @@
             </div>
             <div style="display:flex; gap:10px;">
               <button type="button" class="btn-adm-primary" onclick="openNewPageModal()">➕ Create New Page</button>
+              <button type="button" class="btn-adm-primary" style="background:#0284c7;" onclick="triggerQuickMdUpload('page')">📁 Upload .md File</button>
+              <input type="file" id="quickPageUploadInput" accept=".md,.markdown,.txt,.html" style="display:none;" onchange="handleQuickMdUpload(this, 'page')" />
               <button type="button" class="btn-adm-danger" onclick="loadCmsPagesList()">🔄 Refresh</button>
             </div>
           </div>
@@ -2659,6 +2661,8 @@
             </div>
             <div style="display:flex; gap:10px;">
               <button type="button" class="btn-adm-primary" onclick="openNewBlogModal()">➕ Write New Article</button>
+              <button type="button" class="btn-adm-primary" style="background:#0284c7;" onclick="triggerQuickMdUpload('blog')">📁 Upload .md Article</button>
+              <input type="file" id="quickBlogUploadInput" accept=".md,.markdown,.txt,.html" style="display:none;" onchange="handleQuickMdUpload(this, 'blog')" />
               <button type="button" class="btn-adm-danger" onclick="loadCmsBlogList()">🔄 Refresh</button>
             </div>
           </div>
@@ -3278,6 +3282,8 @@
               <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '![', '](https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80)', 'Alt Text')" title="Insert Image">🖼️ Image</button>
               <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '| Metric | Value | Benchmark |\n|---|---|---|\n| Advances | 1,420 | 1,200 |\n', '', '')" title="Insert Table">📊 Table</button>
               <button type="button" class="seo-pill-btn" onclick="insertSyntax('cmsPageContent', '> [!NOTE]\n> Institutional trading desk directive.\n', '', '')" title="Insert Callout">⚡ Callout</button>
+              <button type="button" class="seo-pill-btn" style="background:#0284c7; color:#fff; font-weight:700; margin-left:auto;" onclick="document.getElementById('fileUploadCmsPage').click()" title="Upload .md file from your computer">📁 Upload .md File</button>
+              <input type="file" id="fileUploadCmsPage" accept=".md,.markdown,.txt,.html" style="display:none;" onchange="handleModalMdUpload(this, 'cmsPage')" />
             </div>
 
             <!-- Split Editor -->
@@ -6479,6 +6485,85 @@
           `;
         });
         tbody.innerHTML = html;
+      }
+
+      function triggerQuickMdUpload(type) {
+        const inp = document.getElementById(type === 'page' ? 'quickPageUploadInput' : 'quickBlogUploadInput');
+        if (inp) {
+          inp.value = '';
+          inp.click();
+        }
+      }
+
+      function handleQuickMdUpload(input, type) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const content = e.target.result;
+          const fileName = file.name.replace(/\.[^/.]+$/, '');
+          const titleMatch = content.match(/^#\s+(.+)$/m);
+          const title = titleMatch ? titleMatch[1].trim() : fileName.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          const slug = fileName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+          if (type === 'page') {
+            openNewPageModal();
+            document.getElementById('cmsPageTitle').value = title;
+            document.getElementById('cmsPageSlug').value = slug;
+            document.getElementById('cmsPageMetaTitle').value = title + ' | TradersDesk';
+            document.getElementById('cmsPageContent').value = content;
+            
+            const descMatch = content.match(/^(?!#|>|\||-|\*|<|`)(.{30,160})/m);
+            if (descMatch) {
+              document.getElementById('cmsPageMetaDesc').value = descMatch[1].trim();
+            }
+            renderCmsPagePreview();
+            updatePageSerpPreview();
+          } else {
+            openNewBlogModal();
+            document.getElementById('cmsBlogTitle').value = title;
+            document.getElementById('cmsBlogSlug').value = slug;
+            document.getElementById('cmsBlogMetaTitle').value = title + ' | TradersDesk Blog';
+            document.getElementById('cmsBlogContent').value = content;
+            renderCmsBlogPreview();
+            updateBlogSerpPreview();
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function handleModalMdUpload(input, targetPrefix) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const content = e.target.result;
+          const fileName = file.name.replace(/\.[^/.]+$/, '');
+          const titleMatch = content.match(/^#\s+(.+)$/m);
+          const title = titleMatch ? titleMatch[1].trim() : fileName.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          const slug = fileName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+          if (targetPrefix === 'cmsPage') {
+            document.getElementById('cmsPageContent').value = content;
+            if (!document.getElementById('cmsPageTitle').value) {
+              document.getElementById('cmsPageTitle').value = title;
+              document.getElementById('cmsPageSlug').value = slug;
+              document.getElementById('cmsPageMetaTitle').value = title + ' | TradersDesk';
+            }
+            renderCmsPagePreview();
+            updatePageSerpPreview();
+          } else {
+            document.getElementById('cmsBlogContent').value = content;
+            if (!document.getElementById('cmsBlogTitle').value) {
+              document.getElementById('cmsBlogTitle').value = title;
+              document.getElementById('cmsBlogSlug').value = slug;
+              document.getElementById('cmsBlogMetaTitle').value = title + ' | TradersDesk Blog';
+            }
+            renderCmsBlogPreview();
+            updateBlogSerpPreview();
+          }
+        };
+        reader.readAsText(file);
       }
 
       function openNewPageModal() {
