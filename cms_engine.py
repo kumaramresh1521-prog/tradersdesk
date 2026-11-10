@@ -31,6 +31,8 @@ def markdown_to_html(md_text: str) -> str:
     in_table = False
     table_rows = []
     in_list = False
+    in_raw_block = False
+    raw_block_tag = ""
 
     def close_table():
         nonlocal in_table, table_rows, html_lines
@@ -67,6 +69,30 @@ def markdown_to_html(md_text: str) -> str:
 
     for line in lines:
         stripped = line.strip()
+
+        # Raw multi-line HTML block (<style>, <script>)
+        if in_raw_block:
+            html_lines.append(line)
+            if f"</{raw_block_tag}>" in stripped.lower():
+                in_raw_block = False
+            continue
+
+        if stripped.lower().startswith("<script") or stripped.lower().startswith("<style"):
+            close_table()
+            close_list()
+            in_raw_block = True
+            raw_block_tag = "script" if stripped.lower().startswith("<script") else "style"
+            html_lines.append(line)
+            if f"</{raw_block_tag}>" in stripped.lower():
+                in_raw_block = False
+            continue
+
+        # Generic HTML tag lines (<div>, <section>, <button>, <input>, </...>, etc.)
+        if stripped.startswith("<") and (stripped.startswith("</") or stripped.endswith(">") or ">" in stripped):
+            close_table()
+            close_list()
+            html_lines.append(line)
+            continue
 
         # Fenced code block
         if stripped.startswith("```"):
@@ -584,6 +610,14 @@ def list_pages() -> List[Dict[str, Any]]:
                 pages = json.load(f)
         except Exception:
             pages = []
+    if not pages:
+        alt_pages_file = DATA_DIR / "pages.json"
+        if alt_pages_file.exists():
+            try:
+                with open(alt_pages_file, "r", encoding="utf-8") as f:
+                    pages = json.load(f)
+            except Exception:
+                pages = []
     if not pages:
         try:
             import supabase_engine

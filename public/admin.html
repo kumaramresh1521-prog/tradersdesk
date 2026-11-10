@@ -5920,9 +5920,31 @@
         let lines = md.split('\n');
         let htmlOut = [];
         let inList = false;
+        let inRawBlock = false;
+        let rawTag = '';
 
         for (let line of lines) {
           let trimmed = line.trim();
+          let low = trimmed.toLowerCase();
+
+          if (inRawBlock) {
+            htmlOut.push(line);
+            if (low.includes('</' + rawTag + '>')) inRawBlock = false;
+            continue;
+          }
+          if (low.startsWith('<script') || low.startsWith('<style')) {
+            if (inList) { htmlOut.push('</ul>'); inList = false; }
+            inRawBlock = true;
+            rawTag = low.startsWith('<script') ? 'script' : 'style';
+            htmlOut.push(line);
+            if (low.includes('</' + rawTag + '>')) inRawBlock = false;
+            continue;
+          }
+          if (trimmed.startsWith('<') && (trimmed.startsWith('</') || trimmed.includes('>'))) {
+            if (inList) { htmlOut.push('</ul>'); inList = false; }
+            htmlOut.push(line);
+            continue;
+          }
           if (trimmed.startsWith('# ')) {
             if (inList) { htmlOut.push('</ul>'); inList = false; }
             htmlOut.push('<h1 style="font-size:22px; font-weight:800; color:#fff; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px; margin:16px 0 10px 0;">' + escapeHtml(trimmed.slice(2)) + '</h1>');
