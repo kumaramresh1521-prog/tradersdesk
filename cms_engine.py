@@ -686,6 +686,11 @@ def save_page(page_data: Dict[str, Any]) -> bool:
             supabase_engine.save_app_config_to_supabase("cms_pages", pages)
         except Exception as se:
             print(f"[CMS] Supabase pages sync note: {se}")
+        try:
+            import seo_engine
+            seo_engine.rebuild_sitemap_xml()
+        except Exception as s_err:
+            print(f"[CMS] Sitemap update note: {s_err}")
         return True
     except Exception as exc:
         print(f"[CMS] Failed saving page {slug}: {exc}")
@@ -705,6 +710,11 @@ def delete_page(slug: str) -> bool:
             supabase_engine.save_app_config_to_supabase("cms_pages", pages)
         except Exception as se:
             print(f"[CMS] Supabase pages delete note: {se}")
+        try:
+            import seo_engine
+            seo_engine.rebuild_sitemap_xml()
+        except Exception as s_err:
+            print(f"[CMS] Sitemap update note: {s_err}")
         return True
     except Exception as exc:
         print(f"[CMS] Failed deleting page {slug}: {exc}")
@@ -799,6 +809,11 @@ def save_post(post_data: Dict[str, Any]) -> bool:
             supabase_engine.save_app_config_to_supabase("cms_posts", posts)
         except Exception as se:
             print(f"[CMS] Supabase post sync note: {se}")
+        try:
+            import seo_engine
+            seo_engine.rebuild_sitemap_xml()
+        except Exception as s_err:
+            print(f"[CMS] Sitemap update note: {s_err}")
         return True
     except Exception as exc:
         print(f"[CMS] Failed saving post {slug}: {exc}")
@@ -817,6 +832,11 @@ def delete_post(post_id: str) -> bool:
             supabase_engine.save_app_config_to_supabase("cms_posts", posts)
         except Exception as se:
             print(f"[CMS] Supabase post delete note: {se}")
+        try:
+            import seo_engine
+            seo_engine.rebuild_sitemap_xml()
+        except Exception as s_err:
+            print(f"[CMS] Sitemap update note: {s_err}")
         return True
     except Exception as exc:
         print(f"[CMS] Failed deleting post {post_id}: {exc}")

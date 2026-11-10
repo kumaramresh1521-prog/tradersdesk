@@ -123,6 +123,12 @@
           "type": "inst",
           "label": "Stock Delivery Drilldown",
           "target": "delivery"
+        },
+        {
+          "url": "/sip-calculator",
+          "type": "link",
+          "label": "SIP & Wealth Calculator",
+          "target": "_self"
         }
       ],
       "title": "📊 Market Analytics & Tools"
