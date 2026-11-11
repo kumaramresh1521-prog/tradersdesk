@@ -18,6 +18,7 @@ from datetime import datetime, date, timezone, timedelta
 
 IST = timezone(timedelta(hours=5, minutes=30))
 from typing import Dict, List, Any, Optional
+import market_calendar
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 CACHE_DIR = os.path.join(DATA_DIR, "cache")
@@ -67,20 +68,11 @@ NSE_CALENDAR_HOLIDAYS = {
 
 def is_nse_trading_session_active_now() -> bool:
     """
-    Returns True ONLY if today is a regular weekday trading day (Mon-Fri) and current IST time is
-    within or after regular market hours (09:15 to 15:40 IST), and not an exchange holiday.
-    On weekends (Saturday & Sunday) and market holidays, returns False.
+    Returns True ONLY if today is a verified trading day and current IST time has reached
+    the session open time (e.g. 09:15 IST). Returns False on weekends, market holidays,
+    and pre-open hours using real exchange API calendar.
     """
-    now = datetime.now(IST)
-    if now.weekday() >= 5:  # Saturday=5, Sunday=6
-        return False
-    d = now.date()
-    if (d.month, d.day) in NSE_FIXED_HOLIDAYS or d.isoformat() in NSE_CALENDAR_HOLIDAYS:
-        return False
-    hm = (now.hour, now.minute)
-    if hm < (9, 15):
-        return False
-    return True
+    return market_calendar.has_market_opened_on_date()
 
 
 class ChartEngine:
@@ -233,7 +225,7 @@ class ChartEngine:
         }
 
         market_session_active = is_nse_trading_session_active_now()
-        quote["is_live"] = market_session_active
+        quote["is_live"] = market_calendar.is_market_open()
 
         # 1. Fetch real-time market quote from server feed ONLY during active NSE trading sessions
         live_found = False
@@ -586,10 +578,8 @@ class ChartEngine:
                     file_age = now_ts - mtime
                     now_dt = datetime.now(IST)
                     today_str = now_dt.strftime("%Y-%m-%d")
-                    is_weekday = now_dt.weekday() < 5
-                    after_market_open = (now_dt.hour, now_dt.minute) >= (9, 15)
-                    # On trading days after 09:15, ensure today's candle is loaded
-                    if is_weekday and after_market_open:
+                    # On trading days after market open, ensure today's candle is loaded
+                    if market_calendar.has_market_opened_on_date(now_dt):
                         if last_time < today_str or file_age > 120:
                             cache_needs_refresh = True
                     elif file_age > 1800:
@@ -787,14 +777,11 @@ class ChartEngine:
             print(f"[ChartEngine] Error during master FO overlay/infill for {sym}: {exc}")
 
         # 5. Real-time live forming candle stitching (Current Day)
-        # CRITICAL: On active trading days (Mon-Fri after 09:15), today's candle (forming or completed EOD) MUST be displayed!
-        # On weekends (Saturday/Sunday) or pre-market, no bar for today should exist.
+        # CRITICAL: Only attach today's forming/EOD candle if today is a verified trading day AND market has opened.
         now_dt = datetime.now(IST)
         today_str = now_dt.strftime("%Y-%m-%d")
-        is_weekday = now_dt.weekday() < 5
-        after_market_open = (now_dt.hour, now_dt.minute) >= (9, 15)
 
-        if is_weekday and after_market_open:
+        if market_calendar.has_market_opened_on_date(now_dt):
             live_quote = self.get_symbol_quote(sym)
             ltp = float(live_quote.get("ltp") or 0.0)
             if ltp > 0:
@@ -847,10 +834,20 @@ class ChartEngine:
             # Weekend or pre-market before 09:15: ensure no dummy/forming bar for today
             daily_bars = [b for b in daily_bars if b.get("time") != today_str]
 
-        # 6. Deduplicate & sort daily bars
+        # 6. Deduplicate, strip holiday/unopened bars, & sort daily bars
         if daily_bars:
             bars_dict = {}
+            has_opened = market_calendar.has_market_opened_on_date()
             for bar in daily_bars:
+                bt = str(bar.get("time") or "")[:10]
+                try:
+                    bd = date.fromisoformat(bt)
+                    if not market_calendar.is_trading_day(bd, allow_network=False):
+                        continue
+                    if bt == today_str and not has_opened:
+                        continue
+                except Exception:
+                    pass
                 bars_dict[bar["time"]] = bar
             daily_bars = [bars_dict[k] for k in sorted(bars_dict.keys())]
 
@@ -875,6 +872,21 @@ class ChartEngine:
         # Resolution handling: Intraday vs Daily (Prefer 100% REAL exchange candles)
         if res_str in ("1", "3", "5", "15", "30", "60"):
             real_intraday = self._fetch_real_intraday_bars(sym, res_str)
+            has_opened_today = market_calendar.has_market_opened_on_date()
+            if real_intraday:
+                filtered_intra = []
+                for b in real_intraday:
+                    bd_str = str(b.get("time") or "")[:10]
+                    try:
+                        bd_obj = date.fromisoformat(bd_str)
+                        if not market_calendar.is_trading_day(bd_obj, allow_network=False):
+                            continue
+                        if bd_str == today_str and not has_opened_today:
+                            continue
+                    except Exception:
+                        pass
+                    filtered_intra.append(b)
+                real_intraday = filtered_intra
             if real_intraday and len(real_intraday) >= 5:
                 bars = real_intraday
             elif daily_bars:
@@ -1044,7 +1056,21 @@ class ChartEngine:
 
     def _generate_intraday_bars(self, daily_bars: List[Dict], resolution: str) -> List[Dict]:
         step_minutes = int(resolution) if resolution.isdigit() else 5
-        recent_days = daily_bars[-7:]
+        today_str = datetime.now(IST).strftime("%Y-%m-%d")
+        has_opened = market_calendar.has_market_opened_on_date()
+        valid_days = []
+        for day in daily_bars:
+            d_s = str(day.get("time") or "")[:10]
+            try:
+                d_obj = date.fromisoformat(d_s)
+                if not market_calendar.is_trading_day(d_obj, allow_network=False):
+                    continue
+                if d_s == today_str and not has_opened:
+                    continue
+            except Exception:
+                pass
+            valid_days.append(day)
+        recent_days = valid_days[-7:]
         intraday_bars = []
 
         for day in recent_days:

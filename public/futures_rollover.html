@@ -902,9 +902,9 @@
 
       <!-- Center: Live Indian Market Clock & Session Status -->
       <div class="inst-market-clock-wrap" id="topMarketClockWrap">
-        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE / BSE Regular Trading Session (09:15 - 15:30 IST)">
+        <div class="inst-market-pill closed" id="topMarketStatusPill" title="NSE / BSE Trading Session Status">
           <span class="market-dot" id="marketDot"></span>
-          <span id="marketStatusText">NSE LIVE</span>
+          <span id="marketStatusText">CHECKING...</span>
         </div>
         <div class="inst-clock-pill" title="Indian Standard Time (IST)">
           <span class="clock-icon">🕒</span>
@@ -1247,8 +1247,19 @@
         refreshTimer: null
       };
 
-      // --- Digital IST Clock & Market Status ---
+      // --- Digital IST Clock & Exchange API Market Status ---
       function updateClock() {
+        const c = window.__nseMarketStatusCache || (window.__nseMarketStatusCache = { ts: 0, data: null, fetching: false });
+        const nowMs = Date.now();
+        if (!c.fetching && (nowMs - c.ts) >= 45000) {
+          c.fetching = true;
+          fetch('/api/market-status?_t=' + nowMs)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d && d.ok) { c.data = d; c.ts = Date.now(); } })
+            .catch(() => {})
+            .finally(() => { c.fetching = false; });
+        }
+
         const now = new Date();
         const ist = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
         const h = String(ist.getHours()).padStart(2, '0');
@@ -1259,18 +1270,20 @@
         const elClock = document.getElementById('instLiveClock') || document.getElementById('roLiveClock');
         if (elClock) elClock.textContent = timeStr;
 
-        const day = ist.getDay();
-        const mins = ist.getHours() * 60 + ist.getMinutes();
-        const isMarketOpen = day >= 1 && day <= 5 && mins >= 555 && mins < 930;
+        const api = c.data;
+        const isMarketOpen = api ? Boolean(api.isOpen) : false;
         const pill = document.getElementById('topMarketStatusPill');
         const statusText = document.getElementById('marketStatusText');
         if (pill && statusText) {
           if (isMarketOpen) {
             pill.className = "inst-market-pill open";
-            statusText.textContent = "NSE LIVE";
+            statusText.textContent = api && api.isSpecialSession ? "NSE SPECIAL LIVE" : "NSE LIVE";
+          } else if (api && api.isHoliday) {
+            pill.className = "inst-market-pill closed";
+            statusText.textContent = api.holidayName ? `HOLIDAY • ${api.holidayName.toUpperCase()}` : "MARKET HOLIDAY";
           } else {
             pill.className = "inst-market-pill closed";
-            statusText.textContent = "MARKET CLOSED";
+            statusText.textContent = (api && api.statusCode === "PRE_OPEN") ? "PRE-OPEN (09:15 IST)" : "MARKET CLOSED";
           }
         }
       }

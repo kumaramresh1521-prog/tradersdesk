@@ -2722,13 +2722,9 @@
       // Pause if browser tab is hidden/minimized
       if (document.hidden) return;
 
-      // Check Indian market hours (Mon-Fri 09:15 to 15:40 IST)
-      const now = new Date();
-      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-      const ist = new Date(utc + 3600000 * 5.5);
-      const day = ist.getDay();
-      const mins = ist.getHours() * 60 + ist.getMinutes();
-      const isMarketOpen = (day >= 1 && day <= 5) && (mins >= 555 && mins <= 940);
+      const mktApi = window.__nseMarketStatusCache && window.__nseMarketStatusCache.data;
+      const isMarketOpen = mktApi ? Boolean(mktApi.isOpen) : Boolean(state.dashboardData && state.dashboardData.isLive);
+      const closedLbl = (mktApi && mktApi.statusCode) || (state.dashboardData && state.dashboardData.sessionMode) || 'EOD';
       const cycleSec = isMarketOpen ? seconds : Math.max(30, seconds * 5);
 
       state.countdownSec -= 1;
@@ -2742,7 +2738,7 @@
           setTimeout(() => badge.classList.remove('tick-flash-up'), 800);
         }
       }
-      if (cdText) cdText.textContent = isMarketOpen ? (state.countdownSec + 's') : (`EOD (${state.countdownSec}s)`);
+      if (cdText) cdText.textContent = isMarketOpen ? (state.countdownSec + 's') : (`${closedLbl} (${state.countdownSec}s)`);
     }, 1000);
   }
 
@@ -3148,7 +3144,9 @@
   function renderFutIntradayDateOptions(dates) {
     const sel = document.getElementById('futIntradayDateSel');
     if (!sel) return;
-    sel.innerHTML = '<option value="">Today (Live)</option>' +
+    const isLive = Boolean(futIntraState.data && futIntraState.data.isLive);
+    const defaultLbl = isLive ? 'Today (Live)' : 'Latest Trading Session (Auto)';
+    sel.innerHTML = `<option value="">${defaultLbl}</option>` +
       (dates || []).slice(0, 30).map(d =>
         `<option value="${d.date}">${d.label}</option>`
       ).join('');
@@ -3184,6 +3182,7 @@
       renderFutIntradayTable(d.bars, d.lot);
 
       const isLive = d.isLive;
+      const isHolOrPre = (d.marketStatus === 'HOLIDAY' || d.marketStatus === 'PRE_OPEN' || d.marketStatus === 'WEEKEND');
       const liveBadge = document.getElementById('futIntradayLiveBadge');
       if (liveBadge) {
         liveBadge.style.display = 'inline-flex';
@@ -3192,6 +3191,11 @@
           liveBadge.style.background = 'rgba(16, 185, 129, 0.15)';
           liveBadge.style.color = '#10b981';
           liveBadge.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+        } else if (isHolOrPre) {
+          liveBadge.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-right:6px;"></span> ${escapePvoHtml(d.marketStatusText || d.marketStatus)}`;
+          liveBadge.style.background = 'rgba(245, 158, 11, 0.14)';
+          liveBadge.style.color = '#f59e0b';
+          liveBadge.style.border = '1px solid rgba(245, 158, 11, 0.35)';
         } else {
           liveBadge.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#94a3b8;margin-right:6px;"></span> ${escapePvoHtml(d.marketStatusText || 'CLOSED (EOD)')}`;
           liveBadge.style.background = 'rgba(148, 163, 184, 0.12)';
@@ -3199,7 +3203,12 @@
           liveBadge.style.border = '1px solid rgba(148, 163, 184, 0.25)';
         }
       }
-      if (helpEl) helpEl.textContent = `${d.bars ? d.bars.length : 0} bars · ${d.dateDisplay || ''} · Timing: 09:15 - 15:40 IST · Status: ${d.marketStatusText || (isLive ? 'LIVE' : 'CLOSED')}`;
+      if (helpEl) {
+        const barCnt = d.bars ? d.bars.length : 0;
+        helpEl.textContent = barCnt === 0
+          ? `No session bars for ${d.dateDisplay || ''} · Status: ${d.marketStatusText || 'CLOSED'}`
+          : `${barCnt} bars · Session: ${d.dateDisplay || ''} · Status: ${d.marketStatusText || (isLive ? 'LIVE' : 'CLOSED')}`;
+      }
     } catch (e) {
       console.error('FutIntraday fetch error:', e);
       if (helpEl) helpEl.textContent = `Error: ${e.message}`;
@@ -3456,11 +3465,17 @@
     const liveBadge = document.getElementById('pvoLiveStatus');
     if (liveBadge) {
       const isLive = (data.mode === 'live' && data.isLive);
+      const isHolOrPre = (data.marketStatus === 'HOLIDAY' || data.marketStatus === 'PRE_OPEN' || data.marketStatus === 'WEEKEND');
       if (isLive) {
         liveBadge.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:5px;box-shadow:0 0 8px #10b981;"></span> ${escapePvoHtml(data.marketStatusText || 'LIVE')}`;
         liveBadge.style.background = 'rgba(16, 185, 129, 0.15)';
         liveBadge.style.color = '#10b981';
         liveBadge.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+      } else if (data.mode === 'live' && isHolOrPre) {
+        liveBadge.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-right:5px;"></span> ${escapePvoHtml(data.marketStatusText || data.marketStatus)}`;
+        liveBadge.style.background = 'rgba(245, 158, 11, 0.14)';
+        liveBadge.style.color = '#f59e0b';
+        liveBadge.style.border = '1px solid rgba(245, 158, 11, 0.35)';
       } else {
         liveBadge.innerHTML = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#94a3b8;margin-right:5px;"></span> ${data.mode === 'live' ? escapePvoHtml(data.marketStatusText || 'CLOSED (EOD)') : 'HISTORICAL EOD'}`;
         liveBadge.style.background = 'rgba(148, 163, 184, 0.12)';

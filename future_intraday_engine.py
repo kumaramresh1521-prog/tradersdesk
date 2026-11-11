@@ -166,43 +166,89 @@ def get_market_session_state(target_date_str: Optional[str] = None) -> dict:
       - market_status: 'LIVE', 'CLOSED', or 'PRE_OPEN'.
       - market_status_text: badge string for UI.
     """
-    now_utc = datetime.datetime.now(datetime.timezone.utc)
-    now_ist = now_utc + datetime.timedelta(hours=5, minutes=30)
+    import market_calendar
+    now_ist = market_calendar.now_ist()
     today_ist_str = now_ist.strftime("%Y%m%d")
+    mkt_sum = market_calendar.get_market_status_summary(now_dt=now_ist)
+    last_td_str = mkt_sum["lastTradingDateYmd"]
+    has_opened_today = market_calendar.has_market_opened_on_date(now_dt=now_ist)
 
-    target_clean = target_date_str.replace("-", "").strip() if target_date_str else today_ist_str
-    is_requested_today = (target_clean == today_ist_str)
+    requested_clean = target_date_str.replace("-", "").strip() if target_date_str else ""
+    is_holiday_blocked = False
 
-    is_weekday = (now_ist.weekday() < 5)
+    if not requested_clean or requested_clean.lower() in ("today", "latest", "auto") or requested_clean == today_ist_str:
+        # On holidays, weekends, or pre-open (<09:15 IST), roll back automatically to last active trading session
+        effective_date = today_ist_str if has_opened_today else last_td_str
+        is_requested_today = (effective_date == today_ist_str)
+    else:
+        effective_date = requested_clean
+        is_requested_today = (effective_date == today_ist_str)
+        try:
+            req_d = datetime.datetime.strptime(effective_date, "%Y%m%d").date()
+            if not market_calendar.is_trading_day(req_d) or req_d > now_ist.date() or (req_d == now_ist.date() and not has_opened_today):
+                is_holiday_blocked = True
+        except Exception:
+            pass
+
+    target_clean = effective_date
     hm_minutes = now_ist.hour * 60 + now_ist.minute
     open_minutes = 9 * 60 + 15       # 09:15 IST
-    close_minutes = 15 * 60 + 40     # 15:40 IST (385 minutes total)
 
-    if is_requested_today and is_weekday and (open_minutes <= hm_minutes <= close_minutes):
+    if is_requested_today and mkt_sum["isOpen"]:
         is_live = True
-        elapsed_minutes = hm_minutes - open_minutes
+        elapsed_minutes = max(1, hm_minutes - open_minutes)
         market_status = "LIVE"
-        market_status_text = f"LIVE ({now_ist.strftime('%H:%M')} IST)"
-    elif is_requested_today and is_weekday and (hm_minutes < open_minutes):
+        market_status_text = mkt_sum["statusText"]
+    elif not is_holiday_blocked and effective_date != today_ist_str and (not requested_clean or requested_clean == today_ist_str):
+        eff_disp = datetime.datetime.strptime(effective_date, "%Y%m%d").strftime("%d-%b-%Y")
+        is_live = False
+        elapsed_minutes = 385
+        market_status = mkt_sum["statusCode"]
+        market_status_text = f"{mkt_sum['statusText']} • Showing {eff_disp}"
+    elif is_holiday_blocked:
         is_live = False
         elapsed_minutes = 0
-        market_status = "PRE_OPEN"
-        market_status_text = "PRE-OPEN (Opens 09:15 IST)"
+        try:
+            req_d = datetime.datetime.strptime(effective_date, "%Y%m%d").date()
+            hol = market_calendar.get_holiday_info(req_d)
+            if hol:
+                market_status = "HOLIDAY"
+                market_status_text = f"MARKET HOLIDAY • {hol.get('description', 'Exchange Closed')}"
+            elif req_d.weekday() >= 5:
+                market_status = "WEEKEND"
+                market_status_text = f"WEEKEND CLOSED • {req_d.strftime('%A')}"
+            elif req_d == now_ist.date():
+                market_status = "PRE_OPEN"
+                market_status_text = mkt_sum["statusText"]
+            else:
+                market_status = "CLOSED"
+                market_status_text = "FUTURE DATE • Market Not Opened"
+        except Exception:
+            market_status = "CLOSED"
+            market_status_text = "MARKET CLOSED"
     else:
         is_live = False
         elapsed_minutes = 385  # Full completed trading session (15:40 IST)
-        market_status = "CLOSED"
-        market_status_text = "CLOSED (EOD 15:40 IST)"
+        if effective_date == today_ist_str:
+            market_status = mkt_sum["statusCode"]
+            market_status_text = mkt_sum["statusText"]
+        else:
+            market_status = "CLOSED"
+            market_status_text = "CLOSED (EOD 15:40 IST)"
 
     return {
         "now_ist": now_ist,
         "today_str": today_ist_str,
         "target_date": target_clean,
+        "effective_date": effective_date,
         "is_requested_today": is_requested_today,
+        "is_holiday_blocked": is_holiday_blocked,
+        "has_opened_today": has_opened_today,
         "is_live": is_live,
         "elapsed_minutes": elapsed_minutes,
         "market_status": market_status,
         "market_status_text": market_status_text,
+        "market_hours": mkt_sum["marketHours"],
         "time_str": now_ist.strftime("%H:%M:%S")
     }
 
@@ -399,9 +445,14 @@ def _record_live_intraday_oi(symbol: str, target_date: str, interval: int, time_
     except Exception:
         pass
 
-def _fetch_yahoo_intraday_candles(yf_symbol: str, interval_str: str = "5m", range_str: str = "1d") -> List[list]:
-    """Fetches authentic intraday candles from Yahoo Finance up to 15:40 IST with 30s TTL cache."""
-    cache_k = f"{yf_symbol}_{interval_str}_{range_str}"
+def _fetch_yahoo_intraday_candles(
+    yf_symbol: str,
+    interval_str: str = "5m",
+    range_str: str = "1d",
+    target_date_ymd: Optional[str] = None,
+) -> List[list]:
+    """Fetches authentic intraday candles from Yahoo Finance strictly for target_date_ymd up to 15:40 IST."""
+    cache_k = f"{yf_symbol}_{interval_str}_{range_str}_{target_date_ymd or 'all'}"
     now = time.time()
     if cache_k in _YF_CANDLE_CACHE:
         c_entry = _YF_CANDLE_CACHE[cache_k]
@@ -427,6 +478,9 @@ def _fetch_yahoo_intraday_candles(yf_symbol: str, interval_str: str = "5m", rang
                 if closes[i] is not None:
                     t_epoch = timestamps[i]
                     t_ist = datetime.datetime.fromtimestamp(t_epoch, tz=datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
+                    c_ymd = t_ist.strftime("%Y%m%d")
+                    if target_date_ymd and c_ymd != target_date_ymd:
+                        continue
                     time_str = t_ist.strftime("%H:%M")
                     # F&O Market hours: 09:15 to 15:30 IST
                     if "09:15" <= time_str <= "15:40":
@@ -876,19 +930,48 @@ def compute_future_intraday_analytics(
     price_chg_pct = round((price_chg / prev_cls * 100.0), 2) if prev_cls else 0.0
     day_oi_chg_pct = round((day_oi_chg / (start_oi or 1)) * 100.0, 2) if start_oi else 0.0
 
-    # 3. Fetch authentic Exchange NFO Futures & Spot candles for today
+    # 3. Resolve effective active session date & fetch authentic Exchange NFO Futures & Spot candles
+    import market_calendar
+    eff_target_date = target_clean if "target_clean" in locals() else target_date
+    try:
+        req_d_obj = datetime.datetime.strptime(target_date, "%Y%m%d").date()
+        now_ist_dt = session["now_ist"]
+        is_req_holiday = not market_calendar.is_trading_day(req_d_obj)
+        is_req_unopened_today = (target_date == session["today_str"] and not market_calendar.has_market_opened_on_date(now_ist_dt))
+        is_req_future = req_d_obj > now_ist_dt.date()
+    except Exception:
+        is_req_holiday = False
+        is_req_unopened_today = False
+        is_req_future = False
+
+    explicit_req = bool(date_str and str(date_str).strip() and str(date_str).strip().lower() not in ("today", "latest", "auto"))
+    if (is_req_holiday or is_req_unopened_today or is_req_future) and not explicit_req:
+        target_date = market_calendar.get_last_trading_date(now_dt=session["now_ist"]).strftime("%Y%m%d")
+        is_today = False
+        is_live = False
+        is_req_holiday = False
+        is_req_unopened_today = False
+        is_req_future = False
+
     real_yf = []
     real_fut = []
     real_spot = []
-    if is_today:
+    if is_req_holiday or is_req_unopened_today or is_req_future:
+        bars = []
+    else:
         real_fut = _fetch_angel_nfo_candles(sym, interval=interval, date_str=target_date)
         if idx_meta.get("yf"):
             interval_str = f"{interval}m" if interval in (1, 5, 15, 30) else "5m"
-            real_spot = _fetch_yahoo_intraday_candles(idx_meta["yf"], interval_str=interval_str, range_str="1d")
+            real_spot = _fetch_yahoo_intraday_candles(
+                idx_meta["yf"],
+                interval_str=interval_str,
+                range_str=("1d" if is_today else "5d"),
+                target_date_ymd=target_date,
+            )
             real_yf = real_spot  # Fallback
 
-        # Record live OI snapshot during trading session
-        if fut_q and fut_q.get("oi"):
+        # Record live OI snapshot ONLY when live trading session is genuinely active
+        if is_live and fut_q and fut_q.get("oi"):
             try:
                 now_ist = session["now_ist"]
                 c_min = now_ist.minute
@@ -899,27 +982,27 @@ def compute_future_intraday_analytics(
             except Exception:
                 pass
 
-    # 4. Generate Intraday Timeline strictly clamped to elapsed session time
-    bars = _generate_intraday_bars(
-        symbol=sym,
-        target_date=target_date,
-        open_px=open_px,
-        high_px=high_px,
-        low_px=low_px,
-        current_px=ltp,
-        prev_close=prev_cls,
-        tot_vol=tot_vol,
-        start_oi=start_oi,
-        current_oi=current_oi,
-        spot_px=spot_px,
-        basis_base=basis_base,
-        interval_minutes=interval,
-        elapsed_minutes=session["elapsed_minutes"],
-        is_live=is_live,
-        real_yf_candles=real_yf,
-        real_fut_candles=real_fut,
-        real_spot_candles=real_spot
-    )
+        # 4. Generate Intraday Timeline strictly clamped to elapsed session time
+        bars = _generate_intraday_bars(
+            symbol=sym,
+            target_date=target_date,
+            open_px=open_px,
+            high_px=high_px,
+            low_px=low_px,
+            current_px=ltp,
+            prev_close=prev_cls,
+            tot_vol=tot_vol,
+            start_oi=start_oi,
+            current_oi=current_oi,
+            spot_px=spot_px,
+            basis_base=basis_base,
+            interval_minutes=interval,
+            elapsed_minutes=session["elapsed_minutes"],
+            is_live=is_live,
+            real_yf_candles=real_yf,
+            real_fut_candles=real_fut,
+            real_spot_candles=real_spot
+        )
 
     # 5. Dominant Regime
     if price_chg >= 0 and day_oi_chg >= 0:
@@ -971,13 +1054,15 @@ def compute_future_intraday_analytics(
         "dominantColor": dominant_color
     }
 
-    # Available Dates from Bhavcopy files
+    # Available Dates from Bhavcopy files (exclude market holidays / weekends)
     avail_dates = []
     if FO_BHAV_DIR.exists():
         for p in sorted(FO_BHAV_DIR.glob("BhavCopy_NSE_FO_*.csv"), reverse=True)[:30]:
             raw_d = p.stem.replace("BhavCopy_NSE_FO_", "")
             try:
                 dt_obj = datetime.datetime.strptime(raw_d, "%Y%m%d")
+                if not market_calendar.is_trading_day(dt_obj.date(), allow_network=False):
+                    continue
                 label = dt_obj.strftime("%d-%b-%Y (%a)")
                 avail_dates.append({"date": raw_d, "label": label})
             except Exception:

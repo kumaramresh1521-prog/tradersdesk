@@ -925,23 +925,28 @@ def _record_and_get_intraday_timeline(ikey: str, target_expiry: str, spot: float
     """
     global _INTRADAY_TIMELINE
     from pathlib import Path
-    now = now_ist()
-    today_str = now.strftime("%Y-%m-%d")
-    cache_file = Path("cache") / f"options_timeline_{today_str}.json"
+    import market_calendar
+    now = market_calendar.now_ist()
+    mkt_sum = market_calendar.get_market_status_summary(now_dt=now)
+    has_opened = market_calendar.has_market_opened_on_date(now)
+    session_date_str = mkt_sum["todayDate"] if has_opened else mkt_sum["lastTradingDate"]
+    cache_file = Path("cache") / f"options_timeline_{session_date_str}.json"
 
-    if not _INTRADAY_TIMELINE and cache_file.exists():
+    if (not _INTRADAY_TIMELINE or _INTRADAY_TIMELINE.get("_sessionDate") != session_date_str) and cache_file.exists():
         try:
-            _INTRADAY_TIMELINE = json.loads(cache_file.read_text(encoding="utf-8"))
+            loaded = json.loads(cache_file.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                loaded["_sessionDate"] = session_date_str
+                _INTRADAY_TIMELINE = loaded
         except Exception:
             _INTRADAY_TIMELINE = {}
 
-    timeline_key = f"{ikey}|{target_expiry}"
+    timeline_key = f"{ikey}|{target_expiry}|{session_date_str}"
     pts = _INTRADAY_TIMELINE.get(timeline_key, [])
 
-    is_weekday = now.weekday() < 5
     cur_m = now.hour * 60 + now.minute
     start_m = 9 * 60 + 15
-    market_open = is_weekday and (start_m <= cur_m <= (15 * 60 + 30))
+    market_open = bool(mkt_sum["isOpen"])
 
     if market_open:
         end_m = min(15 * 60 + 30, max(start_m + 5, cur_m))

@@ -1664,11 +1664,11 @@
 
       <div class="inst-market-clock-wrap" id="topMarketClockWrap">
 
-        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE Regular Trading Session">
+        <div class="inst-market-pill closed" id="topMarketStatusPill" title="NSE / BSE Trading Session Status">
 
           <span class="market-dot" id="marketDot"></span>
 
-          <span id="marketStatusText">NSE LIVE</span>
+          <span id="marketStatusText">CHECKING...</span>
 
         </div>
 
@@ -2894,9 +2894,29 @@
 
 
 
-    // Live IST Clock
+    // Live IST Clock & Exchange API Market Status
 
     function updateLiveClock() {
+
+      const c = window.__nseMarketStatusCache || (window.__nseMarketStatusCache = { ts: 0, data: null, fetching: false });
+
+      const nowMs = Date.now();
+
+      if (!c.fetching && (nowMs - c.ts) >= 45000) {
+
+        c.fetching = true;
+
+        fetch('/api/market-status?_t=' + nowMs)
+
+          .then(r => r.ok ? r.json() : null)
+
+          .then(d => { if (d && d.ok) { c.data = d; c.ts = Date.now(); } })
+
+          .catch(() => {})
+
+          .finally(() => { c.fetching = false; });
+
+      }
 
       const now = new Date();
 
@@ -2907,6 +2927,36 @@
       if (clockEl) {
 
         clockEl.textContent = now.toLocaleTimeString("en-GB", istOptions) + " IST";
+
+      }
+
+      const api = c.data;
+
+      const pill = document.getElementById("topMarketStatusPill");
+
+      const statusText = document.getElementById("marketStatusText");
+
+      if (pill && statusText && api) {
+
+        if (api.isOpen) {
+
+          pill.className = "inst-market-pill open";
+
+          statusText.textContent = api.isSpecialSession ? "NSE SPECIAL LIVE" : "NSE LIVE";
+
+        } else if (api.isHoliday) {
+
+          pill.className = "inst-market-pill closed";
+
+          statusText.textContent = api.holidayName ? `HOLIDAY • ${api.holidayName.toUpperCase()}` : "MARKET HOLIDAY";
+
+        } else {
+
+          pill.className = "inst-market-pill closed";
+
+          statusText.textContent = api.statusCode === "PRE_OPEN" ? "PRE-OPEN (09:15 IST)" : "MARKET CLOSED";
+
+        }
 
       }
 
@@ -3124,11 +3174,17 @@
 
 
 
-      // 2. Market status badge
+      // 2. Market status badge (preserve authoritative /api/market-status state)
+
+      const apiMkt = window.__nseMarketStatusCache && window.__nseMarketStatusCache.data;
 
       const statusText = document.getElementById("marketStatusText");
 
-      if (statusText && d.market_status) statusText.textContent = d.market_status;
+      const statusPill = document.getElementById("topMarketStatusPill");
+
+      if (statusText && d.market_status && !apiMkt) statusText.textContent = d.market_status;
+
+      if (statusPill && apiMkt) statusPill.className = apiMkt.isOpen ? "inst-market-pill open" : "inst-market-pill closed";
 
 
 

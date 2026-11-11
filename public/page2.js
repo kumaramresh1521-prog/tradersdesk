@@ -4385,6 +4385,17 @@ window.instNavClick = function(ev, deskKey, subview) {
 
 // 4. Live Indian Market Clock & Session Status (09:15 - 15:40 IST)
 function updateLiveClock() {
+  const c = window.__nseMarketStatusCache || (window.__nseMarketStatusCache = { ts: 0, data: null, fetching: false });
+  const nowMs = Date.now();
+  if (!c.fetching && (nowMs - c.ts) >= 45000) {
+    c.fetching = true;
+    fetch('/api/market-status?_t=' + nowMs)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d && d.ok) { c.data = d; c.ts = Date.now(); } })
+      .catch(() => {})
+      .finally(() => { c.fetching = false; });
+  }
+
   const now = new Date();
   const istOptions = { timeZone: "Asia/Kolkata", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" };
   const clockEl = document.getElementById("instLiveClock");
@@ -4392,21 +4403,24 @@ function updateLiveClock() {
     clockEl.textContent = now.toLocaleTimeString("en-GB", istOptions) + " IST";
   }
 
-  // Market hours: Monday to Friday 09:15 - 15:40 IST
-  const istMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() + 330;
-  const day = now.getUTCDay();
-  const isWeekday = day >= 1 && day <= 5;
-  const isMarketHours = isWeekday && istMinutes >= (9 * 60 + 15) && istMinutes <= (15 * 60 + 40);
+  const api = c.data;
+  const isMarketHours = api ? Boolean(api.isOpen) : false;
 
   const pill = document.getElementById("topMarketStatusPill");
   const txt = document.getElementById("marketStatusText");
   if (pill && txt) {
     if (isMarketHours) {
       pill.className = "inst-market-pill open";
-      txt.textContent = "NSE LIVE";
+      txt.textContent = api && api.isSpecialSession ? "NSE SPECIAL LIVE" : "NSE LIVE";
+    } else if (api && api.isHoliday) {
+      pill.className = "inst-market-pill closed";
+      txt.textContent = api.holidayName ? `HOLIDAY • ${api.holidayName.toUpperCase()}` : "MARKET HOLIDAY";
+    } else if (api && api.statusCode === "PRE_OPEN") {
+      pill.className = "inst-market-pill closed";
+      txt.textContent = "PRE-OPEN (09:15 IST)";
     } else {
       pill.className = "inst-market-pill closed";
-      txt.textContent = "NSE CLOSED";
+      txt.textContent = (api && api.isWeekend) ? "NSE CLOSED (WEEKEND)" : "NSE CLOSED";
     }
   }
 }

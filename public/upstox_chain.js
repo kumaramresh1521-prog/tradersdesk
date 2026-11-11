@@ -2236,15 +2236,14 @@
     if (!state.intradayHistory) state.intradayHistory = {};
     let pts = state.intradayHistory[key];
 
-    // Accurate IST time regardless of local/browser timezone
+    // Trust exchange API market status instead of assuming every weekday is a trading day
     const nowUtc = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
-    const istDate = new Date(nowUtc.getTime() + istOffset + nowUtc.getTimezoneOffset() * 60 * 1000);
-    const dayOfWeek = istDate.getDay(); // 0 is Sun, 6 is Sat
-    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+    const istDate = new Date(nowUtc.getTime() + istOffset + nowUtc.getTimezoneOffset() * 60000);
     const curM = istDate.getHours() * 60 + istDate.getMinutes();
     const startM = 9 * 60 + 15;
-    const marketOpen = isWeekday && (curM >= startM && curM <= (15 * 60 + 30));
+    const apiMkt = window.__nseMarketStatusCache && window.__nseMarketStatusCache.data;
+    const marketOpen = apiMkt ? Boolean(apiMkt.isOpen) : Boolean(state.lastData && state.lastData.isLive);
 
     // When market is closed (weekend, holiday, off-hours), always generate full session (09:15 to 15:30)
     const endM = marketOpen ? Math.min(15 * 60 + 30, Math.max(startM + 5, curM)) : (15 * 60 + 30);

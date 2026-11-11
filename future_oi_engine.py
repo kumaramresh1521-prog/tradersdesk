@@ -647,15 +647,15 @@ def compute_future_open_interest_analytics(symbol: str = "NIFTY", range_sessions
 
     # Convert all sessions to uniform dicts
     cleaned_sessions = []
-    from chart_engine import NSE_FIXED_HOLIDAYS, NSE_CALENDAR_HOLIDAYS
-    now_dt = datetime.now()
+    import market_calendar
+    now_dt = market_calendar.now_ist()
     today_str = now_dt.strftime("%Y%m%d")
 
     for s_item in timeline_sessions:
         dt_str = s_item.get("date", "")
         try:
             d_obj = datetime.strptime(dt_str, "%Y%m%d").date()
-            if d_obj.weekday() >= 5 or (d_obj.month, d_obj.day) in NSE_FIXED_HOLIDAYS or d_obj.isoformat() in NSE_CALENDAR_HOLIDAYS:
+            if not market_calendar.is_trading_day(d_obj, allow_network=False):
                 continue
             display_dt = d_obj.strftime("%d-%b-%Y")
         except Exception:

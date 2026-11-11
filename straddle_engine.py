@@ -312,16 +312,15 @@ def get_history_meta() -> dict:
     except Exception:
         pass
 
-    now_dt = datetime.now(INDIA_TZ)
+    import market_calendar
+    now_dt = market_calendar.now_ist()
     today = now_dt.date()
 
     days_back = []
-    d = today
-    if d.weekday() >= 5 or (now_dt.hour < 9 or (now_dt.hour == 9 and now_dt.minute < 15)):
-        d -= timedelta(days=1)
+    d = market_calendar.get_last_trading_date(ref_date=today, now_dt=now_dt, include_today_if_opened=True, allow_network=False)
 
     while len(days_back) < 7:
-        if d.weekday() < 5:
+        if market_calendar.is_trading_day(d, allow_network=False):
             days_back.append(d)
         d -= timedelta(days=1)
 
@@ -394,9 +393,10 @@ def get_time_to_expiry(
 
     trading_days_after = 0
     if target_exp_date > sess_date:
+        import market_calendar
         cur = sess_date + timedelta(days=1)
         while cur <= target_exp_date:
-            if cur.weekday() < 5:
+            if market_calendar.is_trading_day(cur, allow_network=False):
                 trading_days_after += 1
             cur += timedelta(days=1)
 
@@ -431,9 +431,10 @@ def calc_option_leg(
 
     trading_days_after = 0
     if target_exp_date > sess_date:
+        import market_calendar
         cur = sess_date + timedelta(days=1)
         while cur <= target_exp_date:
-            if cur.weekday() < 5:
+            if market_calendar.is_trading_day(cur, allow_network=False):
                 trading_days_after += 1
             cur += timedelta(days=1)
 
@@ -636,12 +637,10 @@ def record_all_indices_straddle_ticks() -> dict[str, Any]:
     Captures live ATM straddle quotes directly for NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX.
     Appends ticks to persistent local cache and syncs with Supabase.
     """
-    now_ist = get_now_ist()
-    if now_ist.weekday() >= 5:
-        return {"recorded": False, "reason": "Weekend"}
-    cur_m = now_ist.hour * 60 + now_ist.minute
-    if cur_m < (9 * 60 + 14) or cur_m > (15 * 60 + 35):
-        return {"recorded": False, "reason": "Market closed"}
+    import market_calendar
+    now_ist = market_calendar.now_ist()
+    if not market_calendar.is_market_open(now_ist):
+        return {"recorded": False, "reason": market_calendar.get_market_status_summary(now_ist)["statusText"]}
 
     results = {}
     today = now_ist.date()

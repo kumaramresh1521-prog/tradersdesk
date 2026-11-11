@@ -52,6 +52,8 @@ logger = logging.getLogger("server")
 
 import uuid
 
+import market_calendar
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from dataclasses import dataclass
@@ -3869,6 +3871,13 @@ def fetch_real_intraday_index_candles(index_key: str, date_value: str, interval_
 
     is_today = (date_value == today_str)
 
+    try:
+        req_d = date.fromisoformat(date_value[:10])
+        if not is_trading_day(req_d) or (is_today and not market_calendar.has_market_opened_on_date(now_dt)):
+            return []
+    except Exception:
+        pass
+
 
 
     # 1. Disk cache check
@@ -5638,6 +5647,38 @@ def resolve_market_session_date(dt_param: Optional[str] = None) -> str:
 
 
 
+
+
+resolve_straddle_session_date = resolve_market_session_date
+
+
+# Unified Exchange API Market Calendar Overrides (Upstox Public Holidays/Timings + NSE API)
+def is_market_holiday(d: date) -> bool:
+    return market_calendar.is_market_holiday(d)
+
+
+def is_trading_day(d: date) -> bool:
+    return market_calendar.is_trading_day(d)
+
+
+def is_market_open() -> bool:
+    return market_calendar.is_market_open()
+
+
+def resolve_market_session_date(dt_param: Optional[str] = None) -> str:
+    clean_dt = (dt_param or "").strip()
+    now_dt = market_calendar.now_ist()
+    today_date = now_dt.date()
+
+    if not clean_dt or clean_dt.lower() in ("today", "latest", "auto"):
+        return market_calendar.get_last_trading_date(ref_date=today_date, now_dt=now_dt, include_today_if_opened=True).isoformat()
+
+    try:
+        parsed = date.fromisoformat(clean_dt[:10])
+        return market_calendar.get_last_trading_date(ref_date=parsed, now_dt=now_dt, include_today_if_opened=True).isoformat()
+    except Exception:
+        pass
+    return clean_dt
 
 
 resolve_straddle_session_date = resolve_market_session_date
@@ -13579,13 +13620,7 @@ def compute_major_indices_delivery(stocks: dict[str, dict], baseline_sessions: l
 
 def fetch_delivery_bhav_by_date(target_dt: date) -> tuple[pathlib.Path | None, date]:
 
-    if target_dt.weekday() >= 5:
-
-        return None, target_dt
-
-    from chart_engine import NSE_FIXED_HOLIDAYS, NSE_CALENDAR_HOLIDAYS
-
-    if (target_dt.month, target_dt.day) in NSE_FIXED_HOLIDAYS or target_dt.isoformat() in NSE_CALENDAR_HOLIDAYS:
+    if not is_trading_day(target_dt):
 
         return None, target_dt
 
@@ -14090,8 +14125,6 @@ def build_delivery_analytics(payload: dict) -> dict:
 
     seen_dates = set()
 
-    from chart_engine import NSE_FIXED_HOLIDAYS, NSE_CALENDAR_HOLIDAYS
-
     for directory in (DELIVERY_CACHE_DIR, ROOT / "data" / "delivery", ROOT / "data", CACHE_DIR / "delivery_bhav"):
 
         if not directory.exists():
@@ -14106,11 +14139,7 @@ def build_delivery_analytics(payload: dict) -> dict:
 
                 s_dt = datetime.strptime(raw_d, "%d%m%Y").date()
 
-                if s_dt.weekday() >= 5:
-
-                    continue
-
-                if (s_dt.month, s_dt.day) in NSE_FIXED_HOLIDAYS or s_dt.isoformat() in NSE_CALENDAR_HOLIDAYS:
+                if not is_trading_day(s_dt):
 
                     continue
 
@@ -20243,6 +20272,8 @@ class RequestHandler(BaseHTTPRequestHandler):
 
             broker_connected = has_active_session
 
+            mkt_sum = market_calendar.get_market_status_summary()
+
             return self.send_json(
 
                 200,
@@ -20287,15 +20318,31 @@ class RequestHandler(BaseHTTPRequestHandler):
 
                     "marketDate": resolve_market_session_date(),
 
-                    "marketOpen": is_market_open(),
+                    "marketOpen": mkt_sum["isOpen"],
 
-                    "isHoliday": is_market_holiday(now_ist().date()),
+                    "isTradingDay": mkt_sum["isTradingDay"],
 
-                    "holidayName": "Mahatma Gandhi Jayanti" if (now_ist().month, now_ist().day) == (10, 2) else "",
+                    "isHoliday": mkt_sum["isHoliday"],
+
+                    "isWeekend": mkt_sum["isWeekend"],
+
+                    "holidayName": mkt_sum["holidayName"],
+
+                    "marketStatus": mkt_sum["statusCode"],
+
+                    "marketStatusText": mkt_sum["statusText"],
+
+                    "lastTradingDate": mkt_sum["lastTradingDate"],
+
+                    "marketHours": mkt_sum["marketHours"],
 
                 },
 
             )
+
+        if path == "/api/market-status":
+
+            return self.send_json(200, market_calendar.get_market_status_summary())
 
         if path == "/api/settings":
 
@@ -25344,8 +25391,8 @@ def start_market_hours_background_poller() -> None:
                     trigger_background_indices_update(date_val)
                     _warm_breadth_contributions_worker()
                 else:
-                    # Auto-capture today's EOD snapshot once market closes (after 15:35 IST on weekdays)
-                    if ist.weekday() < 5 and ist.hour >= 15 and (ist.hour > 15 or ist.minute >= 35):
+                    # Auto-capture today's EOD snapshot once market closes (ONLY on genuine trading days after close)
+                    if is_trading_day(ist.date()) and market_calendar.has_market_opened_on_date(ist) and ist.hour >= 15 and (ist.hour > 15 or ist.minute >= 35):
                         if _LAST_EOD_SNAP_DATE != date_val:
                             import snapshot_engine
                             print(f"[AutoSnapshot] Capturing scheduled EOD snapshot for {date_val} at {ist.strftime('%H:%M:%S IST')}...")

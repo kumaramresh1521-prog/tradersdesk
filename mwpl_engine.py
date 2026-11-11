@@ -380,8 +380,9 @@ def get_mwpl_analysis(force_refresh: bool = False, live_records: list[dict] = No
 
     fallback_prices, fallback_lots = _get_fallback_market_info()
 
-    now_dt = now_ist()
-    is_market_hours = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
+    import market_calendar
+    now_dt = market_calendar.now_ist()
+    is_market_hours = market_calendar.is_market_open(now_dt=now_dt)
 
     live_meta = {}
     if live_records:

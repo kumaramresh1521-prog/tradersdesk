@@ -26506,7 +26506,43 @@ function initInstNavState() {
 
 function startLiveMarketClock() {
 
+  function _refreshMarketStatusFromApi() {
+
+    const c = window.__nseMarketStatusCache || (window.__nseMarketStatusCache = { ts: 0, data: null, fetching: false });
+
+    const nowMs = Date.now();
+
+    if (c.fetching || (nowMs - c.ts) < 45000) return;
+
+    c.fetching = true;
+
+    fetch('/api/market-status?_t=' + nowMs)
+
+      .then(r => r.ok ? r.json() : null)
+
+      .then(d => {
+
+        if (d && d.ok) {
+
+          c.data = d;
+
+          c.ts = Date.now();
+
+        }
+
+      })
+
+      .catch(() => {})
+
+      .finally(() => { c.fetching = false; });
+
+  }
+
+  _refreshMarketStatusFromApi();
+
   function updateClock() {
+
+    _refreshMarketStatusFromApi();
 
     const now = new Date();
 
@@ -26518,8 +26554,6 @@ function startLiveMarketClock() {
 
     const istDate = new Date(utc + istOffset);
 
-
-
     const h = istDate.getHours();
 
     const m = istDate.getMinutes();
@@ -26528,7 +26562,7 @@ function startLiveMarketClock() {
 
     const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} IST`;
 
-
+    const api = window.__nseMarketStatusCache && window.__nseMarketStatusCache.data;
 
     const day = istDate.getDay(); // 0 is Sunday, 6 is Saturday
 
@@ -26536,11 +26570,9 @@ function startLiveMarketClock() {
 
     const currentMinutes = h * 60 + m;
 
-    // Market regular hours: 09:15 to 15:30 IST (555 to 930 mins)
+    // Trust real exchange API status; never show NSE LIVE without API confirmation on holidays/off-hours
 
-    const isMarketOpen = isWeekday && currentMinutes >= 555 && currentMinutes < 940;
-
-
+    const isMarketOpen = api ? Boolean(api.isOpen) : false;
 
     const elClock = document.getElementById("instLiveClock");
 
@@ -26550,8 +26582,6 @@ function startLiveMarketClock() {
 
     if (heroClock) heroClock.textContent = timeStr;
 
-
-
     const pill = document.getElementById("topMarketStatusPill");
 
     const statusText = document.getElementById("marketStatusText");
@@ -26560,31 +26590,53 @@ function startLiveMarketClock() {
 
     const sessionText = document.getElementById("dashSessionText");
 
-
-
     if (isMarketOpen) {
 
       if (pill) pill.className = "inst-market-pill open";
 
-      if (statusText) statusText.textContent = "NSE LIVE";
+      if (statusText) statusText.textContent = api && api.isSpecialSession ? "NSE SPECIAL LIVE" : "NSE LIVE";
 
       if (sessionBadge) sessionBadge.className = "dash-session-badge live";
 
-      if (sessionText) sessionText.textContent = "NSE Regular Trading Session Active (09:15 - 15:40 IST)";
+      if (sessionText) sessionText.textContent = `NSE Trading Session Active (${(api && api.marketHours) || "09:15 - 15:40 IST"})`;
+
+    } else if (api && api.isHoliday) {
+
+      if (pill) pill.className = "inst-market-pill closed";
+
+      if (statusText) statusText.textContent = api.holidayName ? `HOLIDAY • ${api.holidayName.toUpperCase()}` : "MARKET HOLIDAY";
+
+      if (sessionBadge) sessionBadge.className = "dash-session-badge closed";
+
+      if (sessionText) sessionText.textContent = `Market Holiday (${api.holidayName || "Exchange Closed"}) • Last Session: ${api.lastTradingDateDisplay || ""}`;
+
+    } else if (api && api.statusCode === "PRE_OPEN") {
+
+      if (pill) pill.className = "inst-market-pill closed";
+
+      if (statusText) statusText.textContent = "PRE-OPEN (09:15 IST)";
+
+      if (sessionBadge) sessionBadge.className = "dash-session-badge closed";
+
+      if (sessionText) sessionText.textContent = `Pre-Market • Opens 09:15 IST (Showing ${api.lastTradingDateDisplay || "Last EOD"})`;
 
     } else {
 
       if (pill) pill.className = "inst-market-pill closed";
 
-      if (statusText) statusText.textContent = "MARKET CLOSED";
+      if (statusText) statusText.textContent = (api && api.isWeekend) ? "NSE CLOSED (WEEKEND)" : "MARKET CLOSED";
 
       if (sessionBadge) sessionBadge.className = "dash-session-badge closed";
 
       if (sessionText) {
 
-        if (isWeekday && currentMinutes < 555) {
+        if (api && api.lastTradingDateDisplay) {
 
-          sessionText.textContent = "Pre-Market Session Opens at 09:00 IST";
+          sessionText.textContent = `${api.statusText || "Market Closed"} • Last Session: ${api.lastTradingDateDisplay}`;
+
+        } else if (isWeekday && currentMinutes < 555) {
+
+          sessionText.textContent = "Pre-Market Session Opens at 09:15 IST";
 
         } else {
 

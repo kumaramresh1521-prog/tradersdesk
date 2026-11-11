@@ -316,6 +316,8 @@ def compute_live_pvo(symbol: str = "NIFTY", interval: int = 5, force_refresh: bo
         "ok": True,
         "symbol": symbol,
         "mode": "live",
+        "date": res.get("date", ""),
+        "dateDisplay": res.get("dateDisplay", ""),
         "isLive": res.get("isLive", False),
         "marketStatus": res.get("marketStatus", "CLOSED"),
         "marketStatusText": res.get("marketStatusText", "CLOSED (EOD 15:40 IST)"),
@@ -332,15 +334,20 @@ def _compute_stock_intraday_pvo(symbol: str, interval: int = 5) -> Dict[str, Any
     Extracts real live Kotak quotes (LTP, Volume, VWAP, OI) & anchors Day Open OI
     from the near-month contract in the latest Bhavcopy.
     """
+    import market_calendar
     session = future_intraday_engine.get_market_session_state()
-    is_live = session["is_live"]
+    is_live = bool(session["is_live"])
     elapsed_minutes = session["elapsed_minutes"]
-    today_str = session["today_str"]
+    today_str = session.get("target_date") or market_calendar.get_last_trading_date(now_dt=session["now_ist"]).strftime("%Y%m%d")
 
-    # 1. Fetch live quotes from Kotak / Angel
-    quotes = future_intraday_engine._get_live_quotes_map([symbol])
-    fut_q = quotes.get(f"FUT:{symbol}") or quotes.get(symbol) or {}
-    spot_q = quotes.get(f"SPOT:{symbol}") or {}
+    # 1. Fetch live quotes ONLY when market has opened today (never stamp previous ticks as today on holidays/pre-open)
+    if is_live or market_calendar.has_market_opened_on_date(now_dt=session["now_ist"]):
+        quotes = future_intraday_engine._get_live_quotes_map([symbol])
+        fut_q = quotes.get(f"FUT:{symbol}") or quotes.get(symbol) or {}
+        spot_q = quotes.get(f"SPOT:{symbol}") or {}
+    else:
+        fut_q = {}
+        spot_q = {}
 
     # 2. Fetch near-month contract from Bhavcopy for baseline OI & lot size
     bhav = future_intraday_engine._get_near_contract_from_bhavcopy(symbol, today_str)

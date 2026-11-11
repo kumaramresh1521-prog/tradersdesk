@@ -245,6 +245,9 @@ FO_UNIVERSE = [
     {'symbol': 'ANGELONE', 'name': 'Angel One Ltd', 'sector': 'Services', 'lot': 125, 'basePrice': 2780.0, 'mwplBase': 68.0},
 ]
 
+# Unified exchange holiday & market status engine
+import market_calendar
+
 # In-Memory Cache
 _FUTURES_CACHE: Dict[str, Any] = {}
 _CACHE_TTL = 15.0  # seconds (high-speed response under 5ms, perfectly synchronized)
@@ -765,7 +768,7 @@ def _load_latest_bhavcopy_data(force: bool = False) -> tuple[dict[str, dict], st
 
     bhav_map = {}
     bhav_date_str = ""
-    today = datetime.now().date()
+    today = market_calendar.now_ist().date()
     if csvs:
         latest_csv = csvs[0]
         try:
@@ -1210,7 +1213,8 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
     Kotak Securities Neo API and Angel SmartAPI exchange quotes, basis, OI, and buildup,
     with automatic official NSE Bhavcopy EOD seeding when market is closed.
     """
-    now = datetime.now()
+    now = market_calendar.now_ist()
+    mkt_is_open = market_calendar.is_market_open()
     records = []
     live_quotes = get_live_kotak_quotes_map() if allow_network else (_LIVE_QUOTES_CACHE.get("data") or {})
     bhav_map, bhav_date_str = _load_latest_bhavcopy_data()
@@ -1299,7 +1303,7 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
         spot_q = live_quotes.get(f"SPOT:{sym}") or live_quotes.get(sym)
 
         is_live_broker = False
-        if fut_q and fut_q.get("ltp"):
+        if mkt_is_open and fut_q and fut_q.get("ltp") and fut_q.get("source") != "MASTER_EOD":
             is_live_broker = True
             fut_price = float(fut_q["ltp"])
             fut_chg = float(fut_q.get("change") or 0.0)
@@ -1597,21 +1601,32 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
 
     _, bhav_date_str = _load_latest_bhavcopy_data(force=force_refresh)
 
-    now_dt = datetime.now()
-    today_display = now_dt.strftime("%d-%b-%Y")
-    is_market_hours = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
-    is_live = any(r.get("isLiveBroker") for r in records) or is_market_hours
+    now_dt = market_calendar.now_ist()
+    mkt_sum = market_calendar.get_market_status_summary(now_dt=now_dt)
+    today_display = mkt_sum["todayDisplay"]
+    is_live = bool(mkt_sum["isOpen"])
+    has_opened_today = market_calendar.has_market_opened_on_date(now_dt=now_dt)
 
-    # If live broker feed is active or today is a trading day post-market open (09:15), session belongs to TODAY
-    if is_live or (now_dt.hour >= 9 and now_dt.weekday() < 5):
+    # Session belongs to TODAY only if today is an active trading day and session has already opened (09:15 IST / special session).
+    # On holidays, weekends, and pre-open hours, freeze on the last active trading session (Bhavcopy / lastTradingDateDisplay).
+    if has_opened_today:
         as_of_date = today_display
     else:
-        as_of_date = bhav_date_str or today_display
+        as_of_date = bhav_date_str or mkt_sum["lastTradingDateDisplay"]
 
     res = {
         "ok": True,
         "isLive": is_live,
-        "sessionMode": "LIVE" if is_live else "EOD",
+        "sessionMode": mkt_sum["sessionMode"],
+        "marketStatus": mkt_sum["statusCode"],
+        "marketStatusText": mkt_sum["statusText"],
+        "isHoliday": mkt_sum["isHoliday"],
+        "isWeekend": mkt_sum["isWeekend"],
+        "holidayName": mkt_sum["holidayName"],
+        "isTradingDay": mkt_sum["isTradingDay"],
+        "lastTradingDate": mkt_sum["lastTradingDate"],
+        "lastTradingDateDisplay": mkt_sum["lastTradingDateDisplay"],
+        "marketHours": mkt_sum["marketHours"],
         "timestamp": now_dt.strftime("%H:%M:%S"),
         "date": today_display,
         "asOfDate": as_of_date,
@@ -1715,13 +1730,19 @@ def get_futures_buildup(force_refresh: bool = False) -> dict:
     sc = sorted([r for r in stocks if r.get("buildupCode") == "SC"], key=lambda x: x.get("priceChangePct", 0.0), reverse=True)
     lu = sorted([r for r in stocks if r.get("buildupCode") == "LU"], key=lambda x: x.get("priceChangePct", 0.0))
 
-    now_dt = datetime.now()
-    is_live = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
+    now_dt = market_calendar.now_ist()
+    mkt_sum = market_calendar.get_market_status_summary(now_dt=now_dt)
+    is_live = bool(mkt_sum["isOpen"])
 
     return {
         "ok": True,
         "isLive": is_live,
-        "sessionMode": "LIVE" if is_live else "EOD",
+        "sessionMode": mkt_sum["sessionMode"],
+        "marketStatus": mkt_sum["statusCode"],
+        "marketStatusText": mkt_sum["statusText"],
+        "isHoliday": mkt_sum["isHoliday"],
+        "holidayName": mkt_sum["holidayName"],
+        "asOfDate": mkt_sum["todayDisplay"] if market_calendar.has_market_opened_on_date(now_dt) else mkt_sum["lastTradingDateDisplay"],
         "timestamp": now_dt.strftime("%Y-%m-%d %H:%M:%S"),
         "totalCount": len(stocks),
         "longBuildup": lb,
@@ -1799,8 +1820,7 @@ def get_mwpl_data(force_refresh: bool = False) -> dict:
     try:
         import mwpl_engine
         records = _FUTURES_CACHE.get("master")
-        now_dt = datetime.now()
-        is_market_hours = (9 <= now_dt.hour < 15 or (now_dt.hour == 15 and now_dt.minute <= 30)) and now_dt.weekday() < 5
+        is_market_hours = market_calendar.is_market_open()
         if not records and is_market_hours:
             try:
                 records = get_futures_master(force_refresh=False)

@@ -2101,13 +2101,13 @@
       <div class="inst-market-clock-wrap" id="topMarketClockWrap">
 
 
-        <div class="inst-market-pill open" id="topMarketStatusPill" title="NSE Regular Trading Session">
+        <div class="inst-market-pill closed" id="topMarketStatusPill" title="NSE / BSE Trading Session Status">
 
 
           <span class="market-dot" id="marketDot"></span>
 
 
-          <span id="marketStatusText">NSE LIVE</span>
+          <span id="marketStatusText">CHECKING...</span>
 
 
         </div>
@@ -5664,50 +5664,69 @@
         const timeVal = hours * 100 + minutes;
 
 
-        const isWeekend = (day === 0 || day === 6);
+        const c = window.__nseMarketStatusCache || (window.__nseMarketStatusCache = { ts: 0, data: null, fetching: false });
 
+        const nowMs = Date.now();
 
-        const isMarketHours = !isWeekend && (timeVal >= 915 && timeVal <= 1540);
+        if (!c.fetching && (nowMs - c.ts) >= 45000) {
 
+          c.fetching = true;
 
+          fetch('/api/market-status?_t=' + nowMs)
 
+            .then(r => r.ok ? r.json() : null)
 
+            .then(d => { if (d && d.ok) { c.data = d; c.ts = Date.now(); } })
+
+            .catch(() => {})
+
+            .finally(() => { c.fetching = false; });
+
+        }
+
+        const api = c.data;
+
+        const isWeekend = api ? Boolean(api.isWeekend) : (day === 0 || day === 6);
+
+        const isMarketHours = api ? Boolean(api.isOpen) : false;
 
         const pill = document.getElementById("topMarketStatusPill");
 
-
         const statusText = document.getElementById("marketStatusText");
-
 
         const livePulse = document.getElementById("livePulseText");
 
-
-
-
-
         if (isMarketHours) {
-
 
           if (pill) pill.className = "inst-market-pill open";
 
-
-          if (statusText) statusText.textContent = "NSE LIVE";
-
+          if (statusText) statusText.textContent = api && api.isSpecialSession ? "NSE SPECIAL LIVE" : "NSE LIVE";
 
           if (livePulse) livePulse.innerHTML = "🟢 LIVE FEED • Real-time forming candle active";
 
-
-        } else {
-
+        } else if (api && api.isHoliday) {
 
           if (pill) pill.className = "inst-market-pill closed";
 
+          if (statusText) statusText.textContent = api.holidayName ? `HOLIDAY • ${api.holidayName.toUpperCase()}` : "MARKET HOLIDAY";
+
+          if (livePulse) livePulse.innerHTML = `🏛️ MARKET HOLIDAY (${api.holidayName || 'Exchange Closed'}) • Showing Last Session: ${api.lastTradingDateDisplay || ''}`;
+
+        } else if (api && api.statusCode === "PRE_OPEN") {
+
+          if (pill) pill.className = "inst-market-pill closed";
+
+          if (statusText) statusText.textContent = "PRE-OPEN (09:15 IST)";
+
+          if (livePulse) livePulse.innerHTML = `🟡 PRE-OPEN (Opens 09:15 IST) • Last Session: ${api.lastTradingDateDisplay || ''}`;
+
+        } else {
+
+          if (pill) pill.className = "inst-market-pill closed";
 
           if (statusText) statusText.textContent = isWeekend ? "NSE CLOSED (WEEKEND)" : "NSE CLOSED";
 
-
-          if (livePulse) livePulse.innerHTML = isWeekend ? "🔴 MARKET CLOSED • Weekend (Next session: Monday 09:15 IST)" : "🔴 MARKET CLOSED (Trading ended at 15:30 IST)";
-
+          if (livePulse) livePulse.innerHTML = isWeekend ? `🔴 MARKET CLOSED • Weekend (Last session: ${api ? api.lastTradingDateDisplay : ''})` : `🔴 MARKET CLOSED • Showing EOD (${api ? api.lastTradingDateDisplay : ''})`;
 
         }
 
