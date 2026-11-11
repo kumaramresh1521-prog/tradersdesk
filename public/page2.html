@@ -804,9 +804,10 @@
 
       <!-- Controls Strip: Period Switcher + View Switcher + Range Select -->
       <div class="fii-top-controls">
-        <!-- Timeframe Period Switcher (Daily / Monthly / Yearly) -->
+        <!-- Timeframe Period Switcher (Daily / Weekly / Monthly / Yearly) -->
         <div class="fii-period-switcher" id="fiiPeriodGroup">
           <button class="fii-period-btn active" data-period="daily" type="button">FII/DII DAILY</button>
+          <button class="fii-period-btn" data-period="weekly" type="button">FII/DII WEEKLY</button>
           <button class="fii-period-btn" data-period="monthly" type="button">FII/DII MONTHLY</button>
           <button class="fii-period-btn" data-period="yearly" type="button">FII/DII YEARLY</button>
         </div>
@@ -897,7 +898,7 @@
 
       <div class="p2-table-container" style="overflow-x:auto;">
         <table class="p2-table" id="tableFiiDiiData">
-          <thead>
+          <thead id="fiiTableHead">
             <tr>
               <th>Date</th>
               <th style="text-align:right;">NIFTY 50</th>

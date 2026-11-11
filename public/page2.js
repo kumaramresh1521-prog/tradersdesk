@@ -1587,20 +1587,116 @@ if (suiteKey === "callVsPut") {
       }
     }
 
-    // Setup periodic 10-minute auto-sync timer while on this tab
+    // Setup periodic 5-minute auto-sync timer while on this tab
     if (!fiiAutoSyncInterval) {
       fiiAutoSyncInterval = setInterval(() => {
         if (currentSuite === "fiidii") {
           loadFiiDiiSuite(false);
         }
-      }, 10 * 60 * 1000);
+      }, 5 * 60 * 1000);
     }
+  }
+
+  function parsePage2FiiDate(dateStr) {
+    if (!dateStr || typeof dateStr !== "string") return null;
+    const m = dateStr.trim().match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+    if (!m) return null;
+    const months = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+    const mon = months[m[2]];
+    if (mon === undefined) return null;
+    return new Date(Date.UTC(parseInt(m[3], 10), mon, parseInt(m[1], 10)));
+  }
+
+  function fmtPage2FiiDate(dt) {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const d = String(dt.getUTCDate()).padStart(2, "0");
+    return `${d}-${months[dt.getUTCMonth()]}-${dt.getUTCFullYear()}`;
+  }
+
+  function fmtPage2WeekPeriod(monDt, sunDt) {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const d1 = String(monDt.getUTCDate()).padStart(2, "0");
+    const m1 = months[monDt.getUTCMonth()];
+    const d2 = String(sunDt.getUTCDate()).padStart(2, "0");
+    const m2 = months[sunDt.getUTCMonth()];
+    if (m1 === m2) return `${d1}-${d2} ${m1}`;
+    return `${d1} ${m1}-${d2} ${m2}`;
+  }
+
+  function buildPage2WeeklyRollup(dailyRows) {
+    if (!Array.isArray(dailyRows) || !dailyRows.length) return [];
+    const sortedAsc = dailyRows
+      .map(r => ({ row: r, dt: parsePage2FiiDate(r.date) }))
+      .filter(x => x.dt !== null)
+      .sort((a, b) => a.dt - b.dt);
+    const buckets = new Map();
+    for (const item of sortedAsc) {
+      const { row, dt } = item;
+      const dow = (dt.getUTCDay() + 6) % 7; // Monday=0 .. Sunday=6
+      const monDt = new Date(dt.getTime() - dow * 86400000);
+      const sunDt = new Date(monDt.getTime() + 6 * 86400000);
+      const key = fmtPage2FiiDate(monDt);
+      if (!buckets.has(key)) {
+        buckets.set(key, {
+          sortMs: monDt.getTime(),
+          period: fmtPage2WeekPeriod(monDt, sunDt),
+          date: fmtPage2FiiDate(monDt),
+          fiiBuy: 0, fiiSell: 0, fiiNet: 0,
+          diiBuy: 0, diiSell: 0, diiNet: 0,
+          totalNet: 0, sessions: 0,
+          niftyClose: 0, _prevClose: 0, niftyChange: 0, niftyPct: 0
+        });
+      }
+      const b = buckets.get(key);
+      b.date = row.date || b.date;
+      b.fiiBuy += Number(row.fiiBuy || 0);
+      b.fiiSell += Number(row.fiiSell || 0);
+      b.fiiNet += Number(row.fiiNet || 0);
+      b.diiBuy += Number(row.diiBuy || 0);
+      b.diiSell += Number(row.diiSell || 0);
+      b.diiNet += Number(row.diiNet || 0);
+      b.totalNet += Number(row.totalNet ?? row.netTotal ?? ((row.fiiNet || 0) + (row.diiNet || 0)));
+      b.sessions += 1;
+      if (Number(row.niftyClose || 0) > 0) {
+        if (!b._firstSet) {
+          b._prevClose = Number(row.niftyClose) - Number(row.niftyChange || 0);
+          b._firstSet = true;
+        }
+        b.niftyClose = Number(row.niftyClose);
+      }
+    }
+    return Array.from(buckets.values())
+      .sort((a, b) => b.sortMs - a.sortMs)
+      .map(b => {
+        const chg = (b.niftyClose > 0 && b._prevClose > 0) ? +(b.niftyClose - b._prevClose).toFixed(2) : 0;
+        const pct = (b.niftyClose > 0 && b._prevClose > 0) ? +((chg / b._prevClose) * 100).toFixed(2) : 0;
+        return {
+          period: b.period,
+          date: b.date,
+          fiiBuy: +b.fiiBuy.toFixed(2),
+          fiiSell: +b.fiiSell.toFixed(2),
+          fiiNet: +b.fiiNet.toFixed(2),
+          diiBuy: +b.diiBuy.toFixed(2),
+          diiSell: +b.diiSell.toFixed(2),
+          diiNet: +b.diiNet.toFixed(2),
+          totalNet: +b.totalNet.toFixed(2),
+          sessions: b.sessions,
+          niftyClose: +b.niftyClose.toFixed(2),
+          niftyChange: chg,
+          niftyPct: pct
+        };
+      });
   }
 
   function getFiiActiveDataset() {
     if (!fiiDiiData) return [];
     let list = [];
     if (currentFiiPeriod === "daily") list = fiiDiiData.daily || [];
+    else if (currentFiiPeriod === "weekly") {
+      list = (Array.isArray(fiiDiiData.weekly) && fiiDiiData.weekly.length)
+        ? fiiDiiData.weekly
+        : buildPage2WeeklyRollup(fiiDiiData.daily || []);
+    }
     else if (currentFiiPeriod === "monthly") list = fiiDiiData.monthly || [];
     else list = fiiDiiData.yearly || [];
 
@@ -1617,57 +1713,118 @@ if (suiteKey === "callVsPut") {
     updateFiiMetricCards(list);
     renderFiiDiiChart();
     renderFiiDiiTable(list);
+    if (typeof filterFiiTable === "function") {
+      const q = document.getElementById("fiiTableSearch")?.value || "";
+      if (q.trim()) filterFiiTable(q.toLowerCase().trim());
+    }
+  }
+
+  function fmtPage2SignedCr(val) {
+    const num = Number(val || 0);
+    return (num >= 0 ? "+₹" : "-₹") + Math.abs(num).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " Cr";
+  }
+
+  function fmtPage2GrossCr(val, peerVal) {
+    const n = Number(val || 0);
+    const p = Number(peerVal || 0);
+    if (n === 0 && p === 0) return "--";
+    return "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
   }
 
   function updateFiiMetricCards(list) {
     if (!list || list.length === 0) return;
     const latest = list[0];
-    const totalNet = Number(latest.totalNet || 0);
+    const totalNet = Number(latest.totalNet ?? latest.netTotal ?? 0);
     const fiiNet = Number(latest.fiiNet || 0);
     const diiNet = Number(latest.diiNet || 0);
+    const periodTag = latest.period || latest.date || currentFiiPeriod.toUpperCase();
 
     const valTotEl = document.getElementById("fiiValTotal");
     if (valTotEl) {
-      valTotEl.textContent = (totalNet > 0 ? "+₹" : "-₹") + Math.abs(totalNet).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " Cr";
-      valTotEl.className = "metric-value " + (totalNet >= 0 ? "text-green" : "text-red");
+      valTotEl.textContent = fmtPage2SignedCr(totalNet);
+      valTotEl.className = "p2-metric-val " + (totalNet >= 0 ? "text-green" : "text-red");
     }
     const badgeTot = document.getElementById("fiiBadgeTotal");
     if (badgeTot) {
       badgeTot.textContent = totalNet >= 0 ? "BULLISH INFLOW" : "BEARISH OUTFLOW";
       badgeTot.className = "p2-badge " + (totalNet >= 0 ? "p2-badge-green" : "p2-badge-red");
     }
+    const subTot = document.getElementById("fiiSubTotal");
+    if (subTot) {
+      const fiiBuy = Number(latest.fiiBuy || 0);
+      const diiBuy = Number(latest.diiBuy || 0);
+      const grossTag = (fiiBuy === 0 && Number(latest.fiiSell || 0) === 0 && diiBuy === 0) ? "Net Rollup" : "Combined Cash Flow";
+      subTot.textContent = `${grossTag} (${currentFiiPeriod.toUpperCase()}: ${periodTag})`;
+    }
 
     const valFiiEl = document.getElementById("fiiValFii");
     if (valFiiEl) {
-      valFiiEl.textContent = (fiiNet > 0 ? "+₹" : "-₹") + Math.abs(fiiNet).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " Cr";
-      valFiiEl.className = "metric-value " + (fiiNet >= 0 ? "text-green" : "text-red");
+      valFiiEl.textContent = fmtPage2SignedCr(fiiNet);
+      valFiiEl.className = "p2-metric-val " + (fiiNet >= 0 ? "text-green" : "text-red");
+    }
+    const badgeFii = document.getElementById("fiiBadgeFii");
+    if (badgeFii) {
+      badgeFii.textContent = fiiNet >= 0 ? "BUYERS" : "SELLERS";
+      badgeFii.className = "p2-badge " + (fiiNet >= 0 ? "p2-badge-green" : "p2-badge-red");
     }
     const buyFii = document.getElementById("fiiBuyVal");
     const sellFii = document.getElementById("fiiSellVal");
-    if (buyFii) buyFii.textContent = "₹" + Number(latest.fiiBuy || 0).toLocaleString("en-IN");
-    if (sellFii) sellFii.textContent = "₹" + Number(latest.fiiSell || 0).toLocaleString("en-IN");
+    if (buyFii) buyFii.textContent = fmtPage2GrossCr(latest.fiiBuy, latest.fiiSell);
+    if (sellFii) sellFii.textContent = fmtPage2GrossCr(latest.fiiSell, latest.fiiBuy);
 
     const valDiiEl = document.getElementById("fiiValDii");
     if (valDiiEl) {
-      valDiiEl.textContent = (diiNet > 0 ? "+₹" : "-₹") + Math.abs(diiNet).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " Cr";
-      valDiiEl.className = "metric-value " + (diiNet >= 0 ? "text-green" : "text-red");
+      valDiiEl.textContent = fmtPage2SignedCr(diiNet);
+      valDiiEl.className = "p2-metric-val " + (diiNet >= 0 ? "text-green" : "text-red");
+    }
+    const badgeDii = document.getElementById("fiiBadgeDii");
+    if (badgeDii) {
+      badgeDii.textContent = diiNet >= 0 ? "BUYERS" : "SELLERS";
+      badgeDii.className = "p2-badge " + (diiNet >= 0 ? "p2-badge-green" : "p2-badge-red");
     }
     const buyDii = document.getElementById("diiBuyVal");
     const sellDii = document.getElementById("diiSellVal");
-    if (buyDii) buyDii.textContent = "₹" + Number(latest.diiBuy || 0).toLocaleString("en-IN");
-    if (sellDii) sellDii.textContent = "₹" + Number(latest.diiSell || 0).toLocaleString("en-IN");
+    if (buyDii) buyDii.textContent = fmtPage2GrossCr(latest.diiBuy, latest.diiSell);
+    if (sellDii) sellDii.textContent = fmtPage2GrossCr(latest.diiSell, latest.diiBuy);
 
     const valNifty = document.getElementById("fiiValNifty");
     const subNifty = document.getElementById("fiiSubNifty");
     const badgeNifty = document.getElementById("fiiBadgeNifty");
-    if (valNifty && latest.niftyClose) valNifty.textContent = Number(latest.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2 });
-    if (subNifty && latest.niftyChange !== undefined) {
-      subNifty.textContent = (latest.niftyChange > 0 ? "+" : "") + latest.niftyChange.toFixed(2) + " pts";
-      subNifty.className = "metric-sub " + (latest.niftyChange >= 0 ? "text-green" : "text-red");
+    if (valNifty) {
+      valNifty.textContent = Number(latest.niftyClose || 0) > 0
+        ? Number(latest.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2 })
+        : "--";
     }
-    if (badgeNifty && latest.niftyPct !== undefined) {
-      badgeNifty.textContent = (latest.niftyPct > 0 ? "+" : "") + latest.niftyPct.toFixed(2) + "%";
-      badgeNifty.className = "p2-badge " + (latest.niftyPct >= 0 ? "p2-badge-green" : "p2-badge-red");
+    if (subNifty) {
+      if (latest.niftyChange !== undefined && Number(latest.niftyClose || 0) > 0) {
+        const chg = Number(latest.niftyChange || 0);
+        subNifty.textContent = (chg > 0 ? "+" : "") + chg.toFixed(2) + " pts Period Change";
+        subNifty.className = "st-sub " + (chg >= 0 ? "text-green" : "text-red");
+      } else {
+        subNifty.textContent = "Index Benchmark";
+        subNifty.className = "st-sub";
+      }
+    }
+    if (badgeNifty) {
+      if (latest.niftyPct !== undefined && Number(latest.niftyClose || 0) > 0) {
+        const pct = Number(latest.niftyPct || 0);
+        badgeNifty.textContent = (pct > 0 ? "+" : "") + pct.toFixed(2) + "%";
+        badgeNifty.className = "p2-badge " + (pct >= 0 ? "p2-badge-green" : "p2-badge-red");
+      } else {
+        badgeNifty.textContent = "--";
+        badgeNifty.className = "p2-badge";
+      }
+    }
+
+    const cardsWrap = document.getElementById("fiiMetricCards");
+    if (cardsWrap && cardsWrap.children.length >= 3) {
+      const [cTot, cFii, cDii] = cardsWrap.children;
+      cTot.style.opacity = currentFiiView === "net" ? "1" : "0.72";
+      cFii.style.opacity = (currentFiiView === "net" || currentFiiView === "fii") ? "1" : "0.65";
+      cDii.style.opacity = (currentFiiView === "net" || currentFiiView === "dii") ? "1" : "0.65";
+      cTot.style.outline = currentFiiView === "net" ? "1px solid rgba(20,184,166,0.45)" : "";
+      cFii.style.outline = currentFiiView === "fii" ? "1px solid rgba(56,189,248,0.65)" : "";
+      cDii.style.outline = currentFiiView === "dii" ? "1px solid rgba(251,146,60,0.65)" : "";
     }
   }
 
@@ -1680,7 +1837,7 @@ if (suiteKey === "callVsPut") {
     const isLightMode = isLight();
     const colors = getThemeColors();
 
-    const labelWidth = 100;
+    const labelWidth = currentFiiPeriod === "weekly" ? 128 : 100;
     const paddingRight = 90;
     const paddingTop = 45;
     const paddingBottom = 40;
@@ -1981,43 +2138,127 @@ if (suiteKey === "callVsPut") {
 
   function renderFiiDiiTable(list) {
     const tbody = document.getElementById("fiiTableBody");
+    const thead = document.getElementById("fiiTableHead");
     if (!tbody) return;
     tbody.innerHTML = "";
 
     const periodLabel = currentFiiPeriod.toUpperCase();
+    const isFiiOnly = currentFiiView === "fii";
+    const isDiiOnly = currentFiiView === "dii";
     const tableTitle = document.getElementById("fiiTableTitle");
-    if (tableTitle) tableTitle.textContent = `FII/FPI & DII Net Buy/Sell Data - ${periodLabel}`;
+    if (tableTitle) {
+      const viewTitle = isFiiOnly ? "FII/FPI Buy/Sell Net" : (isDiiOnly ? "DII Domestic Buy/Sell Net" : "FII/FPI & DII Net Buy/Sell Data");
+      tableTitle.textContent = `${viewTitle} - ${periodLabel}`;
+    }
+
+    const firstColLabel = currentFiiPeriod === "daily" ? "Date" : "Period";
+    if (thead) {
+      if (isFiiOnly) {
+        thead.innerHTML = `<tr>
+          <th>${firstColLabel}</th>
+          <th class="text-right">NIFTY 50</th>
+          <th class="text-right">FII Buy (₹Cr)</th>
+          <th class="text-right">FII Sell (₹Cr)</th>
+          <th class="text-right">FII Net (₹Cr)</th>
+          <th class="text-center">FII Stance</th>
+        </tr>`;
+      } else if (isDiiOnly) {
+        thead.innerHTML = `<tr>
+          <th>${firstColLabel}</th>
+          <th class="text-right">NIFTY 50</th>
+          <th class="text-right">DII Buy (₹Cr)</th>
+          <th class="text-right">DII Sell (₹Cr)</th>
+          <th class="text-right">DII Net (₹Cr)</th>
+          <th class="text-center">DII Stance</th>
+        </tr>`;
+      } else {
+        thead.innerHTML = `<tr>
+          <th>${firstColLabel}</th>
+          <th class="text-right">NIFTY 50</th>
+          <th class="text-right">Combined Net (₹Cr)</th>
+          <th class="text-right">FII Buy (₹Cr)</th>
+          <th class="text-right">FII Sell (₹Cr)</th>
+          <th class="text-right">FII Net (₹Cr)</th>
+          <th class="text-right">DII Buy (₹Cr)</th>
+          <th class="text-right">DII Sell (₹Cr)</th>
+          <th class="text-right">DII Net (₹Cr)</th>
+          <th class="text-center">Market Action</th>
+        </tr>`;
+      }
+    }
+
+    if (!Array.isArray(list) || list.length === 0) {
+      const colSpan = (isFiiOnly || isDiiOnly) ? 6 : 10;
+      tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center" style="padding:20px;opacity:0.7;">No FII/DII ${periodLabel} records available.</td></tr>`;
+      return;
+    }
+
+    const fmtNetCell = (v) => `${v > 0 ? "+" : ""}${v.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
     list.forEach((row, idx) => {
       const tr = document.createElement("tr");
       tr.setAttribute("data-row-idx", idx);
 
-      const tot = Number(row.totalNet || 0);
+      const tot = Number(row.totalNet ?? row.netTotal ?? 0);
       const fii = Number(row.fiiNet || 0);
       const dii = Number(row.diiNet || 0);
-      const niftyClose = row.niftyClose ? Number(row.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2 }) : "--";
-      const niftyPct = row.niftyPct !== undefined ? (row.niftyPct >= 0 ? `+${row.niftyPct}%` : `${row.niftyPct}%`) : "";
+      const hasNifty = Number(row.niftyClose || 0) > 0;
+      const niftyClose = hasNifty ? Number(row.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2 }) : "--";
+      const niftyPct = (hasNifty && row.niftyPct !== undefined)
+        ? (row.niftyPct >= 0 ? `+${row.niftyPct}%` : `${row.niftyPct}%`)
+        : "";
       const niftyClass = (row.niftyPct || 0) >= 0 ? "text-green" : "text-red";
 
       let actionText = "Neutral";
       let actionClass = "divergent";
-      if (fii > 0 && dii > 0) { actionText = "Both Buying"; actionClass = "bullish"; }
-      else if (fii < 0 && dii < 0) { actionText = "Both Selling"; actionClass = "bearish"; }
-      else if (fii < 0 && dii > 0) { actionText = "DII Absorbing"; actionClass = "bullish"; }
-      else if (fii > 0 && dii < 0) { actionText = "FII Dominance"; actionClass = "bullish"; }
+      if (isFiiOnly) {
+        actionText = fii >= 0 ? "FII Buying" : "FII Selling";
+        actionClass = fii >= 0 ? "bullish" : "bearish";
+      } else if (isDiiOnly) {
+        actionText = dii >= 0 ? "DII Buying" : "DII Selling";
+        actionClass = dii >= 0 ? "bullish" : "bearish";
+      } else {
+        if (fii > 0 && dii > 0) { actionText = "Both Buying"; actionClass = "bullish"; }
+        else if (fii < 0 && dii < 0) { actionText = "Both Selling"; actionClass = "bearish"; }
+        else if (fii < 0 && dii > 0) { actionText = "DII Absorbing"; actionClass = "bullish"; }
+        else if (fii > 0 && dii < 0) { actionText = "FII Dominance"; actionClass = "bullish"; }
+      }
 
-      tr.innerHTML = `
-        <td><strong>${row.period || row.date}</strong></td>
-        <td class="text-right"><strong class="${niftyClass}">${niftyClose}</strong> <span style="font-size:10px;" class="${niftyClass}">(${niftyPct})</span></td>
-        <td class="text-right"><strong class="${tot >= 0 ? 'text-green' : 'text-red'}">${tot > 0 ? '+' : ''}${tot.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
-        <td class="text-right">₹${Number(row.fiiBuy || 0).toLocaleString('en-IN')}</td>
-        <td class="text-right">₹${Number(row.fiiSell || 0).toLocaleString('en-IN')}</td>
-        <td class="text-right"><strong class="${fii >= 0 ? 'text-green' : 'text-red'}">${fii > 0 ? '+' : ''}${fii.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
-        <td class="text-right">₹${Number(row.diiBuy || 0).toLocaleString('en-IN')}</td>
-        <td class="text-right">₹${Number(row.diiSell || 0).toLocaleString('en-IN')}</td>
-        <td class="text-right"><strong class="${dii >= 0 ? 'text-green' : 'text-red'}">${dii > 0 ? '+' : ''}${dii.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
-        <td class="text-center"><span class="fii-action-pill ${actionClass}">${actionText}</span></td>
-      `;
+      const periodCell = `<td><strong>${row.period || row.date}</strong></td>`;
+      const niftyCell = `<td class="text-right"><strong class="${hasNifty ? niftyClass : ""}">${niftyClose}</strong>${niftyPct ? ` <span style="font-size:10px;" class="${niftyClass}">(${niftyPct})</span>` : ""}</td>`;
+
+      if (isFiiOnly) {
+        tr.innerHTML = `
+          ${periodCell}
+          ${niftyCell}
+          <td class="text-right">${fmtPage2GrossCr(row.fiiBuy, row.fiiSell)}</td>
+          <td class="text-right">${fmtPage2GrossCr(row.fiiSell, row.fiiBuy)}</td>
+          <td class="text-right"><strong class="${fii >= 0 ? "text-green" : "text-red"}">${fmtNetCell(fii)}</strong></td>
+          <td class="text-center"><span class="fii-action-pill ${actionClass}">${actionText}</span></td>
+        `;
+      } else if (isDiiOnly) {
+        tr.innerHTML = `
+          ${periodCell}
+          ${niftyCell}
+          <td class="text-right">${fmtPage2GrossCr(row.diiBuy, row.diiSell)}</td>
+          <td class="text-right">${fmtPage2GrossCr(row.diiSell, row.diiBuy)}</td>
+          <td class="text-right"><strong class="${dii >= 0 ? "text-green" : "text-red"}">${fmtNetCell(dii)}</strong></td>
+          <td class="text-center"><span class="fii-action-pill ${actionClass}">${actionText}</span></td>
+        `;
+      } else {
+        tr.innerHTML = `
+          ${periodCell}
+          ${niftyCell}
+          <td class="text-right"><strong class="${tot >= 0 ? "text-green" : "text-red"}">${fmtNetCell(tot)}</strong></td>
+          <td class="text-right">${fmtPage2GrossCr(row.fiiBuy, row.fiiSell)}</td>
+          <td class="text-right">${fmtPage2GrossCr(row.fiiSell, row.fiiBuy)}</td>
+          <td class="text-right"><strong class="${fii >= 0 ? "text-green" : "text-red"}">${fmtNetCell(fii)}</strong></td>
+          <td class="text-right">${fmtPage2GrossCr(row.diiBuy, row.diiSell)}</td>
+          <td class="text-right">${fmtPage2GrossCr(row.diiSell, row.diiBuy)}</td>
+          <td class="text-right"><strong class="${dii >= 0 ? "text-green" : "text-red"}">${fmtNetCell(dii)}</strong></td>
+          <td class="text-center"><span class="fii-action-pill ${actionClass}">${actionText}</span></td>
+        `;
+      }
 
       tr.addEventListener("mouseenter", () => {
         fiiHoveredIndex = idx;
@@ -2049,25 +2290,39 @@ if (suiteKey === "callVsPut") {
     });
   }
 
-  function filterFiiTable(query) {
+  function filterFiiTable(query = "") {
+    const q = String(query || "").toLowerCase().trim();
     const rows = document.querySelectorAll("#tableFiiDiiData tbody tr");
     rows.forEach(r => {
       const text = r.textContent.toLowerCase();
-      r.style.display = text.includes(query) ? "" : "none";
+      r.style.display = (!q || text.includes(q)) ? "" : "none";
     });
   }
 
   function exportFiiCsv() {
     if (!fiiChartRows || fiiChartRows.length === 0) return;
-    let csv = "Date,NIFTY 50,NIFTY Pct,Combined Net (Cr),FII Buy (Cr),FII Sell (Cr),FII Net (Cr),DII Buy (Cr),DII Sell (Cr),DII Net (Cr)\n";
-    fiiChartRows.forEach(r => {
-      csv += `"${r.period || r.date}",${r.niftyClose || ''},${r.niftyPct || ''},${r.totalNet || ''},${r.fiiBuy || ''},${r.fiiSell || ''},${r.fiiNet || ''},${r.diiBuy || ''},${r.diiSell || ''},${r.diiNet || ''}\n`;
-    });
+    let csv = "";
+    if (currentFiiView === "fii") {
+      csv = "Period,NIFTY 50,NIFTY Pct,FII Buy (Cr),FII Sell (Cr),FII Net (Cr)\n";
+      fiiChartRows.forEach(r => {
+        csv += `"${r.period || r.date}",${r.niftyClose || ""},${r.niftyPct || ""},${r.fiiBuy || ""},${r.fiiSell || ""},${r.fiiNet || ""}\n`;
+      });
+    } else if (currentFiiView === "dii") {
+      csv = "Period,NIFTY 50,NIFTY Pct,DII Buy (Cr),DII Sell (Cr),DII Net (Cr)\n";
+      fiiChartRows.forEach(r => {
+        csv += `"${r.period || r.date}",${r.niftyClose || ""},${r.niftyPct || ""},${r.diiBuy || ""},${r.diiSell || ""},${r.diiNet || ""}\n`;
+      });
+    } else {
+      csv = "Period,NIFTY 50,NIFTY Pct,Combined Net (Cr),FII Buy (Cr),FII Sell (Cr),FII Net (Cr),DII Buy (Cr),DII Sell (Cr),DII Net (Cr)\n";
+      fiiChartRows.forEach(r => {
+        csv += `"${r.period || r.date}",${r.niftyClose || ""},${r.niftyPct || ""},${r.totalNet ?? r.netTotal ?? ""},${r.fiiBuy || ""},${r.fiiSell || ""},${r.fiiNet || ""},${r.diiBuy || ""},${r.diiSell || ""},${r.diiNet || ""}\n`;
+      });
+    }
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `FII_DII_${currentFiiPeriod.toUpperCase()}_Data_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `FII_DII_${currentFiiPeriod.toUpperCase()}_${currentFiiView.toUpperCase()}_Data_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

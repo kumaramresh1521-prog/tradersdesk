@@ -12661,10 +12661,12 @@ _SMART_MONEY_SYNC_LAST = 0
 def build_smart_money(payload: dict) -> dict:
 
     date_val = payload.get("date")
+    force_cash_refresh = bool(payload.get("refresh") or payload.get("fastRefresh"))
     try:
         import supabase_cache_bridge
         sb_sm = supabase_cache_bridge.get_smart_money_from_supabase(date_val)
         if sb_sm and sb_sm.get("ok") and sb_sm.get("participants"):
+            sb_sm["cashFlow"] = build_fii_dii_cash({"refresh": force_cash_refresh})
             return sb_sm
     except Exception:
         pass
@@ -12720,7 +12722,9 @@ def build_smart_money(payload: dict) -> dict:
             target_str = target_dt.isoformat() if target_dt else resolve_market_session_date("")
             snap = supabase_engine.load_market_daily_snapshot(target_str, columns="smart_money_data")
             if snap and snap.get("smart_money_data") and isinstance(snap["smart_money_data"], dict):
-                return snap["smart_money_data"]
+                sm_snap = dict(snap["smart_money_data"])
+                sm_snap["cashFlow"] = build_fii_dii_cash({"refresh": force_cash_refresh})
+                return sm_snap
         except Exception:
             pass
 
@@ -13108,7 +13112,7 @@ def build_smart_money(payload: dict) -> dict:
 
 
 
-    cash_flow_data = build_fii_dii_cash({})
+    cash_flow_data = build_fii_dii_cash({"refresh": force_cash_refresh})
 
     try:
 

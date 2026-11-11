@@ -3239,8 +3239,9 @@
               <p style="margin:4px 0 0; font-size:12px; color:var(--text-muted);">Daily net buy/sell flow, monthly &amp; yearly trends, and historical cash allocation by Foreign &amp; Domestic Institutional Investors.</p>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span class="sm-eod-badge" style="font-size:11px; padding:4px 10px;">🟢 NSE Official Cash Records</span>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span id="p1FiiLastUpdatedBadge" class="sm-eod-badge" style="font-size:11px; padding:4px 10px;">⏳ Syncing...</span>
+            <button id="p1FiiRefreshBtn" class="ctrl-btn primary" type="button" style="font-size:11.5px; padding:5px 12px; cursor:pointer;">🔄 Refresh Cash Flow</button>
           </div>
         </div>
 
@@ -3320,6 +3321,7 @@
               <div class="fii-controls-left">
                 <div class="fii-period-switcher" id="p1FiiPeriodGroup">
                   <button type="button" class="fii-period-btn active" data-period="daily">DAILY</button>
+                  <button type="button" class="fii-period-btn" data-period="weekly">WEEKLY</button>
                   <button type="button" class="fii-period-btn" data-period="monthly">MONTHLY</button>
                   <button type="button" class="fii-period-btn" data-period="yearly">YEARLY</button>
                 </div>
@@ -3346,34 +3348,34 @@
 
           <!-- 4 Summary KPI Cards Strip -->
           <div class="p1-fii-kpi-row" id="p1FiiKpiRow">
-            <div class="fii-kpi-card">
+            <div class="fii-kpi-card" id="p1FiiCardTotal">
               <div class="fii-kpi-head">
-                <span class="fii-kpi-lbl">TOTAL INSTITUTIONAL NET</span>
+                <span class="fii-kpi-lbl" id="p1FiiLblTotal">TOTAL INSTITUTIONAL NET</span>
                 <span id="p1FiiBadgeTotal" class="fii-kpi-pill bullish">INFLOW</span>
               </div>
               <div id="p1FiiValTotal" class="fii-kpi-val">+₹0.00 Cr</div>
               <div class="fii-kpi-sub" id="p1FiiSubTotal">Combined FII + DII Net</div>
             </div>
 
-            <div class="fii-kpi-card">
+            <div class="fii-kpi-card" id="p1FiiCardFii">
               <div class="fii-kpi-head">
-                <span class="fii-kpi-lbl">FII / FPI CASH NET</span>
+                <span class="fii-kpi-lbl" id="p1FiiLblFii">FII / FPI CASH NET</span>
                 <span id="p1FiiBadgeFii" class="fii-kpi-pill bullish">BUYERS</span>
               </div>
               <div id="p1FiiValFii" class="fii-kpi-val">+₹0.00 Cr</div>
-              <div class="fii-kpi-sub">Buy: <strong id="p1FiiBuyVal">₹0 Cr</strong> · Sell: <strong id="p1FiiSellVal">₹0 Cr</strong></div>
+              <div class="fii-kpi-sub" id="p1FiiSubFii">Buy: <strong id="p1FiiBuyVal">₹0 Cr</strong> · Sell: <strong id="p1FiiSellVal">₹0 Cr</strong></div>
             </div>
 
-            <div class="fii-kpi-card">
+            <div class="fii-kpi-card" id="p1FiiCardDii">
               <div class="fii-kpi-head">
-                <span class="fii-kpi-lbl">DII DOMESTIC CASH NET</span>
+                <span class="fii-kpi-lbl" id="p1FiiLblDii">DII DOMESTIC CASH NET</span>
                 <span id="p1FiiBadgeDii" class="fii-kpi-pill bullish">BUYERS</span>
               </div>
               <div id="p1FiiValDii" class="fii-kpi-val">+₹0.00 Cr</div>
-              <div class="fii-kpi-sub">Buy: <strong id="p1DiiBuyVal">₹0 Cr</strong> · Sell: <strong id="p1DiiSellVal">₹0 Cr</strong></div>
+              <div class="fii-kpi-sub" id="p1FiiSubDii">Buy: <strong id="p1DiiBuyVal">₹0 Cr</strong> · Sell: <strong id="p1DiiSellVal">₹0 Cr</strong></div>
             </div>
 
-            <div class="fii-kpi-card">
+            <div class="fii-kpi-card" id="p1FiiCardNifty">
               <div class="fii-kpi-head">
                 <span class="fii-kpi-lbl">NIFTY 50 BENCHMARK</span>
                 <span id="p1FiiBadgeNifty" class="fii-kpi-pill neutral">SPOT</span>
@@ -3387,17 +3389,17 @@
           <div class="sm-card sm-table-card" style="margin-bottom: 16px; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 14px;">
             <div class="sm-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; margin-bottom: 12px;">
               <div>
-                <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.2px;">FII / FPI &amp; DII Cash Market Daily Net Flow</h4>
-                <span class="matrix-subtitle" style="font-size: 11.5px; color: var(--text-muted);">Official daily turnover figures in ₹ Crores reported by NSE</span>
+                <h4 id="p1FiiTableHeading" style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.2px;">FII / FPI &amp; DII Cash Market Daily Net Flow</h4>
+                <span id="p1FiiTableSubtitle" class="matrix-subtitle" style="font-size: 11.5px; color: var(--text-muted);">Official daily turnover figures in ₹ Crores reported by NSE</span>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="text" id="p1FiiTableSearch" placeholder="🔍 Filter date..." style="padding: 6px 12px; font-size: 11.5px; border-radius: 6px; border: 1px solid var(--border-default); background: var(--input-bg); color: var(--input-text); outline: none;">
+                <input type="text" id="p1FiiTableSearch" placeholder="🔍 Filter date/period..." style="padding: 6px 12px; font-size: 11.5px; border-radius: 6px; border: 1px solid var(--border-default); background: var(--input-bg); color: var(--input-text); outline: none;">
                 <button id="p1FiiExportBtn" class="ctrl-btn" type="button" style="padding: 6px 12px; font-size: 11.5px; cursor: pointer;">📥 Export CSV</button>
               </div>
             </div>
             <div class="wpcr-table-wrap" style="overflow-x: auto; max-height: 420px;">
               <table class="wpcr-data-table sm-table" id="p1FiiCashTable" style="width: 100%; border-collapse: collapse;">
-                <thead>
+                <thead id="p1FiiCashTableHead">
                   <tr>
                     <th style="text-align: left; padding: 8px 10px; background: var(--table-th-bg); color: var(--table-th-text); border-bottom: 1px solid var(--table-border);">Date</th>
                     <th style="text-align: right; padding: 8px 10px; background: var(--table-th-bg); color: var(--table-th-text); border-bottom: 1px solid var(--table-border);">NIFTY 50</th>

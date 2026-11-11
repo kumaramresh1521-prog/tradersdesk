@@ -6844,13 +6844,15 @@ function renderSmartMoneyDashboard(data) {
 
 
 
-  // 3. Render Cash Market Historical Data Table & Interactive Flow Chart
-
-  renderP1FiiCashTable(dailyCash);
+  // 3. Render Cash Market Historical Data Table & Period/View Filters
 
   if (data.cashFlow) {
 
     renderP1FiiCashDashboard(data.cashFlow);
+
+  } else {
+
+    renderP1FiiCashTable(dailyCash);
 
   }
 
@@ -6940,27 +6942,140 @@ function renderSmartMoneyDashboard(data) {
 
 
 
+function _p1HasGrossValues(r, prefix) {
+  if (!r) return false;
+  const b = Number(r[prefix + "Buy"] || 0);
+  const s = Number(r[prefix + "Sell"] || 0);
+  return b > 0 || s > 0;
+}
+
+function buildFiiWeeklyRollupFromDaily(dailyRows) {
+  if (!Array.isArray(dailyRows) || !dailyRows.length) return [];
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const parseCashDt = (s) => {
+    const str = String(s || "").trim();
+    const m = str.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+    if (!m) return null;
+    const mo = monthNames.findIndex(x => x.toLowerCase() === m[2].toLowerCase());
+    if (mo < 0) return null;
+    return new Date(Date.UTC(Number(m[3]), mo, Number(m[1])));
+  };
+  const buckets = new Map();
+  dailyRows.forEach(r => {
+    const dt = parseCashDt(r.date || r.period);
+    if (!dt) return;
+    const dow = (dt.getUTCDay() + 6) % 7; // Mon=0..Sun=6
+    const wkStart = new Date(dt.getTime() - dow * 86400000);
+    const wkKey = wkStart.toISOString().slice(0, 10);
+    if (!buckets.has(wkKey)) buckets.set(wkKey, { wkStart, rows: [] });
+    buckets.get(wkKey).rows.push({ dt, r });
+  });
+  const sorted = Array.from(buckets.values()).sort((a, b) => a.wkStart - b.wkStart);
+  let prevClose = 0;
+  const weekly = sorted.map(b => {
+    b.rows.sort((a, c) => a.dt - c.dt);
+    const first = b.rows[0];
+    const last = b.rows[b.rows.length - 1];
+    const fmtDayMon = (d) => `${String(d.getUTCDate()).padStart(2, "0")} ${monthNames[d.getUTCMonth()]}`;
+    let period = `${fmtDayMon(first.dt)}–${fmtDayMon(last.dt)} ${last.dt.getUTCFullYear()}`;
+    if (first.dt.getTime() === last.dt.getTime()) {
+      period = `${fmtDayMon(last.dt)} ${last.dt.getUTCFullYear()}`;
+    } else if (first.dt.getUTCMonth() === last.dt.getUTCMonth() && first.dt.getUTCFullYear() === last.dt.getUTCFullYear()) {
+      period = `${String(first.dt.getUTCDate()).padStart(2, "0")}–${fmtDayMon(last.dt)} ${last.dt.getUTCFullYear()}`;
+    }
+    const fiiBuy = Number(b.rows.reduce((s, x) => s + Number(x.r.fiiBuy || 0), 0).toFixed(2));
+    const fiiSell = Number(b.rows.reduce((s, x) => s + Number(x.r.fiiSell || 0), 0).toFixed(2));
+    const fiiNet = Number(b.rows.reduce((s, x) => s + Number(x.r.fiiNet || 0), 0).toFixed(2));
+    const diiBuy = Number(b.rows.reduce((s, x) => s + Number(x.r.diiBuy || 0), 0).toFixed(2));
+    const diiSell = Number(b.rows.reduce((s, x) => s + Number(x.r.diiSell || 0), 0).toFixed(2));
+    const diiNet = Number(b.rows.reduce((s, x) => s + Number(x.r.diiNet || 0), 0).toFixed(2));
+    const totalNet = Number((fiiNet + diiNet).toFixed(2));
+    const close = Number(last.r.niftyClose || 0);
+    const baseClose = prevClose > 0 ? prevClose : (Number(first.r.niftyClose || 0) - Number(first.r.niftyChange || 0));
+    const niftyChange = (close > 0 && baseClose > 0) ? Number((close - baseClose).toFixed(2)) : 0;
+    const niftyPct = (close > 0 && baseClose > 0) ? Number(((niftyChange / baseClose) * 100).toFixed(2)) : 0;
+    if (close > 0) prevClose = close;
+    return {
+      period,
+      date: last.r.date || period,
+      sessions: b.rows.length,
+      niftyClose: close,
+      niftyChange,
+      niftyPct,
+      totalNet,
+      fiiNet,
+      diiNet,
+      fiiBuy,
+      fiiSell,
+      diiBuy,
+      diiSell
+    };
+  });
+  return weekly.reverse();
+}
+
 function renderP1FiiCashTable(rows) {
 
   p1FiiCashDataRows = rows || [];
 
-  const tbody = els.p1FiiCashTableBody;
+  const tbody = els.p1FiiCashTableBody || document.getElementById("p1FiiCashTableBody");
+  const thead = document.getElementById("p1FiiCashTableHead");
 
   if (!tbody) return;
 
+  const isFiiView = (p1FiiCurrentView === "fii");
+  const isDiiView = (p1FiiCurrentView === "dii");
+  const colSpanCount = (isFiiView || isDiiView) ? 6 : 9;
+  const periodColLabel = p1FiiCurrentPeriod === "daily" ? "Date" : (p1FiiCurrentPeriod === "weekly" ? "Week" : (p1FiiCurrentPeriod === "monthly" ? "Month" : "Year"));
 
+  if (thead) {
+    const thStyleBase = "padding: 8px 10px; background: var(--table-th-bg); color: var(--table-th-text); border-bottom: 1px solid var(--table-border);";
+    if (isFiiView) {
+      thead.innerHTML = `
+        <tr>
+          <th style="text-align: left; ${thStyleBase}">${periodColLabel}</th>
+          <th style="text-align: right; ${thStyleBase}">NIFTY 50</th>
+          <th style="text-align: right; ${thStyleBase}">FII Buy (₹ Cr)</th>
+          <th style="text-align: right; ${thStyleBase}">FII Sell (₹ Cr)</th>
+          <th style="text-align: right; ${thStyleBase}">FII Net (₹ Cr)</th>
+          <th style="text-align: center; ${thStyleBase}">FII Stance</th>
+        </tr>`;
+    } else if (isDiiView) {
+      thead.innerHTML = `
+        <tr>
+          <th style="text-align: left; ${thStyleBase}">${periodColLabel}</th>
+          <th style="text-align: right; ${thStyleBase}">NIFTY 50</th>
+          <th style="text-align: right; ${thStyleBase}">DII Buy (₹ Cr)</th>
+          <th style="text-align: right; ${thStyleBase}">DII Sell (₹ Cr)</th>
+          <th style="text-align: right; ${thStyleBase}">DII Net (₹ Cr)</th>
+          <th style="text-align: center; ${thStyleBase}">DII Stance</th>
+        </tr>`;
+    } else {
+      thead.innerHTML = `
+        <tr>
+          <th style="text-align: left; ${thStyleBase}">${periodColLabel}</th>
+          <th style="text-align: right; ${thStyleBase}">NIFTY 50</th>
+          <th style="text-align: right; ${thStyleBase}">Combined Net (₹ Cr)</th>
+          <th style="text-align: right; ${thStyleBase}">FII Buy (₹ Cr)</th>
+          <th style="text-align: right; ${thStyleBase}">FII Sell (₹ Cr)</th>
+          <th style="text-align: right; ${thStyleBase}">FII Net (₹ Cr)</th>
+          <th style="text-align: right; ${thStyleBase}">DII Buy (₹ Cr)</th>
+          <th style="text-align: right; ${thStyleBase}">DII Sell (₹ Cr)</th>
+          <th style="text-align: right; ${thStyleBase}">DII Net (₹ Cr)</th>
+        </tr>`;
+    }
+  }
 
   if (!rows || !rows.length) {
 
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">No Cash Market Data Available</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${colSpanCount}" style="text-align:center; padding:20px; color:var(--text-muted);">No Cash Market Data Available</td></tr>`;
 
     return;
 
   }
 
-
-
-  const query = (els.p1FiiTableSearch ? els.p1FiiTableSearch.value : "").trim().toLowerCase();
+  const searchEl = els.p1FiiTableSearch || document.getElementById("p1FiiTableSearch");
+  const query = (searchEl ? searchEl.value : "").trim().toLowerCase();
 
   const filtered = query
 
@@ -6968,17 +7083,13 @@ function renderP1FiiCashTable(rows) {
 
     : rows;
 
-
-
   if (!filtered.length) {
 
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">No matching dates found for "${query}"</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${colSpanCount}" style="text-align:center; padding:20px; color:var(--text-muted);">No matching records found for "${query}"</td></tr>`;
 
     return;
 
   }
-
-
 
   const fmtCr = (n, showSign = false) => {
 
@@ -6992,8 +7103,6 @@ function renderP1FiiCashTable(rows) {
 
   };
 
-
-
   const signStyle = n => {
 
     const num = Number(n) || 0;
@@ -7002,33 +7111,24 @@ function renderP1FiiCashTable(rows) {
 
   };
 
-
-
-  const isFiiView = (p1FiiCurrentView === "fii");
-
-  const isDiiView = (p1FiiCurrentView === "dii");
-
-  const fiiBg = isFiiView ? "background: rgba(56, 189, 248, 0.06);" : "";
-
-  const diiBg = isDiiView ? "background: rgba(16, 185, 129, 0.06);" : "";
-
-  const netBg = (!isFiiView && !isDiiView) ? "background: rgba(99, 102, 241, 0.04);" : "";
-
-
+  const fiiBg = isFiiView ? "background: rgba(56, 189, 248, 0.08);" : "";
+  const diiBg = isDiiView ? "background: rgba(16, 185, 129, 0.08);" : "";
+  const netBg = (!isFiiView && !isDiiView) ? "background: rgba(99, 102, 241, 0.05);" : "";
 
   tbody.innerHTML = filtered.map(r => {
+
+    const labelStr = (p1FiiCurrentPeriod === "daily" ? (r.date || r.period) : (r.period || r.date)) || "--";
+    const sessBadge = (r.sessions && p1FiiCurrentPeriod !== "daily") ? `<span style="font-size:10px; color:var(--text-muted); margin-left:6px; font-weight:600;">(${r.sessions}D)</span>` : "";
 
     const niftyClose = (r.niftyClose && Number(r.niftyClose) > 1000)
 
       ? Number(r.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-      : (r.niftyClose ? String(r.niftyClose) : "--");
-
-
+      : "--";
 
     let niftyChgBadge = "";
 
-    if (r.niftyPct !== undefined && r.niftyPct !== null) {
+    if (r.niftyPct !== undefined && r.niftyPct !== null && niftyClose !== "--") {
 
       const isPos = Number(r.niftyPct) >= 0;
 
@@ -7046,27 +7146,66 @@ function renderP1FiiCashTable(rows) {
 
     }
 
+    const fiiGrossOk = _p1HasGrossValues(r, "fii");
+    const diiGrossOk = _p1HasGrossValues(r, "dii");
+    const fiiBuyCell = fiiGrossOk ? fmtCr(r.fiiBuy) : "--";
+    const fiiSellCell = fiiGrossOk ? fmtCr(r.fiiSell) : "--";
+    const diiBuyCell = diiGrossOk ? fmtCr(r.diiBuy) : "--";
+    const diiSellCell = diiGrossOk ? fmtCr(r.diiSell) : "--";
 
+    if (isFiiView) {
+      const fNet = Number(r.fiiNet || 0);
+      const pill = fNet >= 0
+        ? `<span class="fii-kpi-pill bullish" style="font-size:10px;padding:2px 8px;">BUYERS</span>`
+        : `<span class="fii-kpi-pill bearish" style="font-size:10px;padding:2px 8px;">SELLERS</span>`;
+      return `
+        <tr style="border-bottom: 1px solid var(--table-border);">
+          <td style="font-weight:700; color:var(--text-primary); padding:8px 10px; white-space:nowrap;">${labelStr}${sessBadge}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); white-space:nowrap;">${niftyClose !== "--" ? "₹" + niftyClose : "--"} ${niftyChgBadge}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${fiiBg}">${fiiBuyCell}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${fiiBg}">${fiiSellCell}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.fiiNet)} ${fiiBg}">${fmtCr(r.fiiNet, true)}</td>
+          <td style="text-align:center; padding:8px 10px;">${pill}</td>
+        </tr>
+      `;
+    }
+
+    if (isDiiView) {
+      const dNet = Number(r.diiNet || 0);
+      const pill = dNet >= 0
+        ? `<span class="fii-kpi-pill bullish" style="font-size:10px;padding:2px 8px;">BUYERS</span>`
+        : `<span class="fii-kpi-pill bearish" style="font-size:10px;padding:2px 8px;">SELLERS</span>`;
+      return `
+        <tr style="border-bottom: 1px solid var(--table-border);">
+          <td style="font-weight:700; color:var(--text-primary); padding:8px 10px; white-space:nowrap;">${labelStr}${sessBadge}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); white-space:nowrap;">${niftyClose !== "--" ? "₹" + niftyClose : "--"} ${niftyChgBadge}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${diiBg}">${diiBuyCell}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${diiBg}">${diiSellCell}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.diiNet)} ${diiBg}">${fmtCr(r.diiNet, true)}</td>
+          <td style="text-align:center; padding:8px 10px;">${pill}</td>
+        </tr>
+      `;
+    }
 
     return `
 
       <tr style="border-bottom: 1px solid var(--table-border);">
 
-        <td style="font-weight:700; color:var(--text-primary); padding:8px 10px; white-space:nowrap;">${r.date || r.period}</td>
+        <td style="font-weight:700; color:var(--text-primary); padding:8px 10px; white-space:nowrap;">${labelStr}${sessBadge}</td>
 
         <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); white-space:nowrap;">${niftyClose !== "--" ? "₹" + niftyClose : "--"} ${niftyChgBadge}</td>
 
         <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.totalNet)} ${netBg}">${fmtCr(r.totalNet, true)}</td>
 
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${fiiBg}">${fmtCr(r.fiiBuy)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${fiiBg}">${fiiBuyCell}</td>
 
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${fiiBg}">${fmtCr(r.fiiSell)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${fiiBg}">${fiiSellCell}</td>
 
         <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.fiiNet)} ${fiiBg}">${fmtCr(r.fiiNet, true)}</td>
 
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${diiBg}">${fmtCr(r.diiBuy)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${diiBg}">${diiBuyCell}</td>
 
-        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${diiBg}">${fmtCr(r.diiSell)}</td>
+        <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; color:var(--text-secondary); ${diiBg}">${diiSellCell}</td>
 
         <td style="text-align:right; font-family:'JetBrains Mono', monospace; padding:8px 10px; ${signStyle(r.diiNet)} ${diiBg}">${fmtCr(r.diiNet, true)}</td>
 
@@ -7164,9 +7303,7 @@ function initP1FiiCashChartControls() {
 
   p1FiiChartInitialized = true;
 
-
-
-  // Period Switcher Buttons (Daily / Monthly / Yearly)
+  // Period Switcher Buttons (Daily / Weekly / Monthly / Yearly)
 
   const periodGroup = document.getElementById("p1FiiPeriodGroup");
 
@@ -7179,18 +7316,12 @@ function initP1FiiCashChartControls() {
         periodGroup.querySelectorAll(".fii-period-btn").forEach(b => {
 
           b.classList.remove("active");
-
-          b.style.background = "transparent";
-
-          b.style.color = "var(--text-secondary)";
+          b.style.removeProperty("background");
+          b.style.removeProperty("color");
 
         });
 
         btn.classList.add("active");
-
-        btn.style.background = "#2563eb";
-
-        btn.style.color = "#ffffff";
 
         p1FiiCurrentPeriod = btn.dataset.period || "daily";
 
@@ -7201,8 +7332,6 @@ function initP1FiiCashChartControls() {
     });
 
   }
-
-
 
   // View Switcher Buttons (Net / FII / DII)
 
@@ -7217,30 +7346,22 @@ function initP1FiiCashChartControls() {
         viewGroup.querySelectorAll(".fii-view-btn").forEach(b => {
 
           b.classList.remove("active");
-
-          b.style.background = "transparent";
-
-          b.style.color = "var(--text-secondary)";
+          b.style.removeProperty("background");
+          b.style.removeProperty("color");
 
         });
 
         btn.classList.add("active");
 
-        btn.style.background = "#2563eb";
-
-        btn.style.color = "#ffffff";
-
         p1FiiCurrentView = btn.dataset.view || "net";
 
-        renderP1FiiCashTable(p1FiiChartRows);
+        updateP1FiiChartRows();
 
       });
 
     });
 
   }
-
-
 
   // Range Selector
 
@@ -7258,6 +7379,23 @@ function initP1FiiCashChartControls() {
 
   }
 
+  // Dedicated Refresh Cash Flow Button
+
+  const refreshBtn = document.getElementById("p1FiiRefreshBtn");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => {
+      if (typeof loadFiiDiiCashData === "function") {
+        loadFiiDiiCashData(true);
+      }
+    });
+  }
+
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => initP1FiiCashChartControls());
+} else {
+  initP1FiiCashChartControls();
 }
 
 
@@ -7267,6 +7405,13 @@ function renderP1FiiCashDashboard(cashFlow) {
   initP1FiiCashChartControls();
 
   p1FiiCashFlowData = cashFlow;
+
+  const badge = document.getElementById("p1FiiLastUpdatedBadge");
+  if (badge && cashFlow) {
+    const latestRec = (cashFlow.daily && cashFlow.daily[0] && (cashFlow.daily[0].date || cashFlow.daily[0].period)) || cashFlow.latestRecordDate || "";
+    const updText = cashFlow.lastUpdated || "Latest Sync";
+    badge.textContent = latestRec ? `🟢 NSE ${latestRec} • ${updText}` : `🟢 ${updText}`;
+  }
 
   updateP1FiiChartRows();
 
@@ -7280,7 +7425,13 @@ function updateP1FiiChartRows() {
 
   let rows = [];
 
-  if (p1FiiCurrentPeriod === "monthly" && Array.isArray(p1FiiCashFlowData.monthly)) {
+  if (p1FiiCurrentPeriod === "weekly") {
+
+    rows = (Array.isArray(p1FiiCashFlowData.weekly) && p1FiiCashFlowData.weekly.length)
+      ? p1FiiCashFlowData.weekly
+      : buildFiiWeeklyRollupFromDaily(p1FiiCashFlowData.daily || []);
+
+  } else if (p1FiiCurrentPeriod === "monthly" && Array.isArray(p1FiiCashFlowData.monthly)) {
 
     rows = p1FiiCashFlowData.monthly;
 
@@ -7306,193 +7457,146 @@ function updateP1FiiChartRows() {
 
   } else {
 
-    p1FiiChartRows = rows.slice(0, 100);
+    p1FiiChartRows = rows.slice(0, 120);
 
   }
 
+  // Update Table Title & View Card Focus
+  const headingEl = document.getElementById("p1FiiTableHeading");
+  const subtitleEl = document.getElementById("p1FiiTableSubtitle");
+  const periodWord = p1FiiCurrentPeriod === "weekly" ? "Weekly" : (p1FiiCurrentPeriod === "monthly" ? "Monthly" : (p1FiiCurrentPeriod === "yearly" ? "Yearly" : "Daily"));
+  const viewWord = p1FiiCurrentView === "fii" ? "FII / FPI Cash Market" : (p1FiiCurrentView === "dii" ? "DII Domestic Cash Market" : "FII / FPI & DII Cash Market");
+  if (headingEl) headingEl.textContent = `${viewWord} ${periodWord} Net Flow`;
+  if (subtitleEl) {
+    const latestLabel = (rows[0] && (rows[0].period || rows[0].date)) || "--";
+    subtitleEl.textContent = `Showing ${p1FiiChartRows.length} ${periodWord.toLowerCase()} records (Latest: ${latestLabel}) · Official NSE Figures in ₹ Crores`;
+  }
 
+  const cTot = document.getElementById("p1FiiCardTotal");
+  const cFii = document.getElementById("p1FiiCardFii");
+  const cDii = document.getElementById("p1FiiCardDii");
+  if (cTot && cFii && cDii) {
+    cTot.style.opacity = p1FiiCurrentView === "net" ? "1" : "0.52";
+    cFii.style.opacity = (p1FiiCurrentView === "net" || p1FiiCurrentView === "fii") ? "1" : "0.45";
+    cDii.style.opacity = (p1FiiCurrentView === "net" || p1FiiCurrentView === "dii") ? "1" : "0.45";
+    cFii.style.borderColor = p1FiiCurrentView === "fii" ? "#38bdf8" : "";
+    cDii.style.borderColor = p1FiiCurrentView === "dii" ? "#10b981" : "";
+    cTot.style.borderColor = "";
+  }
 
-  // Update KPI Cards from latest row
+  // Update KPI Cards from latest row of active period
 
   if (rows && rows.length > 0) {
 
     const latest = rows[0];
-
+    const latestPeriodLbl = latest.period || latest.date || "";
     const totNet = Number(latest.totalNet || 0);
-
     const fiiNet = Number(latest.fiiNet || 0);
-
     const diiNet = Number(latest.diiNet || 0);
 
-
-
     const vTot = document.getElementById("p1FiiValTotal");
-
     const bTot = document.getElementById("p1FiiBadgeTotal");
+    const sTot = document.getElementById("p1FiiSubTotal");
 
     if (vTot) {
-
       vTot.textContent = `${totNet >= 0 ? "+" : "-"}₹${Math.abs(totNet).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
-
       vTot.style.color = totNet >= 0 ? "#10b981" : "#ef4444";
-
     }
-
     if (bTot) {
-
       bTot.textContent = totNet >= 0 ? "NET INFLOW" : "NET OUTFLOW";
-
       bTot.style.background = totNet >= 0 ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)";
-
       bTot.style.color = totNet >= 0 ? "#10b981" : "#ef4444";
-
     }
-
-
+    if (sTot) {
+      sTot.textContent = `${periodWord}: ${latestPeriodLbl}`;
+    }
 
     const vFii = document.getElementById("p1FiiValFii");
-
     const bFii = document.getElementById("p1FiiBadgeFii");
-
-    const buyFii = document.getElementById("p1FiiBuyVal");
-
-    const sellFii = document.getElementById("p1FiiSellVal");
+    const sFii = document.getElementById("p1FiiSubFii");
+    const fiiGrossOk = _p1HasGrossValues(latest, "fii");
 
     if (vFii) {
-
       vFii.textContent = `${fiiNet >= 0 ? "+" : "-"}₹${Math.abs(fiiNet).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
-
       vFii.style.color = fiiNet >= 0 ? "#10b981" : "#ef4444";
-
     }
-
     if (bFii) {
-
       bFii.textContent = fiiNet >= 0 ? "BUYERS" : "SELLERS";
-
       bFii.style.background = fiiNet >= 0 ? "rgba(56,189,248,0.15)" : "rgba(239,68,68,0.15)";
-
       bFii.style.color = fiiNet >= 0 ? "#38bdf8" : "#ef4444";
-
     }
-
-    if (buyFii) buyFii.textContent = `₹${Math.round(Number(latest.fiiBuy || 0)).toLocaleString("en-IN")} Cr`;
-
-    if (sellFii) sellFii.textContent = `₹${Math.round(Number(latest.fiiSell || 0)).toLocaleString("en-IN")} Cr`;
-
-
+    if (sFii) {
+      if (fiiGrossOk) {
+        sFii.innerHTML = `Buy: <strong id="p1FiiBuyVal">₹${Math.round(Number(latest.fiiBuy || 0)).toLocaleString("en-IN")} Cr</strong> · Sell: <strong id="p1FiiSellVal">₹${Math.round(Number(latest.fiiSell || 0)).toLocaleString("en-IN")} Cr</strong>`;
+      } else {
+        sFii.textContent = `${periodWord} Net Rollup (${latestPeriodLbl})`;
+      }
+    }
 
     const vDii = document.getElementById("p1FiiValDii");
-
     const bDii = document.getElementById("p1FiiBadgeDii");
-
-    const buyDii = document.getElementById("p1DiiBuyVal");
-
-    const sellDii = document.getElementById("p1DiiSellVal");
+    const sDii = document.getElementById("p1FiiSubDii");
+    const diiGrossOk = _p1HasGrossValues(latest, "dii");
 
     if (vDii) {
-
       vDii.textContent = `${diiNet >= 0 ? "+" : "-"}₹${Math.abs(diiNet).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
-
       vDii.style.color = diiNet >= 0 ? "#10b981" : "#ef4444";
-
     }
-
     if (bDii) {
-
       bDii.textContent = diiNet >= 0 ? "BUYERS" : "SELLERS";
-
       bDii.style.background = diiNet >= 0 ? "rgba(56,189,248,0.15)" : "rgba(239,68,68,0.15)";
-
       bDii.style.color = diiNet >= 0 ? "#38bdf8" : "#ef4444";
-
     }
-
-    if (buyDii) buyDii.textContent = `₹${Math.round(Number(latest.diiBuy || 0)).toLocaleString("en-IN")} Cr`;
-
-    if (sellDii) sellDii.textContent = `₹${Math.round(Number(latest.diiSell || 0)).toLocaleString("en-IN")} Cr`;
-
-
+    if (sDii) {
+      if (diiGrossOk) {
+        sDii.innerHTML = `Buy: <strong id="p1DiiBuyVal">₹${Math.round(Number(latest.diiBuy || 0)).toLocaleString("en-IN")} Cr</strong> · Sell: <strong id="p1DiiSellVal">₹${Math.round(Number(latest.diiSell || 0)).toLocaleString("en-IN")} Cr</strong>`;
+      } else {
+        sDii.textContent = `${periodWord} Net Rollup (${latestPeriodLbl})`;
+      }
+    }
 
     const vNifty = document.getElementById("p1FiiValNifty");
-
     const sNifty = document.getElementById("p1FiiSubNifty");
-
     const bNifty = document.getElementById("p1FiiBadgeNifty");
 
     if (vNifty) {
-
       if (latest.niftyClose && Number(latest.niftyClose) > 1000) {
-
         vNifty.textContent = `₹${Number(latest.niftyClose).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-      } else if (latest.niftyClose) {
-
-        vNifty.textContent = String(latest.niftyClose);
-
       } else {
-
         vNifty.textContent = "--";
-
       }
-
     }
 
     if (sNifty) {
-
-      if (latest.niftyPct !== undefined && latest.niftyPct !== null) {
-
+      if (latest.niftyPct !== undefined && latest.niftyPct !== null && latest.niftyClose && Number(latest.niftyClose) > 1000) {
         const isPos = Number(latest.niftyPct) >= 0;
-
         const ptsStr = (latest.niftyChange !== undefined && latest.niftyChange !== null)
-
           ? `${Number(latest.niftyChange) >= 0 ? '+' : ''}${Number(latest.niftyChange).toFixed(2)} pts `
-
           : "";
-
-        sNifty.textContent = `Session: ${ptsStr}(${isPos ? '+' : ''}${Number(latest.niftyPct).toFixed(2)}%)`;
-
+        sNifty.textContent = `${periodWord}: ${ptsStr}(${isPos ? '+' : ''}${Number(latest.niftyPct).toFixed(2)}%)`;
         sNifty.style.color = isPos ? "#10b981" : "#ef4444";
-
       } else {
-
-        sNifty.textContent = p1FiiCurrentPeriod === "daily" ? "Session Change: --" : "Period Rollup";
-
+        sNifty.textContent = p1FiiCurrentPeriod === "daily" ? "Session Change: --" : `${periodWord} Rollup (${latestPeriodLbl})`;
         sNifty.style.color = "var(--text-muted)";
-
       }
-
     }
 
     if (bNifty) {
-
-      if (latest.niftyPct !== undefined && latest.niftyPct !== null) {
-
+      if (latest.niftyPct !== undefined && latest.niftyPct !== null && latest.niftyClose && Number(latest.niftyClose) > 1000) {
         const isPos = Number(latest.niftyPct) >= 0;
-
         bNifty.textContent = `${isPos ? '+' : ''}${Number(latest.niftyPct).toFixed(2)}%`;
-
         bNifty.style.background = isPos ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)";
-
         bNifty.style.color = isPos ? "#10b981" : "#ef4444";
-
       } else {
-
         bNifty.textContent = "SPOT";
-
         bNifty.style.background = "rgba(148,163,184,0.15)";
-
         bNifty.style.color = "var(--text-muted)";
-
       }
-
     }
 
   }
 
-
-
-  // Update data table with this period
+  // Update data table with this period & view
 
   renderP1FiiCashTable(p1FiiChartRows);
 
@@ -7616,10 +7720,10 @@ function switchP1FiiSubtab(tabKey) {
     stopPoiAutoRefresh();
   }
 
-  // Auto-load Cash data when visiting Cash tab
+  // Auto-load & live-sync Cash data when visiting Cash tab
   if (tabKey === "cash") {
     if (typeof loadFiiDiiCashData === "function") {
-      loadFiiDiiCashData();
+      loadFiiDiiCashData(false);
     }
   }
 
@@ -22134,540 +22238,66 @@ window.addEventListener("resize", () => {
 // ==============================================================================
 
 let fiiDiiCashGlobal = null;
+let _p1FiiCashAutoTimer = null;
+let _p1FiiCashLastFetchTs = 0;
 
-let fiiDiiActivePeriod = "yearly"; // "daily", "monthly", "yearly"
+async function loadFiiDiiCashData(forceRefresh = false) {
+  if (!forceRefresh && fiiDiiCashGlobal && (Date.now() - _p1FiiCashLastFetchTs) < 45000) {
+    renderP1FiiCashDashboard(fiiDiiCashGlobal);
+    return;
+  }
 
-let fiiDiiActiveView = "net";      // "net", "fii", "dii"
-
-
-
-async function loadFiiDiiCashData() {
+  const refreshBtn = document.getElementById("p1FiiRefreshBtn");
+  const badge = document.getElementById("p1FiiLastUpdatedBadge");
+  if (forceRefresh && refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "⏳ Syncing...";
+  }
 
   try {
-
-    const res = await fetch("/api/fii-dii-cash");
-
+    const url = forceRefresh ? "/api/fii-dii-cash?refresh=true" : "/api/fii-dii-cash";
+    const res = await fetch(url);
     if (!res.ok) return;
-
     const data = await res.json();
-
     if (data && data.ok) {
-
       fiiDiiCashGlobal = data;
-
-      renderFiiDiiCashSection();
-
+      _p1FiiCashLastFetchTs = Date.now();
+      if (smartMoneyDataGlobal) {
+        smartMoneyDataGlobal.cashFlow = data;
+      }
+      if (typeof renderP1FiiCashDashboard === "function") {
+        renderP1FiiCashDashboard(data);
+      }
+      // Keep main dashboard FII KPI synced with latest cash flow
+      const dashFii = document.getElementById("dashKpiFii");
+      const latestCash = (data.daily && data.daily[0]) || null;
+      if (dashFii && latestCash && latestCash.fiiNet !== undefined) {
+        const fn = Number(latestCash.fiiNet) || 0;
+        const absVal = Math.abs(fn).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        dashFii.textContent = `₹${fn < 0 ? "-" : "+"}${absVal} Cr`;
+        dashFii.style.color = fn >= 0 ? "var(--green)" : "var(--red)";
+      }
     }
-
   } catch (err) {
-
     console.error("Failed to load FII/DII cash data:", err);
-
+    if (badge) badge.textContent = "⚠️ Sync Error";
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = "🔄 Refresh Cash Flow";
+    }
+    if (!_p1FiiCashAutoTimer) {
+      _p1FiiCashAutoTimer = setInterval(() => {
+        const panelSm = document.getElementById("panelSmartMoney");
+        const cashSub = document.getElementById("p1FiiSubtabCash");
+        if (panelSm && panelSm.classList.contains("active") && cashSub && cashSub.style.display !== "none") {
+          loadFiiDiiCashData(false);
+        }
+      }, 5 * 60 * 1000);
+    }
   }
-
 }
 
-
-
-function renderFiiDiiCashSection() {
-
-  if (!fiiDiiCashGlobal) return;
-
-  let items = fiiDiiCashGlobal[fiiDiiActivePeriod] || [];
-
-
-
-  // Update Top 3 KPI Cards from latest daily item
-
-  const dailyItems = fiiDiiCashGlobal["daily"] || [];
-
-  if (dailyItems.length > 0) {
-
-    const latest = dailyItems[0];
-
-    const kpiFii = document.getElementById("kpiFiiNetVal");
-
-    const kpiDii = document.getElementById("kpiDiiNetVal");
-
-    const kpiTotal = document.getElementById("kpiTotalNetVal");
-
-    const subFii = document.getElementById("kpiFiiBuySellSub");
-
-    const subDii = document.getElementById("kpiDiiBuySellSub");
-
-
-
-    if (kpiFii) {
-
-      kpiFii.textContent = (latest.fiiNet >= 0 ? "+" : "") + latest.fiiNet.toLocaleString("en-IN") + " Cr";
-
-      kpiFii.style.color = latest.fiiNet >= 0 ? "#10b981" : "#ef4444";
-
-    }
-
-    if (kpiDii) {
-
-      kpiDii.textContent = (latest.diiNet >= 0 ? "+" : "") + latest.diiNet.toLocaleString("en-IN") + " Cr";
-
-      kpiDii.style.color = latest.diiNet >= 0 ? "#10b981" : "#ef4444";
-
-    }
-
-    if (kpiTotal) {
-
-      const tot = latest.totalNet !== undefined ? latest.totalNet : (latest.fiiNet + latest.diiNet);
-
-      kpiTotal.textContent = (tot >= 0 ? "+" : "") + tot.toLocaleString("en-IN") + " Cr";
-
-      kpiTotal.style.color = tot >= 0 ? "#10b981" : "#ef4444";
-
-    }
-
-    if (subFii) subFii.textContent = `Buy: ₹${(latest.fiiBuy||0).toLocaleString()} Cr | Sell: ₹${(latest.fiiSell||0).toLocaleString()} Cr`;
-
-    if (subDii) subDii.textContent = `Buy: ₹${(latest.diiBuy||0).toLocaleString()} Cr | Sell: ₹${(latest.diiSell||0).toLocaleString()} Cr`;
-
-  }
-
-
-
-  // Populate Session Select dropdown
-
-  const sessSelect = document.getElementById("fiiDiiSessionSelect");
-
-  if (sessSelect && sessSelect.options.length <= 1) {
-
-    sessSelect.innerHTML = `<option value="all">All Historical Sessions</option>`;
-
-    dailyItems.forEach(item => {
-
-      const opt = document.createElement("option");
-
-      opt.value = item.period || item.date;
-
-      opt.textContent = `${item.period || item.date} (Net: ${item.totalNet >= 0 ? '+' : ''}${item.totalNet} Cr)`;
-
-      sessSelect.appendChild(opt);
-
-    });
-
-  }
-
-
-
-  // Filter items by search input or session select
-
-  const searchInput = document.getElementById("fiiDiiSearchInput");
-
-  const query = (searchInput?.value || "").trim().toLowerCase();
-
-  const selectedSess = sessSelect?.value || "all";
-
-
-
-  if (selectedSess !== "all" && fiiDiiActivePeriod === "daily") {
-
-    items = items.filter(r => (r.period || r.date) === selectedSess);
-
-  } else if (query) {
-
-    items = items.filter(r => String(r.period || r.date).toLowerCase().includes(query));
-
-  }
-
-
-
-  // 1. Draw Bar Chart
-
-  drawFiiDiiCashChart(items, fiiDiiActiveView);
-
-  
-
-  // 2. Populate Data Table
-
-  const tbody = document.getElementById("fiiDiiCashTableBody");
-
-  if (!tbody) return;
-
-  
-
-  if (!items.length) {
-
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b;">No Matching FII/DII Cash Data Found</td></tr>`;
-
-    return;
-
-  }
-
-  
-
-  let html = "";
-
-  items.forEach(row => {
-
-    const period = row.period || row.date || "--";
-
-    const totalNet = row.totalNet !== undefined ? row.totalNet : (row.fiiNet + row.diiNet);
-
-    const fiiNet = row.fiiNet || 0;
-
-    const diiNet = row.diiNet || 0;
-
-    
-
-    const fmt = val => (val >= 0 ? `+${val.toLocaleString("en-IN", {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : val.toLocaleString("en-IN", {minimumFractionDigits: 2, maximumFractionDigits: 2}));
-
-
-
-    html += `
-
-      <tr style="border-bottom: 1px solid #162032;">
-
-        <td style="padding:10px 14px; font-weight:700; color:#f8fafc;">${period}</td>
-
-        <td style="padding:10px 14px; text-align:right; font-weight:800; font-family:'JetBrains Mono', monospace; color:${totalNet >= 0 ? '#10b981' : '#ef4444'};">${fmt(totalNet)}</td>
-
-        <td style="padding:10px 14px; text-align:right; font-weight:700; font-family:'JetBrains Mono', monospace; color:${fiiNet >= 0 ? '#10b981' : '#ef4444'};">${fmt(fiiNet)}</td>
-
-        <td style="padding:10px 14px; text-align:right; font-weight:700; font-family:'JetBrains Mono', monospace; color:${diiNet >= 0 ? '#10b981' : '#ef4444'};">${fmt(diiNet)}</td>
-
-      </tr>
-
-    `;
-
-  });
-
-  tbody.innerHTML = html;
-
-}
-
-
-
-function drawFiiDiiCashChart(items, view) {
-
-  const canvas = document.getElementById("fiiDiiCashCanvas");
-
-  if (!canvas) return;
-
-  const ctx = canvas.getContext("2d");
-
-  const scale = window.devicePixelRatio || 1;
-
-  
-
-  const rect = canvas.getBoundingClientRect();
-
-  const w = rect.width > 50 ? rect.width : (canvas.parentElement?.clientWidth || 800);
-
-  const h = rect.height > 50 ? rect.height : 280;
-
-  if (canvas.width !== Math.round(w * scale) || canvas.height !== Math.round(h * scale)) {
-
-    canvas.width = Math.round(w * scale);
-
-    canvas.height = Math.round(h * scale);
-
-  }
-
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
-
-
-
-  const width = canvas.width / scale;
-
-  const height = canvas.height / scale;
-
-
-
-  ctx.clearRect(0, 0, width, height);
-
-  const fiiChartCols = typeof getChartColors === "function" ? getChartColors() : { bg: "#0c121e" };
-
-  ctx.fillStyle = fiiChartCols.bg;
-
-  ctx.fillRect(0, 0, width, height);
-
-
-
-  if (!items || !items.length) {
-
-    ctx.fillStyle = "#94a3b8";
-
-    ctx.textAlign = "center";
-
-    ctx.font = "11px 'JetBrains Mono', monospace";
-
-    ctx.fillText("No FII/DII Chart Data Available", width / 2, height / 2);
-
-    return;
-
-  }
-
-
-
-  // Reverse items so oldest is on left, newest on right for chart
-
-  const chartItems = [...items].reverse();
-
-
-
-  const pad = { left: 65, right: 20, top: 25, bottom: 35 };
-
-  const plotW = width - pad.left - pad.right;
-
-  const plotH = height - pad.top - pad.bottom;
-
-
-
-  // Compute values according to view
-
-  const vals = chartItems.map(item => {
-
-    if (view === "fii") return item.fiiNet || 0;
-
-    if (view === "dii") return item.diiNet || 0;
-
-    return item.totalNet !== undefined ? item.totalNet : ((item.fiiNet || 0) + (item.diiNet || 0));
-
-  });
-
-
-
-  let maxVal = Math.max(...vals.map(v => Math.abs(v)), 100);
-
-  maxVal *= 1.15;
-
-
-
-  const yZero = pad.top + plotH / 2;
-
-  const yForVal = val => pad.top + plotH / 2 - (val / maxVal) * (plotH / 2);
-
-
-
-  // Draw Gridlines & Zero Axis
-
-  ctx.strokeStyle = "#1e293d";
-
-  ctx.lineWidth = 1;
-
-  ctx.setLineDash([3, 3]);
-
-
-
-  // Upper gridline
-
-  ctx.beginPath();
-
-  ctx.moveTo(pad.left, pad.top);
-
-  ctx.lineTo(width - pad.right, pad.top);
-
-  ctx.stroke();
-
-
-
-  // Zero gridline (solid line)
-
-  ctx.strokeStyle = "#334155";
-
-  ctx.setLineDash([]);
-
-  ctx.lineWidth = 1.5;
-
-  ctx.beginPath();
-
-  ctx.moveTo(pad.left, yZero);
-
-  ctx.lineTo(width - pad.right, yZero);
-
-  ctx.stroke();
-
-
-
-  // Lower gridline
-
-  ctx.strokeStyle = "#1e293d";
-
-  ctx.setLineDash([3, 3]);
-
-  ctx.lineWidth = 1;
-
-  ctx.beginPath();
-
-  ctx.moveTo(pad.left, pad.top + plotH);
-
-  ctx.lineTo(width - pad.right, pad.top + plotH);
-
-  ctx.stroke();
-
-
-
-  // Axis Labels
-
-  ctx.fillStyle = "#94a3b8";
-
-  ctx.font = "10px 'JetBrains Mono', monospace";
-
-  ctx.textAlign = "right";
-
-  ctx.textBaseline = "middle";
-
-  ctx.fillText(`+${Math.round(maxVal).toLocaleString()} Cr`, pad.left - 8, pad.top);
-
-  ctx.fillText("0 Cr", pad.left - 8, yZero);
-
-  ctx.fillText(`-${Math.round(maxVal).toLocaleString()} Cr`, pad.left - 8, pad.top + plotH);
-
-
-
-  // Draw Bars
-
-  const count = chartItems.length;
-
-  const barSlotW = plotW / count;
-
-  const barW = Math.max(4, Math.min(26, barSlotW - 8));
-
-
-
-  chartItems.forEach((item, i) => {
-
-    const val = vals[i];
-
-    const x = pad.left + i * barSlotW + (barSlotW - barW) / 2;
-
-    const yVal = yForVal(val);
-
-    const barH = Math.abs(yVal - yZero);
-
-
-
-    // Color gradient
-
-    const gradient = ctx.createLinearGradient(0, Math.min(yVal, yZero), 0, Math.max(yVal, yZero));
-
-    if (val >= 0) {
-
-      gradient.addColorStop(0, "#10b981");
-
-      gradient.addColorStop(1, "#059669");
-
-    } else {
-
-      gradient.addColorStop(0, "#f43f5e");
-
-      gradient.addColorStop(1, "#dc2626");
-
-    }
-
-
-
-    ctx.fillStyle = gradient;
-
-    ctx.fillRect(x, Math.min(yVal, yZero), barW, Math.max(barH, 2));
-
-
-
-    // Period label on bottom axis
-
-    ctx.fillStyle = "#cbd5e1";
-
-    ctx.font = "9px 'JetBrains Mono', monospace";
-
-    ctx.textAlign = "center";
-
-    ctx.textBaseline = "top";
-
-    const lbl = String(item.period || item.date || "").slice(-4);
-
-    ctx.fillText(lbl, x + barW / 2, pad.top + plotH + 8);
-
-  });
-
-}
-
-
-
-function initFiiDiiCashControls() {
-
-  const pDaily = document.getElementById("fiiDiiPeriodDaily");
-
-  const pMonthly = document.getElementById("fiiDiiPeriodMonthly");
-
-  const pYearly = document.getElementById("fiiDiiPeriodYearly");
-
-  
-
-  const vNet = document.getElementById("fiiDiiViewNet");
-
-  const vFii = document.getElementById("fiiDiiViewFii");
-
-  const vDii = document.getElementById("fiiDiiViewDii");
-
-
-
-  const setPeriod = (period, activeBtn) => {
-
-    fiiDiiActivePeriod = period;
-
-    [pDaily, pMonthly, pYearly].forEach(btn => btn?.classList.remove("active"));
-
-    activeBtn?.classList.add("active");
-
-    renderFiiDiiCashSection();
-
-  };
-
-
-
-  const setView = (view, activeBtn) => {
-
-    fiiDiiActiveView = view;
-
-    [vNet, vFii, vDii].forEach(btn => btn?.classList.remove("active"));
-
-    activeBtn?.classList.add("active");
-
-    renderFiiDiiCashSection();
-
-  };
-
-
-
-  pDaily?.addEventListener("click", () => setPeriod("daily", pDaily));
-
-  pMonthly?.addEventListener("click", () => setPeriod("monthly", pMonthly));
-
-  pYearly?.addEventListener("click", () => setPeriod("yearly", pYearly));
-
-
-
-  vNet?.addEventListener("click", () => setView("net", vNet));
-
-  vFii?.addEventListener("click", () => setView("fii", vFii));
-
-  vDii?.addEventListener("click", () => setView("dii", vDii));
-
-
-
-  const searchInput = document.getElementById("fiiDiiSearchInput");
-
-  const sessSelect = document.getElementById("fiiDiiSessionSelect");
-
-  const refreshBtn = document.getElementById("fiiDiiRefreshBtn");
-
-
-
-  searchInput?.addEventListener("input", () => renderFiiDiiCashSection());
-
-  sessSelect?.addEventListener("change", () => renderFiiDiiCashSection());
-
-  refreshBtn?.addEventListener("click", () => loadFiiDiiCashData());
-
-
-
-}
 
 
 

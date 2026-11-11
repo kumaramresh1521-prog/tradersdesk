@@ -4,9 +4,11 @@ import json
 import logging
 import threading
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+import market_calendar
 
 logger = logging.getLogger("fii_dii_engine")
 
@@ -19,10 +21,37 @@ _FII_DII_IN_MEMORY_CACHE: Dict[str, Any] = {
     "timestamp": 0.0,
 }
 _LAST_AUTO_SYNC_DATE = ""
+_LAST_NSE_FETCH_ATTEMPT_TS = 0.0
+_YAHOO_NIFTY_CACHE: Dict[str, Any] = {"data": {}, "ts": 0.0}
 
 
 def now_ist() -> datetime:
-    return datetime.now(IST)
+    return market_calendar.now_ist()
+
+
+def _parse_cash_date(date_str: str) -> Optional[date]:
+    raw = str(date_str or "").strip()
+    if not raw:
+        return None
+    for fmt in ("%d-%b-%Y", "%Y-%m-%d", "%d %b %Y", "%d-%m-%Y", "%Y%m%d"):
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except Exception:
+            continue
+    return None
+
+
+def _expected_latest_fii_dii_date(now_dt: Optional[datetime] = None) -> date:
+    """
+    Returns the most recent trading session date whose official provisional
+    FII/DII cash market figure is expected to be published on NSE.
+    Provisional EOD figures are typically published after 17:30 IST on trading days.
+    """
+    dt = now_dt or now_ist()
+    today = dt.date()
+    if market_calendar.is_trading_day(today) and (dt.hour > 17 or (dt.hour == 17 and dt.minute >= 30)):
+        return today
+    return market_calendar.get_last_trading_date(today - timedelta(days=1))
 
 
 def fetch_live_fii_dii_from_nse() -> Optional[Dict[str, Any]]:
@@ -94,10 +123,189 @@ def fetch_live_fii_dii_from_nse() -> Optional[Dict[str, Any]]:
         return None
 
 
+def _dedupe_and_sort_daily(daily_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    by_date: Dict[date, Dict[str, Any]] = {}
+    fallback_rows: List[Dict[str, Any]] = []
+    for row in daily_list or []:
+        if not isinstance(row, dict):
+            continue
+        d_str = str(row.get("date") or row.get("period") or "").strip()
+        d_obj = _parse_cash_date(d_str)
+        if not d_obj:
+            fallback_rows.append(row)
+            continue
+        norm_str = d_obj.strftime("%d-%b-%Y")
+        cleaned = dict(row)
+        cleaned["date"] = norm_str
+        cleaned["period"] = norm_str
+        if d_obj not in by_date:
+            by_date[d_obj] = cleaned
+    ordered = [by_date[k] for k in sorted(by_date.keys(), reverse=True)]
+    ordered.extend(fallback_rows)
+    return ordered
+
+
+def _rebuild_period_rollups(history: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Rebuilds weekly buckets and enriches monthly/yearly entries with complete
+    Buy/Sell/Net & Nifty 50 close metrics without disturbing older pre-daily seed data.
+    """
+    daily_list = _dedupe_and_sort_daily(history.get("daily") or [])
+    history["daily"] = daily_list
+
+    parsed_daily: List[Tuple[date, Dict[str, Any]]] = []
+    for row in daily_list:
+        d_obj = _parse_cash_date(row.get("date") or row.get("period") or "")
+        if d_obj:
+            parsed_daily.append((d_obj, row))
+
+    # --- 1. Weekly Rollups (Monday-Sunday trading weeks) ---
+    week_buckets: Dict[date, List[Tuple[date, Dict[str, Any]]]] = {}
+    for d_obj, row in parsed_daily:
+        wk_start = d_obj - timedelta(days=d_obj.weekday())
+        week_buckets.setdefault(wk_start, []).append((d_obj, row))
+
+    weekly_list: List[Dict[str, Any]] = []
+    sorted_weeks = sorted(week_buckets.keys())  # oldest -> newest to compute prev_close accurately
+    prev_wk_close: Optional[float] = None
+    for wk_start in sorted_weeks:
+        wk_rows = sorted(week_buckets[wk_start], key=lambda x: x[0])
+        d_first, r_first = wk_rows[0]
+        d_last, r_last = wk_rows[-1]
+        if d_first == d_last:
+            wk_label = d_last.strftime("%d %b %Y")
+        elif d_first.month == d_last.month and d_first.year == d_last.year:
+            wk_label = f"{d_first.strftime('%d')}–{d_last.strftime('%d %b %Y')}"
+        elif d_first.year == d_last.year:
+            wk_label = f"{d_first.strftime('%d %b')}–{d_last.strftime('%d %b %Y')}"
+        else:
+            wk_label = f"{d_first.strftime('%d %b %y')}–{d_last.strftime('%d %b %y')}"
+
+        fii_buy = round(sum(float(r.get("fiiBuy") or 0.0) for _, r in wk_rows), 2)
+        fii_sell = round(sum(float(r.get("fiiSell") or 0.0) for _, r in wk_rows), 2)
+        fii_net = round(sum(float(r.get("fiiNet") or 0.0) for _, r in wk_rows), 2)
+        dii_buy = round(sum(float(r.get("diiBuy") or 0.0) for _, r in wk_rows), 2)
+        dii_sell = round(sum(float(r.get("diiSell") or 0.0) for _, r in wk_rows), 2)
+        dii_net = round(sum(float(r.get("diiNet") or 0.0) for _, r in wk_rows), 2)
+        tot_net = round(fii_net + dii_net, 2)
+
+        nifty_close = round(float(r_last.get("niftyClose") or 0.0), 2)
+        base_close = prev_wk_close
+        if (base_close is None or base_close <= 0) and float(r_first.get("niftyClose") or 0.0) > 0:
+            base_close = float(r_first.get("niftyClose") or 0.0) - float(r_first.get("niftyChange") or 0.0)
+        if nifty_close > 0 and base_close and base_close > 0:
+            nifty_chg = round(nifty_close - base_close, 2)
+            nifty_pct = round((nifty_chg / base_close) * 100.0, 2)
+        else:
+            nifty_chg = round(sum(float(r.get("niftyChange") or 0.0) for _, r in wk_rows), 2)
+            nifty_pct = round(sum(float(r.get("niftyPct") or 0.0) for _, r in wk_rows), 2)
+        if nifty_close > 0:
+            prev_wk_close = nifty_close
+
+        weekly_list.append({
+            "period": wk_label,
+            "date": d_last.strftime("%d-%b-%Y"),
+            "weekStart": wk_start.isoformat(),
+            "sessions": len(wk_rows),
+            "niftyClose": nifty_close,
+            "niftyChange": nifty_chg,
+            "niftyPct": nifty_pct,
+            "totalNet": tot_net,
+            "fiiNet": fii_net,
+            "diiNet": dii_net,
+            "fiiBuy": fii_buy,
+            "fiiSell": fii_sell,
+            "diiBuy": dii_buy,
+            "diiSell": dii_sell,
+        })
+    weekly_list.reverse()
+    history["weekly"] = weekly_list
+
+    # --- 2. Monthly Enrichments ---
+    month_buckets: Dict[Tuple[int, int], List[Tuple[date, Dict[str, Any]]]] = {}
+    for d_obj, row in parsed_daily:
+        month_buckets.setdefault((d_obj.year, d_obj.month), []).append((d_obj, row))
+
+    monthly_existing: List[Dict[str, Any]] = [dict(m) for m in (history.get("monthly") or []) if isinstance(m, dict)]
+    monthly_by_label: Dict[str, Dict[str, Any]] = {}
+    for m in monthly_existing:
+        lbl = str(m.get("period") or "").strip()
+        if lbl and lbl not in monthly_by_label:
+            monthly_by_label[lbl] = m
+
+    sorted_months = sorted(month_buckets.keys())  # oldest -> newest
+    prev_m_close: Optional[float] = None
+    for ym in sorted_months:
+        m_rows = sorted(month_buckets[ym], key=lambda x: x[0])
+        d_first, r_first = m_rows[0]
+        d_last, r_last = m_rows[-1]
+        m_label = d_last.strftime("%b %Y")
+
+        fii_buy = round(sum(float(r.get("fiiBuy") or 0.0) for _, r in m_rows), 2)
+        fii_sell = round(sum(float(r.get("fiiSell") or 0.0) for _, r in m_rows), 2)
+        fii_net_calc = round(sum(float(r.get("fiiNet") or 0.0) for _, r in m_rows), 2)
+        dii_buy = round(sum(float(r.get("diiBuy") or 0.0) for _, r in m_rows), 2)
+        dii_sell = round(sum(float(r.get("diiSell") or 0.0) for _, r in m_rows), 2)
+        dii_net_calc = round(sum(float(r.get("diiNet") or 0.0) for _, r in m_rows), 2)
+        tot_net_calc = round(fii_net_calc + dii_net_calc, 2)
+
+        nifty_close = round(float(r_last.get("niftyClose") or 0.0), 2)
+        base_close = prev_m_close
+        if (base_close is None or base_close <= 0) and float(r_first.get("niftyClose") or 0.0) > 0:
+            base_close = float(r_first.get("niftyClose") or 0.0) - float(r_first.get("niftyChange") or 0.0)
+        if nifty_close > 0 and base_close and base_close > 0:
+            nifty_chg = round(nifty_close - base_close, 2)
+            nifty_pct = round((nifty_chg / base_close) * 100.0, 2)
+        else:
+            nifty_chg = round(sum(float(r.get("niftyChange") or 0.0) for _, r in m_rows), 2)
+            nifty_pct = round(sum(float(r.get("niftyPct") or 0.0) for _, r in m_rows), 2)
+        if nifty_close > 0:
+            prev_m_close = nifty_close
+
+        existing = monthly_by_label.get(m_label)
+        # Recompute net figures strictly from daily for Sep 2026+ or brand-new months; keep Aug 2026 seed nets if present
+        use_calc_nets = (existing is None) or (ym >= (2026, 9))
+        entry = dict(existing) if existing else {"period": m_label}
+        entry["period"] = m_label
+        entry["sessions"] = len(m_rows)
+        entry["fiiBuy"] = fii_buy
+        entry["fiiSell"] = fii_sell
+        entry["diiBuy"] = dii_buy
+        entry["diiSell"] = dii_sell
+        if use_calc_nets:
+            entry["fiiNet"] = fii_net_calc
+            entry["diiNet"] = dii_net_calc
+            entry["totalNet"] = tot_net_calc
+        entry["niftyClose"] = nifty_close
+        entry["niftyChange"] = nifty_chg
+        entry["niftyPct"] = nifty_pct
+        monthly_by_label[m_label] = entry
+
+    def _month_sort_key(item: Dict[str, Any]) -> Tuple[int, int]:
+        try:
+            dt_m = datetime.strptime(str(item.get("period") or ""), "%b %Y")
+            return (dt_m.year, dt_m.month)
+        except Exception:
+            return (0, 0)
+
+    history["monthly"] = sorted(monthly_by_label.values(), key=_month_sort_key, reverse=True)
+
+    # --- 3. Enrich latest year with latest Nifty close if missing ---
+    yearly_list = [dict(y) for y in (history.get("yearly") or []) if isinstance(y, dict)]
+    if parsed_daily and yearly_list:
+        latest_yr = str(parsed_daily[0][0].year)
+        latest_close = round(float(parsed_daily[0][1].get("niftyClose") or 0.0), 2)
+        for y in yearly_list:
+            if str(y.get("period") or "") == latest_yr and latest_close > 0:
+                y["niftyClose"] = latest_close
+    history["yearly"] = yearly_list
+    return history
+
+
 def load_fii_dii_history() -> Dict[str, Any]:
     """Loads historical FII/DII cash records from JSON file."""
     if not HISTORY_FILE.exists():
-        return {"yearly": [], "monthly": [], "daily": [], "lastUpdated": ""}
+        return {"yearly": [], "monthly": [], "weekly": [], "daily": [], "lastUpdated": ""}
     try:
         with open(HISTORY_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -109,9 +317,9 @@ def load_fii_dii_history() -> Dict[str, Any]:
                         d["niftyClose"] = bench["close"]
                         d["niftyChange"] = bench["change"]
                         d["niftyPct"] = bench["pct"]
-            return data
+            return _rebuild_period_rollups(data)
     except Exception:
-        return {"yearly": [], "monthly": [], "daily": [], "lastUpdated": ""}
+        return {"yearly": [], "monthly": [], "weekly": [], "daily": [], "lastUpdated": ""}
 
 
 def save_fii_dii_history(data: Dict[str, Any]) -> None:
@@ -124,14 +332,49 @@ def save_fii_dii_history(data: Dict[str, Any]) -> None:
         logger.error(f"Failed to save FII/DII history file: {exc}")
 
 
+def _fetch_yahoo_nifty_map() -> Dict[str, Dict[str, float]]:
+    now_ts = time.time()
+    if _YAHOO_NIFTY_CACHE.get("data") and (now_ts - _YAHOO_NIFTY_CACHE.get("ts", 0.0)) < 600.0:
+        return _YAHOO_NIFTY_CACHE["data"]
+    out: Dict[str, Dict[str, float]] = {}
+    try:
+        import urllib.request
+        url = "https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?range=1mo&interval=1d"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=4.0) as r:
+            yd = json.loads(r.read().decode())
+        res0 = yd["chart"]["result"][0]
+        tss = res0.get("timestamp") or []
+        closes = res0["indicators"]["quote"][0]["close"] or []
+        pts: List[Tuple[str, float]] = []
+        for ts, c in zip(tss, closes):
+            if c is None:
+                continue
+            d_ymd = datetime.fromtimestamp(int(ts), tz=IST).strftime("%Y-%m-%d")
+            pts.append((d_ymd, round(float(c), 2)))
+        for idx, (d_ymd, c_val) in enumerate(pts):
+            prev_c = pts[idx - 1][1] if idx > 0 else c_val
+            chg = round(c_val - prev_c, 2)
+            pct = round((chg / prev_c) * 100.0, 2) if prev_c > 0 else 0.0
+            out[d_ymd] = {"close": c_val, "change": chg, "pct": pct}
+        if out:
+            _YAHOO_NIFTY_CACHE["data"] = out
+            _YAHOO_NIFTY_CACHE["ts"] = now_ts
+    except Exception:
+        pass
+    return out
+
 
 def get_nifty_benchmark_for_date(date_str: str) -> Dict[str, float]:
     """
     Resolves the exact official NSE Nifty 50 closing price, net point change,
     and percentage change for a given date from fo_bhav_eod_master.json,
-    falling back to broker quotes or Yahoo finance.
-    Guarantees no copied or stale previous-day duplicates.
+    falling back to date-matched Yahoo finance or live Upstox index quotes.
     """
+    target_d = _parse_cash_date(date_str)
+    norm_target = target_d.strftime("%Y%m%d") if target_d else date_str.replace("-", "")
+    norm_ymd = target_d.strftime("%Y-%m-%d") if target_d else ""
+
     master_path = ROOT_DIR / "data" / "fo_bhav_eod_master.json"
     if master_path.exists():
         try:
@@ -139,18 +382,6 @@ def get_nifty_benchmark_for_date(date_str: str) -> Dict[str, float]:
                 mdata = json.load(f)
             nifty_rows = mdata.get("symbols_data", {}).get("NIFTY", [])
             if nifty_rows:
-                norm_target = None
-                try:
-                    if "-" in date_str and len(date_str.split("-")[0]) == 2:
-                        dt = datetime.strptime(date_str, "%d-%b-%Y")
-                    elif "-" in date_str and len(date_str.split("-")[0]) == 4:
-                        dt = datetime.strptime(date_str, "%Y-%m-%d")
-                    else:
-                        dt = datetime.strptime(date_str, "%Y%m%d")
-                    norm_target = dt.strftime("%Y%m%d")
-                except Exception:
-                    norm_target = date_str.replace("-", "")
-
                 for idx, r in enumerate(nifty_rows):
                     r_date = str(r.get("date", "")).replace("-", "")
                     if r_date == norm_target:
@@ -162,23 +393,22 @@ def get_nifty_benchmark_for_date(date_str: str) -> Dict[str, float]:
         except Exception as e:
             logger.warning(f"Error reading fo_bhav_eod_master for Nifty benchmark: {e}")
 
-    try:
-        import urllib.request
-        url = "https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?range=5d&interval=1d"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=3.5) as r:
-            yd = json.loads(r.read().decode())
-        closes = yd["chart"]["result"][0]["indicators"]["quote"][0]["close"]
-        if closes and len(closes) >= 2:
-            c = round(float(closes[-1]), 2)
-            prev_c = round(float(closes[-2]), 2)
-            chg = round(c - prev_c, 2)
-            pct = round((chg / prev_c) * 100.0, 2) if prev_c > 0 else 0.0
-            return {"close": c, "change": chg, "pct": pct}
-    except Exception:
-        pass
+    if norm_ymd:
+        ymap = _fetch_yahoo_nifty_map()
+        if norm_ymd in ymap:
+            return ymap[norm_ymd]
 
-    return {"close": 23053.10, "change": 116.35, "pct": 0.51}
+    if target_d == now_ist().date():
+        try:
+            import upstox_engine
+            spot, prev_c, chg = upstox_engine.get_real_spot_price("NSE_INDEX|Nifty 50")
+            if spot and spot > 5000:
+                pct = round((chg / prev_c) * 100.0, 2) if prev_c > 0 else 0.0
+                return {"close": round(float(spot), 2), "change": round(float(chg), 2), "pct": pct}
+        except Exception:
+            pass
+
+    return {"close": 0.0, "change": 0.0, "pct": 0.0}
 
 
 def sync_fii_dii_history(
@@ -188,72 +418,89 @@ def sync_fii_dii_history(
     nifty_pct: Optional[float] = None,
 ) -> Dict[str, Any]:
     """
-    Checks if today's/latest FII/DII record is already in history.
-    If missing or forced, fetches from NSE and merges smoothly into daily, monthly, and yearly structures.
+    Checks if the latest expected trading day's FII/DII record is already in history.
+    Auto-catches up missed previous trading sessions anytime on demand or post-17:30 IST.
+    Merges smoothly into daily, weekly, monthly, and yearly structures.
     """
-    global _FII_DII_IN_MEMORY_CACHE, _LAST_AUTO_SYNC_DATE
+    global _FII_DII_IN_MEMORY_CACHE, _LAST_AUTO_SYNC_DATE, _LAST_NSE_FETCH_ATTEMPT_TS
 
     now = now_ist()
     history = load_fii_dii_history()
     daily_list = history.get("daily", [])
 
-    # Check if latest record matches today
-    today_str = now.strftime("%d-%b-%Y")
-    has_today = any(d.get("date") == today_str or d.get("period") == today_str for d in daily_list[:3])
+    expected_date = _expected_latest_fii_dii_date(now)
+    expected_str = expected_date.strftime("%d-%b-%Y")
+    has_expected = any(
+        _parse_cash_date(str(d.get("date") or d.get("period") or "")) == expected_date
+        for d in daily_list[:5]
+    )
 
-    if has_today and not force:
-        # Already up to date
+    latest_rec_date = daily_list[0].get("date") if daily_list else ""
+    market_meta = {
+        "latestRecordDate": latest_rec_date,
+        "expectedLatestDate": expected_str,
+        "isUpToDate": has_expected,
+    }
+
+    if has_expected and not force:
+        history.update(market_meta)
         history["ok"] = True
         return history
 
-    # Do not block during morning/intraday trading hours before 17:30 IST (provisional EOD is only published post-market)
-    if not force:
-        if now.weekday() >= 5 or now.hour < 17 or (now.hour == 17 and now.minute < 30):
-            history["ok"] = True
-            return history
+    now_ts = time.time()
+    if not force and (now_ts - _LAST_NSE_FETCH_ATTEMPT_TS) < 180.0:
+        history.update(market_meta)
+        history["ok"] = True
+        return history
 
-    # Fetch live provisional EOD figures from NSE
-
+    _LAST_NSE_FETCH_ATTEMPT_TS = now_ts
     live_rec = fetch_live_fii_dii_from_nse()
     if not live_rec:
+        history.update(market_meta)
         history["ok"] = True
         return history
 
-    rec_date = live_rec.get("date") or today_str
+    rec_date_obj = _parse_cash_date(live_rec.get("date") or "") or expected_date
+    # Reject invalid holiday/future provisional records if NSE somehow stamped a non-trading date
+    if not market_calendar.is_trading_day(rec_date_obj):
+        rec_date_obj = market_calendar.get_last_trading_date(rec_date_obj)
+    rec_date = rec_date_obj.strftime("%d-%b-%Y")
 
-    # Nifty 50 Benchmark Close values (exact from fo_bhav_eod_master, never duplicated)
-    if nifty_close is None or nifty_close <= 0:
-        bench = get_nifty_benchmark_for_date(rec_date)
-        if bench.get("close", 0) > 0:
-            nifty_close = bench["close"]
-            nifty_change = bench["change"]
-            nifty_pct = bench["pct"]
+    existing_idx = next(
+        (i for i, d in enumerate(daily_list) if _parse_cash_date(str(d.get("date") or d.get("period") or "")) == rec_date_obj),
+        None,
+    )
+    prev_entry = dict(daily_list[existing_idx]) if existing_idx is not None else None
 
-    if nifty_close is None or nifty_close <= 0:
-        try:
-            import upstox_engine
-            spot, prev_c, chg = upstox_engine.get_real_spot_price("NSE_INDEX|Nifty 50")
-            if spot > 0:
-                nifty_close = spot
-                nifty_change = chg
-                nifty_pct = round((chg / prev_c) * 100.0, 2) if prev_c > 0 else 0.0
-        except Exception:
-            pass
-
-    if nifty_close is None or nifty_close <= 0:
-        nifty_close = 23053.10
-        nifty_change = 116.35
-        nifty_pct = 0.51
+    # Resolve Nifty 50 Benchmark Close values for rec_date
+    bench = get_nifty_benchmark_for_date(rec_date)
+    if bench.get("close", 0) > 5000:
+        nifty_close = bench["close"]
+        nifty_change = bench["change"]
+        nifty_pct = bench["pct"]
+    elif nifty_close is None or nifty_close <= 5000:
+        if prev_entry and float(prev_entry.get("niftyClose") or 0) > 5000:
+            nifty_close = float(prev_entry["niftyClose"])
+            nifty_change = float(prev_entry.get("niftyChange") or 0.0)
+            nifty_pct = float(prev_entry.get("niftyPct") or 0.0)
+        elif daily_list and float(daily_list[0].get("niftyClose") or 0) > 5000:
+            nifty_close = float(daily_list[0]["niftyClose"])
+            nifty_change = 0.0
+            nifty_pct = 0.0
+        else:
+            nifty_close = 0.0
+            nifty_change = 0.0
+            nifty_pct = 0.0
     elif daily_list and (nifty_change is None or nifty_change == 0.0):
         prev_c = float(daily_list[0].get("niftyClose") or 0.0)
-        if prev_c > 0 and nifty_close:
+        if prev_c > 0 and nifty_close and prev_entry is None:
             nifty_change = round(float(nifty_close) - prev_c, 2)
             nifty_pct = round((nifty_change / prev_c) * 100.0, 2)
 
     new_daily_entry = {
         "period": rec_date,
         "date": rec_date,
-        "niftyClose": round(float(nifty_close), 2),
+        "niftyClose": round(float(nifty_close or 0.0), 2),
         "niftyChange": round(float(nifty_change or 0.0), 2),
         "niftyPct": round(float(nifty_pct or 0.0), 2),
         "totalNet": live_rec["totalNet"],
@@ -265,86 +512,115 @@ def sync_fii_dii_history(
         "diiSell": live_rec["diiSell"],
     }
 
-    # Update or prepend into daily list
-    existing_idx = next((i for i, d in enumerate(daily_list) if d.get("date") == rec_date or d.get("period") == rec_date), None)
+    changed = (prev_entry is None) or any(
+        prev_entry.get(k) != new_daily_entry.get(k)
+        for k in ("fiiBuy", "fiiSell", "fiiNet", "diiBuy", "diiSell", "diiNet", "totalNet", "niftyClose")
+    )
+
     if existing_idx is not None:
         daily_list[existing_idx] = new_daily_entry
     else:
         daily_list.insert(0, new_daily_entry)
 
-    # Recalculate monthly totals for this month
-    try:
-        dt = datetime.strptime(rec_date, "%d-%b-%Y")
-        month_label = dt.strftime("%b %Y")
-        month_days = [d for d in daily_list if dt.strftime("%b-%Y") in str(d.get("date", "")) or month_label in str(d.get("period", ""))]
-        if month_days:
-            m_fii_net = round(sum(float(d.get("fiiNet", 0.0)) for d in month_days), 2)
-            m_dii_net = round(sum(float(d.get("diiNet", 0.0)) for d in month_days), 2)
-            m_total_net = round(m_fii_net + m_dii_net, 2)
-            monthly_list = history.get("monthly", [])
-            m_idx = next((i for i, m in enumerate(monthly_list) if m.get("period") == month_label), None)
-            m_entry = {
-                "period": month_label,
-                "fiiNet": m_fii_net,
-                "diiNet": m_dii_net,
-                "totalNet": m_total_net,
-            }
-            if m_idx is not None:
-                monthly_list[m_idx] = m_entry
-            else:
-                monthly_list.insert(0, m_entry)
-            history["monthly"] = monthly_list
-    except Exception:
-        pass
+    # Apply incremental delta to yearly entry when record is newly inserted or changed
+    if changed:
+        yr_str = str(rec_date_obj.year)
+        yearly_list = history.get("yearly", [])
+        old_fii_net = float(prev_entry.get("fiiNet") or 0.0) if prev_entry else 0.0
+        old_dii_net = float(prev_entry.get("diiNet") or 0.0) if prev_entry else 0.0
+        old_fii_buy = float(prev_entry.get("fiiBuy") or 0.0) if prev_entry else 0.0
+        old_fii_sell = float(prev_entry.get("fiiSell") or 0.0) if prev_entry else 0.0
+        old_dii_buy = float(prev_entry.get("diiBuy") or 0.0) if prev_entry else 0.0
+        old_dii_sell = float(prev_entry.get("diiSell") or 0.0) if prev_entry else 0.0
+
+        y_idx = next((i for i, y in enumerate(yearly_list) if str(y.get("period") or "") == yr_str), None)
+        if y_idx is not None:
+            y_row = dict(yearly_list[y_idx])
+            y_row["fiiNet"] = round(float(y_row.get("fiiNet") or 0.0) + (new_daily_entry["fiiNet"] - old_fii_net), 2)
+            y_row["diiNet"] = round(float(y_row.get("diiNet") or 0.0) + (new_daily_entry["diiNet"] - old_dii_net), 2)
+            y_row["totalNet"] = round(y_row["fiiNet"] + y_row["diiNet"], 2)
+            y_row["fiiBuy"] = round(float(y_row.get("fiiBuy") or 0.0) + (new_daily_entry["fiiBuy"] - old_fii_buy), 2)
+            y_row["fiiSell"] = round(float(y_row.get("fiiSell") or 0.0) + (new_daily_entry["fiiSell"] - old_fii_sell), 2)
+            y_row["diiBuy"] = round(float(y_row.get("diiBuy") or 0.0) + (new_daily_entry["diiBuy"] - old_dii_buy), 2)
+            y_row["diiSell"] = round(float(y_row.get("diiSell") or 0.0) + (new_daily_entry["diiSell"] - old_dii_sell), 2)
+            yearly_list[y_idx] = y_row
+        else:
+            yearly_list.insert(0, {
+                "period": yr_str,
+                "fiiNet": new_daily_entry["fiiNet"],
+                "diiNet": new_daily_entry["diiNet"],
+                "totalNet": new_daily_entry["totalNet"],
+                "fiiBuy": new_daily_entry["fiiBuy"],
+                "fiiSell": new_daily_entry["fiiSell"],
+                "diiBuy": new_daily_entry["diiBuy"],
+                "diiSell": new_daily_entry["diiSell"],
+            })
+        history["yearly"] = yearly_list
 
     history["daily"] = daily_list
-    history["lastUpdated"] = now.strftime("%d-%b-%Y %H:%M IST")
-    save_fii_dii_history(history)
+    history = _rebuild_period_rollups(history)
+    if changed or not history.get("lastUpdated"):
+        history["lastUpdated"] = now.strftime("%d-%b-%Y %H:%M IST")
+        save_fii_dii_history(history)
 
     _LAST_AUTO_SYNC_DATE = rec_date
     _FII_DII_IN_MEMORY_CACHE["data"] = history
     _FII_DII_IN_MEMORY_CACHE["timestamp"] = time.time()
 
+    has_expected_after = any(
+        _parse_cash_date(str(d.get("date") or d.get("period") or "")) == expected_date
+        for d in (history.get("daily") or [])[:5]
+    )
+    history["latestRecordDate"] = (history.get("daily") or [{}])[0].get("date", "")
+    history["expectedLatestDate"] = expected_str
+    history["isUpToDate"] = has_expected_after
     history["ok"] = True
     return history
 
 
 def get_fii_dii_data(force_refresh: bool = False, nifty_close: Optional[float] = None, nifty_change: Optional[float] = None, nifty_pct: Optional[float] = None) -> Dict[str, Any]:
-    """Returns cached FII/DII data or triggers refresh if requested."""
+    """Returns cached FII/DII data or triggers refresh if requested or behind expected session."""
     global _FII_DII_IN_MEMORY_CACHE
     now_ts = time.time()
     if not force_refresh:
         cached = _FII_DII_IN_MEMORY_CACHE.get("data")
         if cached and (now_ts - _FII_DII_IN_MEMORY_CACHE.get("timestamp", 0.0)) < 60.0:
-            return cached
+            expected_str = _expected_latest_fii_dii_date().strftime("%d-%b-%Y")
+            if cached.get("latestRecordDate") == expected_str or (now_ts - _LAST_NSE_FETCH_ATTEMPT_TS) < 180.0:
+                return cached
 
     # Check if we should sync
     data = sync_fii_dii_history(force=force_refresh, nifty_close=nifty_close, nifty_change=nifty_change, nifty_pct=nifty_pct)
     _FII_DII_IN_MEMORY_CACHE["data"] = data
-    _FII_DII_IN_MEMORY_CACHE["timestamp"] = now_ts
+    _FII_DII_IN_MEMORY_CACHE["timestamp"] = time.time()
     return data
 
 
 def _background_fii_dii_loop():
-    """Lightweight background loop that auto-syncs FII/DII data around 18:00-19:30 IST on trading days."""
-    time.sleep(10)  # Wait 10 seconds after server startup
+    """Background loop: catches up missed FII/DII sessions at startup and polls every 5m post-17:30 IST on trading days."""
+    time.sleep(8)
     while True:
         try:
             now = now_ist()
-            # On weekdays (Monday=0 to Friday=4), after 18:00 IST and before 23:00 IST
-            if now.weekday() < 5 and (now.hour >= 18 or (now.hour == 17 and now.minute >= 45)):
-                today_str = now.strftime("%d-%b-%Y")
-                global _LAST_AUTO_SYNC_DATE
-                if _LAST_AUTO_SYNC_DATE != today_str:
-                    logger.info("Executing scheduled EOD FII/DII cash flow sync...")
-                    res = sync_fii_dii_history(force=False)
-                    if res and res.get("daily") and res["daily"][0].get("date") == today_str:
-                        _LAST_AUTO_SYNC_DATE = today_str
-                        logger.info(f"FII/DII EOD successfully synced for {today_str}")
+            today = now.date()
+            today_str = today.strftime("%d-%b-%Y")
+            expected_date = _expected_latest_fii_dii_date(now)
+            expected_str = expected_date.strftime("%d-%b-%Y")
+
+            res = sync_fii_dii_history(force=False)
+            latest_got = (res.get("daily") or [{}])[0].get("date", "")
+            global _LAST_AUTO_SYNC_DATE
+            if latest_got == expected_str:
+                _LAST_AUTO_SYNC_DATE = latest_got
+
+            # Active NSE provisional publish window on trading days (17:30 - 23:45 IST) -> check every 5 minutes until captured
+            if market_calendar.is_trading_day(today) and ((now.hour == 17 and now.minute >= 30) or (18 <= now.hour <= 23)):
+                if latest_got != today_str:
+                    time.sleep(300)
+                    continue
         except Exception as exc:
             logger.error(f"FII/DII background loop error: {exc}")
 
-        # Sleep for 15 minutes between checks
         time.sleep(900)
 
 
@@ -606,7 +882,7 @@ def get_fii_derivatives_flow(target_date: Optional[datetime] = None) -> Dict[str
         now = now_ist()
         date_key = now.strftime("%Y-%m-%d")
         date_file = cache_dir / f"derivatives_flow_{date_key}.json"
-        if not date_file.exists() and (now.weekday() >= 5 or now.hour < 16):
+        if not date_file.exists() and (not market_calendar.is_trading_day(now.date()) or now.hour < 16):
             candidates = sorted(cache_dir.glob("derivatives_flow_*.json"), reverse=True)
             if candidates:
                 latest_f = candidates[0]
