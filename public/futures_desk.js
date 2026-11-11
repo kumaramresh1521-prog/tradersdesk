@@ -219,12 +219,16 @@
 
       const sessionDateEl = document.getElementById('futSessionDateBadge');
       if (sessionDateEl && data.asOfDate) {
-        const mode = data.isLive ? 'LIVE' : (data.sessionMode || 'EOD');
+        const mode = data.isLive ? 'LIVE' : (data.sessionMode === 'EOD_FALLBACK' ? 'EOD FALLBACK' : (data.sessionMode || 'EOD'));
         sessionDateEl.textContent = `${mode} • ${data.asOfDate.toUpperCase()}`;
         if (data.isLive) {
           sessionDateEl.style.background = 'rgba(16,185,129,0.15)';
           sessionDateEl.style.color = '#10b981';
           sessionDateEl.style.borderColor = 'rgba(16,185,129,0.3)';
+        } else if (data.sessionMode === 'EOD_FALLBACK') {
+          sessionDateEl.style.background = 'rgba(245,158,11,0.15)';
+          sessionDateEl.style.color = '#f59e0b';
+          sessionDateEl.style.borderColor = 'rgba(245,158,11,0.35)';
         } else {
           sessionDateEl.style.background = 'rgba(56,189,248,0.15)';
           sessionDateEl.style.color = '#38bdf8';
@@ -2715,12 +2719,18 @@
       badge.style.color = '#10b981';
     }
 
+    const initMktApi = window.__nseMarketStatusCache && window.__nseMarketStatusCache.data;
+    const initIsLive = initMktApi ? Boolean(initMktApi.isOpen) : Boolean(state.dashboardData && state.dashboardData.isLive);
+    const initClosedLbl = (initMktApi && initMktApi.statusCode) || (state.dashboardData && state.dashboardData.sessionMode) || 'EOD';
+
     state.countdownSec = seconds;
-    if (cdText) cdText.textContent = isMarketOpen ? (state.countdownSec + 's') : (`EOD (${state.countdownSec}s)`);
+    if (cdText) cdText.textContent = initIsLive ? (state.countdownSec + 's') : (`${initClosedLbl} (${state.countdownSec}s)`);
 
     state.countdownTimer = setInterval(() => {
-      // Pause if browser tab is hidden/minimized
+      // Pause if browser tab is hidden or Futures panel is inactive
       if (document.hidden) return;
+      const futPanel = document.getElementById('panelFutures');
+      if (futPanel && !futPanel.classList.contains('active') && window.getComputedStyle(futPanel).display === 'none') return;
 
       const mktApi = window.__nseMarketStatusCache && window.__nseMarketStatusCache.data;
       const isMarketOpen = mktApi ? Boolean(mktApi.isOpen) : Boolean(state.dashboardData && state.dashboardData.isLive);
@@ -2772,7 +2782,7 @@
   // --- Initialization ---
   function init() {
     if (state.initialized) {
-      refreshCurrentSubTab();
+      refreshCurrentSubTab(true);
       return;
     }
     state.initialized = true;

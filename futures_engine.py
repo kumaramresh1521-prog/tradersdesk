@@ -16,6 +16,7 @@ Features:
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import logging
@@ -26,7 +27,7 @@ import time
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -72,13 +73,13 @@ FO_UNIVERSE = [
     {'symbol': 'SHRIRAMFIN', 'name': 'Shriram Finance Ltd', 'sector': 'Financials', 'lot': 300, 'basePrice': 3280.0, 'mwplBase': 64.1},
     {'symbol': 'PFC', 'name': 'Power Finance Corp', 'sector': 'Financials', 'lot': 1300, 'basePrice': 485.0, 'mwplBase': 74.0},
     {'symbol': 'RECLTD', 'name': 'REC Ltd', 'sector': 'Financials', 'lot': 1000, 'basePrice': 535.0, 'mwplBase': 76.5},
-    {'symbol': 'L&TFH', 'name': 'L&T Finance Holdings', 'sector': 'Financials', 'lot': 4484, 'basePrice': 168.0, 'mwplBase': 78.0},
+    {'symbol': 'LTF', 'name': 'L&T Finance Ltd', 'sector': 'Financials', 'lot': 4462, 'basePrice': 168.0, 'mwplBase': 78.0},
     {'symbol': 'LICHSGFIN', 'name': 'LIC Housing Finance', 'sector': 'Financials', 'lot': 1000, 'basePrice': 675.0, 'mwplBase': 69.0},
     {'symbol': 'MANAPPURAM', 'name': 'Manappuram Finance', 'sector': 'Financials', 'lot': 3000, 'basePrice': 182.0, 'mwplBase': 86.0},
     {'symbol': 'M&MFIN', 'name': 'Mahindra & Mahindra Fin', 'sector': 'Financials', 'lot': 2000, 'basePrice': 298.0, 'mwplBase': 71.0},
     {'symbol': 'HDFCLIFE', 'name': 'HDFC Life Insurance', 'sector': 'Financials', 'lot': 1100, 'basePrice': 725.0, 'mwplBase': 48.0},
     {'symbol': 'SBILIFE', 'name': 'SBI Life Insurance', 'sector': 'Financials', 'lot': 375, 'basePrice': 1780.0, 'mwplBase': 46.0},
-    {'symbol': 'ICICIPRULI', 'name': 'ICICI Prudential Life', 'sector': 'Financials', 'lot': 750, 'basePrice': 745.0, 'mwplBase': 54.0},
+    {'symbol': 'ICICILIFE', 'name': 'ICICI Prudential Life', 'sector': 'Financials', 'lot': 750, 'basePrice': 745.0, 'mwplBase': 54.0},
     {'symbol': 'ICICIGI', 'name': 'ICICI Lombard General Ins', 'sector': 'Financials', 'lot': 350, 'basePrice': 2180.0, 'mwplBase': 45.0},
     {'symbol': 'SBICARD', 'name': 'SBI Cards & Payment', 'sector': 'Financials', 'lot': 800, 'basePrice': 735.0, 'mwplBase': 58.0},
     {'symbol': 'HDFCAMC', 'name': 'HDFC Asset Management', 'sector': 'Financials', 'lot': 150, 'basePrice': 4480.0, 'mwplBase': 42.0},
@@ -88,7 +89,7 @@ FO_UNIVERSE = [
     {'symbol': 'HCLTECH', 'name': 'HCL Technologies Ltd', 'sector': 'IT', 'lot': 350, 'basePrice': 1780.0, 'mwplBase': 46.2},
     {'symbol': 'WIPRO', 'name': 'Wipro Ltd', 'sector': 'IT', 'lot': 1500, 'basePrice': 525.0, 'mwplBase': 61.8},
     {'symbol': 'TECHM', 'name': 'Tech Mahindra Ltd', 'sector': 'IT', 'lot': 600, 'basePrice': 1580.0, 'mwplBase': 55.4},
-    {'symbol': 'LTIM', 'name': 'LTIMindtree Ltd', 'sector': 'IT', 'lot': 150, 'basePrice': 6150.0, 'mwplBase': 57.2},
+    {'symbol': 'LTM', 'name': 'LTIMindtree Ltd', 'sector': 'IT', 'lot': 150, 'basePrice': 6150.0, 'mwplBase': 57.2},
     {'symbol': 'COFORGE', 'name': 'Coforge Ltd', 'sector': 'IT', 'lot': 150, 'basePrice': 6920.0, 'mwplBase': 68.3},
     {'symbol': 'PERSISTENT', 'name': 'Persistent Systems Ltd', 'sector': 'IT', 'lot': 200, 'basePrice': 5120.0, 'mwplBase': 63.5},
     {'symbol': 'MPHASIS', 'name': 'MphasiS Ltd', 'sector': 'IT', 'lot': 275, 'basePrice': 2980.0, 'mwplBase': 60.1},
@@ -101,7 +102,7 @@ FO_UNIVERSE = [
     {'symbol': 'ONGC', 'name': 'Oil & Natural Gas Corp', 'sector': 'Energy', 'lot': 2250, 'basePrice': 292.0, 'mwplBase': 64.5},
     {'symbol': 'BPCL', 'name': 'Bharat Petroleum Corp', 'sector': 'Energy', 'lot': 1800, 'basePrice': 348.0, 'mwplBase': 72.0},
     {'symbol': 'IOC', 'name': 'Indian Oil Corporation', 'sector': 'Energy', 'lot': 4875, 'basePrice': 172.0, 'mwplBase': 70.4},
-    {'symbol': 'HPCL', 'name': 'Hindustan Petroleum Corp', 'sector': 'Energy', 'lot': 1350, 'basePrice': 415.0, 'mwplBase': 75.0},
+    {'symbol': 'HINDPETRO', 'name': 'Hindustan Petroleum Corp', 'sector': 'Energy', 'lot': 1350, 'basePrice': 415.0, 'mwplBase': 75.0},
     {'symbol': 'GAIL', 'name': 'GAIL (India) Ltd', 'sector': 'Energy', 'lot': 2650, 'basePrice': 235.0, 'mwplBase': 68.0},
     {'symbol': 'PETRONET', 'name': 'Petronet LNG Ltd', 'sector': 'Energy', 'lot': 3000, 'basePrice': 365.0, 'mwplBase': 62.0},
     {'symbol': 'IGL', 'name': 'Indraprastha Gas Ltd', 'sector': 'Energy', 'lot': 1375, 'basePrice': 542.0, 'mwplBase': 66.0},
@@ -119,7 +120,7 @@ FO_UNIVERSE = [
     {'symbol': 'JSWENERGY', 'name': 'JSW Energy Ltd', 'sector': 'Power', 'lot': 500, 'basePrice': 710.0, 'mwplBase': 68.0},
     {'symbol': 'BHEL', 'name': 'Bharat Heavy Electricals', 'sector': 'Power', 'lot': 2625, 'basePrice': 288.0, 'mwplBase': 86.0},
     {'symbol': 'CESC', 'name': 'CESC Ltd', 'sector': 'Power', 'lot': 2500, 'basePrice': 188.0, 'mwplBase': 70.0},
-    {'symbol': 'TATAMOTORS', 'name': 'Tata Motors Ltd', 'sector': 'Auto', 'lot': 550, 'basePrice': 965.0, 'mwplBase': 75.2},
+    {'symbol': 'TMPV', 'name': 'Tata Motors Passenger Vehicles', 'sector': 'Auto', 'lot': 550, 'basePrice': 965.0, 'mwplBase': 75.2},
     {'symbol': 'M&M', 'name': 'Mahindra & Mahindra Ltd', 'sector': 'Auto', 'lot': 350, 'basePrice': 2950.0, 'mwplBase': 58.4},
     {'symbol': 'MARUTI', 'name': 'Maruti Suzuki India', 'sector': 'Auto', 'lot': 50, 'basePrice': 12150.0, 'mwplBase': 42.1},
     {'symbol': 'BAJAJ-AUTO', 'name': 'Bajaj Auto Ltd', 'sector': 'Auto', 'lot': 75, 'basePrice': 11800.0, 'mwplBase': 49.3},
@@ -175,7 +176,7 @@ FO_UNIVERSE = [
     {'symbol': 'GODREJCP', 'name': 'Godrej Consumer Products', 'sector': 'FMCG', 'lot': 500, 'basePrice': 1480.0, 'mwplBase': 47.0},
     {'symbol': 'COLPAL', 'name': 'Colgate-Palmolive India', 'sector': 'FMCG', 'lot': 300, 'basePrice': 3680.0, 'mwplBase': 43.0},
     {'symbol': 'VBL', 'name': 'Varun Beverages Ltd', 'sector': 'FMCG', 'lot': 400, 'basePrice': 615.0, 'mwplBase': 54.0},
-    {'symbol': 'MCDOWELL-N', 'name': 'United Spirits Ltd', 'sector': 'FMCG', 'lot': 700, 'basePrice': 1420.0, 'mwplBase': 58.0},
+    {'symbol': 'UNITDSPR', 'name': 'United Spirits Ltd', 'sector': 'FMCG', 'lot': 700, 'basePrice': 1420.0, 'mwplBase': 58.0},
     {'symbol': 'UBL', 'name': 'United Breweries Ltd', 'sector': 'FMCG', 'lot': 400, 'basePrice': 2080.0, 'mwplBase': 50.0},
     {'symbol': 'RADICO', 'name': 'Radico Khaitan Ltd', 'sector': 'FMCG', 'lot': 250, 'basePrice': 2180.0, 'mwplBase': 64.0},
     {'symbol': 'JUBLFOOD', 'name': 'Jubilant FoodWorks', 'sector': 'FMCG', 'lot': 1250, 'basePrice': 685.0, 'mwplBase': 71.0},
@@ -234,7 +235,7 @@ FO_UNIVERSE = [
     {'symbol': 'ADANIPORTS', 'name': 'Adani Ports & SEZ', 'sector': 'Services', 'lot': 400, 'basePrice': 1420.0, 'mwplBase': 66.0},
     {'symbol': 'DMART', 'name': 'Avenue Supermarts (DMart)', 'sector': 'Services', 'lot': 150, 'basePrice': 4950.0, 'mwplBase': 45.0},
     {'symbol': 'NYKAA', 'name': 'FSN E-Commerce (Nykaa)', 'sector': 'Services', 'lot': 2000, 'basePrice': 218.0, 'mwplBase': 69.0},
-    {'symbol': 'ZOMATO', 'name': 'Zomato Ltd', 'sector': 'Services', 'lot': 2000, 'basePrice': 285.0, 'mwplBase': 74.0},
+    {'symbol': 'ETERNAL', 'name': 'Eternal Ltd (Zomato)', 'sector': 'Services', 'lot': 2000, 'basePrice': 285.0, 'mwplBase': 74.0},
     {'symbol': 'DELHIVERY', 'name': 'Delhivery Ltd', 'sector': 'Services', 'lot': 1200, 'basePrice': 435.0, 'mwplBase': 61.0},
     {'symbol': 'CONCOR', 'name': 'Container Corp of India', 'sector': 'Services', 'lot': 1000, 'basePrice': 965.0, 'mwplBase': 64.0},
     {'symbol': 'INDIGO', 'name': 'InterGlobe Aviation', 'sector': 'Services', 'lot': 150, 'basePrice': 4780.0, 'mwplBase': 55.0},
@@ -430,28 +431,32 @@ def test_kotak_connection(
             "configured": False,
         }
 
-    # 0. Live session probe: test if active Sid / viewToken is already working for market feeds
+    # 0. Live session probe: ONLY fast-return if we ALSO have a resolved quote baseUrl
+    # (quote feeds require the trading/session baseUrl returned by tradeApiValidate).
     view_tok = (os.getenv("KOTAK_VIEW_TOKEN") or "").strip()
     active_sid = tok or view_tok or (os.getenv("KOTAK_SID") or "").strip()
-    if ckey and active_sid and not l_totp:
+    cached_base_url = (_FUTURES_CACHE.get("kotak_base_url") or os.getenv("KOTAK_BASE_URL") or "").strip().rstrip("/")
+    if ckey and cached_base_url.startswith("http") and active_sid and not l_totp:
         p_headers = {
             "Authorization": ckey,
             "neo-fin-key": "neotradeapi",
             "Sid": active_sid,
             "User-Agent": "neo-api-client/2.0.0",
         }
-        p_url = "https://mis.kotaksecurities.com/script-details/1.0/quotes/neosymbol/nse_fo|68777/all"
+        p_url = f"{cached_base_url}/script-details/1.0/quotes/neosymbol/{urllib.parse.quote('nse_cm|Nifty 50')}/all"
         try:
             p_req = urllib.request.Request(p_url, headers=p_headers)
             with urllib.request.urlopen(p_req, timeout=5) as p_resp:
                 p_data, _ = _safe_parse_kotak_response(p_resp.read())
                 if p_data and isinstance(p_data, list) and len(p_data) > 0 and p_data[0].get("ltp"):
+                    _FUTURES_CACHE["kotak_base_url"] = cached_base_url
                     id_disp = u_code or mob_10 or "YLWGW"
                     return {
                         "ok": True,
                         "message": f"[OK] Kotak Neo Session Active! Connected to {id_disp}. Real-time F&O feeds operational.",
                         "configured": True,
                         "isLive": True,
+                        "baseUrl": cached_base_url,
                     }
         except Exception:
             pass
@@ -631,12 +636,15 @@ def test_kotak_connection(
                         }
                     t_data = v_data.get("data") or {}
                     trade_tok = t_data.get("token")
-                    base_url = t_data.get("baseUrl")
+                    base_url = (t_data.get("baseUrl") or "").strip().rstrip("/")
                     if trade_tok:
                         os.environ["KOTAK_ACCESS_TOKEN"] = trade_tok
                         _FUTURES_CACHE["kotak_token"] = trade_tok
-                        _FUTURES_CACHE["kotak_base_url"] = base_url
+                        if base_url:
+                            os.environ["KOTAK_BASE_URL"] = base_url
+                            _FUTURES_CACHE["kotak_base_url"] = base_url
                         extra = {}
+                        if base_url: extra["KOTAK_BASE_URL"] = base_url
                         if ckey and not _is_masked(ckey): extra["KOTAK_CONSUMER_KEY"] = ckey
                         if u_code and not _is_masked(u_code): extra["KOTAK_UCC"] = u_code
                         if mob_10 and not _is_masked(mob_10): extra["KOTAK_MOBILE_NO"] = mob_10
@@ -649,6 +657,7 @@ def test_kotak_connection(
                             "configured": True,
                             "currentTotp": active_totp,
                             "tradingToken": trade_tok[:10] + "...",
+                            "baseUrl": base_url,
                         }
             except Exception as m_exc:
                 return {
@@ -694,14 +703,14 @@ def classify_buildup(price_chg: float, oi_chg: float) -> tuple[str, str, str]:
         return "CONSOLIDATION", "badge-neutral", "NEUT"
 
 
-_LIVE_QUOTES_CACHE: dict = {"ts": 0.0, "data": {}}
-_KOTAK_FO_MAP: dict = {}
-_KOTAK_CASH_MAP: dict = {}
-
 def _ensure_unexpired_contracts(fo_map: dict) -> dict:
     today = datetime.now().date()
     changed = False
-    for sym, info in fo_map.items():
+    cleaned_map = {}
+    for sym, info in list(fo_map.items()):
+        if sym in _LEGACY_DELISTED_ALIASES:
+            changed = True
+            continue
         contracts = info.get("all_contracts", [])
         unexpired = []
         for c in contracts:
@@ -721,20 +730,105 @@ def _ensure_unexpired_contracts(fo_map: dict) -> dict:
                 info["all_expiries"] = [c["expiry"] for c in unexpired]
                 info["all_contracts"] = unexpired
                 changed = True
+        cleaned_map[sym] = info
     if changed:
         try:
-            Path("cache/kotak_fo_contract_map.json").write_text(json.dumps(fo_map, indent=2), encoding="utf-8")
+            Path("cache/kotak_fo_contract_map.json").write_text(json.dumps(cleaned_map, indent=2), encoding="utf-8")
         except Exception:
             pass
-    return fo_map
+    return cleaned_map
 
 _BHAVCOPY_CACHE: dict = {"ts": 0.0, "data": {}, "date": ""}
+_LIVE_QUOTES_CACHE: dict = {"ts": 0.0, "data": {}}
+_LIVE_OPT_IV_CACHE: dict = {"ts": 0.0, "data": {}}
+_KOTAK_FO_MAP: dict = {}
+_KOTAK_CASH_MAP: dict = {}
+_KOTAK_OPT_CHAIN_MAP: dict = {}
+_NSE_OI_SPURTS_CACHE: dict = {"ts": 0.0, "data": {}}
+_KOTAK_EPOCH_BASE = datetime(1980, 1, 1, tzinfo=timezone.utc)
+_IST_OFFSET = timedelta(hours=5, minutes=30)
+_LEGACY_DELISTED_ALIASES = {"TATAMOTORS", "ZOMATO", "LTIM", "L&TFH", "HPCL", "MCDOWELL-N", "ICICIPRULI"}
+
+_SYMBOL_SECTORS = {
+    'NIFTY': 'Index', 'BANKNIFTY': 'Index', 'FINNIFTY': 'Index', 'MIDCPNIFTY': 'Index',
+    'NIFTYNXT50': 'Index', 'SENSEX': 'Index', 'BANKEX': 'Index', 'NIFTYFPI': 'Index',
+    'SWIGGY': 'Services', 'ETERNAL': 'Services', 'HYUNDAI': 'Auto', 'TMPV': 'Auto',
+    'FORCEMOT': 'Auto', 'ATHERENERG': 'Auto', 'UNOMINDA': 'Auto', 'SONACOMS': 'Auto',
+    'WAAREEENER': 'Power', 'PREMIERENE': 'Power', 'SUZLON': 'Power', 'INOXWIND': 'Power',
+    'ADANIENSOL': 'Power', 'POWERINDIA': 'Power', 'CGPOWER': 'Power', 'GVT&D': 'Power',
+    'JIOFIN': 'Financials', 'LICI': 'Financials', 'POLICYBZR': 'Financials', 'IREDA': 'Financials',
+    'IRFC': 'Financials', 'ABCAPITAL': 'Financials', 'BAJAJHLDNG': 'Financials',
+    'KFINTECH': 'Financials', '360ONE': 'Financials', 'MOTILALOFS': 'Financials',
+    'CAMS': 'Financials', 'MFSL': 'Financials', 'LTF': 'Financials', 'PNBHOUSING': 'Financials',
+    'PAYTM': 'Financials', 'IEX': 'Financials', 'ANANDRATHI': 'Financials',
+    'MAHABANK': 'Banking', 'INDIANB': 'Banking', 'BANKINDIA': 'Banking', 'YESBANK': 'Banking',
+    'KARURVYSYA': 'Banking', 'UJJIVANSFB': 'Banking', 'CUB': 'Banking', 'ICICILIFE': 'Financials',
+    'KALYANKJIL': 'FMCG', 'TITAN': 'FMCG', 'PAGEIND': 'FMCG', 'CROMPTON': 'FMCG',
+    'GODFRYPHLP': 'FMCG', 'PATANJALI': 'FMCG', 'UNITDSPR': 'FMCG', 'VMM': 'Services',
+    'MANKIND': 'Pharma', 'FORTIS': 'Pharma', 'SAGILITY': 'Services', 'INDHOTEL': 'Services',
+    'LODHA': 'Realty', 'RVNL': 'Infrastructure', 'GMRAIRPORT': 'Infrastructure',
+    'LTM': 'IT', 'HINDPETRO': 'Energy', 'SOLARINDS': 'Chemicals', 'NAVINFLUOR': 'Chemicals',
+    'COROMANDEL': 'Chemicals', 'KAYNES': 'Capital Goods', 'PGEL': 'Capital Goods',
+    'AMBER': 'Capital Goods', 'SYRMA': 'Capital Goods', 'DATAPATTNS': 'Capital Goods',
+    'ENRIN': 'Capital Goods', 'APLAPOLLO': 'Metals', 'SUPREMEIND': 'Industrial',
+}
+
+
+def _norm_cdf(x: float) -> float:
+    return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
+
+
+def _bs76_price(F: float, K: float, T: float, r: float, sigma: float, is_call: bool) -> float:
+    if F <= 0 or K <= 0 or T <= 0 or sigma <= 0:
+        return 0.0
+    vol_sqrt_t = sigma * math.sqrt(T)
+    d1 = (math.log(F / K) + 0.5 * sigma * sigma * T) / vol_sqrt_t
+    d2 = d1 - vol_sqrt_t
+    df = math.exp(-r * T)
+    if is_call:
+        return df * (F * _norm_cdf(d1) - K * _norm_cdf(d2))
+    return df * (K * _norm_cdf(-d2) - F * _norm_cdf(-d1))
+
+
+def _solve_black76_iv(opt_price: float, F: float, K: float, T: float, is_call: bool = True, r: float = 0.065) -> Optional[float]:
+    """
+    Computes annualized Implied Volatility (%) via Black-76 bisection solver.
+    Returns None for arbitrage/zero-time-value quotes so bad prints don't corrupt IV.
+    """
+    if opt_price <= 0.05 or F <= 0 or K <= 0 or T <= 0:
+        return None
+    df = math.exp(-r * T)
+    intrinsic = df * (max(F - K, 0.0) if is_call else max(K - F, 0.0))
+    if opt_price <= intrinsic * 1.001 + 0.02:
+        return None
+    max_bound = df * (F if is_call else K)
+    if opt_price >= max_bound * 0.99:
+        return None
+
+    lo, hi = 0.03, 2.50
+    f_lo = _bs76_price(F, K, T, r, lo, is_call) - opt_price
+    f_hi = _bs76_price(F, K, T, r, hi, is_call) - opt_price
+    if f_lo > 0 or f_hi < 0:
+        return None
+
+    for _ in range(26):
+        mid = 0.5 * (lo + hi)
+        f_mid = _bs76_price(F, K, T, r, mid, is_call) - opt_price
+        if abs(f_mid) < 1e-4:
+            lo = hi = mid
+            break
+        if f_mid < 0:
+            lo = mid
+        else:
+            hi = mid
+    return round(((lo + hi) * 0.5) * 100.0, 2)
+
 
 def invalidate_caches() -> None:
     """
     Clears all in-memory caches for Bhavcopy, master futures records, live quotes, and rollover matrices.
     """
-    global _BHAVCOPY_CACHE, _FUTURES_CACHE, _LIVE_QUOTES_CACHE, _LIVE_ROLLOVER_MAP, _ROLLOVER_CACHE
+    global _BHAVCOPY_CACHE, _FUTURES_CACHE, _LIVE_QUOTES_CACHE, _LIVE_OPT_IV_CACHE, _NSE_OI_SPURTS_CACHE, _LIVE_ROLLOVER_MAP, _ROLLOVER_CACHE
     _BHAVCOPY_CACHE["ts"] = 0.0
     _BHAVCOPY_CACHE["data"] = {}
     _BHAVCOPY_CACHE["date"] = ""
@@ -744,6 +838,15 @@ def invalidate_caches() -> None:
     if "_LIVE_QUOTES_CACHE" in globals():
         _LIVE_QUOTES_CACHE["ts"] = 0.0
         _LIVE_QUOTES_CACHE["data"] = {}
+    if "_LIVE_OPT_IV_CACHE" in globals():
+        _LIVE_OPT_IV_CACHE["ts"] = 0.0
+        _LIVE_OPT_IV_CACHE["data"] = {}
+    if "_NSE_OI_SPURTS_CACHE" in globals():
+        _NSE_OI_SPURTS_CACHE["ts"] = 0.0
+        _NSE_OI_SPURTS_CACHE["data"] = {}
+    if "_DASHBOARD_CACHE" in globals():
+        _DASHBOARD_CACHE["ts"] = 0.0
+        _DASHBOARD_CACHE["data"] = None
     if "_LIVE_ROLLOVER_MAP" in globals():
         _LIVE_ROLLOVER_MAP.clear()
     if "_ROLLOVER_CACHE" in globals():
@@ -751,14 +854,16 @@ def invalidate_caches() -> None:
         _ROLLOVER_CACHE["rows"] = []
         _ROLLOVER_CACHE["all_latest_vals"] = []
 
+
 def _load_latest_bhavcopy_data(force: bool = False) -> tuple[dict[str, dict], str]:
     """
-    Loads latest official NSE F&O Bhavcopy EOD prices, OI, volume, and spot quotes.
+    Loads latest official NSE F&O Bhavcopy EOD prices, OI, volume, spot quotes,
+    and genuine Black-76 ATM Option Implied Volatility (IV & IV Change %).
     Caches for 60 seconds to provide zero-latency fallback when market is closed or broker feed is idle.
     """
     global _BHAVCOPY_CACHE
     now = time.time()
-    if not force and _BHAVCOPY_CACHE["data"] and (now - _BHAVCOPY_CACHE["ts"]) < 60.0:
+    if not force and _BHAVCOPY_CACHE["data"] and (now - _BHAVCOPY_CACHE["ts"]) < 600.0:
         return _BHAVCOPY_CACHE["data"], _BHAVCOPY_CACHE["date"]
 
     fo_dir = Path("cache/fo_bhav")
@@ -768,35 +873,81 @@ def _load_latest_bhavcopy_data(force: bool = False) -> tuple[dict[str, dict], st
 
     bhav_map = {}
     bhav_date_str = ""
+    trad_dt_obj: Optional[date] = None
     today = market_calendar.now_ist().date()
+    opt_rows_by_sym: dict[str, dict[date, dict[float, dict[str, tuple[float, float, float]]]]] = {}
+
+    # Fast-path JSON load (~25ms vs ~7s for 100k-row CSV) whenever master JSON already matches latest CSV & has ATM IV
+    latest_csv_name = csvs[0].name if csvs else ""
+    if not force and latest_csv_name:
+        for jp in [Path("data/latest_fo_bhav_master.json"), Path("cache/latest_fo_bhav_master.json")]:
+            if jp.exists():
+                try:
+                    jdata = json.loads(jp.read_text(encoding="utf-8"))
+                    if jdata.get("sourceCsv") == latest_csv_name and jdata.get("hasIv") and jdata.get("records"):
+                        bhav_date_str = jdata.get("date") or ""
+                        for sym, r in jdata["records"].items():
+                            c_item = dict(r)
+                            if isinstance(c_item.get("exp_dt"), str):
+                                try:
+                                    c_item["exp_dt"] = datetime.strptime(c_item["exp_dt"], "%Y-%m-%d").date()
+                                except Exception:
+                                    pass
+                            bhav_map[sym] = c_item
+                        if bhav_map:
+                            _BHAVCOPY_CACHE["ts"] = now
+                            _BHAVCOPY_CACHE["data"] = bhav_map
+                            _BHAVCOPY_CACHE["date"] = bhav_date_str
+                            return bhav_map, bhav_date_str
+                except Exception:
+                    bhav_map = {}
+
     if csvs:
         latest_csv = csvs[0]
         try:
-            import csv
             with open(latest_csv, mode="r", encoding="utf-8", errors="ignore") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     inst_tp = row.get("FinInstrmTp", "")
-                    if inst_tp not in ("IDF", "STF"):
+                    if inst_tp not in ("IDF", "STF", "IDO", "STO"):
                         continue
                     sym = row.get("TckrSymb", "").strip().upper()
                     xpry_str = row.get("XpryDt", "").strip()
-                    if not xpry_str:
+                    if not sym or not xpry_str:
                         continue
                     try:
                         exp_dt = datetime.strptime(xpry_str, "%Y-%m-%d").date()
                     except Exception:
                         continue
-                    if exp_dt < today and exp_dt < datetime(2026, 10, 1).date():
+                    if exp_dt < today and exp_dt < date(2026, 10, 1):
                         continue
 
                     if not bhav_date_str:
-                        raw_dt = row.get("TradDt", "")
+                        raw_dt = row.get("TradDt", "").strip()
                         if raw_dt:
                             try:
-                                bhav_date_str = datetime.strptime(raw_dt, "%Y-%m-%d").strftime("%d-%b-%Y")
+                                trad_dt_obj = datetime.strptime(raw_dt, "%Y-%m-%d").date()
+                                bhav_date_str = trad_dt_obj.strftime("%d-%b-%Y")
                             except Exception:
                                 bhav_date_str = raw_dt
+
+                    if inst_tp in ("IDO", "STO"):
+                        try:
+                            opt_vol = float(row.get("TtlTradgVol") or 0.0)
+                            if opt_vol <= 0:
+                                continue
+                            strk = float(row.get("StrkPric") or 0.0)
+                            opt_tp = (row.get("OptnTp") or "").strip().upper()
+                            cls_opt = float(row.get("ClsPric") or 0.0)
+                            prvs_opt = float(row.get("PrvsClsgPric") or 0.0)
+                            und_opt = float(row.get("UndrlygPric") or 0.0)
+                            if strk > 0 and opt_tp in ("CE", "PE") and cls_opt > 0.05:
+                                by_exp = opt_rows_by_sym.setdefault(sym, {})
+                                by_strk = by_exp.setdefault(exp_dt, {})
+                                by_strk.setdefault(strk, {})[opt_tp] = (cls_opt, prvs_opt, und_opt)
+                        except Exception:
+                            pass
+                        continue
 
                     existing = bhav_map.get(sym)
                     if existing and existing["exp_dt"] <= exp_dt:
@@ -841,19 +992,61 @@ def _load_latest_bhavcopy_data(force: bool = False) -> tuple[dict[str, dict], st
                     except Exception:
                         pass
 
+            # Attach genuine Black-76 ATM Option IV from active Bhavcopy options
+            ref_dt = trad_dt_obj or today
+            for sym, b_rec in bhav_map.items():
+                by_exp = opt_rows_by_sym.get(sym)
+                if not by_exp:
+                    continue
+                valid_exps = sorted([d for d in by_exp.keys() if (d - ref_dt).days >= 2])
+                if not valid_exps:
+                    valid_exps = sorted(by_exp.keys())
+                target_exp = b_rec["exp_dt"] if b_rec["exp_dt"] in valid_exps else valid_exps[0]
+                strikes_map = by_exp.get(target_exp) or {}
+                if not strikes_map:
+                    continue
+                f_curr = float(b_rec.get("close") or b_rec.get("ltp") or b_rec.get("spotPrice") or 0.0)
+                f_prev = float(b_rec.get("prevClose") or f_curr)
+                if f_curr <= 0:
+                    continue
+                atm_k = min(strikes_map.keys(), key=lambda k: abs(k - f_curr))
+                dte_opt = max(2, (target_exp - ref_dt).days)
+                T_curr = dte_opt / 365.0
+                T_prev = (dte_opt + 1) / 365.0
+                curr_ivs, prev_ivs = [], []
+                for opt_tp, (c_opt, p_opt, _) in strikes_map[atm_k].items():
+                    is_c = (opt_tp == "CE")
+                    iv_now = _solve_black76_iv(c_opt, f_curr, atm_k, T_curr, is_call=is_c)
+                    if iv_now is not None:
+                        curr_ivs.append(iv_now)
+                    if p_opt > 0.05 and f_prev > 0:
+                        iv_pr = _solve_black76_iv(p_opt, f_prev, atm_k, T_prev, is_call=is_c)
+                        if iv_pr is not None:
+                            prev_ivs.append(iv_pr)
+                if curr_ivs:
+                    iv_val = round(sum(curr_ivs) / len(curr_ivs), 2)
+                    b_rec["iv"] = iv_val
+                    if prev_ivs:
+                        prev_iv_val = round(sum(prev_ivs) / len(prev_ivs), 2)
+                        iv_chg = round(iv_val - prev_iv_val, 2)
+                        iv_chg_pct = round((iv_chg / prev_iv_val) * 100.0, 2) if prev_iv_val > 0 else 0.0
+                        b_rec["ivChange"] = iv_chg
+                        b_rec["ivChangePct"] = iv_chg_pct
+
             # Sync to data/latest_fo_bhav_master.json for zero-latency fallback
-            try:
-                serializable = {}
-                for s, d in bhav_map.items():
-                    c_dict = dict(d)
-                    if isinstance(c_dict.get("exp_dt"), (datetime, date)):
-                        c_dict["exp_dt"] = str(c_dict["exp_dt"])
-                    serializable[s] = c_dict
-                out_p = Path("data/latest_fo_bhav_master.json")
-                out_p.parent.mkdir(parents=True, exist_ok=True)
-                out_p.write_text(json.dumps({"ok": True, "date": bhav_date_str, "records": serializable}, indent=2), encoding="utf-8")
-            except Exception:
-                pass
+            if bhav_map:
+                try:
+                    serializable = {}
+                    for s, d in bhav_map.items():
+                        c_dict = dict(d)
+                        if isinstance(c_dict.get("exp_dt"), (datetime, date)):
+                            c_dict["exp_dt"] = str(c_dict["exp_dt"])
+                        serializable[s] = c_dict
+                    out_p = Path("data/latest_fo_bhav_master.json")
+                    out_p.parent.mkdir(parents=True, exist_ok=True)
+                    out_p.write_text(json.dumps({"ok": True, "date": bhav_date_str, "sourceCsv": latest_csv.name, "hasIv": True, "records": serializable}, indent=2), encoding="utf-8")
+                except Exception as ser_e:
+                    logger.debug(f"Could not sync latest_fo_bhav_master.json: {ser_e}")
         except Exception as e:
             logger.error(f"Error loading bhavcopy quotes: {e}")
 
@@ -945,281 +1138,915 @@ def get_angel_fo_map() -> dict[str, dict]:
         return _ANGEL_FO_MAP
 
 
-def get_live_kotak_quotes_map(target_symbols: Optional[list] = None) -> dict[str, dict]:
+_KOTAK_AUTH_LOCK = threading.Lock()
+_KOTAK_AUTH_LAST_TS = 0.0
+_KOTAK_MASTER_SYNC_LOCK = threading.Lock()
+_KOTAK_MASTER_SYNC_RUNNING = False
+_LIVE_QUOTES_FETCH_LOCK = threading.Lock()
+
+
+def _ensure_kotak_session_base_url(force_login: bool = False) -> tuple[str, str]:
+    """
+    Ensures a valid Kotak Neo session quote baseUrl (e.g. https://e21.kotaksecurities.com)
+    and Consumer Key are available, auto-authenticating via TOTP + MPIN when needed.
+    """
+    global _KOTAK_AUTH_LAST_TS
+    ckey = (os.getenv("KOTAK_CONSUMER_KEY") or "").strip()
+    base_url = (_FUTURES_CACHE.get("kotak_base_url") or os.getenv("KOTAK_BASE_URL") or "").strip().rstrip("/")
+    if not force_login and ckey and base_url.startswith("http"):
+        return base_url, ckey
+
+    with _KOTAK_AUTH_LOCK:
+        ckey = (os.getenv("KOTAK_CONSUMER_KEY") or "").strip()
+        base_url = (_FUTURES_CACHE.get("kotak_base_url") or os.getenv("KOTAK_BASE_URL") or "").strip().rstrip("/")
+        if not force_login and ckey and base_url.startswith("http"):
+            return base_url, ckey
+
+        now_ts = time.time()
+        cooldown = 90.0 if force_login else 45.0
+        if (now_ts - _KOTAK_AUTH_LAST_TS) < cooldown and not base_url.startswith("http"):
+            return "", ckey
+
+        _KOTAK_AUTH_LAST_TS = now_ts
+        try:
+            res = test_kotak_connection()
+            resolved = (res.get("baseUrl") or _FUTURES_CACHE.get("kotak_base_url") or os.getenv("KOTAK_BASE_URL") or "").strip().rstrip("/")
+            if resolved.startswith("http"):
+                return resolved, (os.getenv("KOTAK_CONSUMER_KEY") or ckey).strip()
+        except Exception as e:
+            logger.debug(f"Kotak auto-session resolve error: {e}")
+        return "", ckey
+
+
+def _parse_kotak_expiry(exp_epoch_str: str) -> Optional[date]:
+    try:
+        secs = int(float(exp_epoch_str))
+        if secs <= 0:
+            return None
+        return (_KOTAK_EPOCH_BASE + timedelta(seconds=secs) + _IST_OFFSET).date()
+    except Exception:
+        return None
+
+
+def _rebuild_kotak_maps_from_csv(fo_csv_path: Path, cm_csv_path: Optional[Path] = None) -> None:
+    """
+    Parses Kotak Neo nse_fo.csv (and optional nse_cm.csv) to populate:
+    - _KOTAK_FO_MAP / cache/kotak_fo_contract_map.json (unexpired near FUTSTK / FUTIDX contracts)
+    - _KOTAK_OPT_CHAIN_MAP (near option expiry strike map for live Black-76 ATM IV)
+    - _KOTAK_CASH_MAP / cache/kotak_token_map.json (equity cash spot tokens)
+    """
+    global _KOTAK_FO_MAP, _KOTAK_CASH_MAP, _KOTAK_OPT_CHAIN_MAP
+    if not fo_csv_path.exists():
+        return
+
+    today = market_calendar.now_ist().date()
+    fut_by_sym: dict[str, list[dict]] = {}
+    opt_by_sym: dict[str, dict[date, dict[float, dict[str, str]]]] = {}
+
+    try:
+        with open(fo_csv_path, mode="r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                inst_tp = (row.get("pInstType") or "").strip().upper()
+                if inst_tp not in ("FUTSTK", "FUTIDX", "OPTSTK", "OPTIDX"):
+                    continue
+                sym = (row.get("pSymbolName") or "").strip().upper()
+                tok = (row.get("pSymbol") or "").strip()
+                if not sym or not tok or sym in _LEGACY_DELISTED_ALIASES:
+                    continue
+
+                exp_val = (row.get("pExpiryDate") or row.get("lExpiryDate ") or row.get("lExpiryDate") or "").strip()
+                exp_dt = _parse_kotak_expiry(exp_val)
+                if not exp_dt or exp_dt < today:
+                    continue
+
+                if inst_tp in ("FUTSTK", "FUTIDX"):
+                    lot_val = row.get("lLotSize") or row.get("iLotSize") or row.get("iBoardLotQty ") or "1"
+                    try:
+                        lot = max(1, int(float(lot_val)))
+                    except Exception:
+                        lot = 1
+                    try:
+                        exp_ep = int(float(exp_val))
+                    except Exception:
+                        exp_ep = 0
+                    fut_by_sym.setdefault(sym, []).append({
+                        "token": tok,
+                        "trd_sym": (row.get("pTrdSymbol") or "").strip(),
+                        "ref_key": (row.get("pScripRefKey") or "").strip(),
+                        "lot": lot,
+                        "expiry": exp_dt.strftime("%d-%b-%Y"),
+                        "exp_dt": exp_dt,
+                        "exp_epoch": exp_ep,
+                    })
+                else:
+                    opt_tp = (row.get("pOptionType") or "").strip().upper()
+                    if opt_tp not in ("CE", "PE"):
+                        continue
+                    raw_strike = (row.get("dStrikePrice;") or row.get("dStrikePrice") or "").strip()
+                    if not raw_strike:
+                        continue
+                    try:
+                        prec = int(float(row.get("lPrecision") or 2))
+                        scale = 10 ** max(0, prec)
+                        strike = round(float(raw_strike) / scale, 2)
+                    except Exception:
+                        continue
+                    if strike <= 0:
+                        continue
+                    by_exp = opt_by_sym.setdefault(sym, {})
+                    by_strk = by_exp.setdefault(exp_dt, {})
+                    by_strk.setdefault(strike, {})[opt_tp] = tok
+
+        new_fo_map = {}
+        for sym, c_list in fut_by_sym.items():
+            c_list.sort(key=lambda c: c["exp_dt"])
+            clean_contracts = [
+                {
+                    "token": c["token"],
+                    "trd_sym": c["trd_sym"],
+                    "ref_key": c["ref_key"],
+                    "lot": c["lot"],
+                    "expiry": c["expiry"],
+                    "exp_epoch": c["exp_epoch"],
+                }
+                for c in c_list
+            ]
+            near = clean_contracts[0]
+            new_fo_map[sym] = {
+                "token": near["token"],
+                "trd_sym": near["trd_sym"],
+                "ref_key": near["ref_key"],
+                "lot": near["lot"],
+                "expiry": near["expiry"],
+                "all_expiries": [c["expiry"] for c in clean_contracts],
+                "all_contracts": clean_contracts,
+            }
+
+        if new_fo_map:
+            _KOTAK_FO_MAP = new_fo_map
+            try:
+                Path("cache/kotak_fo_contract_map.json").write_text(json.dumps(new_fo_map, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+
+        new_opt_chain = {}
+        for sym, by_exp in opt_by_sym.items():
+            # Prefer near option expiry with >= 2 DTE (or same as near future) for clean non-expiry-gamma IV
+            fut_exp = fut_by_sym[sym][0]["exp_dt"] if sym in fut_by_sym and fut_by_sym[sym] else None
+            exps = sorted(by_exp.keys())
+            valid_exps = [d for d in exps if (d - today).days >= 2]
+            if not valid_exps:
+                valid_exps = [d for d in exps if (d - today).days >= 1] or exps
+            target_exp = fut_exp if (fut_exp in valid_exps) else valid_exps[0]
+            strikes_dict = by_exp.get(target_exp) or {}
+            strikes_sorted = [
+                (k, pair.get("CE", ""), pair.get("PE", ""))
+                for k, pair in sorted(strikes_dict.items())
+                if pair.get("CE") or pair.get("PE")
+            ]
+            if strikes_sorted:
+                new_opt_chain[sym] = {
+                    "exp_dt": target_exp,
+                    "expiry": target_exp.strftime("%d-%b-%Y"),
+                    "strikes": strikes_sorted,
+                }
+        if new_opt_chain:
+            _KOTAK_OPT_CHAIN_MAP = new_opt_chain
+            try:
+                ser_opt = {
+                    s: {
+                        "exp_dt": str(v["exp_dt"]),
+                        "expiry": v["expiry"],
+                        "strikes": v["strikes"],
+                    }
+                    for s, v in new_opt_chain.items()
+                }
+                Path("cache/kotak_opt_chain_map.json").write_text(json.dumps(ser_opt), encoding="utf-8")
+            except Exception:
+                pass
+    except Exception as e:
+        logger.debug(f"Error parsing Kotak nse_fo.csv: {e}")
+
+    if cm_csv_path and cm_csv_path.exists():
+        try:
+            new_cm_map = {}
+            with open(cm_csv_path, mode="r", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    grp = (row.get("pGroup") or row.get("pSeries") or "").strip().upper()
+                    if grp and grp not in ("EQ", "BE"):
+                        continue
+                    sym = (row.get("pSymbolName") or "").strip().upper()
+                    tok = (row.get("pSymbol") or "").strip()
+                    if sym and tok and sym not in new_cm_map:
+                        new_cm_map[sym] = tok
+            if new_cm_map:
+                _KOTAK_CASH_MAP = new_cm_map
+                try:
+                    Path("cache/kotak_token_map.json").write_text(json.dumps(new_cm_map, indent=2), encoding="utf-8")
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.debug(f"Error parsing Kotak nse_cm.csv: {e}")
+
+
+def _load_kotak_opt_chain_cache() -> None:
+    global _KOTAK_OPT_CHAIN_MAP
+    if _KOTAK_OPT_CHAIN_MAP:
+        return
+    opt_cache_p = Path("cache/kotak_opt_chain_map.json")
+    if opt_cache_p.exists():
+        try:
+            raw = json.loads(opt_cache_p.read_text(encoding="utf-8"))
+            loaded = {}
+            for sym, v in raw.items():
+                exp_dt = datetime.strptime(v["exp_dt"], "%Y-%m-%d").date()
+                loaded[sym] = {
+                    "exp_dt": exp_dt,
+                    "expiry": v["expiry"],
+                    "strikes": [tuple(x) for x in v.get("strikes", [])],
+                }
+            if loaded:
+                _KOTAK_OPT_CHAIN_MAP = loaded
+        except Exception:
+            pass
+
+
+def _refresh_kotak_scrip_master_if_needed(base_url: str, ckey: str, blocking: bool = False) -> None:
+    """
+    Once per trading day, downloads Kotak Neo's official nse_fo.csv & nse_cm-v1.csv
+    to keep near-month F&O contract tokens & ATM option chains 100% current.
+    """
+    global _KOTAK_MASTER_SYNC_RUNNING
+    _load_kotak_opt_chain_cache()
+    today_s = market_calendar.now_ist().strftime("%Y-%m-%d")
+    sync_meta_p = Path("cache/kotak_master_sync.json")
+    fo_csv_p = Path("cache/nse_fo.csv")
+    cm_csv_p = Path("cache/nse_cm.csv")
+
+    if sync_meta_p.exists() and fo_csv_p.exists():
+        try:
+            meta = json.loads(sync_meta_p.read_text(encoding="utf-8"))
+            if meta.get("date") == today_s:
+                if not _KOTAK_OPT_CHAIN_MAP and not _KOTAK_MASTER_SYNC_RUNNING:
+                    if blocking:
+                        _rebuild_kotak_maps_from_csv(fo_csv_p, None)
+                    else:
+                        _KOTAK_MASTER_SYNC_RUNNING = True
+                        threading.Thread(
+                            target=lambda: (_rebuild_kotak_maps_from_csv(fo_csv_p, None), globals().__setitem__("_KOTAK_MASTER_SYNC_RUNNING", False)),
+                            daemon=True,
+                        ).start()
+                return
+        except Exception:
+            pass
+
+    def _do_sync():
+        global _KOTAK_MASTER_SYNC_RUNNING
+        with _KOTAK_MASTER_SYNC_LOCK:
+            try:
+                if sync_meta_p.exists() and fo_csv_p.exists():
+                    meta = json.loads(sync_meta_p.read_text(encoding="utf-8"))
+                    if meta.get("date") == today_s:
+                        if not _KOTAK_OPT_CHAIN_MAP:
+                            _rebuild_kotak_maps_from_csv(fo_csv_p, None)
+                        return
+
+                url = f"{base_url}/script-details/1.0/masterscrip/file-paths"
+                req = urllib.request.Request(
+                    url,
+                    headers={"Authorization": ckey, "User-Agent": "neo-api-client/2.0.0"},
+                )
+                with urllib.request.urlopen(req, timeout=8) as r:
+                    m_data = json.loads(r.read().decode("utf-8", errors="ignore"))
+                paths = (m_data.get("data") or {}).get("filesPaths") or []
+                fo_url = next((p for p in paths if "nse_fo" in str(p).lower()), None)
+                cm_url = next((p for p in paths if "nse_cm" in str(p).lower()), None)
+
+                fo_csv_p.parent.mkdir(parents=True, exist_ok=True)
+                if fo_url:
+                    req_fo = urllib.request.Request(fo_url, headers={"User-Agent": "neo-api-client/2.0.0"})
+                    with urllib.request.urlopen(req_fo, timeout=20) as rf:
+                        fo_csv_p.write_bytes(rf.read())
+                dl_cm = None
+                if cm_url:
+                    req_cm = urllib.request.Request(cm_url, headers={"User-Agent": "neo-api-client/2.0.0"})
+                    with urllib.request.urlopen(req_cm, timeout=20) as rc:
+                        cm_csv_p.write_bytes(rc.read())
+                    dl_cm = cm_csv_p
+
+                _rebuild_kotak_maps_from_csv(fo_csv_p, dl_cm)
+                sync_meta_p.write_text(json.dumps({"date": today_s, "ts": time.time()}), encoding="utf-8")
+                logger.info(f"[Kotak] Daily scrip master synced ({len(_KOTAK_FO_MAP)} futures, {len(_KOTAK_OPT_CHAIN_MAP)} option chains).")
+            except Exception as e:
+                logger.debug(f"Kotak scrip master sync failed (using cached CSV): {e}")
+                if fo_csv_p.exists() and not _KOTAK_OPT_CHAIN_MAP:
+                    _rebuild_kotak_maps_from_csv(fo_csv_p, None)
+            finally:
+                _KOTAK_MASTER_SYNC_RUNNING = False
+
+    if blocking or not _KOTAK_FO_MAP:
+        _KOTAK_MASTER_SYNC_RUNNING = True
+        _do_sync()
+    else:
+        if not _KOTAK_MASTER_SYNC_RUNNING:
+            _KOTAK_MASTER_SYNC_RUNNING = True
+            threading.Thread(target=_do_sync, daemon=True).start()
+
+
+def _fetch_kotak_quotes_batches(base_url: str, ckey: str, neo_symbols: list[str], batch_size: int = 40) -> tuple[list[dict], bool]:
+    """
+    Concurrently fetches Kotak Neo /quotes/neosymbol batches in chunks of 40.
+    Returns (parsed_quote_items, auth_error_detected).
+    """
+    if not base_url or not ckey or not neo_symbols:
+        return [], False
+
+    chunks = [neo_symbols[i:i + batch_size] for i in range(0, len(neo_symbols), batch_size)]
+    headers = {
+        "Authorization": ckey,
+        "neo-fin-key": "neotradeapi",
+        "User-Agent": "neo-api-client/2.0.0",
+        "Accept": "application/json",
+    }
+    auth_err_flag = False
+
+    def _fetch_chunk(chunk_syms: list[str]) -> list[dict]:
+        nonlocal auth_err_flag
+        encoded = urllib.parse.quote(",".join(chunk_syms), safe="|")
+        url = f"{base_url}/script-details/1.0/quotes/neosymbol/{encoded}/all"
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                raw_bytes = resp.read()
+                data, _ = _safe_parse_kotak_response(raw_bytes)
+                if isinstance(data, list):
+                    return data
+                if isinstance(data, dict):
+                    code = str(data.get("code") or data.get("status") or "")
+                    if "401" in code or "403" in code or "invalid" in str(data).lower():
+                        auth_err_flag = True
+        except urllib.error.HTTPError as he:
+            if he.code in (401, 403):
+                auth_err_flag = True
+        except Exception:
+            pass
+        return []
+
+    out: list[dict] = []
+    with ThreadPoolExecutor(max_workers=min(len(chunks), 8)) as pool:
+        for res_list in pool.map(_fetch_chunk, chunks):
+            if res_list:
+                out.extend(res_list)
+    return out, auth_err_flag
+
+
+def _compute_live_option_iv_batch(base_url: str, ckey: str, quotes_res: dict[str, dict]) -> None:
+    """
+    Fetches live ATM CE & PE option quotes from Kotak Neo and computes real
+    Black-76 Implied Volatility (iv, ivChange, ivChangePct) per F&O underlying.
+    Caches for 12s to avoid saturating Kotak quote bandwidth on 5s polling.
+    """
+    global _LIVE_OPT_IV_CACHE
+    if not _KOTAK_OPT_CHAIN_MAP or not base_url or not ckey:
+        return
+
+    now_ts = time.time()
+    cached_iv = _LIVE_OPT_IV_CACHE.get("data") or {}
+    if cached_iv and (now_ts - _LIVE_OPT_IV_CACHE.get("ts", 0)) < 12.0:
+        quotes_res.update(cached_iv)
+        return
+
+    today = market_calendar.now_ist().date()
+    opt_tokens: list[str] = []
+    tok_meta: dict[str, tuple[str, float, float, float, float, bool]] = {}
+
+    for sym, ch_info in _KOTAK_OPT_CHAIN_MAP.items():
+        fq = quotes_res.get(f"FUT:{sym}") or quotes_res.get(f"SPOT:{sym}") or quotes_res.get(sym)
+        if not fq:
+            continue
+        f_curr = float(fq.get("ltp") or 0.0)
+        if f_curr <= 0:
+            continue
+        f_prev = float(fq.get("close") or f_curr)
+        strikes = ch_info.get("strikes") or []
+        exp_dt = ch_info.get("exp_dt")
+        if not strikes or not exp_dt:
+            continue
+        dte = max(2, (exp_dt - today).days)
+        T_curr = dte / 365.0
+        T_prev = (dte + 1) / 365.0
+
+        # Binary search closest ATM strike in sorted strikes list
+        lo_i, hi_i = 0, len(strikes) - 1
+        while lo_i < hi_i:
+            mid = (lo_i + hi_i) // 2
+            if strikes[mid][0] < f_curr:
+                lo_i = mid + 1
+            else:
+                hi_i = mid
+        best_idx = lo_i
+        if best_idx > 0 and abs(strikes[best_idx - 1][0] - f_curr) < abs(strikes[best_idx][0] - f_curr):
+            best_idx -= 1
+        atm_k, ce_tok, pe_tok = strikes[best_idx]
+        if ce_tok:
+            opt_tokens.append(f"nse_fo|{ce_tok}")
+            tok_meta[ce_tok] = (sym, atm_k, f_curr, f_prev, T_curr, T_prev, True)
+        if pe_tok:
+            opt_tokens.append(f"nse_fo|{pe_tok}")
+            tok_meta[pe_tok] = (sym, atm_k, f_curr, f_prev, T_curr, T_prev, False)
+
+    if not opt_tokens:
+        return
+
+    raw_items, _ = _fetch_kotak_quotes_batches(base_url, ckey, opt_tokens, batch_size=40)
+    if not raw_items:
+        if cached_iv:
+            quotes_res.update(cached_iv)
+        return
+
+    per_sym_curr: dict[str, list[float]] = {}
+    per_sym_prev: dict[str, list[float]] = {}
+    for q in raw_items:
+        tok = str(q.get("exchange_token") or "").strip()
+        meta = tok_meta.get(tok)
+        if not meta:
+            continue
+        sym, k_val, f_curr, f_prev, t_curr, t_prev, is_call = meta
+        ltp = float(q.get("ltp") or 0.0)
+        vol = int(float(q.get("last_volume") or 0))
+        prev_cls = float((q.get("ohlc") or {}).get("close") or 0.0)
+        if ltp > 0.05 and vol > 0:
+            iv_c = _solve_black76_iv(ltp, f_curr, k_val, t_curr, is_call=is_call)
+            if iv_c is not None and 4.0 <= iv_c <= 200.0:
+                per_sym_curr.setdefault(sym, []).append(iv_c)
+        if prev_cls > 0.05 and f_prev > 0:
+            iv_p = _solve_black76_iv(prev_cls, f_prev, k_val, t_prev, is_call=is_call)
+            if iv_p is not None and 4.0 <= iv_p <= 200.0:
+                per_sym_prev.setdefault(sym, []).append(iv_p)
+
+    new_iv_map: dict[str, dict] = {}
+    for sym, c_list in per_sym_curr.items():
+        if not c_list:
+            continue
+        # If CE and PE live IV diverge sharply, prefer the tighter/median value
+        if len(c_list) == 2 and abs(c_list[0] - c_list[1]) > 18.0:
+            curr_iv = round(min(c_list), 2)
+        else:
+            curr_iv = round(sum(c_list) / len(c_list), 2)
+
+        p_list = per_sym_prev.get(sym) or []
+        if p_list:
+            # Put-Call Parity consistency check: reject theoretical/illiquid ohlc.close settlement outliers
+            if len(p_list) == 2 and abs(p_list[0] - p_list[1]) > 15.0:
+                prev_iv = round(min(p_list, key=lambda x: abs(x - curr_iv)), 2)
+            else:
+                prev_iv = round(sum(p_list) / len(p_list), 2)
+
+            iv_chg = round(curr_iv - prev_iv, 2)
+            iv_chg_pct = round((iv_chg / prev_iv) * 100.0, 2) if prev_iv > 0 else 0.0
+            # Guard against extreme 1-tick illiquid settlement close artifacts (>45% single-day swing)
+            if abs(iv_chg_pct) > 45.0:
+                iv_chg = 0.0
+                iv_chg_pct = 0.0
+                prev_iv = curr_iv
+        else:
+            prev_iv = curr_iv
+            iv_chg = 0.0
+            iv_chg_pct = 0.0
+
+        new_iv_map[f"IV:{sym}"] = {
+            "iv": curr_iv,
+            "ivPrev": prev_iv,
+            "ivChange": iv_chg,
+            "ivChangePct": iv_chg_pct,
+            "ivSource": "KOTAK_OPT",
+        }
+
+    if new_iv_map:
+        _LIVE_OPT_IV_CACHE = {"ts": now_ts, "data": new_iv_map}
+        quotes_res.update(new_iv_map)
+
+
+def _fetch_nse_oi_spurts_map() -> dict[str, dict]:
+    """
+    Throttled (30s) official NSE public live-analysis OI spurts fallback map.
+    Provides exchange-verified latestOI, prevOI, avgInOI (%) and underlyingValue.
+    """
+    global _NSE_OI_SPURTS_CACHE
+    now_ts = time.time()
+    if _NSE_OI_SPURTS_CACHE["data"] and (now_ts - _NSE_OI_SPURTS_CACHE["ts"]) < 30.0:
+        return _NSE_OI_SPURTS_CACHE["data"]
+    try:
+        from nselib.libutil import nse_urlfetch
+        r = nse_urlfetch("https://www.nseindia.com/api/live-analysis-oi-spurts-underlyings")
+        if r and r.status_code == 200:
+            payload = r.json()
+            rows = payload.get("data") or []
+            out = {}
+            for row in rows:
+                sym = str(row.get("symbol") or "").strip().upper()
+                if sym:
+                    out[sym] = {
+                        "latestOI": float(row.get("latestOI") or 0.0),
+                        "prevOI": float(row.get("prevOI") or 0.0),
+                        "avgInOI": float(row.get("avgInOI") or 0.0),
+                        "volume": int(float(row.get("volume") or 0)),
+                        "turnover": float(row.get("turnover") or 0.0),
+                        "underlyingValue": float(row.get("underlyingValue") or 0.0),
+                    }
+            if out:
+                _NSE_OI_SPURTS_CACHE = {"ts": now_ts, "data": out}
+                return out
+    except Exception as e:
+        logger.debug(f"NSE OI spurts fallback error: {e}")
+    return _NSE_OI_SPURTS_CACHE["data"] or {}
+
+
+def get_live_kotak_quotes_map(target_symbols: Optional[list] = None, force: bool = False) -> dict[str, dict]:
     """
     Unified high-fidelity live quote engine:
-    1. Fetches real benchmark indices (NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX, BANKEX) & special symbols via Angel One SmartAPI.
-    2. Fetches 216+ F&O stocks & near futures contracts via Kotak Securities Neo API in parallel batches.
-    3. Seamlessly caches for 15s (or targeted symbols in milliseconds) to support high-frequency frontend ticker polling.
+    1. Fetches 220+ near-month F&O Futures + Cash Equity Spots + Benchmark Indices via Kotak Securities Neo API in parallel 40-token batches (~1.0s).
+    2. Computes live Black-76 ATM Option Implied Volatility (IV & IV Change %) from Kotak ATM CE/PE option chains.
+    3. Falls back cleanly to Angel One SmartAPI, Server Broker Cache, NSE OI Spurts, and Master EOD only for any missing entries.
     """
     global _LIVE_QUOTES_CACHE, _KOTAK_FO_MAP, _KOTAK_CASH_MAP
     now = time.time()
     cached_data = _LIVE_QUOTES_CACHE.get("data") or {}
     cache_age = now - _LIVE_QUOTES_CACHE.get("ts", 0)
+    fresh_window = 2.0 if force else 8.0
 
-    if not target_symbols and cached_data and cache_age < 15.0:
+    if not target_symbols and cached_data and cache_age < fresh_window:
         return cached_data
 
     target_set = {str(s).strip().upper() for s in target_symbols} if target_symbols else None
-    if target_set and cached_data and cache_age < 15.0:
+    if target_set and cached_data and cache_age < fresh_window:
         if all((f"FUT:{s}" in cached_data or s in cached_data) for s in target_set):
             return cached_data
 
-    quotes_res = dict(cached_data)
+    with _LIVE_QUOTES_FETCH_LOCK:
+        now = time.time()
+        cached_data = _LIVE_QUOTES_CACHE.get("data") or {}
+        cache_age = now - _LIVE_QUOTES_CACHE.get("ts", 0)
+        if not target_symbols and cached_data and cache_age < fresh_window:
+            return cached_data
 
-    # 0. Load Scrip Masters
-    if not _KOTAK_FO_MAP:
-        for map_file in [Path("cache/kotak_fo_contract_map.json"), Path("data/kotak_fo_contract_map.json")]:
-            if map_file.exists():
-                try:
-                    _KOTAK_FO_MAP = json.loads(map_file.read_text(encoding="utf-8"))
-                    _KOTAK_FO_MAP = _ensure_unexpired_contracts(_KOTAK_FO_MAP)
-                    if _KOTAK_FO_MAP:
-                        break
-                except Exception:
-                    pass
+        quotes_res = dict(cached_data)
+
+        # 0. Load Scrip Masters & Option Chain Map
         if not _KOTAK_FO_MAP:
-            _KOTAK_FO_MAP = {}
-
-    if not _KOTAK_CASH_MAP:
-        try:
-            map_file = Path("cache/kotak_token_map.json")
-            if map_file.exists():
-                _KOTAK_CASH_MAP = json.loads(map_file.read_text(encoding="utf-8"))
-        except Exception:
-            _KOTAK_CASH_MAP = {}
-
-    # 1. Fetch Benchmark Indices & Special Symbols via Angel One SmartAPI
-    try:
-        from server import AngelClient, Instrument
-        ac = AngelClient()
-        if ac.is_configured():
-            ac.ensure_session()
-            angel_insts = [
-                Instrument(symbol='NIFTY', trading_symbol='NIFTY 50', token='99926000', exchange='NSE'),
-                Instrument(symbol='BANKNIFTY', trading_symbol='NIFTY BANK', token='99926009', exchange='NSE'),
-                Instrument(symbol='FINNIFTY', trading_symbol='FINNIFTY', token='99926037', exchange='NSE'),
-                Instrument(symbol='MIDCPNIFTY', trading_symbol='MIDCPNIFTY', token='99926074', exchange='NSE'),
-                Instrument(symbol='SENSEX', trading_symbol='SENSEX', token='99919000', exchange='BSE'),
-                Instrument(symbol='BANKEX', trading_symbol='BANKEX', token='99919012', exchange='BSE'),
-                Instrument(symbol='NIFTYNXT50', trading_symbol='NIFTY NEXT 50', token='99926013', exchange='NSE'),
-            ]
-            angel_res = ac.quote(angel_insts, mode='FULL')
-            for f in angel_res.get('fetched', []):
-                ts_u = str(f.get('tradingSymbol') or '').upper()
-                tok = str(f.get('symbolToken') or '')
-                sym = None
-                if tok == '99926000' or 'NIFTY 50' in ts_u: sym = 'NIFTY'
-                elif tok == '99919012' or 'BANKEX' in ts_u: sym = 'BANKEX'
-                elif tok == '99926009' or 'NIFTY BANK' in ts_u or 'BANKNIFTY' in ts_u: sym = 'BANKNIFTY'
-                elif tok == '99926037' or 'FIN' in ts_u: sym = 'FINNIFTY'
-                elif tok == '99926074' or 'MID' in ts_u: sym = 'MIDCPNIFTY'
-                elif tok == '99919000' or 'SENSEX' in ts_u: sym = 'SENSEX'
-                elif tok == '99926013' or 'NEXT' in ts_u: sym = 'NIFTYNXT50'
-                if sym:
-                    ltp = float(f.get('ltp') or 0.0)
-                    chg = float(f.get('netChange') or 0.0)
-                    pct = float(f.get('percentChange') or 0.0)
-                    close = float(f.get('close') or (ltp - chg if ltp else 0.0))
-                    if ltp > 0:
-                        quotes_res[sym] = {
-                            "ltp": ltp,
-                            "changePct": pct,
-                            "change": chg,
-                            "open": float(f.get('open') or ltp),
-                            "high": float(f.get('high') or ltp),
-                            "low": float(f.get('low') or ltp),
-                            "close": close,
-                            "volume": int(float(f.get('tradeVolume') or 0)),
-                            "oi": int(float(f.get('opnInterest') or 0)),
-                            "source": "ANGEL"
-                        }
-                        quotes_res[f"SPOT:{sym}"] = quotes_res[sym]
-    except Exception as e:
-        logger.debug(f"Angel live quote fetch skipped: {e}")
-
-        # 2. Fetch All F&O Futures via Angel One SmartAPI (Direct NFO Live Exchange Feed)
-    try:
-        from server import AngelClient, Instrument
-        ac = AngelClient()
-        if ac.is_configured():
-            ac.ensure_session()
-            angel_map = get_angel_fo_map()
-            if angel_map:
-                if target_set:
-                    all_syms = [s for s in target_set]
-                else:
-                    all_syms = [item["symbol"] for item in FO_UNIVERSE]
-                    for extra_sym in angel_map.keys():
-                        if extra_sym not in all_syms:
-                            all_syms.append(extra_sym)
-
-                inst_list = []
-                tok_to_sym = {}
-                for sym in all_syms:
-                    f_info = angel_map.get(sym)
-                    if f_info and f_info.get("token"):
-                        tok = str(f_info["token"])
-                        tok_to_sym[tok] = sym
-                        inst_list.append(Instrument(
-                            symbol=sym,
-                            trading_symbol=f_info.get("symbol", f"{sym}FUT"),
-                            token=tok,
-                            exchange="NFO"
-                        ))
-
-                def _fetch_angel_chunk(chunk):
+            for map_file in [Path("cache/kotak_fo_contract_map.json"), Path("data/kotak_fo_contract_map.json")]:
+                if map_file.exists():
                     try:
-                        return ac.quote(chunk, mode="FULL")
+                        _KOTAK_FO_MAP = json.loads(map_file.read_text(encoding="utf-8"))
+                        _KOTAK_FO_MAP = _ensure_unexpired_contracts(_KOTAK_FO_MAP)
+                        if _KOTAK_FO_MAP:
+                            break
                     except Exception:
-                        return {}
+                        pass
+            if not _KOTAK_FO_MAP:
+                _KOTAK_FO_MAP = {}
 
-                chunks = [inst_list[c_idx:c_idx + 50] for c_idx in range(0, min(len(inst_list), 250), 50)]
-                with ThreadPoolExecutor(max_workers=min(len(chunks), 5)) as pool:
-                    results = pool.map(_fetch_angel_chunk, chunks)
-                for a_res in results:
-                    for f in a_res.get("fetched", []):
-                        tok = str(f.get("symbolToken") or "")
-                        sym = tok_to_sym.get(tok)
-                        ltp = float(f.get("ltp") or 0.0)
-                        if sym and ltp > 0:
-                            chg = float(f.get("netChange") or 0.0)
-                            pct = float(f.get("percentChange") or 0.0)
+        if not _KOTAK_CASH_MAP:
+            try:
+                map_file = Path("cache/kotak_token_map.json")
+                if map_file.exists():
+                    _KOTAK_CASH_MAP = json.loads(map_file.read_text(encoding="utf-8"))
+            except Exception:
+                _KOTAK_CASH_MAP = {}
+
+        _load_kotak_opt_chain_cache()
+
+        # 1. Primary Live Engine: Kotak Securities Neo API (220+ Futures + Spot Equities + Spot Indices + ATM Option IV)
+        kotak_fut_count = 0
+        try:
+            base_url, ckey = _ensure_kotak_session_base_url(force_login=False)
+            if base_url and ckey:
+                _refresh_kotak_scrip_master_if_needed(base_url, ckey, blocking=False)
+
+                neo_tokens: list[str] = []
+                tok_to_fut_sym: dict[str, str] = {}
+                tok_to_cm_sym: dict[str, str] = {}
+
+                idx_neo_map = {
+                    "Nifty 50": "NIFTY",
+                    "Nifty Bank": "BANKNIFTY",
+                    "Nifty Fin Service": "FINNIFTY",
+                    "NIFTY MID SELECT": "MIDCPNIFTY",
+                    "Nifty Next 50": "NIFTYNXT50",
+                    "SENSEX": "SENSEX",
+                    "BANKEX": "BANKEX",
+                }
+                for n_sym, ik in idx_neo_map.items():
+                    if target_set and ik not in target_set:
+                        continue
+                    ex_prefix = "bse_cm" if ik in ("SENSEX", "BANKEX") else "nse_cm"
+                    neo_tokens.append(f"{ex_prefix}|{n_sym}")
+
+                fut_syms = [s for s in _KOTAK_FO_MAP.keys() if (not target_set or s in target_set) and s not in _LEGACY_DELISTED_ALIASES]
+                for sym in fut_syms:
+                    tok = str((_KOTAK_FO_MAP.get(sym) or {}).get("token") or "").strip()
+                    if tok:
+                        tok_to_fut_sym[tok] = sym
+                        neo_tokens.append(f"nse_fo|{tok}")
+
+                for sym in fut_syms:
+                    cm_tok = str(_KOTAK_CASH_MAP.get(sym) or "").strip()
+                    if cm_tok:
+                        tok_to_cm_sym[cm_tok] = sym
+                        neo_tokens.append(f"nse_cm|{cm_tok}")
+
+                if neo_tokens:
+                    raw_quotes, auth_err = _fetch_kotak_quotes_batches(base_url, ckey, neo_tokens, batch_size=40)
+                    if auth_err or not raw_quotes:
+                        new_url, new_ckey = _ensure_kotak_session_base_url(force_login=True)
+                        if new_url and new_ckey:
+                            base_url, ckey = new_url, new_ckey
+                            raw_quotes, _ = _fetch_kotak_quotes_batches(base_url, ckey, neo_tokens, batch_size=40)
+
+                    for q in raw_quotes:
+                        ex_tok = str(q.get("exchange_token") or "").strip()
+                        ltp = float(q.get("ltp") or 0.0)
+                        if not ex_tok or ltp <= 0:
+                            continue
+                        ohlc = q.get("ohlc") or {}
+                        prev_cls = float(ohlc.get("close") or 0.0)
+                        raw_chg = q.get("change")
+                        raw_pct = q.get("per_change")
+                        chg = float(raw_chg) if raw_chg not in (None, "") else (round(ltp - prev_cls, 2) if prev_cls > 0 else 0.0)
+                        pct = float(raw_pct) if raw_pct not in (None, "") else (round((chg / prev_cls) * 100.0, 2) if prev_cls > 0 else 0.0)
+                        if prev_cls <= 0:
+                            prev_cls = round(ltp - chg, 2)
+
+                        if ex_tok in idx_neo_map:
+                            ik = idx_neo_map[ex_tok]
+                            idx_q = {
+                                "ltp": ltp,
+                                "change": chg,
+                                "changePct": pct,
+                                "open": float(ohlc.get("open") or ltp),
+                                "high": float(ohlc.get("high") or ltp),
+                                "low": float(ohlc.get("low") or ltp),
+                                "close": prev_cls,
+                                "lstupTime": q.get("lstup_time"),
+                                "source": "KOTAK_IDX",
+                            }
+                            quotes_res[ik] = idx_q
+                            quotes_res[f"SPOT:{ik}"] = idx_q
+                        elif ex_tok in tok_to_fut_sym:
+                            sym = tok_to_fut_sym[ex_tok]
+                            oi_shares = int(float(q.get("open_int") or 0))
+                            vol_shares = int(float(q.get("last_volume") or 0))
+                            vwap = float(q.get("avg_cost") or ltp)
                             quotes_res[f"FUT:{sym}"] = {
                                 "ltp": ltp,
                                 "change": chg,
                                 "changePct": pct,
-                                "open": float(f.get("open") or ltp),
-                                "high": float(f.get("high") or ltp),
-                                "low": float(f.get("low") or ltp),
-                                "close": float(f.get("close") or (ltp - chg)),
-                                "volume": int(float(f.get("tradeVolume") or 0)),
-                                "oi": int(float(f.get("opnInterest") or 0)),
-                                "vwap": float(f.get("avgPrice") or ltp),
-                                "source": "ANGEL_NFO"
+                                "open": float(ohlc.get("open") or ltp),
+                                "high": float(ohlc.get("high") or ltp),
+                                "low": float(ohlc.get("low") or ltp),
+                                "close": prev_cls,
+                                "volume": vol_shares,
+                                "volIsContracts": False,
+                                "oi": oi_shares,
+                                "vwap": vwap if vwap > 0 else ltp,
+                                "lstupTime": q.get("lstup_time"),
+                                "source": "KOTAK_NFO",
                             }
-    except Exception as e:
-        logger.debug(f"Angel NFO batch live fetch error: {e}")
+                            kotak_fut_count += 1
+                        elif ex_tok in tok_to_cm_sym:
+                            sym = tok_to_cm_sym[ex_tok]
+                            quotes_res[f"SPOT:{sym}"] = {
+                                "ltp": ltp,
+                                "change": chg,
+                                "changePct": pct,
+                                "open": float(ohlc.get("open") or ltp),
+                                "high": float(ohlc.get("high") or ltp),
+                                "low": float(ohlc.get("low") or ltp),
+                                "close": prev_cls,
+                                "source": "KOTAK_CM",
+                            }
 
-    # 4. Fast Index Quotes from Server Broker Cache
-    try:
-        from server import get_live_market_index_quotes
-        s_quotes = get_live_market_index_quotes()
-        idx_mapping = {
-            "NIFTY": "nifty50",
-            "BANKNIFTY": "banknifty",
-            "SENSEX": "sensex",
-            "FINNIFTY": "finnifty",
-            "MIDCPNIFTY": "midcpnifty"
-        }
-        for ik, sk in idx_mapping.items():
-            if ik not in quotes_res or quotes_res[ik].get("ltp", 0) <= 0:
-                sq = s_quotes.get(sk)
-                if sq and float(sq.get("ltp") or 0) > 0:
-                    ltp = float(sq["ltp"])
-                    chg = float(sq.get("change") or 0.0)
-                    pct = float(sq.get("change_pct") or sq.get("changePct") or 0.0)
-                    prev = float(sq.get("prev_close") or (ltp - chg))
-                    quotes_res[ik] = {
-                        "ltp": ltp,
-                        "change": chg,
-                        "changePct": pct,
-                        "close": prev,
-                        "source": "SERVER_BROKER"
-                    }
-                    quotes_res[f"SPOT:{ik}"] = quotes_res[ik]
-    except Exception as e:
-        logger.debug(f"Server index quotes fallback error: {e}")
-
-    # 4.5 Fast EOD Bhavcopy Master Fallback for Benchmark Indices (0ms instant resolution)
-    try:
-        master_path = Path("data/fo_bhav_eod_master.json")
-        if master_path.exists():
-            with open(master_path, "r", encoding="utf-8") as f:
-                mdata = json.load(f)
-            sym_data = mdata.get("symbols_data", {})
-            for ik in ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50"]:
-                if (ik not in quotes_res or quotes_res[ik].get("ltp", 0) <= 0) and ik in sym_data and sym_data[ik]:
-                    last_b = sym_data[ik][-1]
-                    c = float(last_b.get("c") or 0.0)
-                    fut_c = float(last_b.get("fut_c") or c)
-                    prev_c = float(sym_data[ik][-2].get("c", c)) if len(sym_data[ik]) > 1 else c
-                    chg = round(c - prev_c, 2)
-                    pct = round((chg / prev_c) * 100.0, 2) if prev_c > 0 else 0.0
-                    quotes_res[ik] = {
-                        "ltp": c,
-                        "change": chg,
-                        "changePct": pct,
-                        "close": prev_c,
-                        "source": "MASTER_EOD"
-                    }
-                    quotes_res[f"SPOT:{ik}"] = quotes_res[ik]
-                    quotes_res[f"FUT:{ik}"] = {
-                        "ltp": fut_c,
-                        "change": chg,
-                        "changePct": pct,
-                        "close": prev_c,
-                        "source": "MASTER_EOD"
-                    }
-    except Exception as e:
-        logger.debug(f"Master EOD index fallback error: {e}")
-
-    # 5. Concurrent Fast Yahoo Finance Fallback for any still missing indices
-    missing_yf = [(ik, ys) for ik, ys in [("NIFTY", "%5ENSEI"), ("BANKNIFTY", "%5ENSEBANK"), ("SENSEX", "%5EBSESN")]
-                  if ik not in quotes_res or quotes_res[ik].get("ltp", 0) <= 0]
-    if missing_yf:
-        def _fetch_single_yf(item):
-            ik, ys = item
-            try:
-                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ys}?interval=1m&range=1d"
-                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req, timeout=1.5) as r:
-                    d = json.loads(r.read().decode())
-                    meta = d["chart"]["result"][0]["meta"]
-                    price = float(meta.get("regularMarketPrice") or 0.0)
-                    prev = float(meta.get("chartPreviousClose") or meta.get("previousClose") or price)
-                    chg = round(price - prev, 2)
-                    pct = round((chg / prev) * 100, 2) if prev else 0.0
-                    if price > 0:
-                        return ik, {
-                            "ltp": price,
-                            "changePct": pct,
-                            "change": chg,
-                            "close": prev,
-                            "source": "YAHOO"
-                        }
-            except Exception:
-                pass
-            return ik, None
-
-        try:
-            with ThreadPoolExecutor(max_workers=min(len(missing_yf), 3)) as yf_pool:
-                for ik, yf_res in yf_pool.map(_fetch_single_yf, missing_yf):
-                    if yf_res:
-                        quotes_res[ik] = yf_res
-                        quotes_res[f"SPOT:{ik}"] = yf_res
+                # Compute genuine Black-76 ATM Option IV if Kotak Futures returned live data
+                if kotak_fut_count > 0 and not target_set:
+                    _compute_live_option_iv_batch(base_url, ckey, quotes_res)
         except Exception as e:
-            logger.debug(f"Yahoo pool error: {e}")
+            logger.debug(f"Kotak Neo live quote batch error: {e}")
+
+        # 2. Angel One SmartAPI Fallback (ONLY for missing benchmark indices / missing futures when Kotak failed or incomplete)
+        missing_idx = [ik for ik in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX", "NIFTYNXT50")
+                       if ik not in quotes_res or float(quotes_res[ik].get("ltp") or 0) <= 0]
+        if missing_idx or kotak_fut_count < 20:
+            try:
+                from server import AngelClient, Instrument
+                ac = AngelClient()
+                if ac.is_configured():
+                    ac.ensure_session()
+                    if missing_idx:
+                        angel_insts = [
+                            Instrument(symbol='NIFTY', trading_symbol='NIFTY 50', token='99926000', exchange='NSE'),
+                            Instrument(symbol='BANKNIFTY', trading_symbol='NIFTY BANK', token='99926009', exchange='NSE'),
+                            Instrument(symbol='FINNIFTY', trading_symbol='FINNIFTY', token='99926037', exchange='NSE'),
+                            Instrument(symbol='MIDCPNIFTY', trading_symbol='MIDCPNIFTY', token='99926074', exchange='NSE'),
+                            Instrument(symbol='SENSEX', trading_symbol='SENSEX', token='99919000', exchange='BSE'),
+                            Instrument(symbol='BANKEX', trading_symbol='BANKEX', token='99919012', exchange='BSE'),
+                            Instrument(symbol='NIFTYNXT50', trading_symbol='NIFTY NEXT 50', token='99926013', exchange='NSE'),
+                        ]
+                        angel_res = ac.quote(angel_insts, mode='FULL')
+                        for f in angel_res.get('fetched', []):
+                            ts_u = str(f.get('tradingSymbol') or '').upper()
+                            tok = str(f.get('symbolToken') or '')
+                            sym = None
+                            if tok == '99926000' or 'NIFTY 50' in ts_u: sym = 'NIFTY'
+                            elif tok == '99919012' or 'BANKEX' in ts_u: sym = 'BANKEX'
+                            elif tok == '99926009' or 'NIFTY BANK' in ts_u or 'BANKNIFTY' in ts_u: sym = 'BANKNIFTY'
+                            elif tok == '99926037' or 'FIN' in ts_u: sym = 'FINNIFTY'
+                            elif tok == '99926074' or 'MID' in ts_u: sym = 'MIDCPNIFTY'
+                            elif tok == '99919000' or 'SENSEX' in ts_u: sym = 'SENSEX'
+                            elif tok == '99926013' or 'NEXT' in ts_u: sym = 'NIFTYNXT50'
+                            if sym and sym in missing_idx:
+                                ltp = float(f.get('ltp') or 0.0)
+                                chg = float(f.get('netChange') or 0.0)
+                                pct = float(f.get('percentChange') or 0.0)
+                                close = float(f.get('close') or (ltp - chg if ltp else 0.0))
+                                if ltp > 0:
+                                    quotes_res[sym] = {
+                                        "ltp": ltp,
+                                        "changePct": pct,
+                                        "change": chg,
+                                        "open": float(f.get('open') or ltp),
+                                        "high": float(f.get('high') or ltp),
+                                        "low": float(f.get('low') or ltp),
+                                        "close": close,
+                                        "volume": int(float(f.get('tradeVolume') or 0)),
+                                        "oi": int(float(f.get('opnInterest') or 0)),
+                                        "source": "ANGEL"
+                                    }
+                                    quotes_res[f"SPOT:{sym}"] = quotes_res[sym]
+
+                    if kotak_fut_count < 20:
+                        angel_map = get_angel_fo_map()
+                        if angel_map:
+                            all_syms = [s for s in target_set] if target_set else list(angel_map.keys())
+                            inst_list = []
+                            tok_to_sym = {}
+                            for sym in all_syms:
+                                if f"FUT:{sym}" in quotes_res and float(quotes_res[f"FUT:{sym}"].get("ltp") or 0) > 0:
+                                    continue
+                                f_info = angel_map.get(sym)
+                                if f_info and f_info.get("token"):
+                                    tok = str(f_info["token"])
+                                    tok_to_sym[tok] = sym
+                                    inst_list.append(Instrument(
+                                        symbol=sym,
+                                        trading_symbol=f_info.get("symbol", f"{sym}FUT"),
+                                        token=tok,
+                                        exchange="NFO"
+                                    ))
+
+                            def _fetch_angel_chunk(chunk):
+                                try:
+                                    return ac.quote(chunk, mode="FULL")
+                                except Exception:
+                                    return {}
+
+                            chunks = [inst_list[c_idx:c_idx + 50] for c_idx in range(0, min(len(inst_list), 250), 50)]
+                            if chunks:
+                                with ThreadPoolExecutor(max_workers=min(len(chunks), 5)) as pool:
+                                    results = pool.map(_fetch_angel_chunk, chunks)
+                                for a_res in results:
+                                    for f in a_res.get("fetched", []):
+                                        tok = str(f.get("symbolToken") or "")
+                                        sym = tok_to_sym.get(tok)
+                                        ltp = float(f.get("ltp") or 0.0)
+                                        if sym and ltp > 0:
+                                            chg = float(f.get("netChange") or 0.0)
+                                            pct = float(f.get("percentChange") or 0.0)
+                                            quotes_res[f"FUT:{sym}"] = {
+                                                "ltp": ltp,
+                                                "change": chg,
+                                                "changePct": pct,
+                                                "open": float(f.get("open") or ltp),
+                                                "high": float(f.get("high") or ltp),
+                                                "low": float(f.get("low") or ltp),
+                                                "close": float(f.get("close") or (ltp - chg)),
+                                                "volume": int(float(f.get("tradeVolume") or 0)),
+                                                "volIsContracts": False,
+                                                "oi": int(float(f.get("opnInterest") or 0)),
+                                                "vwap": float(f.get("avgPrice") or ltp),
+                                                "source": "ANGEL_NFO"
+                                            }
+            except Exception as e:
+                logger.debug(f"Angel fallback live quote error: {e}")
+
+        # 3. NSE Public Live OI Spurts Fallback ONLY when Kotak failed/incomplete during live market hours
+        try:
+            if kotak_fut_count < 20 and market_calendar.has_market_opened_on_date():
+                nse_oi_map = _fetch_nse_oi_spurts_map()
+                if nse_oi_map:
+                    quotes_res["__NSE_OI_SPURTS__"] = nse_oi_map
+        except Exception:
+            pass
+
+        # 4. Fast Index Quotes from Server Broker Cache (for any still-missing index spots)
+        try:
+            from server import get_live_market_index_quotes
+            s_quotes = get_live_market_index_quotes()
+            idx_mapping = {
+                "NIFTY": "nifty50",
+                "BANKNIFTY": "banknifty",
+                "SENSEX": "sensex",
+                "FINNIFTY": "finnifty",
+                "MIDCPNIFTY": "midcpnifty"
+            }
+            for ik, sk in idx_mapping.items():
+                if ik not in quotes_res or quotes_res[ik].get("ltp", 0) <= 0:
+                    sq = s_quotes.get(sk)
+                    if sq and float(sq.get("ltp") or 0) > 0:
+                        ltp = float(sq["ltp"])
+                        chg = float(sq.get("change") or 0.0)
+                        pct = float(sq.get("change_pct") or sq.get("changePct") or 0.0)
+                        prev = float(sq.get("prev_close") or (ltp - chg))
+                        quotes_res[ik] = {
+                            "ltp": ltp,
+                            "change": chg,
+                            "changePct": pct,
+                            "close": prev,
+                            "source": "SERVER_BROKER"
+                        }
+                        quotes_res[f"SPOT:{ik}"] = quotes_res[ik]
+        except Exception as e:
+            logger.debug(f"Server index quotes fallback error: {e}")
+
+        # 5. Concurrent Fast Yahoo Finance Fallback for any still-missing index spots
+        missing_yf = [(ik, ys) for ik, ys in [("NIFTY", "%5ENSEI"), ("BANKNIFTY", "%5ENSEBANK"), ("SENSEX", "%5EBSESN")]
+                      if ik not in quotes_res or quotes_res[ik].get("ltp", 0) <= 0]
+        if missing_yf:
+            def _fetch_single_yf(item):
+                ik, ys = item
+                try:
+                    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ys}?interval=1m&range=1d"
+                    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req, timeout=1.5) as r:
+                        d = json.loads(r.read().decode())
+                        meta = d["chart"]["result"][0]["meta"]
+                        price = float(meta.get("regularMarketPrice") or 0.0)
+                        prev = float(meta.get("chartPreviousClose") or meta.get("previousClose") or price)
+                        chg = round(price - prev, 2)
+                        pct = round((chg / prev) * 100, 2) if prev else 0.0
+                        if price > 0:
+                            return ik, {
+                                "ltp": price,
+                                "changePct": pct,
+                                "change": chg,
+                                "close": prev,
+                                "source": "YAHOO"
+                            }
+                except Exception:
+                    pass
+                return ik, None
+
+            try:
+                with ThreadPoolExecutor(max_workers=min(len(missing_yf), 3)) as yf_pool:
+                    for ik, yf_res in yf_pool.map(_fetch_single_yf, missing_yf):
+                        if yf_res:
+                            quotes_res[ik] = yf_res
+                            quotes_res[f"SPOT:{ik}"] = yf_res
+            except Exception as e:
+                logger.debug(f"Yahoo pool error: {e}")
+
+        if quotes_res:
+            _LIVE_QUOTES_CACHE = {"ts": time.time(), "data": quotes_res}
+        return quotes_res
 
 
-    if quotes_res:
-        _LIVE_QUOTES_CACHE = {"ts": now, "data": quotes_res}
-    return quotes_res
-
-
-def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
+def _build_master_futures_records(allow_network: bool = True, force_quotes: bool = False) -> list[dict]:
     """
     Constructs high-fidelity records for all F&O universe symbols with real-time
-    Kotak Securities Neo API and Angel SmartAPI exchange quotes, basis, OI, and buildup,
-    with automatic official NSE Bhavcopy EOD seeding when market is closed.
+    Kotak Securities Neo API and Angel SmartAPI exchange quotes, basis, OI, real ATM option IV,
+    and buildup, with automatic official NSE Bhavcopy EOD seeding when market is closed.
     """
     now = market_calendar.now_ist()
-    mkt_is_open = market_calendar.is_market_open()
-    records = []
-    live_quotes = get_live_kotak_quotes_map() if allow_network else (_LIVE_QUOTES_CACHE.get("data") or {})
-    bhav_map, bhav_date_str = _load_latest_bhavcopy_data()
+    mkt_sum = market_calendar.get_market_status_summary(now_dt=now)
+    mkt_is_open = bool(mkt_sum["isOpen"])
+    has_opened_today = market_calendar.has_market_opened_on_date(now_dt=now)
+    today_display = mkt_sum["todayDisplay"]
 
-    # Load baseline OI cache for real OI Change calculation
+    bhav_map, bhav_date_str = _load_latest_bhavcopy_data()
+    use_live_quotes = has_opened_today and not (not mkt_is_open and bhav_date_str == today_display)
+
+    if allow_network and use_live_quotes:
+        live_quotes = get_live_kotak_quotes_map(force=force_quotes)
+    elif use_live_quotes:
+        live_quotes = _LIVE_QUOTES_CACHE.get("data") or {}
+    else:
+        live_quotes = {}
+
+    nse_oi_map = live_quotes.get("__NSE_OI_SPURTS__", {}) if use_live_quotes else {}
+    records = []
+
+    # Load baseline OI cache as secondary fallback only
     baseline_cache_file = Path("cache/daily_oi_baseline.json")
     baseline_oi = {}
     today_str = now.strftime("%Y-%m-%d")
@@ -1248,39 +2075,43 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
 
     new_baseline_needed = False
 
-    # Merge symbols: FO_UNIVERSE + any remaining active contracts in _KOTAK_FO_MAP
+    # Merge symbols cleanly: FO_UNIVERSE + active Kotak contracts + active Bhavcopy contracts
     symbols_seen = set()
     universe_items = []
     for item in FO_UNIVERSE:
         sym = item["symbol"]
+        if sym in _LEGACY_DELISTED_ALIASES or sym in symbols_seen:
+            continue
         symbols_seen.add(sym)
         universe_items.append(item)
 
     for sym, c_info in _KOTAK_FO_MAP.items():
-        if sym not in symbols_seen:
-            symbols_seen.add(sym)
-            _KNOWN_SECTORS = {
-                'SWIGGY': 'Services', 'ETERNAL': 'Services', 'ZOMATO': 'Services',
-                'HYUNDAI': 'Auto', 'TMPV': 'Auto', 'TATAMOTORS': 'Auto', 'FORCEMOT': 'Auto', 'ATHERENERG': 'Auto', 'UNOMINDA': 'Auto', 'SONACOMS': 'Auto',
-                'WAAREEENER': 'Power', 'PREMIERENE': 'Power', 'SUZLON': 'Power', 'INOXWIND': 'Power', 'ADANIENSOL': 'Power', 'POWERINDIA': 'Power', 'CGPOWER': 'Power',
-                'JIOFIN': 'Financials', 'LICI': 'Financials', 'POLICYBZR': 'Financials', 'IREDA': 'Financials', 'IRFC': 'Financials',
-                'MAHABANK': 'Banking', 'INDIANB': 'Banking', 'BANKINDIA': 'Banking', 'YESBANK': 'Banking', 'ABCAPITAL': 'Financials',
-                'BAJAJHLDNG': 'Financials', 'KFINTECH': 'Financials', '360ONE': 'Financials', 'MOTILALOFS': 'Financials', 'CAMS': 'Financials', 'MFSL': 'Financials', 'LTF': 'Financials', 'PNBHOUSING': 'Financials',
-                'PAYTM': 'Financials', 'KALYANKJIL': 'FMCG', 'TITAN': 'FMCG', 'MANKIND': 'Pharma', 'FORTIS': 'Pharma', 'SAGILITY': 'Services',
-                'INDHOTEL': 'Services', 'LODHA': 'Realty', 'RVNL': 'Infrastructure', 'LTM': 'IT', 'HINDPETRO': 'Energy', 'UNITDSPR': 'FMCG',
-                'KAYNES': 'Capital Goods', 'PGEL': 'Capital Goods', 'AMBER': 'Capital Goods', 'APLAPOLLO': 'Metals', 'SUPREMEIND': 'Industrial',
-                'PAGEIND': 'FMCG', 'CROMPTON': 'FMCG', 'GODFRYPHLP': 'FMCG', 'PATANJALI': 'FMCG', 'SOLARINDS': 'Chemicals', 'GVT&D': 'Power',
-                'IEX': 'Financials', 'GMRAIRPORT': 'Infrastructure', 'VMM': 'Consumer', 'NIFTYFPI': 'Index'
-            }
-            universe_items.append({
-                "symbol": sym,
-                "name": sym,
-                "sector": _KNOWN_SECTORS.get(sym, "Others"),
-                "lot": c_info.get("lot", 1),
-                "isIndex": sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50", "SENSEX", "BANKEX", "NIFTYFPI"),
-                "basePrice": 100.0,
-                "mwplBase": 50.0
-            })
+        if sym in _LEGACY_DELISTED_ALIASES or sym in symbols_seen:
+            continue
+        symbols_seen.add(sym)
+        universe_items.append({
+            "symbol": sym,
+            "name": sym,
+            "sector": _SYMBOL_SECTORS.get(sym, "Others"),
+            "lot": c_info.get("lot", 1),
+            "isIndex": sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50", "SENSEX", "BANKEX", "NIFTYFPI"),
+            "basePrice": 100.0,
+            "mwplBase": 50.0,
+        })
+
+    for sym, b_info in bhav_map.items():
+        if sym in _LEGACY_DELISTED_ALIASES or sym in symbols_seen:
+            continue
+        symbols_seen.add(sym)
+        universe_items.append({
+            "symbol": sym,
+            "name": sym,
+            "sector": _SYMBOL_SECTORS.get(sym, "Others"),
+            "lot": b_info.get("lot", 1),
+            "isIndex": sym in ("NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50", "SENSEX", "BANKEX", "NIFTYFPI"),
+            "basePrice": float(b_info.get("ltp") or 100.0),
+            "mwplBase": 50.0,
+        })
 
     for item in universe_items:
         sym = item["symbol"]
@@ -1291,7 +2122,7 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
         c_info = _KOTAK_FO_MAP.get(sym, {})
         if c_info.get("lot"):
             lot = c_info["lot"]
-        expiry = c_info.get("expiry", "27-Oct-2026")
+        expiry = c_info.get("expiry", "26-Nov-2026")
 
         bhav_q = bhav_map.get(sym, {})
         if bhav_q.get("expiry"):
@@ -1299,24 +2130,43 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
         if bhav_q.get("lot"):
             lot = bhav_q["lot"]
 
-        fut_q = live_quotes.get(f"FUT:{sym}")
-        spot_q = live_quotes.get(f"SPOT:{sym}") or live_quotes.get(sym)
+        fut_q = live_quotes.get(f"FUT:{sym}") if use_live_quotes else None
+        spot_q = (live_quotes.get(f"SPOT:{sym}") or live_quotes.get(sym)) if use_live_quotes else None
+        has_live_fut = bool(use_live_quotes and fut_q and float(fut_q.get("ltp") or 0) > 0 and fut_q.get("source") != "MASTER_EOD")
+
+        # Skip delisted/ex-F&O stocks that have neither active Bhavcopy nor live Futures feed
+        if not is_idx and not bhav_q and not has_live_fut:
+            continue
 
         is_live_broker = False
-        if mkt_is_open and fut_q and fut_q.get("ltp") and fut_q.get("source") != "MASTER_EOD":
+        vol_is_contracts = True
+        if has_live_fut:
             is_live_broker = True
             fut_price = float(fut_q["ltp"])
             fut_chg = float(fut_q.get("change") or 0.0)
             fut_chg_pct = float(fut_q.get("changePct") or 0.0)
             curr_oi = int(float(fut_q.get("oi") or 0))
             raw_vol = int(float(fut_q.get("volume") or 0))
+            vol_is_contracts = bool(fut_q.get("volIsContracts", False))
             vwap = float(fut_q.get("vwap") or fut_price)
             day_high = float(fut_q.get("high") or fut_price)
             day_low = float(fut_q.get("low") or fut_price)
             prev_close = float(fut_q.get("close") or (fut_price - fut_chg))
+        elif is_idx and use_live_quotes and spot_q and float(spot_q.get("ltp") or 0) > 0 and spot_q.get("source") != "MASTER_EOD":
+            # BSE indices (SENSEX / BANKEX) may only have spot feed unless BSE F&O is subscribed
+            is_live_broker = True
+            fut_price = float(spot_q["ltp"])
+            fut_chg = float(spot_q.get("change") or 0.0)
+            fut_chg_pct = float(spot_q.get("changePct") or 0.0)
+            curr_oi = int(float(bhav_q.get("oi") or 0))
+            raw_vol = int(float(bhav_q.get("volume") or 0))
+            vwap = fut_price
+            day_high = float(spot_q.get("high") or fut_price)
+            day_low = float(spot_q.get("low") or fut_price)
+            prev_close = float(spot_q.get("close") or (fut_price - fut_chg))
         elif bhav_q:
-            # Fall back to latest official NSE Bhavcopy session data
-            fut_price = float(bhav_q.get("ltp") or base)
+            # Official NSE Bhavcopy EOD session data
+            fut_price = float(bhav_q.get("ltp") or bhav_q.get("close") or base)
             fut_chg = float(bhav_q.get("priceChange") or 0.0)
             fut_chg_pct = float(bhav_q.get("priceChangePct") or 0.0)
             curr_oi = int(float(bhav_q.get("oi") or 0))
@@ -1336,11 +2186,9 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
             day_low = fut_price
             prev_close = base
 
-        if spot_q and spot_q.get("ltp"):
+        if use_live_quotes and spot_q and float(spot_q.get("ltp") or 0) > 0 and spot_q.get("source") != "MASTER_EOD":
             spot_price = float(spot_q["ltp"])
             spot_chg_pct = float(spot_q.get("changePct") or 0.0)
-            if not is_live_broker:
-                is_live_broker = True
         elif bhav_q and bhav_q.get("spotPrice"):
             spot_price = float(bhav_q["spotPrice"])
             spot_chg_pct = fut_chg_pct
@@ -1360,28 +2208,25 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
             dte = 5
         coc = round(basis_pct * (365.0 / dte), 2)
 
-        is_live_fut = bool(fut_q and fut_q.get("ltp") and (float(fut_q.get("oi") or 0) > 0))
+        # Real OI metrics vs previous trading day's official near-month closing OI
+        prev_day_oi = 0.0
+        if bhav_q and bhav_q.get("oi"):
+            b_date = bhav_q.get("date", "")
+            if b_date == today_display or b_date == today_str:
+                prev_day_oi = float(bhav_q.get("oi", 0) - bhav_q.get("oiChange", 0))
+            else:
+                prev_day_oi = float(bhav_q.get("oi", 0))
 
-        # Real OI metrics
-        if is_live_fut and curr_oi > 0:
-            if sym not in baseline_oi:
-                prev_day_oi = 0.0
-                if bhav_q and bhav_q.get("oi"):
-                    b_date = bhav_q.get("date", "")
-                    if b_date == today_str or b_date == now.strftime("%d-%b-%Y"):
-                        prev_day_oi = float(bhav_q.get("oi", 0) - bhav_q.get("oiChange", 0))
-                    else:
-                        prev_day_oi = float(bhav_q.get("oi", 0))
-                if prev_day_oi > 0:
+        if is_live_broker and curr_oi > 0:
+            if prev_day_oi <= 0:
+                prev_day_oi = float((nse_oi_map.get(sym) or {}).get("prevOI") or baseline_oi.get(sym) or 0.0)
+            if prev_day_oi > 0:
+                if baseline_oi.get(sym) != prev_day_oi:
                     baseline_oi[sym] = prev_day_oi
                     new_baseline_needed = True
-                else:
-                    baseline_oi[sym] = float(curr_oi)
-                    new_baseline_needed = True
-
-            base_sym_oi = baseline_oi.get(sym, curr_oi)
-            if base_sym_oi > 0 and curr_oi != base_sym_oi:
-                oi_chg_pct = round(((curr_oi - base_sym_oi) / base_sym_oi) * 100.0, 2)
+                oi_chg_pct = round(((curr_oi - prev_day_oi) / prev_day_oi) * 100.0, 2)
+            elif sym in nse_oi_map and nse_oi_map[sym].get("avgInOI"):
+                oi_chg_pct = round(float(nse_oi_map[sym]["avgInOI"]), 2)
             elif bhav_q and "oiChangePct" in bhav_q:
                 oi_chg_pct = float(bhav_q["oiChangePct"])
             else:
@@ -1394,12 +2239,23 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
         oi_contracts = curr_oi // lot if (lot > 0 and curr_oi > 0) else curr_oi
         oi_val_cr = round((curr_oi * fut_price) / 10000000.0, 2)
 
-        if raw_vol == 0 and bhav_q and bhav_q.get("volume"):
-            vol_contracts = int(bhav_q["volume"])
-            vol_cr = bhav_q.get("turnoverCr", 0.0)
+        # Accurate contracts & live Turnover (Cr) respecting unit semantics
+        if has_live_fut:
+            if raw_vol <= 0:
+                vol_contracts = 0
+                vol_cr = 0.0
+            elif vol_is_contracts:
+                vol_contracts = raw_vol
+                vol_cr = round((vol_contracts * lot * (vwap or fut_price)) / 10000000.0, 2)
+            else:
+                vol_contracts = raw_vol // lot if lot > 0 else raw_vol
+                vol_cr = round((raw_vol * (vwap or fut_price)) / 10000000.0, 2)
+        elif bhav_q:
+            vol_contracts = int(float(bhav_q.get("volume") or 0))
+            vol_cr = float(bhav_q.get("turnoverCr") or round((vol_contracts * lot * fut_price) / 10000000.0, 2))
         else:
-            vol_contracts = raw_vol // lot if (lot > 0 and raw_vol > 0) else raw_vol
-            vol_cr = round(bhav_q.get("turnoverCr") or ((vol_contracts * lot * fut_price) / 10000000.0), 2)
+            vol_contracts = 0
+            vol_cr = 0.0
 
         buildup_name, buildup_cls, buildup_code = classify_buildup(fut_chg_pct, oi_chg_pct)
 
@@ -1416,23 +2272,23 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
             mwpl_status = "NORMAL"
             mwpl_badge = "status-normal"
 
-        # Implied Volatility (IV) estimation (Parkinson High-Low Volatility + Price Shock Momentum)
-        if day_high > day_low > 0:
-            hl_ratio = day_high / day_low
-            parkinson_vol = math.sqrt((math.log(hl_ratio) ** 2) / (4.0 * math.log(2.0))) * math.sqrt(252.0) * 100.0
+        # Genuine exchange Black-76 ATM Option Implied Volatility (live options or Bhavcopy options)
+        iv_q = live_quotes.get(f"IV:{sym}") if (use_live_quotes and is_live_broker) else None
+        if iv_q and float(iv_q.get("iv") or 0.0) > 0:
+            est_iv = float(iv_q["iv"])
+            iv_prev = float(iv_q.get("ivPrev") or est_iv)
+            iv_change = float(iv_q.get("ivChange") or 0.0)
+            iv_change_pct = float(iv_q.get("ivChangePct") or 0.0)
+        elif bhav_q and float(bhav_q.get("iv") or 0.0) > 0:
+            est_iv = float(bhav_q["iv"])
+            iv_change = float(bhav_q.get("ivChange") or 0.0)
+            iv_change_pct = float(bhav_q.get("ivChangePct") or 0.0)
+            iv_prev = round(est_iv - iv_change, 2)
         else:
-            parkinson_vol = 0.0
-
-        base_vol = 14.5 if is_idx else 32.0
-        abs_return_vol = (abs(fut_chg_pct) / 100.0) * math.sqrt(252.0) * 50.0
-        est_iv = round(max(8.0, min(120.0, base_vol * 0.45 + parkinson_vol * 0.35 + abs_return_vol * 0.20)), 2)
-
-        intraday_range_pct = ((day_high - day_low) / prev_close) * 100.0 if prev_close > 0 else abs(fut_chg_pct)
-        normal_range_pct = 1.1 if is_idx else 2.2
-        iv_change = round((intraday_range_pct - normal_range_pct) * 1.5 + (abs(fut_chg_pct) * 0.3) - 0.3, 2)
-        if fut_chg_pct < -1.5:
-            iv_change += round(abs(fut_chg_pct) * 0.5, 2)
-        iv_change_pct = round((iv_change / est_iv) * 100.0, 2) if est_iv > 0 else 0.0
+            est_iv = 0.0
+            iv_prev = 0.0
+            iv_change = 0.0
+            iv_change_pct = 0.0
 
         rec = {
             "symbol": sym,
@@ -1474,6 +2330,7 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
             "mwplBadge": mwpl_badge,
             "limitOi": mwpl_limit,
             "iv": est_iv,
+            "ivPrev": iv_prev,
             "ivChange": iv_change,
             "ivChangePct": iv_change_pct,
             "isLiveBroker": is_live_broker,
@@ -1491,16 +2348,43 @@ def _build_master_futures_records(allow_network: bool = True) -> list[dict]:
 
 
 _MASTER_REFRESH_LOCK = threading.Lock()
+_MASTER_BUILD_LOCK = threading.Lock()
 _MASTER_BACKGROUND_RUNNING = False
+
+
+def _resolve_futures_session_meta(records: list[dict], mkt_sum: dict, bhav_date_str: str) -> tuple[bool, str, str]:
+    """
+    Determines honest (is_live, session_mode, as_of_date) based on exchange calendar
+    AND whether live broker quotes were actually obtained for F&O stocks.
+    """
+    today_display = mkt_sum["todayDisplay"]
+    has_opened_today = bool(mkt_sum.get("isTradingDay")) and market_calendar.has_market_opened_on_date()
+    live_fut_count = sum(1 for r in records if not r.get("isIndex") and r.get("isLiveBroker"))
+
+    if mkt_sum["isOpen"]:
+        if live_fut_count > 0:
+            return True, mkt_sum["sessionMode"], today_display
+        return False, "EOD_FALLBACK", (bhav_date_str or mkt_sum["lastTradingDateDisplay"])
+
+    if has_opened_today:
+        if bhav_date_str == today_display:
+            return False, mkt_sum["sessionMode"], today_display
+        if live_fut_count > 0:
+            return False, "POST_CLOSE", today_display
+        return False, "EOD_FALLBACK", (bhav_date_str or mkt_sum["lastTradingDateDisplay"])
+
+    return False, mkt_sum["sessionMode"], (bhav_date_str or mkt_sum["lastTradingDateDisplay"])
+
 
 def _async_refresh_master_worker():
     global _MASTER_BACKGROUND_RUNNING
     try:
-        recs = _build_master_futures_records(allow_network=True)
-        if recs:
-            _FUTURES_CACHE["master"] = recs
-            _FUTURES_CACHE["master_ts"] = time.time()
-            logger.info(f"[Futures] Background master quote refresh completed ({len(recs)} contracts).")
+        with _MASTER_BUILD_LOCK:
+            recs = _build_master_futures_records(allow_network=True, force_quotes=False)
+            if recs:
+                _FUTURES_CACHE["master"] = recs
+                _FUTURES_CACHE["master_ts"] = time.time()
+                logger.info(f"[Futures] Background master quote refresh completed ({len(recs)} contracts).")
     except Exception as e:
         logger.debug(f"[Futures] Background master refresh error: {e}")
     finally:
@@ -1510,25 +2394,33 @@ def _async_refresh_master_worker():
         except Exception:
             pass
 
+
 def get_futures_master(force_refresh: bool = False) -> list[dict]:
     global _MASTER_BACKGROUND_RUNNING
     now = time.time()
     cached_master = _FUTURES_CACHE.get("master")
     master_age = now - _FUTURES_CACHE.get("master_ts", 0)
+    effective_ttl = 4.0 if market_calendar.is_market_open() else 15.0
 
-    # 1. Force refresh requested: immediately build fresh records if cache is older than 3 seconds
-    if force_refresh and (not cached_master or master_age >= 3.0):
-        try:
-            fresh = _build_master_futures_records(allow_network=True)
-            if fresh:
-                _FUTURES_CACHE["master"] = fresh
-                _FUTURES_CACHE["master_ts"] = now
-                return fresh
-        except Exception as _fe:
-            logger.debug(f"Direct force refresh failed: {_fe}")
+    # 1. Force refresh requested: coalesce parallel pollers with _MASTER_BUILD_LOCK
+    if force_refresh and (not cached_master or master_age >= 2.5):
+        with _MASTER_BUILD_LOCK:
+            now = time.time()
+            cached_master = _FUTURES_CACHE.get("master")
+            master_age = now - _FUTURES_CACHE.get("master_ts", 0)
+            if cached_master and master_age < 2.5:
+                return cached_master
+            try:
+                fresh = _build_master_futures_records(allow_network=True, force_quotes=True)
+                if fresh:
+                    _FUTURES_CACHE["master"] = fresh
+                    _FUTURES_CACHE["master_ts"] = time.time()
+                    return fresh
+            except Exception as _fe:
+                logger.debug(f"Direct force refresh failed: {_fe}")
 
     # 2. Warm cache hit: return immediately (< 0.1ms)
-    if cached_master and not force_refresh and master_age < _CACHE_TTL:
+    if cached_master and master_age < effective_ttl:
         return cached_master
 
     # 3. Stale cache exists: return cached data immediately and trigger background refresh
@@ -1539,7 +2431,7 @@ def get_futures_master(force_refresh: bool = False) -> list[dict]:
         return cached_master
 
     # 4. Cold start: build instant baseline from Bhavcopy / disk master in < 5ms without blocking
-    initial_recs = _build_master_futures_records(allow_network=False)
+    initial_recs = _build_master_futures_records(allow_network=False, force_quotes=False)
     if initial_recs:
         _FUTURES_CACHE["master"] = initial_recs
         _FUTURES_CACHE["master_ts"] = now
@@ -1554,10 +2446,13 @@ def get_futures_master(force_refresh: bool = False) -> list[dict]:
 
 _DASHBOARD_CACHE = {"ts": 0.0, "data": None}
 
+
 def get_futures_dashboard(force_refresh: bool = False) -> dict:
     global _DASHBOARD_CACHE
     now_ts = time.time()
-    if not force_refresh and _DASHBOARD_CACHE["data"] and (now_ts - _DASHBOARD_CACHE["ts"]) < 10.0:
+    if not force_refresh and _DASHBOARD_CACHE["data"] and (now_ts - _DASHBOARD_CACHE["ts"]) < 3.5:
+        return _DASHBOARD_CACHE["data"]
+    if force_refresh and _DASHBOARD_CACHE["data"] and (now_ts - _DASHBOARD_CACHE["ts"]) < 2.0:
         return _DASHBOARD_CACHE["data"]
 
     """
@@ -1578,13 +2473,17 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
     if len(valid_stocks) < 30:
         valid_stocks = [r for r in stocks if r.get("futPrice", 0) > 0]
 
+    iv_stocks = [r for r in valid_stocks if r.get("iv", 0) > 0 and r.get("ivPrev", 0) > 0]
+    if not iv_stocks:
+        iv_stocks = [r for r in valid_stocks if r.get("iv", 0) > 0]
+
     top_gainers = sorted(valid_stocks, key=lambda x: x["priceChangePct"], reverse=True)[:10]
     top_losers = sorted(valid_stocks, key=lambda x: x["priceChangePct"])[:10]
     top_oi_gainers = sorted(valid_stocks, key=lambda x: x["oiChangePct"], reverse=True)[:10]
     top_oi_losers = sorted(valid_stocks, key=lambda x: x["oiChangePct"])[:10]
     top_volume_buzzers = sorted(valid_stocks, key=lambda x: x.get("volumeValueCr", 0.0), reverse=True)[:10]
-    top_iv_gainers = sorted(valid_stocks, key=lambda x: x.get("ivChangePct", 0.0), reverse=True)[:10]
-    top_iv_losers = sorted(valid_stocks, key=lambda x: x.get("ivChangePct", 0.0))[:10]
+    top_iv_gainers = sorted(iv_stocks, key=lambda x: x.get("ivChangePct", 0.0), reverse=True)[:10]
+    top_iv_losers = sorted(iv_stocks, key=lambda x: x.get("ivChangePct", 0.0))[:10]
 
     market_movers = {
         "topGainers": top_gainers,
@@ -1599,25 +2498,17 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
     # Indices
     indices_list = [r for r in records if r["isIndex"]]
 
-    _, bhav_date_str = _load_latest_bhavcopy_data(force=force_refresh)
+    _, bhav_date_str = _load_latest_bhavcopy_data(force=False)
 
     now_dt = market_calendar.now_ist()
     mkt_sum = market_calendar.get_market_status_summary(now_dt=now_dt)
     today_display = mkt_sum["todayDisplay"]
-    is_live = bool(mkt_sum["isOpen"])
-    has_opened_today = market_calendar.has_market_opened_on_date(now_dt=now_dt)
-
-    # Session belongs to TODAY only if today is an active trading day and session has already opened (09:15 IST / special session).
-    # On holidays, weekends, and pre-open hours, freeze on the last active trading session (Bhavcopy / lastTradingDateDisplay).
-    if has_opened_today:
-        as_of_date = today_display
-    else:
-        as_of_date = bhav_date_str or mkt_sum["lastTradingDateDisplay"]
+    is_live, session_mode, as_of_date = _resolve_futures_session_meta(records, mkt_sum, bhav_date_str)
 
     res = {
         "ok": True,
         "isLive": is_live,
-        "sessionMode": mkt_sum["sessionMode"],
+        "sessionMode": session_mode,
         "marketStatus": mkt_sum["statusCode"],
         "marketStatusText": mkt_sum["statusText"],
         "isHoliday": mkt_sum["isHoliday"],
@@ -1630,6 +2521,7 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
         "timestamp": now_dt.strftime("%H:%M:%S"),
         "date": today_display,
         "asOfDate": as_of_date,
+        "liveBrokerCount": sum(1 for r in stocks if r.get("isLiveBroker")),
         "activeExpiry": (records[0].get("expiry") if records and records[0].get("expiry") else "26-Nov-2026"),
         "tickSeq": int(time.time() / 3),
         "totalTurnoverCr": round(total_turnover, 2),
@@ -1658,7 +2550,7 @@ def get_futures_dashboard(force_refresh: bool = False) -> dict:
         "topIvLosers": top_iv_losers,
         "marketMovers": market_movers,
     }
-    _DASHBOARD_CACHE = {'ts': now_ts, 'data': res}
+    _DASHBOARD_CACHE = {'ts': time.time(), 'data': res}
     return res
 
 
@@ -1730,19 +2622,20 @@ def get_futures_buildup(force_refresh: bool = False) -> dict:
     sc = sorted([r for r in stocks if r.get("buildupCode") == "SC"], key=lambda x: x.get("priceChangePct", 0.0), reverse=True)
     lu = sorted([r for r in stocks if r.get("buildupCode") == "LU"], key=lambda x: x.get("priceChangePct", 0.0))
 
+    _, bhav_date_str = _load_latest_bhavcopy_data(force=False)
     now_dt = market_calendar.now_ist()
     mkt_sum = market_calendar.get_market_status_summary(now_dt=now_dt)
-    is_live = bool(mkt_sum["isOpen"])
+    is_live, session_mode, as_of_date = _resolve_futures_session_meta(records, mkt_sum, bhav_date_str)
 
     return {
         "ok": True,
         "isLive": is_live,
-        "sessionMode": mkt_sum["sessionMode"],
+        "sessionMode": session_mode,
         "marketStatus": mkt_sum["statusCode"],
         "marketStatusText": mkt_sum["statusText"],
         "isHoliday": mkt_sum["isHoliday"],
         "holidayName": mkt_sum["holidayName"],
-        "asOfDate": mkt_sum["todayDisplay"] if market_calendar.has_market_opened_on_date(now_dt) else mkt_sum["lastTradingDateDisplay"],
+        "asOfDate": as_of_date,
         "timestamp": now_dt.strftime("%Y-%m-%d %H:%M:%S"),
         "totalCount": len(stocks),
         "longBuildup": lb,
@@ -1913,9 +2806,9 @@ def get_real_contract_rollover_map() -> dict[str, float]:
     except Exception as e:
         logger.debug(f"Error loading bhavcopy rollover map: {e}")
 
-    # 2. Overlay live contract feed if available
+    # 2. Only scan cache/nse_fo.csv if Bhavcopy rollover map was empty/incomplete (< 100 symbols)
     csv_path = Path("cache/nse_fo.csv")
-    if csv_path.exists():
+    if len(_LIVE_ROLLOVER_MAP) < 100 and csv_path.exists():
         from collections import defaultdict
         import csv
 

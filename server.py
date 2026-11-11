@@ -5094,7 +5094,7 @@ def fetch_instrument_master() -> list[dict]:
 
         cache_path = CACHE_DIR / "openapi_scrip_master.json"
         cached = read_json(cache_path, {})
-        if cached.get("rows") and time.time() - cached.get("cached_at", 0) < 86400:
+        if cached.get("schema_v") == 2 and cached.get("rows") and time.time() - cached.get("cached_at", 0) < 86400:
             _INSTRUMENT_MASTER_MEM_CACHE = cached["rows"]
             return _INSTRUMENT_MASTER_MEM_CACHE
 
@@ -5107,9 +5107,9 @@ def fetch_instrument_master() -> list[dict]:
                     filtered_rows = [
                         r for r in raw_rows
                         if (r.get("exch_seg") == "NSE" and str(r.get("symbol", "")).endswith("-EQ"))
-                        or (r.get("exch_seg") in ("NFO", "BFO") and r.get("instrumenttype") == "OPTIDX")
+                        or (r.get("exch_seg") in ("NFO", "BFO") and r.get("instrumenttype") in ("OPTIDX", "FUTIDX", "FUTSTK"))
                     ]
-                    write_json(cache_path, {"cached_at": time.time(), "source": url, "rows": filtered_rows})
+                    write_json(cache_path, {"cached_at": time.time(), "schema_v": 2, "source": url, "rows": filtered_rows})
                     _INSTRUMENT_MASTER_MEM_CACHE = filtered_rows
                     return filtered_rows
             except Exception as exc:
