@@ -19441,7 +19441,10 @@ def get_straddle_chart_response(params: dict) -> dict:
 
     is_historical = bool((effective_dt and effective_dt != today_ist_str) or not is_active_broker_configured() or not is_market_open())
 
-    if is_historical:
+    # Only use Supabase historical snapshot for PAST dates (not today) — today's live feed is always fresher
+    is_truly_historical = bool(effective_dt and effective_dt != today_ist_str)
+
+    if is_truly_historical:
         try:
             import snapshot_engine
             eff_s_dt = effective_dt or resolve_market_session_date("today")
@@ -19450,35 +19453,42 @@ def get_straddle_chart_response(params: dict) -> dict:
                 st_map = snap["straddle_data"]
                 st_snap = st_map.get(idx_upper.lower()) or st_map.get(idx_upper) or st_map.get(idx_upper.upper())
                 if st_snap and st_snap.get("points") and len(st_snap["points"]) > 0:
-                    return {
-                        "ok": True,
-                        "symbol": idx_upper,
-                        "category": cat,
-                        "date": effective_dt,
-                        "expiry": st_snap.get("expiry") or exp or effective_dt,
-                        "is_historical": True,
-                        "dte": st_snap.get("dte", 0),
-                        "available_expiries": st_snap.get("available_expiries", [{"label": st_snap.get("expiry", effective_dt), "value": st_snap.get("expiry", effective_dt)}]),
-                        "available_strikes": st_snap.get("available_strikes", [st_snap.get("atmStrike")]),
-                        "strikes_data": st_snap.get("strikes_data", {}),
-                        "selected_strike": strike or st_snap.get("atmStrike"),
-                        "atm_strike": st_snap.get("atmStrike"),
-                        "latest": st_snap.get("latest") or {
-                            "spot": st_snap.get("spotPrice"),
-                            "straddle_price": st_snap.get("combinedPremium"),
-                            "straddle_strike": st_snap.get("atmStrike"),
-                            "ce_price": st_snap.get("callLtp"),
-                            "pe_price": st_snap.get("putLtp"),
-                            "decay_pts": st_snap.get("decayPoints"),
-                            "decay_pct": st_snap.get("decayPct"),
-                            "lower_breakeven": st_snap.get("rangeLower"),
-                            "upper_breakeven": st_snap.get("rangeUpper"),
-                            "greeks": st_snap.get("greeks", {}),
-                        },
-                        "points_count": len(st_snap.get("points", [])),
-                        "points": st_snap.get("points", []),
-                        "source": "Supabase EOD Snapshot",
-                    }
+                    # Validate that snap points actually belong to this session date (guard against UTC-shifted data)
+                    raw_snap_pts = st_snap["points"]
+                    valid_snap_pts = straddle_engine._validate_session_points(raw_snap_pts, eff_s_dt)
+                    if not valid_snap_pts:
+                        logger.warning("[Straddle] Supabase snap for %s/%s has no valid points — skipping", idx_upper, eff_s_dt)
+                        # Fall through to live computation
+                    else:
+                        return {
+                            "ok": True,
+                            "symbol": idx_upper,
+                            "category": cat,
+                            "date": effective_dt,
+                            "expiry": st_snap.get("expiry") or exp or effective_dt,
+                            "is_historical": True,
+                            "dte": st_snap.get("dte", 0),
+                            "available_expiries": st_snap.get("available_expiries", [{"label": st_snap.get("expiry", effective_dt), "value": st_snap.get("expiry", effective_dt)}]),
+                            "available_strikes": st_snap.get("available_strikes", [st_snap.get("atmStrike")]),
+                            "strikes_data": st_snap.get("strikes_data", {}),
+                            "selected_strike": strike or st_snap.get("atmStrike"),
+                            "atm_strike": st_snap.get("atmStrike"),
+                            "latest": st_snap.get("latest") or {
+                                "spot": st_snap.get("spotPrice"),
+                                "straddle_price": st_snap.get("combinedPremium"),
+                                "straddle_strike": st_snap.get("atmStrike"),
+                                "ce_price": st_snap.get("callLtp"),
+                                "pe_price": st_snap.get("putLtp"),
+                                "decay_pts": st_snap.get("decayPoints"),
+                                "decay_pct": st_snap.get("decayPct"),
+                                "lower_breakeven": st_snap.get("rangeLower"),
+                                "upper_breakeven": st_snap.get("rangeUpper"),
+                                "greeks": st_snap.get("greeks", {}),
+                            },
+                            "points_count": len(valid_snap_pts),
+                            "points": valid_snap_pts,
+                            "source": "Supabase EOD Snapshot",
+                        }
         except Exception as _snap_err:
             logger.warning("[Straddle] Historical snapshot check note: %s", _snap_err)
 

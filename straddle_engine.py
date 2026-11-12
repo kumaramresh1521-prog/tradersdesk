@@ -459,6 +459,28 @@ def calc_option_leg(
     return round(max(0.0, leg_price), 2)
 
 
+def _validate_session_points(points: list, s_date: str) -> list:
+    """Filter out straddle tick points from wrong session dates (UTC/IST aware)."""
+    if not points:
+        return points
+    valid = []
+    for p in points:
+        t_raw = str(p.get("time", ""))
+        try:
+            dt_obj = datetime.fromisoformat(t_raw.replace("Z", "+00:00"))
+            if dt_obj.tzinfo is None:
+                dt_ist = dt_obj.replace(tzinfo=INDIA_TZ)
+            else:
+                dt_ist = dt_obj.astimezone(INDIA_TZ)
+            if dt_ist.strftime("%Y-%m-%d") == s_date:
+                valid.append(p)
+        except Exception:
+            if t_raw.startswith(s_date):
+                valid.append(p)
+    # Only discard if >50% are wrong-date (safe fallback for edge cases)
+    return valid if len(valid) >= len(points) * 0.5 else points
+
+
 def get_recorded_straddle_series(symbol: str, session_date: str) -> Optional[dict]:
     """
     Retrieves recorded 1-minute intraday straddle ticks:
@@ -484,9 +506,20 @@ def get_recorded_straddle_series(symbol: str, session_date: str) -> Optional[dic
         if fpath.exists():
             data = json.loads(fpath.read_text(encoding="utf-8"))
             if data and data.get("points") and len(data["points"]) > 0:
-                with _INTRADAY_CACHE_LOCK:
-                    _INTRADAY_MEMORY_CACHE[cache_key] = data
-                return data
+                # Validate session date — delete corrupted cache silently
+                valid_pts = _validate_session_points(data["points"], s_date)
+                if len(valid_pts) < len(data["points"]) * 0.5:
+                    logger.warning("[Straddle] Cache %s/%s_%s.json has wrong-date points — purging", STRADDLE_INTRADAY_DIR, sym, s_date)
+                    try:
+                        fpath.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+                    # Fall through to Supabase
+                else:
+                    data["points"] = valid_pts
+                    with _INTRADAY_CACHE_LOCK:
+                        _INTRADAY_MEMORY_CACHE[cache_key] = data
+                    return data
     except Exception:
         pass
 
@@ -498,25 +531,30 @@ def get_recorded_straddle_series(symbol: str, session_date: str) -> Optional[dic
             sd = snap["straddle_data"]
             entry = sd.get(sym.lower()) or sd.get(sym.upper())
             if entry and entry.get("points") and len(entry["points"]) > 0:
-                cloud_data = {
-                    "symbol": sym,
-                    "session_date": s_date,
-                    "expiry": entry.get("expiry"),
-                    "atm_strike": entry.get("atmStrike"),
-                    "selected_strike": entry.get("atmStrike"),
-                    "points": entry.get("points", []),
-                    "latest": entry.get("latest"),
-                    "source": "Supabase Persistent Cloud Snapshot",
-                    "updated_at": get_now_ist().isoformat()
-                }
-                try:
-                    fpath = STRADDLE_INTRADAY_DIR / f"{sym}_{s_date}.json"
-                    fpath.write_text(json.dumps(cloud_data), encoding="utf-8")
-                except Exception:
-                    pass
-                with _INTRADAY_CACHE_LOCK:
-                    _INTRADAY_MEMORY_CACHE[cache_key] = cloud_data
-                return cloud_data
+                raw_snap_pts = entry.get("points", [])
+                valid_snap_pts = _validate_session_points(raw_snap_pts, s_date)
+                if not valid_snap_pts:
+                    logger.warning("[Straddle] Supabase snap for %s/%s has no valid points — skipping", sym, s_date)
+                else:
+                    cloud_data = {
+                        "symbol": sym,
+                        "session_date": s_date,
+                        "expiry": entry.get("expiry"),
+                        "atm_strike": entry.get("atmStrike"),
+                        "selected_strike": entry.get("atmStrike"),
+                        "points": valid_snap_pts,
+                        "latest": entry.get("latest"),
+                        "source": "Supabase Persistent Cloud Snapshot",
+                        "updated_at": get_now_ist().isoformat()
+                    }
+                    try:
+                        fpath = STRADDLE_INTRADAY_DIR / f"{sym}_{s_date}.json"
+                        fpath.write_text(json.dumps(cloud_data), encoding="utf-8")
+                    except Exception:
+                        pass
+                    with _INTRADAY_CACHE_LOCK:
+                        _INTRADAY_MEMORY_CACHE[cache_key] = cloud_data
+                    return cloud_data
     except Exception:
         pass
 
@@ -588,7 +626,7 @@ def record_straddle_tick(
     sym = (symbol or "NIFTY").upper().strip()
     now_ist = get_now_ist()
     s_date = now_ist.strftime("%Y-%m-%d")
-    iso_time = time_str or now_ist.strftime("%Y-%m-%dT%H:%M:00")
+    iso_time = time_str or now_ist.strftime("%Y-%m-%dT%H:%M:00+05:30")
     minute_key = iso_time[:16]
 
     recorded = get_recorded_straddle_series(sym, s_date)
@@ -899,6 +937,10 @@ def compute_straddle_analytics(
             # Automatically persist into local disk cache for instant sub-millisecond future queries
             save_straddle_intraday_series(sym, session_date, target_expiry, raw_pts, source=feed_source)
 
+    # Market hours bounds for IST filtering (09:00 start buffer, 15:35 end buffer)
+    _MOPEN = dt_time(9, 0)
+    _MCLOSE = dt_time(15, 35)
+
     if raw_pts:
         points = []
         cum_vol = 0
@@ -906,7 +948,36 @@ def compute_straddle_analytics(
         all_prices = []
         all_spots = []
 
-        latest_raw = raw_pts[-1]
+        # Pre-filter: convert all timestamps to IST and drop points outside session_date or market hours
+        normalized_raw = []
+        for r in raw_pts:
+            t_raw = r.get("time") or ""
+            try:
+                dt_obj = datetime.fromisoformat(t_raw.replace('Z', '+00:00'))
+                # If naive (no tzinfo), assume it's already IST
+                if dt_obj.tzinfo is None:
+                    dt_ist = dt_obj.replace(tzinfo=INDIA_TZ)
+                else:
+                    dt_ist = dt_obj.astimezone(INDIA_TZ)
+                # Drop points from wrong session date
+                if dt_ist.strftime("%Y-%m-%d") != session_date:
+                    continue
+                # Drop points outside market hours
+                t_hm = dt_ist.time().replace(second=0, microsecond=0)
+                if t_hm < _MOPEN or t_hm > _MCLOSE:
+                    continue
+                r2 = dict(r)
+                r2["_dt_ist"] = dt_ist
+                normalized_raw.append(r2)
+            except Exception:
+                normalized_raw.append(r)
+
+        # If filtering removed everything valid, fall back to original list (trust the data as-is)
+        if not normalized_raw and raw_pts:
+            normalized_raw = raw_pts
+
+        # Use last valid point for ATM strike computation
+        latest_raw = normalized_raw[-1]
         latest_spot = float(latest_raw.get("spot") or spot_override or meta["base_spot"])
         atm_strike = int(round(latest_spot / step) * step)
 
@@ -920,12 +991,16 @@ def compute_straddle_analytics(
 
         is_fixed_strike = (strike_override and str(strike_override).lower() not in ("atm", "auto", ""))
 
-        for r in raw_pts:
+        for r in normalized_raw:
             t_raw = r.get("time") or ""
             try:
-                dt_obj = datetime.fromisoformat(t_raw.replace('Z', '+00:00'))
-                dt_ist = dt_obj.astimezone(INDIA_TZ)
-                iso_time = dt_ist.strftime("%Y-%m-%dT%H:%M:00")
+                if "_dt_ist" in r:
+                    dt_ist = r["_dt_ist"]
+                else:
+                    dt_obj = datetime.fromisoformat(t_raw.replace('Z', '+00:00'))
+                    dt_ist = dt_obj.replace(tzinfo=INDIA_TZ) if dt_obj.tzinfo is None else dt_obj.astimezone(INDIA_TZ)
+                # Always store with explicit +05:30 so browser new Date() parses it correctly
+                iso_time = dt_ist.strftime("%Y-%m-%dT%H:%M:00+05:30")
             except Exception:
                 iso_time = t_raw
 
@@ -1085,12 +1160,19 @@ def compute_straddle_analytics(
         for i, candle in enumerate(raw_candles):
             c_spot = round(float(candle.get("close") or spot_val), 2)
             t_raw = str(candle.get("time") or "")
-            if len(t_raw) <= 5 and ":" in t_raw:
-                iso_time = f"{session_date}T{t_raw}:00"
-            elif " " in t_raw and "T" not in t_raw:
-                iso_time = t_raw.replace(" ", "T")
-            else:
-                iso_time = t_raw or f"{session_date}T09:15:00"
+            try:
+                # Normalize candle time to IST with explicit +05:30 suffix
+                if len(t_raw) <= 5 and ":" in t_raw:
+                    iso_time = f"{session_date}T{t_raw}:00+05:30"
+                elif t_raw and ("+" in t_raw or t_raw.endswith("Z")):
+                    dt_obj2 = datetime.fromisoformat(t_raw.replace("Z", "+00:00"))
+                    iso_time = dt_obj2.astimezone(INDIA_TZ).strftime("%Y-%m-%dT%H:%M:00+05:30")
+                elif " " in t_raw and "T" not in t_raw:
+                    iso_time = t_raw.replace(" ", "T") + "+05:30"
+                else:
+                    iso_time = (t_raw or f"{session_date}T09:15:00") + ("+05:30" if "+" not in t_raw and not t_raw.endswith("Z") else "")
+            except Exception:
+                iso_time = t_raw or f"{session_date}T09:15:00+05:30"
 
             t_hhmm = t_raw[11:16] if len(t_raw) >= 16 else (t_raw[:5] if ":" in t_raw else "")
             c_h, c_m = 9, 15

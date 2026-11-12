@@ -853,7 +853,7 @@ if (suiteKey === "callVsPut") {
       if ((currentSuite === "tools" || currentSuite === "straddle") && straddleState.autoRefresh && straddleState.mode === "live") {
         loadStraddleTool(true); // silent refresh
       }
-    }, 5000);
+    }, 30000);
   }
 
   function stopStraddleTimer() {
@@ -3215,7 +3215,7 @@ if (suiteKey === "callVsPut") {
     let html = "";
     for (let i = points.length - 1; i >= 0; i--) {
       const p = points[i];
-      const tStr = p.time ? String(p.time).substring(11, 16) : "--:--";
+      const tStr = p.time ? formatIstTime(p.time) : "--:--";
       const ce = p.ce_price || 0;
       const pe = p.pe_price || 0;
       const ceChgPct = openCe > 0 ? (((ce - openCe) / openCe) * 100).toFixed(2) : "0.00";
